@@ -1,0 +1,35 @@
+<h2>Devup Design System Creator</h2>
+<button id="createPalette">Create Palette</button>
+<button id="addPalette">Add Palette</button>
+<button id="exportDevupConfig">Export Devup Config</button>
+<button id="cancel">Cancel</button>
+<script>
+
+document.getElementById('createPalette').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'create-palette'  } }, '*')
+}
+document.getElementById('exportDevupConfig').onclick = () => {
+    parent.postMessage({pluginMessage: {type: 'export-devup-config'}}, '*')
+}
+document.getElementById('addPalette').onclick = () => {
+    parent.postMessage({ pluginMessage: { type: 'add-palette' } }, '*')
+}
+
+document.getElementById('cancel').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'close' } }, '*')
+}
+
+onmessage = (event) => {
+    const message = event.data.pluginMessage;
+    switch(message.type) {
+        case 'download':
+            const a = document.createElement('a');
+            const { data, name } = message;
+            a.href = URL.createObjectURL(new File([data], name, { type: 'application/json' }));
+            a.download = name;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            break;
+    }
+};
+</script>

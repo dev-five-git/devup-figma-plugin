@@ -1,0 +1,40 @@
+{
+  "name": "devup-figma-plugin",
+  "version": "1.0.0",
+  "description": "Devup Figma Plugin",
+  "main": "code.js",
+  "scripts": {
+    "dev": "rspack dev",
+    "build": "rspack build",
+    "watch": "rspack build --watch",
+    "preview": "rsbuild preview",
+    "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
+    "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix ."
+  },
+  "author": "",
+  "license": "",
+  "devDependencies": {
+    "@devup/eslint-plugin": "^1.0.3",
+    "@figma/eslint-plugin-figma-plugins": "*",
+    "@figma/plugin-typings": "*",
+    "@rspack/cli": "^1.0.0",
+    "@rspack/core": "^1.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2"
+  },
+  "eslintConfig": {
+    "plugins": [
+      "@devup/eslint-plugin"
+    ],
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "root": true,
+    "extends": [
+      "plugin:@devup/eslint-plugin/recommended",
+      "plugin:@figma/figma-plugins/recommended"
+    ]
+  }
+}

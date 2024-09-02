@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "strict": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@figma"
+    ],
+    "module": "ESNext",
+    "outDir": "./dist",
+    "isolatedModules": true,
+    "moduleResolution": "node"
+  },
+  "include": ["./src",
+    "./rspack.config.js"
+  ]
+}
