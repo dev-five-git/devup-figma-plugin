@@ -1,5 +1,4 @@
 export function colorToRgb(color: string) {
-  console.log(color)
   if (color.startsWith('#')) color = color.slice(1)
   if (color.length !== 6 && color.length !== 3)
     throw new Error(`Invalid color ${color}`)
