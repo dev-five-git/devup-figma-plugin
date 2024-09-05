@@ -1,21 +1,29 @@
 import { DEVUP_COLORS, DEVUP_DARK_COLORS } from '../../constants/Devup'
+import {
+  DATA_DEVUP_COLORS_KEY,
+  DATA_DEVUP_COLORS_VALUE,
+  DATA_DEVUP_DARK_COLORS_VALUE,
+  FRAME_DEVUP_COLOR_PALETTE,
+  PAGE_DEVUP_DESIGN_SYSTEM,
+} from '../../constants/Theme'
 import { colorToRgb } from '../../utils/colorToRgb'
+import { hasData } from '../../utils/hasData'
 import { createDevupVariables } from '../../variables/create-devup-variables'
 import { createColorPair } from './create-color-pair'
 
 export async function createDevupColorPalette() {
   await figma.loadAllPagesAsync()
   let page: PageNode | undefined = figma.root.findAll(
-    (node) => node.type === 'PAGE' && node.name === 'Devup Design System',
+    (node) => node.type === 'PAGE' && node.name === PAGE_DEVUP_DESIGN_SYSTEM,
   )[0] as PageNode | undefined
   if (!page) {
     page = figma.createPage()
-    page.name = 'Devup Design System'
+    page.name = PAGE_DEVUP_DESIGN_SYSTEM
   }
 
   await figma.setCurrentPageAsync(page as PageNode)
   let palette = page.findChild(
-    (node) => node.type === 'FRAME' && node.name === 'Devup Color Palette',
+    (node) => node.type === 'FRAME' && node.name === FRAME_DEVUP_COLOR_PALETTE,
   ) as FrameNode | undefined
 
   const obj: Record<string, [string | null, string | null]> = {}
@@ -23,21 +31,23 @@ export async function createDevupColorPalette() {
     for (const value of palette.children) {
       const keys = value.getPluginDataKeys()
       if (
-        !keys.includes('DEVUP_COLORS_KEY') ||
-        (!keys.includes('DEVUP_COLORS_VALUE') &&
-          !keys.includes('DEVUP_DARK_COLORS_VALUE'))
+        !keys.includes(DATA_DEVUP_COLORS_KEY) ||
+        (!keys.includes(DATA_DEVUP_COLORS_VALUE) &&
+          !keys.includes(DATA_DEVUP_DARK_COLORS_VALUE))
       ) {
         value.remove()
         continue
       }
 
       const _key = await value.getPluginData('DEVUP_COLORS_KEY')
-      if (keys.includes('DEVUP_DARK_COLORS_VALUE')) {
-        const darkValue = await value.getPluginData('DEVUP_DARK_COLORS_VALUE')
+      if (hasData(value, DATA_DEVUP_DARK_COLORS_VALUE)) {
+        const darkValue = await value.getPluginData(
+          DATA_DEVUP_DARK_COLORS_VALUE,
+        )
         obj[_key] = [null, darkValue]
       }
-      if (keys.includes('DEVUP_COLORS_VALUE')) {
-        const lightValue = await value.getPluginData('DEVUP_COLORS_VALUE')
+      if (hasData(value, DATA_DEVUP_COLORS_VALUE)) {
+        const lightValue = await value.getPluginData(DATA_DEVUP_COLORS_VALUE)
         obj[_key] = [lightValue, obj[_key]?.[1]]
       }
       value.remove()
@@ -69,9 +79,9 @@ export async function createDevupColorPalette() {
     variable.setValueForMode(lightModeId, colorToRgb(resLight))
     variable.setValueForMode(darkModeId, colorToRgb(resDark || resLight))
     const fr = await createColorPair(key, variable, lightModeId, darkModeId)
-    fr.setPluginData('DEVUP_COLORS_KEY', key)
-    fr.setPluginData('DEVUP_COLORS_VALUE', resLight)
-    if (resDark) fr.setPluginData('DEVUP_DARK_COLORS_VALUE', resDark)
+    fr.setPluginData(DATA_DEVUP_COLORS_KEY, key)
+    fr.setPluginData(DATA_DEVUP_COLORS_VALUE, resLight)
+    if (resDark) fr.setPluginData(DATA_DEVUP_DARK_COLORS_VALUE, resDark)
     palette.appendChild(fr)
   }
   for (const [key, color] of Object.entries(obj)) {
@@ -81,9 +91,9 @@ export async function createDevupColorPalette() {
     if (color[1])
       variable.setValueForMode(darkModeId, colorToRgb(color[1] || color[0]!))
     const fr = await createColorPair(key, variable, lightModeId, darkModeId)
-    fr.setPluginData('DEVUP_COLORS_KEY', key)
-    if (color[0]) fr.setPluginData('DEVUP_COLORS_VALUE', color[0])
-    if (color[1]) fr.setPluginData('DEVUP_DARK_COLORS_VALUE', color[1])
+    fr.setPluginData(DATA_DEVUP_COLORS_KEY, key)
+    if (color[0]) fr.setPluginData(DATA_DEVUP_COLORS_VALUE, color[0])
+    if (color[1]) fr.setPluginData(DATA_DEVUP_DARK_COLORS_VALUE, color[1])
     palette.appendChild(fr)
   }
   const half = (palette.width + 100) / 3
