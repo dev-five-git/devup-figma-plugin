@@ -3,16 +3,17 @@
   "id": "1412341601954480694",
   "api": "1.0.0",
   "main": "./dist/code.js",
-  "capabilities": [],
+  "capabilities": ["codegen"],
   "enableProposedApi": false,
   "documentAccess": "dynamic-page",
-  "editorType": [
-    "figma"
-  ],
+  "editorType": ["dev"],
   "ui": "ui.html",
   "networkAccess": {
     "allowedDomains": [
       "none"
     ]
-  }
+  },
+  "codegenLanguages": [
+    {"label": "React", "value": "devup"}
+  ]
 }
