@@ -13,6 +13,23 @@ export async function createCode(node: SceneNode): Promise<Element> {
     createAttributes(css),
     children,
   )
+  if (
+    (node.type === 'INSTANCE' || node.type === 'FRAME') &&
+    children.length &&
+    children.every(
+      (child) =>
+        child.type === 'VECTOR' ||
+        child.type === 'ELLIPSE' ||
+        child.type === 'RECTANGLE' ||
+        child.type === 'BOOLEAN_OPERATION',
+    )
+  ) {
+    return {
+      props: { ...attrs, src: node.name },
+      children: [],
+      type: 'Image',
+    }
+  }
   return {
     text,
     props: attrs,
@@ -41,6 +58,7 @@ function selectComponent(node: SceneNode, css: Record<string, string>) {
   const display = css.display
   switch (display) {
     case 'flex':
+    case 'inline-flex':
       if (css['flex-direction'] === 'column') {
         delete css['flex-direction']
         return 'VStack'
@@ -117,6 +135,14 @@ async function applySpecialAttributes(
 
   for (const [key, value] of Object.entries(ATTRS_DEFAULT)) {
     if (key in attrs && attrs[key] === value) {
+      delete attrs[key]
+    }
+  }
+  const borderRegex = /var\(--(\w+), #\w+\)/
+  for (const key of Object.keys(attrs)) {
+    if (key.startsWith('border') && borderRegex.test(attrs[key])) {
+      attrs['borderColor'] = '$' + attrs[key].match(borderRegex)![1]
+      attrs[key] = attrs[key].replace(borderRegex, '')
       delete attrs[key]
     }
   }
