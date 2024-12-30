@@ -14,7 +14,9 @@ export async function createCode(node: SceneNode): Promise<Element> {
     children,
   )
   if (
-    (node.type === 'INSTANCE' || node.type === 'FRAME') &&
+    (node.type === 'INSTANCE' ||
+      node.type === 'FRAME' ||
+      node.type === 'COMPONENT') &&
     children.length &&
     children.every(
       (child) =>
