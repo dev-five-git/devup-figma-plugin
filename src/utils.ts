@@ -148,6 +148,31 @@ async function applySpecialAttributes(
       delete attrs[key]
     }
   }
+  if (attrs['p']) {
+    const splitPadding = attrs['p'].split(' ')
+    if (splitPadding.length === 2) {
+      if (parseInt(splitPadding[0]) === 0) {
+        delete attrs['p']
+        attrs['px'] = splitPadding[1]
+      } else if (parseInt(splitPadding[1]) === 0) {
+        delete attrs['p']
+        attrs['py'] = splitPadding[0]
+      }
+    }
+  }
+
+  if (attrs['m']) {
+    const splitMargin = attrs['m'].split(' ')
+    if (splitMargin.length === 2) {
+      if (parseInt(splitMargin[0]) === 0) {
+        delete attrs['m']
+        attrs['mx'] = splitMargin[1]
+      } else if (parseInt(splitMargin[1]) === 0) {
+        delete attrs['m']
+        attrs['my'] = splitMargin[0]
+      }
+    }
+  }
   return attrs
 }
 
