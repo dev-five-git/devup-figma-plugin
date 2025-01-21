@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-undef
 module.exports = {
   entry: {
     code: './src/code.ts',
@@ -5,8 +6,8 @@ module.exports = {
   resolve: {
     extensions: ['.ts'],
   },
-  output:{
-    chunkFilename: "code.js"
+  output: {
+    chunkFilename: 'code.js',
   },
   module: {
     rules: [
@@ -25,8 +26,4 @@ module.exports = {
       },
     ],
   },
-};
-
-
-
-
+}

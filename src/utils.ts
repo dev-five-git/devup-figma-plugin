@@ -1,207 +1,227 @@
-import { Element } from './Element'
+import { ComponentType } from './Element'
 
-export async function createCode(node: SceneNode): Promise<Element> {
-  const css = await node.getCSSAsync()
-  const children = getChildren(node)
-  const text = node.type === 'TEXT' ? node.characters : ''
-
-  const component = selectComponent(node, css)
-
-  const attrs = await applySpecialAttributes(
-    node,
-    component,
-    createAttributes(css),
-    children,
-  )
-  if (
-    (node.type === 'INSTANCE' ||
-      node.type === 'FRAME' ||
-      node.type === 'COMPONENT') &&
-    children.length &&
-    children.every(
-      (child) =>
-        child.type === 'VECTOR' ||
-        child.type === 'ELLIPSE' ||
-        child.type === 'RECTANGLE' ||
-        child.type === 'BOOLEAN_OPERATION',
-    )
-  ) {
-    return {
-      props: { ...attrs, src: node.name },
-      children: [],
-      type: 'Image',
-    }
-  }
-  return {
-    text,
-    props: attrs,
-    children: await Promise.all(children.map(createCode)),
-    type: component,
-  }
-}
-
-function getChildren(node: SceneNode) {
-  if ('children' in node) return node.children
-  return []
-}
-
-const IGNORE_ATTRS = ['display']
-
-function selectComponent(node: SceneNode, css: Record<string, string>) {
-  const type = node.type
-  if (type === 'VECTOR') return 'Image'
-  if (type === 'TEXT') return 'Text'
-  if (type === 'RECTANGLE') {
-    if ((node.fills as ReadonlyArray<Paint>).length > 0) {
-      const firstFill = (node.fills as ReadonlyArray<Paint>)[0]
-      if (firstFill.type === 'IMAGE') return 'Image'
-    }
-  }
-  const display = css.display
-  switch (display) {
-    case 'flex':
-    case 'inline-flex':
-      if (css['flex-direction'] === 'column') {
-        delete css['flex-direction']
-        return 'VStack'
-      }
-      return 'Flex'
-    default:
-      return 'Box'
-  }
-}
-function createAttributes(css: Record<string, string>) {
-  const res: Record<string, string> = {}
-  for (const [key, value] of Object.entries(css)) {
-    const attr = convertAttributeName(key)
-    if (IGNORE_ATTRS.includes(attr)) continue
-    res[attr] = normalizeValue(value)
-  }
-  return res
-}
-const ATTRS_DEFAULT = {
+const PROPS_DEFAULT = {
   alignItems: 'flex-start',
   alignSelf: 'stretch',
   flexShrink: '0',
 }
-async function applySpecialAttributes(
-  node: SceneNode,
-  component: string,
-  attrs: Record<string, string>,
-  children: readonly SceneNode[],
-) {
-  if (node.type === 'TEXT') {
-    if (node.textStyleId) {
-      const style = await figma.getStyleByIdAsync(node.textStyleId as string)
-      if (style) {
-        const split = style.name.split('/')
-        attrs['typography'] = split[split.length - 1]
-        delete attrs['fontFamily']
-        delete attrs['fontSize']
-        delete attrs['fontWeight']
-        delete attrs['fontStyle']
-        delete attrs['letterSpacing']
-        delete attrs['lineHeight']
-      }
-    }
-  }
 
-  if (component === 'Image') {
-    delete attrs['bg']
-    delete attrs['fill']
-  }
-  if (component === 'Box' || component === 'Flex' || component === 'VStack') {
-    if (attrs['fill']) {
-      attrs['bg'] = attrs['fill']
-      delete attrs['fill']
-    }
-  }
-  if (attrs['gap'] && attrs['justifyContent']) delete attrs['justifyContent']
-  if (attrs['h'] && attrs['w'] === attrs['h']) {
-    attrs['boxSize'] = attrs['w']
-    delete attrs['w']
-    delete attrs['h']
-  }
-  if (node.boundVariables?.fills) {
-    const fill = node.boundVariables.fills[0]
-    if (fill.type === 'VARIABLE_ALIAS') {
-      const name = (await figma.variables.getVariableByIdAsync(fill.id))?.name
-
-      if (name) {
-        if (component === 'Text' && name === 'text') delete attrs['color']
-        else attrs[component === 'Text' ? 'color' : 'bg'] = `$${name}`
-      }
-    }
-  }
-  if (children.length <= 1) delete attrs['gap']
-
-  for (const [key, value] of Object.entries(ATTRS_DEFAULT)) {
-    if (key in attrs && attrs[key] === value) {
-      delete attrs[key]
-    }
-  }
-  const borderRegex = /var\(--(\w+), #\w+\)/
-  for (const key of Object.keys(attrs)) {
-    if (key.startsWith('border') && borderRegex.test(attrs[key])) {
-      attrs['borderColor'] = '$' + attrs[key].match(borderRegex)![1]
-      attrs[key] = attrs[key].replace(borderRegex, '')
-      delete attrs[key]
-    }
-  }
-  if (attrs['p']) {
-    const splitPadding = attrs['p'].split(' ')
-    if (splitPadding.length === 2) {
-      if (parseInt(splitPadding[0]) === 0) {
-        delete attrs['p']
-        attrs['px'] = splitPadding[1]
-      } else if (parseInt(splitPadding[1]) === 0) {
-        delete attrs['p']
-        attrs['py'] = splitPadding[0]
-      }
-    }
-  }
-
-  if (attrs['m']) {
-    const splitMargin = attrs['m'].split(' ')
-    if (splitMargin.length === 2) {
-      if (parseInt(splitMargin[0]) === 0) {
-        delete attrs['m']
-        attrs['mx'] = splitMargin[1]
-      } else if (parseInt(splitMargin[1]) === 0) {
-        delete attrs['m']
-        attrs['my'] = splitMargin[0]
-      }
-    }
-  }
-  return attrs
-}
-
-function normalizeValue(value: string) {
-  return value.split('/*')[0].trim()
-}
-const ATTR_MAP: Record<string, string> = {
+const SHORT_ATTR: Record<string, string> = {
+  background: 'bg',
+  'background-attachment': 'bgAttachment',
+  'background-clip': 'bgClip',
+  'background-color': 'bgColor',
+  'background-image': 'bgImage',
+  'background-origin': 'bgOrigin',
+  'background-position': 'bgPosition',
+  'background-position-x': 'bgPositionX',
+  'background-position-y': 'bgPositionY',
+  'background-repeat': 'bgRepeat',
+  'background-size': 'bgSize',
+  'animation-direction': 'animationDir',
+  'flex-direction': 'flexDir',
+  position: 'pos',
+  margin: 'm',
+  'margin-top': 'mt',
+  'margin-right': 'mr',
+  'margin-bottom': 'mb',
+  'margin-left': 'ml',
+  padding: 'p',
+  'padding-top': 'pt',
+  'padding-right': 'pr',
+  'padding-bottom': 'pb',
+  'padding-left': 'pl',
   width: 'w',
   height: 'h',
-  padding: 'p',
-  margin: 'm',
-  flexDirection: 'flexDir',
-  // justifyContent: 'justify',
-  // alignItems: 'align',
-  marginTop: 'mt',
-  marginBottom: 'mb',
-  marginLeft: 'ml',
-  marginRight: 'mr',
-  paddingTop: 'pt',
-  paddingBottom: 'pb',
-  paddingLeft: 'pl',
-  paddingRight: 'pr',
-  background: 'bg',
+  'min-width': 'minW',
+  'min-height': 'minH',
+  'max-width': 'maxW',
+  'max-height': 'maxH',
 }
-function convertAttributeName(attr: string) {
-  const jsonKey = camelCase(attr)
-  if (jsonKey in ATTR_MAP) return ATTR_MAP[jsonKey]
-  return jsonKey
-}
-function camelCase(str: string) {
+const PAIR_ATTR = [
+  {
+    keys: ['ml', 'mr'],
+    short: 'mx',
+  },
+  {
+    keys: ['mt', 'mb'],
+    short: 'my',
+  },
+  {
+    keys: ['pl', 'pr'],
+    short: 'px',
+  },
+  {
+    keys: ['pt', 'pb'],
+    short: 'py',
+  },
+  {
+    keys: ['w', 'h'],
+    short: 'boxSize',
+  },
+]
+function toCamelCase(str: string) {
   return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+}
+
+const IGNORED_CSS_KEYS = ['display']
+
+export function cssToProps(css: Record<string, string>) {
+  const ret: Record<string, string> = {}
+  for (const key in css)
+    if (!IGNORED_CSS_KEYS.includes(key))
+      ret[key in SHORT_ATTR ? SHORT_ATTR[key] : toCamelCase(key)] = css[key]
+  for (const pair of PAIR_ATTR) {
+    if (pair.keys.every((key) => ret[key] && ret[key] === ret[pair.keys[0]])) {
+      ret[pair.short] = ret[pair.keys[0]]
+      pair.keys.forEach((key) => delete ret[key])
+    }
+  }
+  return ret
+}
+
+export async function propsToPropsWithTypography(
+  props: Record<string, string>,
+  textStyleId: TextNode['textStyleId'],
+) {
+  const ret: Record<string, string> = { ...props }
+  if (textStyleId) {
+    const style = await figma.getStyleByIdAsync(textStyleId as string)
+    if (style) {
+      const split = style.name.split('/')
+      ret['typography'] = split[split.length - 1]
+      delete ret['fontFamily']
+      delete ret['fontSize']
+      delete ret['fontWeight']
+      delete ret['fontStyle']
+      delete ret['letterSpacing']
+      delete ret['lineHeight']
+    }
+  }
+  return ret
+}
+
+export function space(depth: number) {
+  return ' '.repeat(depth * 2)
+}
+
+export function extractVariableName(value: string) {
+  if (!value.startsWith('var(--')) return value
+  const match = value.match(/var\(--(\w+)/)
+  return match ? '$' + match[1] : ''
+}
+
+export function propsToComponentProps(
+  props: Record<string, string>,
+  componentType: ComponentType,
+) {
+  const ret = { ...props }
+  switch (componentType) {
+    case 'Box':
+      if (ret['fill']) {
+        ret['bg'] = ret['fill']
+        delete ret['fill']
+      }
+      break
+    case 'Image':
+    case 'Text':
+    case 'Button':
+    case 'Input':
+    case 'Flex':
+    case 'Grid':
+      break
+    case 'Center':
+      delete ret['alignItems']
+      delete ret['justifyContent']
+      break
+    case 'VStack':
+      delete ret['flexDir']
+      break
+  }
+  return ret
+}
+const COLOR_PROPS = ['color', 'bg', 'borderColor']
+const SPACE_PROPS = ['m', 'p']
+const DEFAULT_PROPS_MAP = {
+  flex: {
+    default: '1 0 0',
+    value: '1',
+  },
+} as const
+
+const CONVERT_PROPS_MAP = {
+  p: [
+    {
+      test: /0px \d+px/,
+      value: {
+        prop: 'px',
+        value: (value: string) => value.split(' ')[1],
+      },
+    },
+    {
+      test: /\dpx 0px/,
+      value: {
+        prop: 'py',
+        value: (value: string) => value.split(' ')[1],
+      },
+    },
+  ],
+  m: [
+    {
+      test: /0px \d+px/,
+      value: {
+        prop: 'mx',
+        value: (value: string) => value.split(' ')[1],
+      },
+    },
+    {
+      test: /\dpx 0px/,
+      value: {
+        prop: 'my',
+        value: (value: string) => value.split(' ')[1],
+      },
+    },
+  ],
+} as const
+export function organizeProps(props: Record<string, string>) {
+  const ret = { ...props }
+  for (const key of COLOR_PROPS)
+    if (ret[key]) ret[key] = extractVariableName(ret[key])
+  for (const key of SPACE_PROPS)
+    if (props[key]) ret[key] = shortSpaceValue(ret[key])
+
+  for (const key in DEFAULT_PROPS_MAP)
+    if (
+      ret[key] ===
+      DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].default
+    )
+      ret[key] = DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].value
+
+  for (const key in PROPS_DEFAULT)
+    if (ret[key] === PROPS_DEFAULT[key as keyof typeof PROPS_DEFAULT])
+      delete ret[key]
+  for (const key in CONVERT_PROPS_MAP) {
+    if (!ret[key]) continue
+    for (const convert of CONVERT_PROPS_MAP[
+      key as keyof typeof CONVERT_PROPS_MAP
+    ]) {
+      if (convert.test.test(ret[key])) {
+        const { prop, value } = convert.value
+        ret[prop] = value(ret[key])
+        delete ret[key]
+        break
+      }
+    }
+  }
+  return ret
+}
+
+export function shortSpaceValue(value: string) {
+  const split = value.split(' ')
+  if (split.every((v) => v === split[0])) return split[0]
+  if (split.length === 4 && split[1] === split[3])
+    return `${split[0]} ${split[1]} ${split[2]}`
+  if (split.length === 4 && split[0] === split[2])
+    return `${split[0]} ${split[1]} ${split[3]}`
+  return value
 }

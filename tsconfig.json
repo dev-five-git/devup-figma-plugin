@@ -1,18 +1,16 @@
 {
   "compilerOptions": {
     "target": "ESNext",
+    "types": ["vite/client", "vitest/importMeta", "vitest/globals", "@figma/plugin-typings"],
     "lib": ["ESNext"],
     "strict": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@figma"
-    ],
     "module": "ESNext",
     "outDir": "./dist",
     "isolatedModules": true,
     "moduleResolution": "node"
   },
-  "include": ["./src",
+  "include": [
+    "./src",
     "./rspack.config.js"
   ]
 }
