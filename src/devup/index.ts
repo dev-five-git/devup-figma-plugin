@@ -42,13 +42,27 @@ export async function exportDevup() {
 
   await figma.loadAllPagesAsync()
   const texts = figma.root.children.flatMap((node) => node.findAll((node) => node.type === 'TEXT')) as TextNode[]
+  const textStyles = await figma.getLocalTextStylesAsync()
+  const ids = new Set(textStyles.map((style) => style.id))
 
   const typography: Record<string, (null | DevupTypography)[]> = {}
   await Promise.all(
     texts.map(async (text) => {
       if (typeof text.textStyleId !== 'string') return
       const style = await figma.getStyleByIdAsync(text.textStyleId)
-      if (style) {
+      if (style && ids.has(style.id)) {
+        const { type, name } = styleNameToTypography(style.name)
+        if(typography[name]){
+          if(type === 'mobile' && typography[name][0]){
+            return
+          }
+          if(type === 'tablet' && typography[name][2]){
+            return
+          }
+          if(type === 'desktop' && typography[name][4]){
+            return
+          }
+        }
         const seg = text.getStyledTextSegments([
           'fontName',
           'fontWeight',
@@ -65,7 +79,6 @@ export async function exportDevup() {
           'hyperlink',
         ])[0]
         if (seg) {
-          const { type, name } = styleNameToTypography(style.name)
           const typo = textSegmentToTypography(seg as StyledTextSegment)
           typography[name] ??= [null, null, null, null, null]
           if (type === 'mobile') {
@@ -75,7 +88,6 @@ export async function exportDevup() {
           } else if (type === 'desktop') {
             typography[name][4] = typo
           }
-        } else {
         }
       }
     }),
