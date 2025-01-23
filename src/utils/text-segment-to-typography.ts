@@ -29,11 +29,11 @@ export function textSegmentToTypography(
       segment.lineHeight.unit === 'AUTO'
         ? 'normal'
         : segment.lineHeight.unit === 'PERCENT'
-          ? Math.floor(segment.lineHeight.value) / 100
+          ? Math.round(segment.lineHeight.value / 10) / 10
           : segment.lineHeight.value + 'px',
     letterSpacing:
       segment.letterSpacing.unit === 'PERCENT'
-        ? Math.floor(segment.letterSpacing.value) / 100
+        ? Math.round(segment.letterSpacing.value) / 100
         : segment.letterSpacing.value + 'px',
   }
 }

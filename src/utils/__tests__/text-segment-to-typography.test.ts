@@ -90,5 +90,35 @@ describe('textSegmentToTypography', () => {
       lineHeight: '0px',
       letterSpacing: 0.1,
     })
+
+    expect(
+      textSegmentToTypography({
+        fontName: {
+          family: 'Roboto',
+          style: 'normal',
+        },
+        fontWeight: 400,
+        fontSize: 16,
+        textDecoration: 'UNDERLINE',
+        textCase: 'UPPER',
+        lineHeight: {
+          unit: 'PERCENT',
+          value: 139,
+        },
+        letterSpacing: {
+          unit: 'PERCENT',
+          value: 10,
+        },
+      }),
+    ).toEqual({
+      fontFamily: 'Roboto',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      fontSize: '16px',
+      textDecoration: 'underline',
+      textTransform: 'upper',
+      lineHeight: 1.4,
+      letterSpacing: 0.1,
+    })
   })
 })
