@@ -3,10 +3,10 @@ import { isVariableAlias } from '../utils/is-variable-alias'
 import { rgbaToHex } from '../utils/rgba-to-hex'
 import { styleNameToTypography } from '../utils/style-name-to-typography'
 import { textSegmentToTypography } from '../utils/text-segment-to-typography'
+import { toCamel } from '../utils/to-camel'
 import { variableAliasToValue } from '../utils/variable-alias-to-value'
 import { type Devup, DevupTypography } from './types'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
-import {toCamel} from "../utils/to-camel";
 
 export async function exportDevup() {
   const devup: Devup = {}
@@ -33,17 +33,15 @@ export async function exportDevup() {
               figma.util.rgba(nextValue),
             )
           } else {
-            colors[toCamel(variable.name)] = rgbaToHex(
-              figma.util.rgba(value),
-            )
+            colors[toCamel(variable.name)] = rgbaToHex(figma.util.rgba(value))
           }
         }),
       )
     }
   }
 
-  const texts = figma.currentPage.findAll(
-    (node) => node.type === 'TEXT') as TextNode[]
+  await figma.loadAllPagesAsync()
+  const texts = figma.root.children.flatMap((node) => node.findAll((node) => node.type === 'TEXT')) as TextNode[]
 
   const typography: Record<string, (null | DevupTypography)[]> = {}
   await Promise.all(
