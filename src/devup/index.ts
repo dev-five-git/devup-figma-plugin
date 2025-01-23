@@ -6,6 +6,7 @@ import { textSegmentToTypography } from '../utils/text-segment-to-typography'
 import { variableAliasToValue } from '../utils/variable-alias-to-value'
 import { type Devup, DevupTypography } from './types'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
+import {toCamel} from "../utils/to-camel";
 
 export async function exportDevup() {
   const devup: Devup = {}
@@ -28,11 +29,11 @@ export async function exportDevup() {
             if (nextValue === null) return
             if (typeof nextValue === 'boolean' || typeof nextValue === 'number')
               return
-            colors[variable.name.toLowerCase()] = rgbaToHex(
+            colors[toCamel(variable.name)] = rgbaToHex(
               figma.util.rgba(nextValue),
             )
           } else {
-            colors[variable.name.toLowerCase()] = rgbaToHex(
+            colors[toCamel(variable.name)] = rgbaToHex(
               figma.util.rgba(value),
             )
           }

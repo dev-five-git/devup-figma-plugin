@@ -70,6 +70,7 @@ export class Element {
         this.componentType = 'Text'
         break
       case 'FRAME':
+      case 'BOOLEAN_OPERATION':
       case 'GROUP':
       case 'INSTANCE': {
         const children = this.getChildren()
@@ -91,6 +92,12 @@ export class Element {
           this.fakeComponentType = true
           this.additionalProps = {
             src: this.node.name,
+          }
+          if (children[0] instanceof Element) {
+            this.additionalProps = {
+              ...this.additionalProps,
+              ...(await children[0].getProps()),
+            }
           }
         }
         break
@@ -122,12 +129,12 @@ export class Element {
     const componentType = await this.getComponentType()
     const originProps = await this.getProps()
     const mergedProps = { ...originProps, ...this.additionalProps }
+    const children = this.getChildren()
     const props = organizeProps(
       this.node.type === 'TEXT'
         ? await propsToPropsWithTypography(mergedProps, this.node.textStyleId)
-        : propsToComponentProps(mergedProps, componentType),
+        : propsToComponentProps(mergedProps, componentType, children.length),
     )
-    const children = this.getChildren()
     const hasChildren = children.length > 0 && !this.skipChildren
     const renderChildren = (
       await Promise.all(

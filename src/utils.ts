@@ -114,7 +114,11 @@ export function extractVariableName(value: string) {
 export function propsToComponentProps(
   props: Record<string, string>,
   componentType: ComponentType,
+  childrenLength: number,
 ) {
+  if (childrenLength <= 1) {
+    delete props['flexDir']
+  }
   const ret = { ...props }
   switch (componentType) {
     case 'Box':
@@ -124,6 +128,9 @@ export function propsToComponentProps(
       }
       break
     case 'Image':
+      delete ret['alignItems']
+      delete ret['justifyContent']
+      break
     case 'Text':
     case 'Button':
     case 'Input':
@@ -147,38 +154,46 @@ const DEFAULT_PROPS_MAP = {
     default: '1 0 0',
     value: '1',
   },
+  p: {
+    default: '0px',
+    value: null,
+  },
+  m: {
+    default: '0px',
+    value: null,
+  },
 } as const
 
 const CONVERT_PROPS_MAP = {
   p: [
     {
-      test: /0px \d+px/,
+      test: /0px \d*[1-9]px/,
       value: {
         prop: 'px',
         value: (value: string) => value.split(' ')[1],
       },
     },
     {
-      test: /\dpx 0px/,
+      test: /\d*[1-9]px 0px/,
       value: {
         prop: 'py',
-        value: (value: string) => value.split(' ')[1],
+        value: (value: string) => value.split(' ')[0],
       },
     },
   ],
   m: [
     {
-      test: /0px \d+px/,
+      test: /0px \d*[1-9]px/,
       value: {
         prop: 'mx',
         value: (value: string) => value.split(' ')[1],
       },
     },
     {
-      test: /\dpx 0px/,
+      test: /\d*[1-9]px 0px/,
       value: {
         prop: 'my',
-        value: (value: string) => value.split(' ')[1],
+        value: (value: string) => value.split(' ')[0],
       },
     },
   ],
@@ -188,14 +203,19 @@ export function organizeProps(props: Record<string, string>) {
   for (const key of COLOR_PROPS)
     if (ret[key]) ret[key] = extractVariableName(ret[key])
   for (const key of SPACE_PROPS)
-    if (props[key]) ret[key] = shortSpaceValue(ret[key])
+    if (ret[key]) ret[key] = shortSpaceValue(ret[key])
 
   for (const key in DEFAULT_PROPS_MAP)
     if (
       ret[key] ===
       DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].default
-    )
-      ret[key] = DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].value
+    ) {
+      const defaultValue =
+        DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].value
+
+      if (defaultValue === null) delete ret[key]
+      else ret[key] = defaultValue
+    }
 
   for (const key in PROPS_DEFAULT)
     if (ret[key] === PROPS_DEFAULT[key as keyof typeof PROPS_DEFAULT])
@@ -211,6 +231,11 @@ export function organizeProps(props: Record<string, string>) {
         delete ret[key]
         break
       }
+    }
+  }
+  for (const key in ret) {
+    if (ret[key] === '') {
+      delete ret[key]
     }
   }
   return ret

@@ -1,7 +1,16 @@
 import { DevupTypography } from '../devup/types'
 
 export function textSegmentToTypography(
-  segment: StyledTextSegment,
+  segment: Pick<
+    StyledTextSegment,
+    | 'fontName'
+    | 'fontWeight'
+    | 'fontSize'
+    | 'textDecoration'
+    | 'textCase'
+    | 'lineHeight'
+    | 'letterSpacing'
+  >,
 ): DevupTypography {
   return {
     fontFamily: segment.fontName.family,
@@ -19,13 +28,12 @@ export function textSegmentToTypography(
     lineHeight:
       segment.lineHeight.unit === 'AUTO'
         ? 'normal'
-        : segment.lineHeight.unit === 'PERCENT' && segment.lineHeight.value > 0
-          ? segment.lineHeight.value / 100
+        : segment.lineHeight.unit === 'PERCENT'
+          ? Math.floor(segment.lineHeight.value) / 100
           : segment.lineHeight.value + 'px',
     letterSpacing:
-      segment.letterSpacing.unit === 'PERCENT' &&
-      segment.letterSpacing.value > 0
-        ? segment.letterSpacing.value / 100
+      segment.letterSpacing.unit === 'PERCENT'
+        ? Math.floor(segment.letterSpacing.value) / 100
         : segment.letterSpacing.value + 'px',
   }
 }
