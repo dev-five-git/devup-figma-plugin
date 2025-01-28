@@ -1,4 +1,5 @@
 import { ComponentType } from './Element'
+import { toCamel } from './utils/to-camel'
 
 const PROPS_DEFAULT = {
   alignItems: 'flex-start',
@@ -40,12 +41,20 @@ const SHORT_ATTR: Record<string, string> = {
 }
 const PAIR_ATTR = [
   {
+    keys: ['ml', 'mr', 'mb', 'mt'],
+    short: 'm',
+  },
+  {
     keys: ['ml', 'mr'],
     short: 'mx',
   },
   {
     keys: ['mt', 'mb'],
     short: 'my',
+  },
+  {
+    keys: ['pl', 'pr', 'pb', 'pt'],
+    short: 'p',
   },
   {
     keys: ['pl', 'pr'],
@@ -60,9 +69,6 @@ const PAIR_ATTR = [
     short: 'boxSize',
   },
 ]
-function toCamelCase(str: string) {
-  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-}
 
 const IGNORED_CSS_KEYS = ['display']
 
@@ -70,7 +76,7 @@ export function cssToProps(css: Record<string, string>) {
   const ret: Record<string, string> = {}
   for (const key in css)
     if (!IGNORED_CSS_KEYS.includes(key))
-      ret[key in SHORT_ATTR ? SHORT_ATTR[key] : toCamelCase(key)] = css[key]
+      ret[key in SHORT_ATTR ? SHORT_ATTR[key] : toCamel(key)] = css[key]
   for (const pair of PAIR_ATTR) {
     if (pair.keys.every((key) => ret[key] && ret[key] === ret[pair.keys[0]])) {
       ret[pair.short] = ret[pair.keys[0]]
@@ -105,10 +111,10 @@ export function space(depth: number) {
   return ' '.repeat(depth * 2)
 }
 
-export function extractVariableName(value: string) {
+function extractVariableName(value: string) {
   if (!value.startsWith('var(--')) return value
   const match = value.match(/var\(--(\w+)/)
-  return match ? '$' + match[1] : ''
+  return '$' + match?.[1]
 }
 
 export function propsToComponentProps(
@@ -122,20 +128,19 @@ export function propsToComponentProps(
   const ret = { ...props }
   switch (componentType) {
     case 'Box':
-      if (ret['fill']) {
-        ret['bg'] = ret['fill']
-        delete ret['fill']
-      }
+      delete ret['fill']
       break
     case 'Image':
       delete ret['alignItems']
       delete ret['justifyContent']
+      delete ret['gap']
+      delete ret['fill']
       break
-    case 'Text':
+    case 'Flex':
     case 'Button':
     case 'Input':
-    case 'Flex':
     case 'Grid':
+    case 'Text':
       break
     case 'Center':
       delete ret['alignItems']
@@ -167,14 +172,14 @@ const DEFAULT_PROPS_MAP = {
 const CONVERT_PROPS_MAP = {
   p: [
     {
-      test: /0px \d*[1-9]px/,
+      test: /^0px (\d*[1-9]|\d{2,})px$/,
       value: {
         prop: 'px',
         value: (value: string) => value.split(' ')[1],
       },
     },
     {
-      test: /\d*[1-9]px 0px/,
+      test: /^(\d*[1-9]|\d{2,})px 0px$/,
       value: {
         prop: 'py',
         value: (value: string) => value.split(' ')[0],
@@ -183,14 +188,14 @@ const CONVERT_PROPS_MAP = {
   ],
   m: [
     {
-      test: /0px \d*[1-9]px/,
+      test: /^0px (\d*[1-9]|\d{2,})px$/,
       value: {
         prop: 'mx',
         value: (value: string) => value.split(' ')[1],
       },
     },
     {
-      test: /\d*[1-9]px 0px/,
+      test: /^(\d*[1-9]|\d{2,})px 0px$/,
       value: {
         prop: 'my',
         value: (value: string) => value.split(' ')[0],
@@ -198,6 +203,16 @@ const CONVERT_PROPS_MAP = {
     },
   ],
 } as const
+
+const CONVERT_PROPS_VALUE_MAP = {
+  bg: [
+    {
+      test: /url\(<path-to-image>\)/,
+      value: (value: string) =>
+        value.replace(/url\(<path-to-image>\)/, 'url(/path/to/image)'),
+    },
+  ],
+}
 export function organizeProps(props: Record<string, string>) {
   const ret = { ...props }
   for (const key of COLOR_PROPS)
@@ -238,15 +253,72 @@ export function organizeProps(props: Record<string, string>) {
       delete ret[key]
     }
   }
+  for (const key in CONVERT_PROPS_VALUE_MAP) {
+    if (!ret[key]) continue
+    for (const convert of CONVERT_PROPS_VALUE_MAP[
+      key as keyof typeof CONVERT_PROPS_VALUE_MAP
+    ]) {
+      if (convert.test.test(ret[key])) {
+        ret[key] = convert.value(ret[key])
+        break
+      }
+    }
+  }
   return ret
 }
 
-export function shortSpaceValue(value: string) {
+function shortSpaceValue(value: string) {
   const split = value.split(' ')
   if (split.every((v) => v === split[0])) return split[0]
+  if (split.length === 4 && split[1] === split[3] && split[0] === split[2])
+    return `${split[0]} ${split[1]}`
   if (split.length === 4 && split[1] === split[3])
     return `${split[0]} ${split[1]} ${split[2]}`
-  if (split.length === 4 && split[0] === split[2])
-    return `${split[0]} ${split[1]} ${split[3]}`
   return value
+}
+
+export async function checkImageChildrenType(
+  node: SceneNode & ChildrenMixin,
+): Promise<{ type: 'SVG' | 'IMAGE'; fill?: string } | null> {
+  const children = node.children
+  let hasSVG = false
+  let fill: undefined | string = undefined
+
+  for (const child of children) {
+    if (
+      child.type === 'ELLIPSE' ||
+      child.type === 'RECTANGLE' ||
+      child.type === 'POLYGON' ||
+      child.type === 'STAR' ||
+      child.type === 'VECTOR' ||
+      child.type === 'LINE'
+    ) {
+      const css = await child.getCSSAsync()
+      if (css['fill'] && css['fill'].startsWith('var(--')) fill = css['fill']
+      hasSVG = true
+      continue
+    }
+    if (
+      child.type === 'FRAME' ||
+      child.type === 'GROUP' ||
+      child.type === 'BOOLEAN_OPERATION' ||
+      child.type === 'INSTANCE'
+    ) {
+      const retType = (await checkImageChildrenType(child))?.type
+      if (retType) hasSVG = true
+      else return null
+      continue
+    }
+    return null
+  }
+  if (hasSVG && fill)
+    return {
+      type: 'SVG',
+      fill,
+    }
+  if (hasSVG)
+    return {
+      type: 'IMAGE',
+    }
+  return null
 }

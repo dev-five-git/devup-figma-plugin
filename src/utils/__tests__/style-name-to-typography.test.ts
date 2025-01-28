@@ -2,9 +2,9 @@ import { styleNameToTypography } from '../style-name-to-typography'
 
 describe('styleNameToTypography', () => {
   it('should convert styleName to Typography', () => {
-    expect(styleNameToTypography('mobile-font')).toEqual({
+    expect(styleNameToTypography('mobile/font')).toEqual({
       type: 'mobile',
-      name: 'mobile-font',
+      name: 'font',
     })
 
     expect(styleNameToTypography('desktop/font')).toEqual({
@@ -20,6 +20,14 @@ describe('styleNameToTypography', () => {
     expect(styleNameToTypography('mobile/font')).toEqual({
       type: 'mobile',
       name: 'font',
+    })
+    expect(styleNameToTypography('mobile/font-name')).toEqual({
+      type: 'mobile',
+      name: 'fontName',
+    })
+    expect(styleNameToTypography('font-name')).toEqual({
+      type: 'mobile',
+      name: 'fontName',
     })
   })
 })

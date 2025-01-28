@@ -88,7 +88,7 @@ describe('textSegmentToTypography', () => {
       textDecoration: 'underline',
       textTransform: 'upper',
       lineHeight: '0px',
-      letterSpacing: 0.1,
+      letterSpacing: '0.1em',
     })
 
     expect(
@@ -118,7 +118,7 @@ describe('textSegmentToTypography', () => {
       textDecoration: 'underline',
       textTransform: 'upper',
       lineHeight: 1.4,
-      letterSpacing: 0.1,
+      letterSpacing: '0.1em',
     })
   })
 })

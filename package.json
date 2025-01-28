@@ -9,7 +9,7 @@
     "watch": "rspack build --watch",
     "test": "vitest test --run --coverage",
     "preview": "rsbuild preview",
-    "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
+    "lint": "eslint",
     "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix ."
   },
   "author": "",
