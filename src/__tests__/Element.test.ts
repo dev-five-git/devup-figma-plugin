@@ -27,6 +27,7 @@ function createNode(
     textStyleId,
     parent,
     characters,
+    visible: true,
     width: props.width ? parseInt(props.width) : undefined,
     height: props.height ? parseInt(props.height) : undefined,
     name,

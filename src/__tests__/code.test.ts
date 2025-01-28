@@ -48,11 +48,33 @@ describe('codegen', () => {
               background: 'red',
             }
           },
+          visible: true,
         },
       }),
     ).toEqual([
       {
         code: '<Box bg="red" />',
+        language: 'JAVASCRIPT',
+        title: undefined,
+      },
+    ])
+
+    expect(
+      await callback({
+        node: {
+          type: 'code',
+          code: 'code',
+          getCSSAsync: async () => {
+            return {
+              background: 'red',
+            }
+          },
+          visible: false,
+        },
+      }),
+    ).toEqual([
+      {
+        code: '',
         language: 'JAVASCRIPT',
         title: undefined,
       },

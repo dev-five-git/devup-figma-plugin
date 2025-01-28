@@ -140,6 +140,7 @@ export class Element {
   }
 
   async render(dep: number = 0): Promise<string> {
+    if (!this.node.visible) return ''
     const componentType = await this.getComponentType()
 
     if (componentType === 'svg') {
