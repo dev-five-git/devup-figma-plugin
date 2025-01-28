@@ -141,14 +141,6 @@ export class Element {
 
   async render(dep: number = 0): Promise<string> {
     const componentType = await this.getComponentType()
-    const originProps = await this.getProps()
-    const mergedProps = { ...originProps, ...this.additionalProps }
-    const children = this.getChildren()
-    const props = organizeProps(
-      this.node.type === 'TEXT'
-        ? await propsToPropsWithTypography(mergedProps, this.node.textStyleId)
-        : propsToComponentProps(mergedProps, componentType, children.length),
-    )
 
     if (componentType === 'svg') {
       //   prue svg
@@ -176,6 +168,15 @@ export class Element {
         })
         .trim()
     }
+    const originProps = await this.getProps()
+    const mergedProps = { ...originProps, ...this.additionalProps }
+    const children = this.getChildren()
+    const props = organizeProps(
+      this.node.type === 'TEXT'
+        ? await propsToPropsWithTypography(mergedProps, this.node.textStyleId)
+        : propsToComponentProps(mergedProps, componentType, children.length),
+    )
+
     const hasChildren = children.length > 0 && !this.skipChildren
     const renderChildren = hasChildren
       ? (

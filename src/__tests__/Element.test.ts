@@ -53,10 +53,21 @@ function createElement(
 describe('Element', () => {
   describe('ComponentType', () => {
     it('ELLIPSE', async () => {
-      const element = createElement('ELLIPSE')
-      expect(await element.getComponentType()).toEqual('Box')
-      expect(await element.render()).toEqual('<Box borderRadius="50%" />')
-      expect(await element.getProps()).toEqual({})
+      {
+        const element = createElement('ELLIPSE')
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual('<Box borderRadius="50%" />')
+        expect(await element.getProps()).toEqual({})
+      }
+      {
+        const element = createElement('ELLIPSE', {
+          fill: 'red',
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box borderRadius="50%" bg="red" />',
+        )
+      }
     })
 
     it('Box', async () => {
