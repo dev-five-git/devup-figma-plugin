@@ -34,7 +34,9 @@ export class Element {
   }
   async getCss(): Promise<Record<string, string>> {
     if (this.css) return this.css
-    this.css = await this.node.getCSSAsync()
+    this.css = await this.node.getCSSAsync().catch(() => ({
+      error: 'getCSSAsync Error',
+    }))
     if (
       this.css['width']?.endsWith('px') &&
       this.node.parent &&

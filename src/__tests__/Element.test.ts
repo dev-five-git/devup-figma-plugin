@@ -436,4 +436,13 @@ describe('Element', () => {
       })
     })
   })
+  describe('Error Node', () => {
+    it('should throw error', async () => {
+      const element = createElement('TEXT')
+      element.node.getCSSAsync = vi.fn().mockRejectedValue({})
+      expect(await element.render()).toEqual(
+        '<Text error="getCSSAsync Error" />',
+      )
+    })
+  })
 })
