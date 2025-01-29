@@ -128,7 +128,10 @@ export function propsToComponentProps(
   const ret = { ...props }
   switch (componentType) {
     case 'Box':
-      delete ret['fill']
+      if (ret['fill']) {
+        ret['bg'] = ret['fill']
+        delete ret['fill']
+      }
       break
     case 'Image':
       delete ret['alignItems']

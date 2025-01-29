@@ -27,6 +27,7 @@ function createNode(
     textStyleId,
     parent,
     characters,
+    visible: true,
     width: props.width ? parseInt(props.width) : undefined,
     height: props.height ? parseInt(props.height) : undefined,
     name,
@@ -53,10 +54,21 @@ function createElement(
 describe('Element', () => {
   describe('ComponentType', () => {
     it('ELLIPSE', async () => {
-      const element = createElement('ELLIPSE')
-      expect(await element.getComponentType()).toEqual('Box')
-      expect(await element.render()).toEqual('<Box borderRadius="50%" />')
-      expect(await element.getProps()).toEqual({})
+      {
+        const element = createElement('ELLIPSE')
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual('<Box borderRadius="50%" />')
+        expect(await element.getProps()).toEqual({})
+      }
+      {
+        const element = createElement('ELLIPSE', {
+          fill: 'red',
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box borderRadius="50%" bg="red" />',
+        )
+      }
     })
 
     it('Box', async () => {
@@ -422,6 +434,15 @@ describe('Element', () => {
         expect(await element.getComponentType()).toEqual('VStack')
         expect(await element.render()).toEqual('<VStack />')
       })
+    })
+  })
+  describe('Error Node', () => {
+    it('should throw error', async () => {
+      const element = createElement('TEXT')
+      element.node.getCSSAsync = vi.fn().mockRejectedValue({})
+      expect(await element.render()).toEqual(
+        '<Text error="getCSSAsync Error" />',
+      )
     })
   })
 })

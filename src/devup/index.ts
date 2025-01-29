@@ -52,14 +52,14 @@ export async function exportDevup() {
       const style = await figma.getStyleByIdAsync(text.textStyleId)
       if (style && ids.has(style.id)) {
         const { type, name } = styleNameToTypography(style.name)
-        if(typography[name]){
-          if(type === 'mobile' && typography[name][0]){
+        if (typography[name]) {
+          if (type === 'mobile' && typography[name][0]) {
             return
           }
-          if(type === 'tablet' && typography[name][2]){
+          if (type === 'tablet' && typography[name][2]) {
             return
           }
-          if(type === 'desktop' && typography[name][4]){
+          if (type === 'desktop' && typography[name][4]) {
             return
           }
         }
@@ -94,7 +94,38 @@ export async function exportDevup() {
   )
   if (Object.keys(typography).length > 0) {
     devup['theme'] ??= {}
-    devup['theme']['typography'] = typography
+    devup['theme']['typography'] = Object.entries(typography).reduce(
+      (acc, [key, value]) => {
+        const filtered = value.filter((v) => v !== null)
+        if (filtered.length === 0) return acc
+        if (filtered.length === 1) {
+          acc[key] = filtered[0]
+          return acc
+        }
+        if (value[0] === null) {
+          acc[key] = [filtered[0]]
+          let init = false
+          for (let i = 0; i < value.length; i += 1) {
+            if (value[i] === null) {
+              if (init) {
+                acc[key].push(null)
+              } else {
+                if (!init) {
+                  acc[key].push(null)
+                  init = true
+                } else {
+                  acc[key].push(value[i])
+                }
+              }
+            }
+          }
+          return acc
+        }
+        acc[key] = value
+        return acc
+      },
+      {} as Record<string, DevupTypography | (null | DevupTypography)[]>,
+    )
   }
 
   return downloadFile('devup.json', JSON.stringify(devup))
