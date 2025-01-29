@@ -1,6 +1,7 @@
 import {
   checkImageChildrenType,
   cssToProps,
+  formatSvg,
   organizeProps,
   propsToComponentProps,
   propsToPropsWithTypography,
@@ -37,13 +38,18 @@ export class Element {
     this.css = await this.node.getCSSAsync().catch(() => ({
       error: 'getCSSAsync Error',
     }))
-    if (
-      this.css['width']?.endsWith('px') &&
-      this.node.parent &&
-      'width' in this.node.parent &&
-      this.node.width === this.node.parent.width
-    )
-      this.css['width'] = '100%'
+    if (this.css['width']?.endsWith('px') && this.node.parent) {
+      if (
+        this.node.parent.type === 'SECTION' ||
+        this.node.parent.type === 'PAGE'
+      )
+        delete this.css['width']
+      else if (
+        'width' in this.node.parent &&
+        this.node.width === this.node.parent.width
+      )
+        this.css['width'] = '100%'
+    }
     return this.css
   }
   async getProps(): Promise<Record<string, string>> {
@@ -101,6 +107,8 @@ export class Element {
       case 'GROUP':
       case 'INSTANCE': {
         if (this.node.children.length > 1 && (await this.hasSpaceProps())) break
+        // has instance type children, skip
+        if (this.node.children.some((child) => child.type === 'INSTANCE')) break
         const res = await checkImageChildrenType(this.node)
         if (res) {
           if (res.type === 'SVG' && res.fill) {
@@ -161,15 +169,7 @@ export class Element {
         )
       }
 
-      const newLineCount = value.split('\n').filter(Boolean).length
-      let idx = 0
-      return value
-        .replaceAll(/(\n)/g, (_, letter) => {
-          if (newLineCount / 2 > idx + 1) idx += 1
-          else idx -= 1
-          return letter + space(dep + idx)
-        })
-        .trim()
+      return formatSvg(value, dep)
     }
     const originProps = await this.getProps()
     const mergedProps = { ...originProps, ...this.additionalProps }
