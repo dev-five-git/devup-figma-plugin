@@ -368,6 +368,29 @@ describe('Element', () => {
 </Flex>`,
           )
         })
+        it('should render Image with aspect ratio', async () => {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            width: '60px',
+            'flex-direction': 'column',
+            children: [
+              createNode('VECTOR', {
+                name: 'image',
+                width: '60px',
+                height: '60px',
+                fills: [],
+              }),
+              createNode('TEXT', {
+                width: '60px',
+                height: '60px',
+                fills: [],
+              }),
+            ],
+          })
+          expect(await element.render()).toEqual(
+            '<VStack w="60px">\n  <Image w="100%" src="image" aspectRatio="1" />\n  <Text />\n</VStack>',
+          )
+        })
       })
     })
 

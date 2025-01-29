@@ -73,6 +73,24 @@ export class Element {
       css['padding-right']
     )
   }
+  getImageProps(): Record<string, string> {
+    return cssToProps(
+      this.node.parent &&
+        'width' in this.node.parent &&
+        this.node.parent.width === this.node.width
+        ? {
+            src: this.node.name,
+            width: '100%',
+            height: '',
+            'aspect-ratio': `${this.node.width / this.node.height}`,
+          }
+        : {
+            src: this.node.name,
+            width: this.node.width + 'px',
+            height: this.node.height + 'px',
+          },
+    )
+  }
 
   async getComponentType(): Promise<ComponentType> {
     if (this.componentType) return this.componentType
@@ -92,11 +110,7 @@ export class Element {
           break
         }
         this.componentType = 'Image'
-        this.additionalProps = cssToProps({
-          src: this.node.name,
-          width: this.node.width + 'px',
-          height: this.node.height + 'px',
-        })
+        this.additionalProps = this.getImageProps()
         break
       }
       case 'TEXT':
@@ -120,11 +134,7 @@ export class Element {
 
           this.componentType = 'Image'
           this.skipChildren = true
-          this.additionalProps = cssToProps({
-            src: this.node.name,
-            width: this.node.width + 'px',
-            height: this.node.height + 'px',
-          })
+          this.additionalProps = this.getImageProps()
         }
         break
       }
