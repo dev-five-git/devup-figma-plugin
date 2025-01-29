@@ -1,4 +1,4 @@
-import { cssToProps, organizeProps, space } from '../utils'
+import { cssToProps, formatSvg, organizeProps, space } from '../utils'
 
 describe('organizeProps', () => {
   it('should organize props', () => {
@@ -43,6 +43,19 @@ describe('organizeProps', () => {
     expect(organizeProps({ p: '0px 0px' })).toEqual({})
     expect(organizeProps({ p: '0px 0px 0px' })).toEqual({})
     expect(organizeProps({ p: '0px 0px 0px 0px' })).toEqual({})
+
+    expect(organizeProps({ m: '10px 10px 10px 10px' })).toEqual({
+      m: '10px',
+    })
+    expect(organizeProps({ m: '10px 20px 30px 40px' })).toEqual({
+      m: '10px 20px 30px 40px',
+    })
+    expect(organizeProps({ m: '0px 10px 0px 10px' })).toEqual({
+      mx: '10px',
+    })
+    expect(organizeProps({ m: '10px 0px 10px 0px' })).toEqual({
+      my: '10px',
+    })
   })
 
   it('should change image url', () => {
@@ -138,5 +151,23 @@ describe('cssToProps', () => {
     ).toEqual({
       boxSize: '100px',
     })
+  })
+})
+
+describe('formatSvg', () => {
+  it('should format svg', () => {
+    expect(formatSvg('<svg>\n</svg>')).toEqual('<svg>\n</svg>')
+    expect(formatSvg('<svg>\n<path>\n</path>\n</svg>')).toEqual(
+      '<svg>\n  <path>\n  </path>\n</svg>',
+    )
+    expect(
+      formatSvg('<svg>\n<path>\n</path>\n<path>\n</path>\n</svg>'),
+    ).toEqual('<svg>\n  <path>\n  </path>\n  <path>\n  </path>\n</svg>')
+    expect(
+      formatSvg('<svg>\n<path>\n</path>\n<path>\n</path>\n</svg>', 1),
+    ).toEqual(
+      '  <svg>\n    <path>\n    </path>\n    <path>\n    </path>\n  </svg>',
+    )
+    expect(formatSvg('<svg />', 1)).toEqual('  <svg />')
   })
 })

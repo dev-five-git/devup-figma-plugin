@@ -325,3 +325,17 @@ export async function checkImageChildrenType(
     }
   return null
 }
+
+export function formatSvg(svg: string, dep: number = 0) {
+  let depCount = 0
+  return svg
+    .split('\n')
+    .map((line) => {
+      if (line.startsWith('</')) depCount--
+      const ret = space(dep + depCount) + line
+      if (!line.startsWith('</') && !line.endsWith('/>')) depCount++
+      return ret
+    })
+    .join('\n')
+    .trimEnd()
+}

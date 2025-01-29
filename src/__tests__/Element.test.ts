@@ -20,7 +20,7 @@ function createNode(
     children?: SceneNode[]
   } = {},
 ): SceneNode {
-  return {
+  const ret = {
     type,
     getCSSAsync: async () => props,
     exportAsync: async () => '<svg>\n<path/>\n</svg>',
@@ -34,6 +34,11 @@ function createNode(
     fills,
     children: children ?? [],
   } as unknown as SceneNode
+  ;(ret as any).children.forEach((child: any) => {
+    ;(child as any).parent = ret
+  })
+
+  return ret
 }
 
 function createElement(
@@ -328,26 +333,63 @@ describe('Element', () => {
             )
           }
         })
+        it('should split Element when children have instance type', async () => {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            'align-items': 'center',
+            'align-self': 'stretch',
+            children: [
+              createNode('INSTANCE', {
+                name: 'image',
+                width: '60px',
+                height: '60px',
+                children: [
+                  createNode('VECTOR', {
+                    width: '17.003px',
+                    height: '28.741px',
+                    'flex-shrink': '0',
+                    fill: '#231815',
+                  }),
+                ],
+              }),
+              createNode('VECTOR', {
+                width: '17.003px',
+                height: '28.741px',
+                'flex-shrink': '0',
+                fill: '#231815',
+              }),
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('Flex')
+          expect(await element.render()).toEqual(
+            `<Flex alignItems="center">
+  <Image boxSize="60px" src="image" />
+  <Image w="17px" h="28px" src="undefined" />
+</Flex>`,
+          )
+        })
       })
     })
 
     describe('Svg', () => {
       it('should render variant svg', async () => {
-        const element = createElement('FRAME', {
-          width: '24px',
-          height: '24px',
-          children: [
-            createNode('VECTOR', {
-              width: '20.001px',
-              height: '20px',
-              'flex-shrink': '0',
-              fill: 'var(--title, #1A1A1A)',
-            }),
-          ],
-        })
-        expect(await element.render()).toEqual(
-          '<svg className={css({ color: "$title" })}>\n  <path/>\n</svg>',
-        )
+        {
+          const element = createElement('FRAME', {
+            width: '24px',
+            height: '24px',
+            children: [
+              createNode('VECTOR', {
+                width: '20.001px',
+                height: '20px',
+                'flex-shrink': '0',
+                fill: 'var(--title, #1A1A1A)',
+              }),
+            ],
+          })
+          expect(await element.render()).toEqual(
+            '<svg className={css({ color: "$title" })}>\n  <path/>\n</svg>',
+          )
+        }
       })
     })
 
@@ -443,6 +485,28 @@ describe('Element', () => {
       expect(await element.render()).toEqual(
         '<Text error="getCSSAsync Error" />',
       )
+    })
+  })
+  describe('Page', () => {
+    it('should remove width props when parent is page', async () => {
+      const element = createElement('PAGE' as any, {
+        children: [
+          createNode('INSTANCE', {
+            width: '1920px',
+          }),
+        ],
+      })
+      expect(await element.render()).toEqual('<Box>\n  <Box />\n</Box>')
+    })
+    it('should remove width props when parent is section', async () => {
+      const element = createElement('PAGE' as any, {
+        children: [
+          createNode('INSTANCE', {
+            width: '1920px',
+          }),
+        ],
+      })
+      expect(await element.render()).toEqual('<Box>\n  <Box />\n</Box>')
     })
   })
 })
