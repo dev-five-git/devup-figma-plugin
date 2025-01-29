@@ -91,6 +91,8 @@ export async function propsToPropsWithTypography(
   textStyleId: TextNode['textStyleId'],
 ) {
   const ret: Record<string, string> = { ...props }
+  delete ret['w']
+  delete ret['h']
   if (textStyleId) {
     const style = await figma.getStyleByIdAsync(textStyleId as string)
     if (style) {
