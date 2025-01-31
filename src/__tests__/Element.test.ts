@@ -11,6 +11,7 @@ function createNode(
     name,
     fills,
     parent,
+    layoutPositioning = 'AUTO',
     ...props
   }: {
     [_: string]: any
@@ -18,6 +19,7 @@ function createNode(
     name?: string
     textStyleId?: string
     children?: SceneNode[]
+    layoutPositioning?: string
   } = {},
 ): SceneNode {
   const ret = {
@@ -28,6 +30,7 @@ function createNode(
     parent,
     characters,
     visible: true,
+    layoutPositioning,
     width: props.width ? parseInt(props.width) : undefined,
     height: props.height ? parseInt(props.height) : undefined,
     name,
@@ -392,6 +395,47 @@ describe('Element', () => {
           )
         })
       })
+      it('should Image has not padding', async () => {
+        const element = createElement('INSTANCE', {
+          display: 'flex',
+          width: '28px',
+          height: '28px',
+          'justify-content': 'center',
+          'align-items': 'center',
+          padding: '10px',
+          name: 'image',
+          children: [
+            createNode('VECTOR', {
+              width: '28px',
+              height: '28px',
+              'flex-shrink': '0',
+              fill: '#231815',
+            }),
+          ],
+        })
+        expect(await element.getComponentType()).toEqual('Image')
+        expect(await element.render()).toEqual(
+          '<Image boxSize="28px" src="image" />',
+        )
+      })
+      describe('Rectangle', () => {
+        it('should render Image with rectangle', async () => {
+          const element = createElement('RECTANGLE', {
+            name: 'image',
+            width: '60px',
+            height: '60px',
+            fills: [
+              {
+                type: 'IMAGE',
+              },
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('Image')
+          expect(await element.render()).toEqual(
+            '<Image boxSize="60px" src="image" />',
+          )
+        })
+      })
     })
 
     describe('Svg', () => {
@@ -530,6 +574,42 @@ describe('Element', () => {
         ],
       })
       expect(await element.render()).toEqual('<Box>\n  <Box />\n</Box>')
+    })
+  })
+  describe('Rectangle', () => {
+    it('should render Rectangle', async () => {
+      {
+        const element = createElement('RECTANGLE', {
+          fills: [],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual('<Box />')
+      }
+
+      {
+        const element = createElement('RECTANGLE', {
+          background: 'red',
+          fills: [],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual('<Box bg="red" />')
+      }
+    })
+  })
+  describe('Position', () => {
+    it('should be relative', async () => {
+      const element = createElement('FRAME', {
+        children: [
+          createNode('TEXT', {
+            position: 'absolute',
+            characters: 'I am centered',
+            layoutPositioning: 'ABSOLUTE',
+          }),
+        ],
+      })
+      expect(await element.render()).toEqual(
+        '<Box position="relative">\n  <Text pos="absolute">\n    I am centered\n  </Text>\n</Box>',
+      )
     })
   })
 })

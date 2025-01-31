@@ -50,6 +50,8 @@ export class Element {
       )
         this.css['width'] = '100%'
     }
+    // Image has not padding
+    delete this.css['padding']
     return this.css
   }
   async getProps(): Promise<Record<string, string>> {
@@ -82,7 +84,7 @@ export class Element {
             src: this.node.name,
             width: '100%',
             height: '',
-            'aspect-ratio': `${this.node.width / this.node.height}`,
+            'aspect-ratio': `${Math.floor((this.node.width / this.node.height) * 100) / 100}`,
           }
         : {
             src: this.node.name,
@@ -94,6 +96,22 @@ export class Element {
 
   async getComponentType(): Promise<ComponentType> {
     if (this.componentType) return this.componentType
+
+    if (
+      'children' in this.node &&
+      this.node.children.some(
+        (child) =>
+          'layoutPositioning' in child &&
+          child.layoutPositioning === 'ABSOLUTE',
+      )
+    )
+      this.additionalProps = {
+        position: 'relative',
+      }
+    else {
+      this.additionalProps = {}
+    }
+
     switch (this.node.type) {
       case 'ELLIPSE':
         this.additionalProps = {
@@ -110,12 +128,22 @@ export class Element {
           break
         }
         this.componentType = 'Image'
-        this.additionalProps = this.getImageProps()
+        Object.assign(this.additionalProps, this.getImageProps())
         break
       }
       case 'TEXT':
         this.componentType = 'Text'
         break
+      case 'RECTANGLE': {
+        if (
+          (this.node.fills as any).length === 1 &&
+          (this.node.fills as any)[0].type === 'IMAGE'
+        ) {
+          this.componentType = 'Image'
+          Object.assign(this.additionalProps, this.getImageProps())
+        }
+        break
+      }
       case 'FRAME':
       case 'BOOLEAN_OPERATION':
       case 'GROUP':
@@ -134,7 +162,7 @@ export class Element {
 
           this.componentType = 'Image'
           this.skipChildren = true
-          this.additionalProps = this.getImageProps()
+          Object.assign(this.additionalProps, this.getImageProps())
         }
         break
       }
@@ -191,17 +219,15 @@ export class Element {
     )
 
     const hasChildren = children.length > 0 && !this.skipChildren
-    const renderChildren = hasChildren
-      ? (
-          await Promise.all(
-            children.map((child) =>
-              child instanceof Element ? child.render(dep + 1) : child,
-            ),
-          )
-        )
-          .join('\n')
-          .trim()
-      : ''
+    const renderChildren = (
+      await Promise.all(
+        children.map((child) =>
+          child instanceof Element ? child.render(dep + 1) : child,
+        ),
+      )
+    )
+      .join('\n')
+      .trim()
 
     const propsString = Object.entries(props)
       .map(([key, value]) => `${key}="${value}"`)
