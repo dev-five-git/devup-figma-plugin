@@ -51,7 +51,6 @@ export class Element {
         this.css['width'] = '100%'
     }
     // Image has not padding
-    delete this.css['padding']
     return this.css
   }
   async getProps(): Promise<Record<string, string>> {
@@ -209,6 +208,7 @@ export class Element {
 
       return formatSvg(value, dep)
     }
+    console.log('node', await this.getCss())
     const originProps = await this.getProps()
     const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()

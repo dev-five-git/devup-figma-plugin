@@ -21,7 +21,8 @@ describe('organizeProps', () => {
       p: '10px 20px 20px',
     })
     expect(organizeProps({ p: '10px 20px 10px 20px' })).toEqual({
-      p: '10px 20px',
+      px: '20px',
+      py: '10px',
     })
     expect(organizeProps({ p: '10px 10px' })).toEqual({
       p: '10px',
@@ -30,7 +31,8 @@ describe('organizeProps', () => {
       p: '1px',
     })
     expect(organizeProps({ p: '1px 2px' })).toEqual({
-      p: '1px 2px',
+      px: '2px',
+      py: '1px',
     })
     expect(organizeProps({ p: '1px 2px 30px' })).toEqual({
       p: '1px 2px 30px',
@@ -54,6 +56,15 @@ describe('organizeProps', () => {
       mx: '10px',
     })
     expect(organizeProps({ m: '10px 0px 10px 0px' })).toEqual({
+      my: '10px',
+    })
+
+    expect(
+      organizeProps({ p: '10px 20px 10px 20px', m: '10px 20px 10px 20px' }),
+    ).toEqual({
+      px: '20px',
+      py: '10px',
+      mx: '20px',
       my: '10px',
     })
   })

@@ -140,6 +140,7 @@ export function propsToComponentProps(
       delete ret['justifyContent']
       delete ret['gap']
       delete ret['fill']
+      delete ret['p']
       break
     case 'Flex':
     case 'Button':
@@ -190,6 +191,19 @@ const CONVERT_PROPS_MAP = {
         value: (value: string) => value.split(' ')[0],
       },
     },
+    {
+      test: /^(\d*[1-9]|\d{2,})px (\d*[1-9]|\d{2,})px$/,
+      value: [
+        {
+          prop: 'py',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'px',
+          value: (value: string) => value.split(' ')[1],
+        },
+      ],
+    },
   ],
   m: [
     {
@@ -205,6 +219,19 @@ const CONVERT_PROPS_MAP = {
         prop: 'my',
         value: (value: string) => value.split(' ')[0],
       },
+    },
+    {
+      test: /^(\d*[1-9]|\d{2,})px (\d*[1-9]|\d{2,})px$/,
+      value: [
+        {
+          prop: 'my',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'mx',
+          value: (value: string) => value.split(' ')[1],
+        },
+      ],
     },
   ],
 } as const
@@ -246,8 +273,13 @@ export function organizeProps(props: Record<string, string>) {
       key as keyof typeof CONVERT_PROPS_MAP
     ]) {
       if (convert.test.test(ret[key])) {
-        const { prop, value } = convert.value
-        ret[prop] = value(ret[key])
+        const convertValue = Array.isArray(convert.value)
+          ? convert.value
+          : [convert.value]
+        for (const convert of convertValue) {
+          const { prop, value } = convert
+          ret[prop] = value(ret[key])
+        }
         delete ret[key]
         break
       }
