@@ -169,7 +169,55 @@ const DEFAULT_PROPS_MAP = {
     default: '0px',
     value: null,
   },
+  pr: {
+    default: '0px',
+    value: null,
+  },
+  pt: {
+    default: '0px',
+    value: null,
+  },
+  pb: {
+    default: '0px',
+    value: null,
+  },
+  px: {
+    default: '0px',
+    value: null,
+  },
+  py: {
+    default: '0px',
+    value: null,
+  },
+  pl: {
+    default: '0px',
+    value: null,
+  },
   m: {
+    default: '0px',
+    value: null,
+  },
+  mt: {
+    default: '0px',
+    value: null,
+  },
+  mb: {
+    default: '0px',
+    value: null,
+  },
+  mr: {
+    default: '0px',
+    value: null,
+  },
+  ml: {
+    default: '0px',
+    value: null,
+  },
+  mx: {
+    default: '0px',
+    value: null,
+  },
+  my: {
     default: '0px',
     value: null,
   },
@@ -204,6 +252,57 @@ const CONVERT_PROPS_MAP = {
         },
       ],
     },
+    {
+      test: /^\d+px \d+px \d+px$/,
+      value: [
+        {
+          prop: 'px',
+          value: (value: string) => value.split(' ')[1],
+        },
+        {
+          prop: 'pt',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'pb',
+          value: (value: string) => value.split(' ')[2],
+        },
+      ],
+    },
+    {
+      test: /^(\d+)px \d+px \1px \d+px$/,
+      value: [
+        {
+          prop: 'py',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'pr',
+          value: (value: string) => value.split(' ')[1],
+        },
+        {
+          prop: 'pl',
+          value: (value: string) => value.split(' ')[3],
+        },
+      ],
+    },
+    {
+      test: /^\d+px (\d+)px \d+px \1px$/,
+      value: [
+        {
+          prop: 'px',
+          value: (value: string) => value.split(' ')[1],
+        },
+        {
+          prop: 'pt',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'pb',
+          value: (value: string) => value.split(' ')[2],
+        },
+      ],
+    },
   ],
   m: [
     {
@@ -233,6 +332,57 @@ const CONVERT_PROPS_MAP = {
         },
       ],
     },
+    {
+      test: /^\d+px \d+px \d+px$/,
+      value: [
+        {
+          prop: 'mx',
+          value: (value: string) => value.split(' ')[1],
+        },
+        {
+          prop: 'mt',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'mb',
+          value: (value: string) => value.split(' ')[2],
+        },
+      ],
+    },
+    {
+      test: /^(\d+)px \d+px \1px \d+px$/,
+      value: [
+        {
+          prop: 'my',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'mr',
+          value: (value: string) => value.split(' ')[1],
+        },
+        {
+          prop: 'ml',
+          value: (value: string) => value.split(' ')[3],
+        },
+      ],
+    },
+    {
+      test: /^\d+px (\d+)px \d+px \1px$/,
+      value: [
+        {
+          prop: 'mx',
+          value: (value: string) => value.split(' ')[1],
+        },
+        {
+          prop: 'mt',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'mb',
+          value: (value: string) => value.split(' ')[2],
+        },
+      ],
+    },
   ],
 } as const
 
@@ -251,18 +401,6 @@ export function organizeProps(props: Record<string, string>) {
     if (ret[key]) ret[key] = extractVariableName(ret[key])
   for (const key of SPACE_PROPS)
     if (ret[key]) ret[key] = shortSpaceValue(ret[key])
-
-  for (const key in DEFAULT_PROPS_MAP)
-    if (
-      ret[key] ===
-      DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].default
-    ) {
-      const defaultValue =
-        DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].value
-
-      if (defaultValue === null) delete ret[key]
-      else ret[key] = defaultValue
-    }
 
   for (const key in PROPS_DEFAULT)
     if (ret[key] === PROPS_DEFAULT[key as keyof typeof PROPS_DEFAULT])
@@ -301,6 +439,17 @@ export function organizeProps(props: Record<string, string>) {
       }
     }
   }
+  for (const key in DEFAULT_PROPS_MAP)
+    if (
+      ret[key] ===
+      DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].default
+    ) {
+      const defaultValue =
+        DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].value
+
+      if (defaultValue === null) delete ret[key]
+      else ret[key] = defaultValue
+    }
   return ret
 }
 

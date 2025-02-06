@@ -4,61 +4,66 @@ describe('organizeProps', () => {
   it('should organize props', () => {
     expect(organizeProps({})).toEqual({})
   })
-  it('should optimize space props', () => {
-    expect(organizeProps({ p: '10px 10px 10px 10px' })).toEqual({
-      p: '10px',
+  it.each(['p', 'm'])('should organize space props', (pro) => {
+    expect(organizeProps({ [pro]: '10px 10px 10px 10px' })).toEqual({
+      [pro]: '10px',
     })
-    expect(organizeProps({ p: '10px 20px 30px 40px' })).toEqual({
-      p: '10px 20px 30px 40px',
+    expect(organizeProps({ [pro]: '10px 20px 30px 40px' })).toEqual({
+      [pro]: '10px 20px 30px 40px',
     })
-    expect(organizeProps({ p: '10px 0px 10px 0px' })).toEqual({
-      py: '10px',
+    expect(organizeProps({ [pro]: '10px 0px 10px 0px' })).toEqual({
+      [pro + 'y']: '10px',
     })
-    expect(organizeProps({ p: '0px 10px 0px 10px' })).toEqual({
-      px: '10px',
+    expect(organizeProps({ [pro]: '0px 10px 0px 10px' })).toEqual({
+      [pro + 'x']: '10px',
     })
-    expect(organizeProps({ p: '10px 20px 20px 20px' })).toEqual({
-      p: '10px 20px 20px',
+    expect(organizeProps({ [pro]: '10px 20px 20px 20px' })).toEqual({
+      [pro + 'x']: '20px',
+      [pro + 't']: '10px',
+      [pro + 'b']: '20px',
     })
-    expect(organizeProps({ p: '10px 20px 10px 20px' })).toEqual({
-      px: '20px',
-      py: '10px',
+    expect(organizeProps({ [pro]: '10px 20px 10px 20px' })).toEqual({
+      [pro + 'x']: '20px',
+      [pro + 'y']: '10px',
     })
-    expect(organizeProps({ p: '10px 10px' })).toEqual({
-      p: '10px',
+    expect(organizeProps({ [pro]: '10px 10px' })).toEqual({
+      [pro]: '10px',
     })
-    expect(organizeProps({ p: '1px' })).toEqual({
-      p: '1px',
+    expect(organizeProps({ [pro]: '1px' })).toEqual({
+      [pro]: '1px',
     })
-    expect(organizeProps({ p: '1px 2px' })).toEqual({
-      px: '2px',
-      py: '1px',
+    expect(organizeProps({ [pro]: '1px 2px' })).toEqual({
+      [pro + 'x']: '2px',
+      [pro + 'y']: '1px',
     })
-    expect(organizeProps({ p: '1px 2px 30px' })).toEqual({
-      p: '1px 2px 30px',
+    expect(organizeProps({ [pro]: '0px 2px' })).toEqual({
+      [pro + 'x']: '2px',
     })
+    expect(organizeProps({ [pro]: '1px 2px 30px' })).toEqual({
+      [pro + 't']: '1px',
+      [pro + 'x']: '2px',
+      [pro + 'b']: '30px',
+    })
+    expect(organizeProps({ [pro]: '0px 2px 0px' })).toEqual({
+      [pro + 'x']: '2px',
+    })
+    expect(organizeProps({ [pro]: '30px 2px 30px 4px' })).toEqual({
+      [pro + 'y']: '30px',
+      [pro + 'r']: '2px',
+      [pro + 'l']: '4px',
+    })
+    expect(organizeProps({ [pro]: '0px' })).toEqual({})
+    expect(organizeProps({ [pro]: '0px 0px' })).toEqual({})
+    expect(organizeProps({ [pro]: '0px 0px 0px' })).toEqual({})
+    expect(organizeProps({ [pro]: '0px 0px 0px 0px' })).toEqual({})
+    expect(organizeProps({ [pro]: '10px 8px 10px 6px' })).toEqual({
+      [pro + 'y']: '10px',
+      [pro + 'r']: '8px',
+      [pro + 'l']: '6px',
+    })
+  })
 
-    expect(organizeProps({ p: '30px 2px 30px 4px' })).toEqual({
-      p: '30px 2px 30px 4px',
-    })
-    expect(organizeProps({ p: '0px' })).toEqual({})
-    expect(organizeProps({ p: '0px 0px' })).toEqual({})
-    expect(organizeProps({ p: '0px 0px 0px' })).toEqual({})
-    expect(organizeProps({ p: '0px 0px 0px 0px' })).toEqual({})
-
-    expect(organizeProps({ m: '10px 10px 10px 10px' })).toEqual({
-      m: '10px',
-    })
-    expect(organizeProps({ m: '10px 20px 30px 40px' })).toEqual({
-      m: '10px 20px 30px 40px',
-    })
-    expect(organizeProps({ m: '0px 10px 0px 10px' })).toEqual({
-      mx: '10px',
-    })
-    expect(organizeProps({ m: '10px 0px 10px 0px' })).toEqual({
-      my: '10px',
-    })
-
+  it('should organize space props 2', () => {
     expect(
       organizeProps({ p: '10px 20px 10px 20px', m: '10px 20px 10px 20px' }),
     ).toEqual({
