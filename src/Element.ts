@@ -42,14 +42,17 @@ export class Element {
     if (this.css['width']?.endsWith('px') && this.node.parent) {
       if (
         this.node.parent.type === 'SECTION' ||
-        this.node.parent.type === 'PAGE'
+        this.node.parent.type === 'PAGE' ||
+        // inline case
+        (this.node.parent as any).layoutSizingHorizontal == 'HUG'
       )
         delete this.css['width']
       else if (
         'width' in this.node.parent &&
         this.node.width === this.node.parent.width
-      )
+      ) {
         this.css['width'] = '100%'
+      }
     }
     // Image has not padding
     return this.css

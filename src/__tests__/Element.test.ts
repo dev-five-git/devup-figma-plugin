@@ -12,6 +12,7 @@ function createNode(
     fills,
     parent,
     layoutPositioning = 'AUTO',
+    layoutSizingHorizontal,
     ...props
   }: {
     [_: string]: any
@@ -26,6 +27,7 @@ function createNode(
     type,
     getCSSAsync: async () => props,
     exportAsync: async () => '<svg>\n<path/>\n</svg>',
+    layoutSizingHorizontal,
     textStyleId,
     parent,
     characters,
@@ -674,6 +676,20 @@ describe('Element', () => {
       expect(await element.render()).toEqual(
         '<Box position="relative">\n  <Text pos="absolute">\n    I am centered\n  </Text>\n</Box>',
       )
+    })
+  })
+
+  describe('Render', () => {
+    it('should remove width when parent is HUG', async () => {
+      const element = createElement('FRAME', {
+        layoutSizingHorizontal: 'HUG',
+        children: [
+          createNode('INSTANCE', {
+            width: '1920px',
+          }),
+        ],
+      })
+      expect(await element.render()).toEqual('<Box>\n  <Box />\n</Box>')
     })
   })
 })
