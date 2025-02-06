@@ -1,5 +1,5 @@
 import {
-  checkImageChildrenType,
+  checkSvgImageChildrenType,
   cssToProps,
   formatSvg,
   organizeProps,
@@ -150,7 +150,7 @@ export class Element {
         if (this.node.children.length > 1 && (await this.hasSpaceProps())) break
         // has instance type children, skip
         if (this.node.children.some((child) => child.type === 'INSTANCE')) break
-        const res = await checkImageChildrenType(this.node)
+        const res = await checkSvgImageChildrenType(this.node)
         if (res) {
           if (res.type === 'SVG' && res.fill) {
             this.componentType = 'svg'
@@ -208,7 +208,6 @@ export class Element {
 
       return formatSvg(value, dep)
     }
-    console.log('node', await this.getCss())
     const originProps = await this.getProps()
     const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()
@@ -219,15 +218,17 @@ export class Element {
     )
 
     const hasChildren = children.length > 0 && !this.skipChildren
-    const renderChildren = (
-      await Promise.all(
-        children.map((child) =>
-          child instanceof Element ? child.render(dep + 1) : child,
-        ),
-      )
-    )
-      .join('\n')
-      .trim()
+    const renderChildren = hasChildren
+      ? (
+          await Promise.all(
+            children.map((child) =>
+              child instanceof Element ? child.render(dep + 1) : child,
+            ),
+          )
+        )
+          .join('\n')
+          .trim()
+      : ''
 
     const propsString = Object.entries(props)
       .map(([key, value]) => `${key}="${value}"`)

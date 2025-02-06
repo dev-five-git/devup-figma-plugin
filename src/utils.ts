@@ -314,17 +314,27 @@ function shortSpaceValue(value: string) {
   return value
 }
 
-export async function checkImageChildrenType(
+export async function checkSvgImageChildrenType(
   node: SceneNode & ChildrenMixin,
 ): Promise<{ type: 'SVG' | 'IMAGE'; fill?: string } | null> {
   const children = node.children
   let hasSVG = false
   let fill: undefined | string = undefined
+  let allOfRect = true
 
   for (const child of children) {
+    if (child.type === 'RECTANGLE') {
+      if (
+        (child.fills as any).length === 1 &&
+        (child.fills as any)[0].type === 'IMAGE'
+      ) {
+        return null
+      }
+      continue
+    }
+    allOfRect = false
     if (
       child.type === 'ELLIPSE' ||
-      child.type === 'RECTANGLE' ||
       child.type === 'POLYGON' ||
       child.type === 'STAR' ||
       child.type === 'VECTOR' ||
@@ -341,19 +351,18 @@ export async function checkImageChildrenType(
       child.type === 'BOOLEAN_OPERATION' ||
       child.type === 'INSTANCE'
     ) {
-      const retType = (await checkImageChildrenType(child))?.type
-      if (retType) hasSVG = true
+      if ((await checkSvgImageChildrenType(child))?.type) hasSVG = true
       else return null
       continue
     }
     return null
   }
-  if (hasSVG && fill)
+  if (!allOfRect && hasSVG && fill)
     return {
       type: 'SVG',
       fill,
     }
-  if (hasSVG)
+  if (!allOfRect && hasSVG)
     return {
       type: 'IMAGE',
     }

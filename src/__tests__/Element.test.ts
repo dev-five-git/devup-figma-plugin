@@ -420,20 +420,84 @@ describe('Element', () => {
       })
       describe('Rectangle', () => {
         it('should render Image with rectangle', async () => {
-          const element = createElement('RECTANGLE', {
-            name: 'image',
-            width: '60px',
-            height: '60px',
-            fills: [
-              {
-                type: 'IMAGE',
-              },
+          {
+            const element = createElement('RECTANGLE', {
+              name: 'image',
+              width: '60px',
+              height: '60px',
+              fills: [
+                {
+                  type: 'IMAGE',
+                },
+              ],
+            })
+            expect(await element.getComponentType()).toEqual('Image')
+            expect(await element.render()).toEqual(
+              '<Image boxSize="60px" src="image" />',
+            )
+          }
+          {
+            const element = createElement('FRAME', {
+              display: 'flex',
+              width: '6px',
+              'align-items': 'flex-start',
+              'align-self': 'stretch',
+              background: 'var(--menuHover, #F6F4FF)',
+              children: [
+                createNode('RECTANGLE', {
+                  height: '318px',
+                  flex: '1 0 0',
+                  'border-radius': '100px',
+                  background: 'var(--third, #918AE9)',
+                  fills: [],
+                }),
+                createNode('RECTANGLE', {
+                  width: '6px',
+                  height: '6px',
+                  name: 'image',
+                  fills: [
+                    {
+                      type: 'IMAGE',
+                    },
+                  ],
+                }),
+              ],
+            })
+            expect(await element.render())
+              .toEqual(`<Flex w="6px" bg="$menuHover">
+  <Box h="318px" flex="1" borderRadius="100px" bg="$third" />
+  <Image w="100%" src="image" aspectRatio="1" />
+</Flex>`)
+          }
+        })
+        it('should render Rectangle', async () => {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            width: '6px',
+            'align-items': 'flex-start',
+            gap: '10px',
+            'align-self': 'stretch',
+            background: 'var(--menuHover, #F6F4FF)',
+            children: [
+              createNode('RECTANGLE', {
+                height: '318px',
+                flex: '1 0 0',
+                'border-radius': '100px',
+                background: 'var(--third, #918AE9)',
+                fills: [],
+              }),
+              createNode('RECTANGLE', {
+                width: '6px',
+                height: '6px',
+                fills: [],
+              }),
             ],
           })
-          expect(await element.getComponentType()).toEqual('Image')
-          expect(await element.render()).toEqual(
-            '<Image boxSize="60px" src="image" />',
-          )
+          expect(await element.render())
+            .toEqual(`<Flex w="6px" gap="10px" bg="$menuHover">
+  <Box h="318px" flex="1" borderRadius="100px" bg="$third" />
+  <Box w="100%" h="6px" />
+</Flex>`)
         })
       })
     })
