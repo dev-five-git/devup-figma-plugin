@@ -1,6 +1,7 @@
 import {
   checkSvgImageChildrenType,
   cssToProps,
+  fixChildrenText,
   formatSvg,
   organizeProps,
   propsToComponentProps,
@@ -222,7 +223,9 @@ export class Element {
       ? (
           await Promise.all(
             children.map((child) =>
-              child instanceof Element ? child.render(dep + 1) : child,
+              child instanceof Element
+                ? child.render(dep + 1)
+                : fixChildrenText(child),
             ),
           )
         )

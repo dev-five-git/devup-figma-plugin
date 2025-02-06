@@ -531,3 +531,6 @@ export function formatSvg(svg: string, dep: number = 0) {
     .join('\n')
     .trimEnd()
 }
+export function fixChildrenText(children: string) {
+  return children.replace(/([{}&<>]+)/g, '{"$1"}')
+}

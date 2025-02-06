@@ -1,4 +1,10 @@
-import { cssToProps, formatSvg, organizeProps, space } from '../utils'
+import {
+  cssToProps,
+  fixChildrenText,
+  formatSvg,
+  organizeProps,
+  space,
+} from '../utils'
 
 describe('organizeProps', () => {
   it('should organize props', () => {
@@ -185,5 +191,24 @@ describe('formatSvg', () => {
       '  <svg>\n    <path>\n    </path>\n    <path>\n    </path>\n  </svg>',
     )
     expect(formatSvg('<svg />', 1)).toEqual('  <svg />')
+  })
+})
+
+describe('fixChildrenText', () => {
+  it.each([
+    ['{', '{"{"}'],
+    ['}', '{"}"}'],
+    ['&', '{"&"}'],
+    ['>', '{">"}'],
+    ['<', '{"<"}'],
+    ['{wow', '{"{"}wow'],
+    ['{wow{', '{"{"}wow{"{"}'],
+    ['{wow{wow', '{"{"}wow{"{"}wow'],
+    ['{wow{wow}', '{"{"}wow{"{"}wow{"}"}'],
+    ['{wow{wow{', '{"{"}wow{"{"}wow{"{"}'],
+    ['{wow{wow{wow', '{"{"}wow{"{"}wow{"{"}wow'],
+    ['{wow{wow{wow}', '{"{"}wow{"{"}wow{"{"}wow{"}"}'],
+  ])('should fix children text with special characters', (input, output) => {
+    expect(fixChildrenText(input)).toEqual(output)
   })
 })
