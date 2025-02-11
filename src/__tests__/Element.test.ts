@@ -358,6 +358,7 @@ describe('Element', () => {
                 ],
               }),
               createNode('VECTOR', {
+                name: 'image',
                 width: '17.003px',
                 height: '28.741px',
                 'flex-shrink': '0',
@@ -369,7 +370,7 @@ describe('Element', () => {
           expect(await element.render()).toEqual(
             `<Flex alignItems="center">
   <Image boxSize="60px" src="image" />
-  <Image w="17px" h="28px" src="undefined" />
+  <Image w="17px" h="28px" src="image" />
 </Flex>`,
           )
         })
@@ -528,10 +529,23 @@ describe('Element', () => {
 
     describe('Text', () => {
       it('should render Text', async () => {
-        const element = createElement('TEXT')
-        expect(await element.getComponentType()).toEqual('Text')
-        expect(await element.render()).toEqual('<Text />')
+        {
+          const element = createElement('TEXT')
+          expect(await element.getComponentType()).toEqual('Text')
+          expect(await element.render()).toEqual('<Text />')
+        }
+        {
+          const element = createElement('TEXT', {
+            fontFamily: '"Roboto"',
+            lineHeight: '30px /* 157.895% */',
+          })
+          expect(await element.getComponentType()).toEqual('Text')
+          expect(await element.render()).toEqual(
+            '<Text fontFamily="Roboto" lineHeight="30px" />',
+          )
+        }
       })
+
       it('should render Text with char', async () => {
         const element = createElement('TEXT', {
           characters: 'a',

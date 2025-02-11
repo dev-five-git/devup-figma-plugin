@@ -424,9 +424,13 @@ export function organizeProps(props: Record<string, string>) {
     }
   }
   for (const key in ret) {
-    if (ret[key] === '') {
+    if (!ret[key]) {
       delete ret[key]
+      continue
     }
+    if (ret[key].startsWith('"') && ret[key].endsWith('"'))
+      ret[key] = ret[key].slice(1, -1)
+    if (ret[key].includes('/*')) ret[key] = ret[key].split('/*')[0].trim()
   }
   for (const key in CONVERT_PROPS_VALUE_MAP) {
     if (!ret[key]) continue
