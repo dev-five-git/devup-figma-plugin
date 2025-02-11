@@ -212,6 +212,7 @@ export class Element {
 
       return formatSvg(value, dep)
     }
+
     const originProps = await this.getProps()
     const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()

@@ -93,7 +93,7 @@ export async function propsToPropsWithTypography(
   const ret: Record<string, string> = { ...props }
   delete ret['w']
   delete ret['h']
-  if (textStyleId) {
+  if (typeof textStyleId === 'string') {
     const style = await figma.getStyleByIdAsync(textStyleId as string)
     if (style) {
       const split = style.name.split('/')
