@@ -13,6 +13,7 @@ function createNode(
     parent,
     layoutPositioning = 'AUTO',
     layoutSizingHorizontal,
+    styledTextSegments = [],
     ...props
   }: {
     [_: string]: any
@@ -21,12 +22,14 @@ function createNode(
     textStyleId?: string
     children?: SceneNode[]
     layoutPositioning?: string
+    styledTextSegments?: any[]
   } = {},
 ): SceneNode {
   const ret = {
     type,
     getCSSAsync: async () => props,
     exportAsync: async () => '<svg>\n<path/>\n</svg>',
+    getStyledTextSegments: () => styledTextSegments,
     layoutSizingHorizontal,
     textStyleId,
     parent,
@@ -575,6 +578,59 @@ describe('Element', () => {
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
           '<Text typography="button-title">\n  a\n</Text>',
+        )
+      })
+      it('should render many Text', async () => {
+        const element = createElement('TEXT', {
+          characters: 'ab',
+          styledTextSegments: [
+            {
+              start: 0,
+              end: 1,
+              fontName: {
+                family: 'Roboto',
+                style: 'Italic',
+              },
+              textDecoration: 'NONE',
+              fontWeight: 400,
+              textCase: 'UPPER',
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              characters: 'a',
+              fontSize: 16,
+            },
+            {
+              fontSize: 16,
+              characters: 'b',
+              start: 1,
+              end: 2,
+              fontName: {
+                family: 'Roboto',
+                style: 'Italic',
+              },
+              textCase: 'UPPER',
+              textDecoration: 'NONE',
+              fontWeight: 700,
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+            },
+          ],
+        })
+        expect(await element.getComponentType()).toEqual('Text')
+        expect(await element.render()).toEqual(
+          '<><Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">a</Text><Text fontFamily="Roboto" fontStyle="italic" fontWeight="700" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">b</Text></>',
         )
       })
     })

@@ -63,7 +63,7 @@ export async function exportDevup() {
             return
           }
         }
-        const seg = text.getStyledTextSegments([
+        const segs = text.getStyledTextSegments([
           'fontName',
           'fontWeight',
           'fontSize',
@@ -77,16 +77,18 @@ export async function exportDevup() {
           'listOptions',
           'indentation',
           'hyperlink',
-        ])[0]
-        if (seg) {
-          const typo = textSegmentToTypography(seg as StyledTextSegment)
-          typography[name] ??= [null, null, null, null, null]
-          if (type === 'mobile') {
-            typography[name][0] = typo
-          } else if (type === 'tablet') {
-            typography[name][2] = typo
-          } else if (type === 'desktop') {
-            typography[name][4] = typo
+        ])
+        for (const seg of segs) {
+          if (seg) {
+            const typo = textSegmentToTypography(seg as StyledTextSegment)
+            typography[name] ??= [null, null, null, null, null]
+            if (type === 'mobile') {
+              typography[name][0] = typo
+            } else if (type === 'tablet') {
+              typography[name][2] = typo
+            } else if (type === 'desktop') {
+              typography[name][4] = typo
+            }
           }
         }
       }

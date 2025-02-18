@@ -9,8 +9,10 @@ import {
   space,
 } from './utils'
 import { extractKeyValueFromCssVar } from './utils/extract-key-value-from-css-var'
+import { textSegmentToTypography } from './utils/text-segment-to-typography'
 
 export type ComponentType =
+  | 'Fragment'
   | 'Box'
   | 'Text'
   | 'Button'
@@ -21,6 +23,21 @@ export type ComponentType =
   | 'Image'
   | 'Grid'
   | 'svg'
+const SEGMENT_TYPE = [
+  'fontName',
+  'fontWeight',
+  'fontSize',
+  'textDecoration',
+  'textCase',
+  'lineHeight',
+  'letterSpacing',
+  'fills',
+  'textStyleId',
+  'fillStyleId',
+  'listOptions',
+  'indentation',
+  'hyperlink',
+] as (keyof Omit<StyledTextSegment, 'characters' | 'start' | 'end'>)[]
 
 export class Element {
   node: SceneNode
@@ -216,6 +233,40 @@ export class Element {
     const originProps = await this.getProps()
     const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()
+
+    if (this.node.type === 'TEXT') {
+      const segs = this.node.getStyledTextSegments(SEGMENT_TYPE)
+      if (segs.length > 1) {
+        const children = (
+          await Promise.all(
+            segs.map(async (seg) => {
+              const props = propsToComponentProps(
+                organizeProps({
+                  ...mergedProps,
+                  ...Object.fromEntries(
+                    Object.entries(
+                      await propsToPropsWithTypography(
+                        (await textSegmentToTypography(seg)) as any,
+                        seg.textStyleId,
+                      ),
+                    )
+                      .filter(([_, value]) => Boolean(value))
+                      .map(([key, value]) => [key, String(value)]),
+                  ),
+                }),
+                'Text',
+                1,
+              )
+              return `<Text ${Object.entries(props)
+                .map(([key, value]) => `${key}="${value}"`)
+                .join(' ')}>${fixChildrenText(seg.characters)}</Text>`
+            }),
+          )
+        ).join('')
+        return `<>${children}</>`
+      }
+    }
+
     const props = organizeProps(
       this.node.type === 'TEXT'
         ? await propsToPropsWithTypography(mergedProps, this.node.textStyleId)
