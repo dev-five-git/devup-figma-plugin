@@ -100,6 +100,26 @@ describe('Element', () => {
       expect(await element.render()).toEqual(
         '<Box w="60px">\n  <Box w="100%" />\n</Box>',
       )
+      {
+        const element = createElement('RECTANGLE', {
+          border: 'solid 1px var(--containerBackground, #FFF)',
+          fills: [],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box border="solid 1px $containerBackground" />',
+        )
+      }
+      {
+        const element = createElement('RECTANGLE', {
+          border: 'solid 1px var(--containerBackground)',
+          fills: [],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box border="solid 1px $containerBackground" />',
+        )
+      }
     })
 
     describe('Image', () => {
