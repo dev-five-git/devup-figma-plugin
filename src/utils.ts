@@ -116,7 +116,7 @@ export function space(depth: number) {
 function extractVariableName(value: string) {
   if (!value.startsWith('var(--')) return value
   const match = value.match(/var\(--(\w+)/)
-  return '$' + match?.[1]
+  return '$' + match?.[1].split(',')[0].trim()
 }
 
 export function propsToComponentProps(
@@ -431,6 +431,8 @@ export function organizeProps(props: Record<string, string>) {
     if (ret[key].startsWith('"') && ret[key].endsWith('"'))
       ret[key] = ret[key].slice(1, -1)
     if (ret[key].includes('/*')) ret[key] = ret[key].split('/*')[0].trim()
+    if (ret[key].includes('var(--'))
+      ret[key] = ret[key].replace(/var\(--.*\)/g, extractVariableName)
   }
   for (const key in CONVERT_PROPS_VALUE_MAP) {
     if (!ret[key]) continue
