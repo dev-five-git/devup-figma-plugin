@@ -33,7 +33,7 @@ export function textSegmentToTypography(
           : segment.lineHeight.value + 'px',
     letterSpacing:
       segment.letterSpacing.unit === 'PERCENT'
-        ? `${segment.letterSpacing.value / 100}em`
+        ? `${Math.round(segment.letterSpacing.value) / 100}em`
         : segment.letterSpacing.value + 'px',
   }
 }
