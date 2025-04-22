@@ -101,6 +101,14 @@ describe('organizeProps', () => {
     expect(organizeProps({ bg: 'var(--primary)' })).toEqual({
       bg: '$primary',
     })
+
+    expect(
+      organizeProps({
+        bg: 'linear-gradient(202deg, var(--primary, #5B34F7) 3.96%, #6D7EDC 85.94%)',
+      }),
+    ).toEqual({
+      bg: 'linear-gradient(202deg, $primary 3.96%, #6D7EDC 85.94%)',
+    })
   })
 })
 

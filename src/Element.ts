@@ -101,16 +101,16 @@ export class Element {
         'width' in this.node.parent &&
         this.node.parent.width === this.node.width
         ? {
-            src: this.node.name,
-            width: '100%',
-            height: '',
-            'aspect-ratio': `${Math.floor((this.node.width / this.node.height) * 100) / 100}`,
-          }
+          src: this.node.name,
+          width: '100%',
+          height: '',
+          'aspect-ratio': `${Math.floor((this.node.width / this.node.height) * 100) / 100}`,
+        }
         : {
-            src: this.node.name,
-            width: this.node.width + 'px',
-            height: this.node.height + 'px',
-          },
+          src: this.node.name,
+          width: this.node.width + 'px',
+          height: this.node.height + 'px',
+        },
     )
   }
 
@@ -231,6 +231,7 @@ export class Element {
     }
 
     const originProps = await this.getProps()
+    console.log(originProps)
     const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()
 
@@ -272,20 +273,22 @@ export class Element {
         ? await propsToPropsWithTypography(mergedProps, this.node.textStyleId)
         : propsToComponentProps(mergedProps, componentType, children.length),
     )
+    console.log(props)
 
     const hasChildren = children.length > 0 && !this.skipChildren
+
     const renderChildren = hasChildren
       ? (
-          await Promise.all(
-            children.map((child) =>
-              child instanceof Element
-                ? child.render(dep + 1)
-                : fixChildrenText(child),
-            ),
-          )
+        await Promise.all(
+          children.map((child) =>
+            child instanceof Element
+              ? child.render(dep + 1)
+              : fixChildrenText(child),
+          ),
         )
-          .join('\n')
-          .trim()
+      )
+        .join('\n')
+        .trim()
       : ''
 
     const propsString = Object.entries(props)

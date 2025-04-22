@@ -432,7 +432,7 @@ export function organizeProps(props: Record<string, string>) {
       ret[key] = ret[key].slice(1, -1)
     if (ret[key].includes('/*')) ret[key] = ret[key].split('/*')[0].trim()
     if (ret[key].includes('var(--'))
-      ret[key] = ret[key].replace(/var\(--.*\)/g, extractVariableName)
+      ret[key] = ret[key].replace(/var\(--[^)]*\)/g, extractVariableName)
   }
   for (const key in CONVERT_PROPS_VALUE_MAP) {
     if (!ret[key]) continue
