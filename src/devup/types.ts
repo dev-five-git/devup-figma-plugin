@@ -4,7 +4,7 @@ export interface DevupTypography {
   fontSize?: string
   fontWeight?: number
   lineHeight?: number | string
-  letterSpacing?: number | string
+  letterSpacing?: string
   textDecoration?: string
   textTransform?: string
 }

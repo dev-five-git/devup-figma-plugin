@@ -4,6 +4,7 @@ import { rgbaToHex } from '../utils/rgba-to-hex'
 import { styleNameToTypography } from '../utils/style-name-to-typography'
 import { textSegmentToTypography } from '../utils/text-segment-to-typography'
 import { toCamel } from '../utils/to-camel'
+import { uploadFile } from '../utils/upload-file'
 import { variableAliasToValue } from '../utils/variable-alias-to-value'
 import { type Devup, DevupTypography } from './types'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
@@ -131,4 +132,107 @@ export async function exportDevup() {
   }
 
   return downloadFile('devup.json', JSON.stringify(devup))
+}
+
+export async function importDevup() {
+  const devup: Devup = JSON.parse(await uploadFile('.json'))
+  if (devup.theme?.colors) {
+    const collection = (await getDevupColorCollection()) ?? (await figma.variables.createVariableCollection('Devup Colors'))
+    const themes = new Set()
+    const colors = new Set()
+    for (const [theme, value] of Object.entries(devup.theme.colors)) {
+      const modeId = collection.modes.find((mode) => mode.name === theme)?.modeId ?? collection.addMode(theme)
+
+      const variables = await figma.variables.getLocalVariablesAsync()
+      for (const [colorKey, colorValue] of Object.entries(value)) {
+        const variable = variables.find((variable) => variable.name === colorKey) ?? figma.variables.createVariable(colorKey, collection, 'COLOR')
+
+        variable.setValueForMode(modeId, figma.util.rgba(colorValue))
+        colors.add(colorKey)
+      }
+      themes.add(theme)
+    }
+    for(const theme of collection.modes.filter((mode) => !themes.has(mode.name))) 
+      collection.removeMode(theme.modeId)
+
+    const variables = await figma.variables.getLocalVariablesAsync()
+    for(const variable of variables.filter((variable) => !colors.has(variable.name)))
+      variable.remove()
+  }
+  if (devup.theme?.typography) {
+    const styles = await figma.getLocalTextStylesAsync()
+    for(const [style, value] of Object.entries(devup.theme.typography)) {
+      const targetStyleNames:[target:string, typography:DevupTypography][] = []
+      if (Array.isArray(value)) {
+        for(const v in value) {
+          if(v&&value[v]) {
+
+            targetStyleNames.push([`${{
+              0: 'mobile',
+              2: 'tablet',
+              4: 'desktop',
+            }[v]}/${style}`, value[v]])
+          }
+        }
+      } else {
+        targetStyleNames.push([`mobile/${style}`, value])
+      }
+
+      for(const [target, typography] of targetStyleNames) {
+        const st = styles.find((s) => s.name === target) ?? figma.createTextStyle()
+        st.name = target
+
+        if(typography.fontWeight || typography.fontStyle) {
+          const fontFamily = {
+            family: typography.fontFamily ?? "Inter",
+            style: typography.fontStyle == 'italic' ? 'Italic' : 'Regular',
+          }
+          await figma.loadFontAsync(fontFamily)
+          st.fontName = fontFamily
+        }
+        if(typography.fontSize) {
+          st.fontSize = parseInt(typography.fontSize)
+        }
+        if(typography.letterSpacing) {
+          if(typography.letterSpacing.endsWith('em')) {
+
+            st.letterSpacing = {
+              unit: 'PERCENT',
+              value: parseFloat(typography.letterSpacing),
+            }
+          } else {
+            st.letterSpacing = {
+              unit: 'PIXELS',
+              value: parseFloat(typography.letterSpacing) * 100,
+            }
+          }
+        }
+        if(typography.lineHeight) {
+          if(typography.lineHeight === 'normal') {
+            st.lineHeight = {
+              unit: 'AUTO',
+            }
+          } else {
+            if(typeof typography.lineHeight === 'string') {
+              st.lineHeight = {
+                unit: 'PIXELS',
+                value: parseInt(typography.lineHeight),
+              }
+            } else {
+              st.lineHeight = {
+                unit: 'PERCENT',
+                value: Math.round(typography.lineHeight / 10) / 10,
+              }
+            }
+          }
+        }
+        if(typography.textTransform) {
+          st.textCase = typography.textTransform.toUpperCase() as TextCase
+        }
+        if(typography.textDecoration) {
+          st.textDecoration = typography.textDecoration.toUpperCase() as TextDecoration
+        }
+      }
+    }
+  }
 }

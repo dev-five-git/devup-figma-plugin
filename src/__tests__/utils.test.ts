@@ -102,6 +102,10 @@ describe('organizeProps', () => {
       bg: '$primary',
     })
 
+    expect(organizeProps({ bg: 'var(--PASCAL_CASE)' })).toEqual({
+      bg: '$pascalCase',
+    })
+
     expect(
       organizeProps({
         bg: 'linear-gradient(202deg, var(--primary, #5B34F7) 3.96%, #6D7EDC 85.94%)',

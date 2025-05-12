@@ -597,7 +597,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
-          '<Text typography="button-title">\n  a\n</Text>',
+          '<Text typography="buttonTitle">\n  a\n</Text>',
         )
       })
       it('should render many Text', async () => {

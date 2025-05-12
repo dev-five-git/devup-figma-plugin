@@ -97,7 +97,7 @@ export async function propsToPropsWithTypography(
     const style = await figma.getStyleByIdAsync(textStyleId as string)
     if (style) {
       const split = style.name.split('/')
-      ret['typography'] = split[split.length - 1]
+      ret['typography'] = toCamel(split[split.length - 1])
       delete ret['fontFamily']
       delete ret['fontSize']
       delete ret['fontWeight']
@@ -115,8 +115,9 @@ export function space(depth: number) {
 
 function extractVariableName(value: string) {
   if (!value.startsWith('var(--')) return value
-  const match = value.match(/var\(--(\w+)/)
-  return '$' + match?.[1].split(',')[0].trim()
+  const match = value.match(/var\(--([\w-]+)/)
+  // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+  return '$' + toCamel(match?.[1].split(',')[0].trim()!)
 }
 
 export function propsToComponentProps(

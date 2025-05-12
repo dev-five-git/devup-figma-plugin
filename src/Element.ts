@@ -10,6 +10,7 @@ import {
 } from './utils'
 import { extractKeyValueFromCssVar } from './utils/extract-key-value-from-css-var'
 import { textSegmentToTypography } from './utils/text-segment-to-typography'
+import { toCamel } from './utils/to-camel'
 
 export type ComponentType =
   | 'Fragment'
@@ -101,16 +102,16 @@ export class Element {
         'width' in this.node.parent &&
         this.node.parent.width === this.node.width
         ? {
-          src: this.node.name,
-          width: '100%',
-          height: '',
-          'aspect-ratio': `${Math.floor((this.node.width / this.node.height) * 100) / 100}`,
-        }
+            src: this.node.name,
+            width: '100%',
+            height: '',
+            'aspect-ratio': `${Math.floor((this.node.width / this.node.height) * 100) / 100}`,
+          }
         : {
-          src: this.node.name,
-          width: this.node.width + 'px',
-          height: this.node.height + 'px',
-        },
+            src: this.node.name,
+            width: this.node.width + 'px',
+            height: this.node.height + 'px',
+          },
     )
   }
 
@@ -221,6 +222,10 @@ export class Element {
 
       if (this.svgVarKeyValue) {
         value = value.replaceAll(this.svgVarKeyValue[1], 'currentColor')
+        if (this.svgVarKeyValue[0].startsWith('$'))
+          this.svgVarKeyValue[0] =
+            '$' + toCamel(this.svgVarKeyValue[0].slice(1))
+
         value = value.replace(
           '<svg',
           `<svg className={css({ color: "${this.svgVarKeyValue[0]}" })}`,
@@ -231,7 +236,6 @@ export class Element {
     }
 
     const originProps = await this.getProps()
-    console.log(originProps)
     const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()
 
@@ -273,22 +277,21 @@ export class Element {
         ? await propsToPropsWithTypography(mergedProps, this.node.textStyleId)
         : propsToComponentProps(mergedProps, componentType, children.length),
     )
-    console.log(props)
 
     const hasChildren = children.length > 0 && !this.skipChildren
 
     const renderChildren = hasChildren
       ? (
-        await Promise.all(
-          children.map((child) =>
-            child instanceof Element
-              ? child.render(dep + 1)
-              : fixChildrenText(child),
-          ),
+          await Promise.all(
+            children.map((child) =>
+              child instanceof Element
+                ? child.render(dep + 1)
+                : fixChildrenText(child),
+            ),
+          )
         )
-      )
-        .join('\n')
-        .trim()
+          .join('\n')
+          .trim()
       : ''
 
     const propsString = Object.entries(props)

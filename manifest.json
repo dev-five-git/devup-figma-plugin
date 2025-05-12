@@ -3,22 +3,35 @@
   "id": "1412341601954480694",
   "api": "1.0.0",
   "main": "./dist/code.js",
-  "capabilities": ["codegen", "inspect"],
+  "capabilities": [
+    "codegen",
+    "inspect"
+  ],
   "enableProposedApi": false,
   "documentAccess": "dynamic-page",
-  "editorType": ["dev", "figma"],
+  "editorType": [
+    "dev",
+    "figma"
+  ],
   "networkAccess": {
     "allowedDomains": [
       "none"
     ]
   },
   "codegenLanguages": [
-    {"label": "React", "value": "devup"}
+    {
+      "label": "React",
+      "value": "devup"
+    }
   ],
   "menu": [
     {
       "name": "Export Devup",
       "command": "export-devup"
+    },
+    {
+      "name": "Import Devup",
+      "command": "import-devup"
     }
   ]
 }

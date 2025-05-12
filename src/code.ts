@@ -1,4 +1,4 @@
-import { exportDevup } from './devup'
+import { exportDevup, importDevup } from './devup'
 import { Element } from './Element'
 
 if (figma.editorType === 'dev' && figma.mode === 'codegen') {
@@ -12,9 +12,11 @@ if (figma.editorType === 'dev' && figma.mode === 'codegen') {
     ]
   })
 }
-if (figma.editorType === 'figma')
-  switch (figma.command) {
-    case 'export-devup':
-      exportDevup().finally(() => figma.closePlugin())
-      break
-  }
+switch (figma.command) {
+  case 'export-devup':
+    exportDevup().finally(() => figma.closePlugin())
+    break
+  case 'import-devup':
+    importDevup().finally(() => figma.closePlugin())
+    break
+}

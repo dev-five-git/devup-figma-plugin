@@ -1,4 +1,4 @@
-import { exportDevup } from '../devup'
+import { exportDevup, importDevup } from '../devup'
 
 vi.mock('../devup')
 
@@ -19,6 +19,18 @@ describe('figma', () => {
     expect(exportDevup).toBeCalledTimes(1)
     expect(closePlugin).toBeCalledTimes(1)
   })
+})
+it('should import devup', async () => {
+  const closePlugin = vi.fn()
+  ;(globalThis as any).figma = {
+    editorType: 'figma',
+    command: 'import-devup',
+    closePlugin,
+  }
+  vi.mocked(importDevup).mockResolvedValueOnce()
+  await import('../code')
+  expect(importDevup).toBeCalledTimes(1)
+  expect(closePlugin).toBeCalledTimes(1)
 })
 
 describe('codegen', () => {
