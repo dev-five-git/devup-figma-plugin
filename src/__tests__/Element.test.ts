@@ -146,25 +146,71 @@ describe('Element', () => {
         )
       })
 
+      it('should divide wrapper and icon asset when children is a square', async () => {
+        const element = createElement('FRAME', {
+          width: '100px',
+          height: '120px',
+          children: [createNode('VECTOR', { width: '60px', height: '60px' })],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box w="100px" h="120px">\n  <Image boxSize="60px" />\n</Box>',
+        )
+      })
+
       describe('Overlap', async () => {
         it('should render Image with overlap', async () => {
-          const element = createElement('INSTANCE', {
-            name: 'image',
-            width: '60px',
-            height: '60px',
-            children: [
-              createNode('VECTOR', {
-                fills: [],
-              }),
-              createNode('STAR', {
-                fills: [],
-              }),
-            ],
-          })
-          expect(await element.getComponentType()).toEqual('Image')
-          expect(await element.render()).toEqual(
-            '<Image boxSize="60px" src="image" />',
-          )
+          {
+            const element = createElement('INSTANCE', {
+              name: 'image',
+              width: '60px',
+              height: '60px',
+              children: [
+                createNode('VECTOR', {
+                  fills: [],
+                }),
+                createNode('STAR', {
+                  fills: [],
+                }),
+              ],
+            })
+            expect(await element.getComponentType()).toEqual('Image')
+            expect(await element.render()).toEqual(
+              '<Image boxSize="60px" src="image" />',
+            )
+          }
+          {
+            const element = createElement('FRAME', {
+              width: '100px',
+              height: '120px',
+              children: [
+                createNode('RECTANGLE', {
+                  width: '100px',
+                  fills: [],
+                  height: '120px',
+                  children: [
+                    createNode('FRAME', {
+                      name: 'image',
+                      width: '60px',
+                      height: '60px',
+                      children: [
+                        createNode('VECTOR', {
+                          fills: [],
+                        }),
+                        createNode('STAR', {
+                          fills: [],
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            })
+            expect(await element.getComponentType()).toEqual('Box')
+            expect(await element.render()).toEqual(
+              '<Box w="100px" h="120px">\n  <Box w="100%" h="120px">\n    <Image boxSize="60px" src="image" />\n  </Box>\n</Box>',
+            )
+          }
         })
 
         it('should render Image with overlap', async () => {
@@ -450,7 +496,7 @@ describe('Element', () => {
             const element = createElement('RECTANGLE', {
               name: 'image',
               width: '60px',
-              height: '60px',
+              height: '68px',
               fills: [
                 {
                   type: 'IMAGE',
@@ -459,7 +505,7 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Image')
             expect(await element.render()).toEqual(
-              '<Image boxSize="60px" src="image" />',
+              '<Image w="60px" h="68px" src="image" />',
             )
           }
           {

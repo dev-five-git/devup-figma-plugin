@@ -132,7 +132,6 @@ export class Element {
     else {
       this.additionalProps = {}
     }
-
     switch (this.node.type) {
       case 'ELLIPSE':
         this.additionalProps = {
@@ -172,6 +171,13 @@ export class Element {
         if (this.node.children.length > 1 && (await this.hasSpaceProps())) break
         // has instance type children, skip
         if (this.node.children.some((child) => child.type === 'INSTANCE')) break
+        // if child is square, It is an icon asset
+        if (
+          this.node.width !== this.node.height &&
+          this.node.children.length === 1 &&
+          this.node.children.some((child) => child.width === child.height)
+        )
+          break
         const res = await checkSvgImageChildrenType(this.node)
         if (res) {
           if (res.type === 'SVG' && res.fill) {
