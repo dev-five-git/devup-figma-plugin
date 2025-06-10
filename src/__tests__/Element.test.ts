@@ -328,6 +328,31 @@ describe('Element', () => {
                 }),
                 createNode('TEXT', {
                   characters: 'Text',
+                  styledTextSegments: [
+                    {
+                      characters: 'Text',
+                      start: 0,
+                      end: 1,
+                      fontName: {
+                        family: 'Roboto',
+                        style: 'Italic',
+                      },
+                      textDecoration: 'NONE',
+                      textCase: 'ORIGINAL',
+                      letterSpacing: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      lineHeight: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      fontSize: 16,
+                      listOptions: {
+                        type: 'NONE',
+                      },
+                    },
+                  ],
                 }),
               ],
             })
@@ -335,7 +360,7 @@ describe('Element', () => {
             expect(await element.render()).toEqual(
               `<Flex alignItems="center" gap="20px">
   <Image boxSize="60px" src="image" />
-  <Text>
+  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
     Text
   </Text>
 </Flex>`,
@@ -357,6 +382,31 @@ describe('Element', () => {
                 }),
                 createNode('TEXT', {
                   characters: 'Text',
+                  styledTextSegments: [
+                    {
+                      characters: 'Text',
+                      start: 0,
+                      end: 1,
+                      fontName: {
+                        family: 'Roboto',
+                        style: 'Italic',
+                      },
+                      textDecoration: 'NONE',
+                      textCase: 'ORIGINAL',
+                      letterSpacing: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      lineHeight: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      fontSize: 16,
+                      listOptions: {
+                        type: 'NONE',
+                      },
+                    },
+                  ],
                 }),
               ],
             })
@@ -366,7 +416,7 @@ describe('Element', () => {
   <svg className={css({ color: "$containerBackground" })}>
     <path/>
   </svg>
-  <Text>
+  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
     Text
   </Text>
 </Flex>`)
@@ -389,6 +439,31 @@ describe('Element', () => {
                   children: [
                     createNode('TEXT', {
                       characters: 'Text',
+                      styledTextSegments: [
+                        {
+                          characters: 'Text',
+                          start: 0,
+                          end: 1,
+                          fontName: {
+                            family: 'Roboto',
+                            style: 'Italic',
+                          },
+                          textDecoration: 'NONE',
+                          textCase: 'ORIGINAL',
+                          letterSpacing: {
+                            value: 20,
+                            unit: 'PIXELS',
+                          },
+                          lineHeight: {
+                            value: 20,
+                            unit: 'PIXELS',
+                          },
+                          fontSize: 16,
+                          listOptions: {
+                            type: 'NONE',
+                          },
+                        },
+                      ],
                     }),
                   ],
                 }),
@@ -399,7 +474,7 @@ describe('Element', () => {
               `<Flex alignItems="center">
   <Image boxSize="20px" src="image" />
   <Box>
-    <Text>
+    <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
       Text
     </Text>
   </Box>
@@ -459,11 +534,34 @@ describe('Element', () => {
                 width: '60px',
                 height: '60px',
                 fills: [],
+                styledTextSegments: [
+                  {
+                    characters: 'Text',
+                    fontName: {
+                      family: 'Roboto',
+                      style: 'Italic',
+                    },
+                    textDecoration: 'NONE',
+                    textCase: 'ORIGINAL',
+                    letterSpacing: {
+                      value: 20,
+                      unit: 'PIXELS',
+                    },
+                    lineHeight: {
+                      value: 20,
+                      unit: 'PIXELS',
+                    },
+                    fontSize: 16,
+                    listOptions: {
+                      type: 'NONE',
+                    },
+                  },
+                ],
               }),
             ],
           })
           expect(await element.render()).toEqual(
-            '<VStack w="60px">\n  <Image w="100%" src="image" aspectRatio="1" />\n  <Text />\n</VStack>',
+            '<VStack w="60px">\n  <Image w="100%" src="image" aspectRatio="1" />\n  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    Text\n  </Text>\n</VStack>',
           )
         })
       })
@@ -599,18 +697,72 @@ describe('Element', () => {
     describe('Text', () => {
       it('should render Text', async () => {
         {
-          const element = createElement('TEXT')
+          const element = createElement('TEXT', {
+            styledTextSegments: [
+              {
+                fontName: {
+                  family: 'Roboto',
+                  style: 'Italic',
+                },
+                characters: 'a',
+                fontWeight: 400,
+                fontSize: 16,
+                textDecoration: 'NONE',
+                textCase: 'ORIGINAL',
+                letterSpacing: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                start: 0,
+                lineHeight: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                end: 1,
+                listOptions: {
+                  type: 'NONE',
+                },
+              },
+            ],
+          })
           expect(await element.getComponentType()).toEqual('Text')
-          expect(await element.render()).toEqual('<Text />')
+          expect(await element.render()).toEqual(
+            '<Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  a\n</Text>',
+          )
         }
         {
           const element = createElement('TEXT', {
             fontFamily: '"Roboto"',
             lineHeight: '30px /* 157.895% */',
+            styledTextSegments: [
+              {
+                fontName: {
+                  family: 'Roboto',
+                  style: 'Italic',
+                },
+                fontSize: 16,
+                lineHeight: {
+                  value: 30,
+                  unit: 'PIXELS',
+                },
+                letterSpacing: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                textCase: 'ORIGINAL',
+                textDecoration: 'NONE',
+                characters: 'a',
+                start: 0,
+                end: 1,
+                listOptions: {
+                  type: 'NONE',
+                },
+              },
+            ],
           })
           expect(await element.getComponentType()).toEqual('Text')
           expect(await element.render()).toEqual(
-            '<Text fontFamily="Roboto" lineHeight="30px" />',
+            '<Text fontFamily="Roboto" lineHeight="30px" fontStyle="italic" fontSize="16px" letterSpacing="20px">\n  a\n</Text>',
           )
         }
       })
@@ -618,9 +770,36 @@ describe('Element', () => {
       it('should render Text with char', async () => {
         const element = createElement('TEXT', {
           characters: 'a',
+          styledTextSegments: [
+            {
+              characters: 'a',
+              start: 0,
+              end: 1,
+              fontName: {
+                family: 'Roboto',
+                style: 'Italic',
+              },
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              fontSize: 16,
+              listOptions: {
+                type: 'NONE',
+              },
+            },
+          ],
         })
         expect(await element.getComponentType()).toEqual('Text')
-        expect(await element.render()).toEqual('<Text>\n  a\n</Text>')
+        expect(await element.render()).toEqual(
+          '<Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  a\n</Text>',
+        )
       })
       it('should render Text with typography', async () => {
         const getStyleByIdAsync = vi.fn().mockResolvedValue({
@@ -637,9 +816,35 @@ describe('Element', () => {
           characters: 'a',
           'font-family': 'Roboto',
           'font-style': 'Italic',
-          'font-weight': 400,
+          'font-weight': '400',
           'font-size': '16px',
           textStyleId: '1',
+          styledTextSegments: [
+            {
+              characters: 'a',
+              start: 0,
+              end: 1,
+              fontName: {
+                family: 'Roboto',
+                style: 'Italic',
+              },
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              fontSize: 16,
+              textStyleId: '1',
+              listOptions: {
+                type: 'NONE',
+              },
+            },
+          ],
         })
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
@@ -670,6 +875,9 @@ describe('Element', () => {
               },
               characters: 'a',
               fontSize: 16,
+              listOptions: {
+                type: 'NONE',
+              },
             },
             {
               fontSize: 16,
@@ -691,13 +899,86 @@ describe('Element', () => {
                 value: 20,
                 unit: 'PIXELS',
               },
+              listOptions: {
+                type: 'NONE',
+              },
             },
           ],
         })
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
-          '<><Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">a</Text><Text fontFamily="Roboto" fontStyle="italic" fontWeight="700" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">b</Text></>',
+          '<>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    a\n  </Text>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="700" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    b\n  </Text>\n</>',
         )
+      })
+      it('should render Text with list', async () => {
+        {
+          const element = createElement('TEXT', {
+            characters: 'a',
+            styledTextSegments: [
+              {
+                characters: 'a',
+                start: 0,
+                end: 1,
+                fontName: {
+                  family: 'Roboto',
+                  style: 'Italic',
+                },
+                textDecoration: 'NONE',
+                textCase: 'ORIGINAL',
+                letterSpacing: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                lineHeight: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                fontSize: 16,
+                listOptions: {
+                  type: 'UNORDERED',
+                },
+              },
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('Text')
+          expect(await element.render()).toEqual(
+            '<Text as="ul" my="0px" pl="1.5em" fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  <li>a</li>\n</Text>',
+          )
+        }
+        {
+          const element = createElement('TEXT', {
+            characters: 'a',
+            styledTextSegments: [
+              {
+                characters: 'a',
+                start: 0,
+                end: 1,
+                fontName: {
+                  family: 'Roboto',
+                  style: 'Italic',
+                },
+                textDecoration: 'NONE',
+                textCase: 'ORIGINAL',
+                letterSpacing: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                lineHeight: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                fontSize: 16,
+                listOptions: {
+                  type: 'ORDERED',
+                },
+              },
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('Text')
+          expect(await element.render()).toEqual(
+            '<Text as="ol" my="0px" pl="1.5em" fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  <li>a</li>\n</Text>',
+          )
+        }
       })
     })
     describe('Flex', () => {
@@ -724,6 +1005,31 @@ describe('Element', () => {
           children: [
             createNode('TEXT', {
               characters: 'I am centered',
+              styledTextSegments: [
+                {
+                  characters: 'I am centered',
+                  start: 0,
+                  end: 1,
+                  fontName: {
+                    family: 'Roboto',
+                    style: 'Italic',
+                  },
+                  textDecoration: 'NONE',
+                  textCase: 'ORIGINAL',
+                  letterSpacing: {
+                    value: 20,
+                    unit: 'PIXELS',
+                  },
+                  lineHeight: {
+                    value: 20,
+                    unit: 'PIXELS',
+                  },
+                  fontSize: 16,
+                  listOptions: {
+                    type: 'NONE',
+                  },
+                },
+              ],
             }),
           ],
           'align-items': 'center',
@@ -732,7 +1038,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Center')
         expect(await element.render()).toEqual(
-          '<Center>\n  <Text>\n    I am centered\n  </Text>\n</Center>',
+          '<Center>\n  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    I am centered\n  </Text>\n</Center>',
         )
       })
     })
@@ -749,7 +1055,30 @@ describe('Element', () => {
   })
   describe('Error Node', () => {
     it('should throw error', async () => {
-      const element = createElement('TEXT')
+      const element = createElement('TEXT', {
+        styledTextSegments: [
+          {
+            characters: 'a',
+            start: 0,
+            end: 1,
+            fontName: {
+              family: 'Roboto',
+              style: 'Italic',
+            },
+            textDecoration: 'NONE',
+            textCase: 'ORIGINAL',
+            letterSpacing: {
+              value: 20,
+              unit: 'PIXELS',
+            },
+            lineHeight: {
+              value: 20,
+              unit: 'PIXELS',
+            },
+            fontSize: 16,
+          },
+        ],
+      })
       element.node.getCSSAsync = vi.fn().mockRejectedValue({})
       expect(await element.render()).toEqual(
         '<Text error="getCSSAsync Error" />',
@@ -806,11 +1135,36 @@ describe('Element', () => {
             position: 'absolute',
             characters: 'I am centered',
             layoutPositioning: 'ABSOLUTE',
+            styledTextSegments: [
+              {
+                characters: 'I am centered',
+                start: 0,
+                end: 1,
+                fontName: {
+                  family: 'Roboto',
+                  style: 'Italic',
+                },
+                textDecoration: 'NONE',
+                textCase: 'ORIGINAL',
+                letterSpacing: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                lineHeight: {
+                  value: 20,
+                  unit: 'PIXELS',
+                },
+                fontSize: 16,
+                listOptions: {
+                  type: 'NONE',
+                },
+              },
+            ],
           }),
         ],
       })
       expect(await element.render()).toEqual(
-        '<Box position="relative">\n  <Text pos="absolute">\n    I am centered\n  </Text>\n</Box>',
+        '<Box position="relative">\n  <Text pos="absolute" fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    I am centered\n  </Text>\n</Box>',
       )
     })
   })

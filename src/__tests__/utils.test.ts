@@ -92,6 +92,18 @@ describe('organizeProps', () => {
     expect(organizeProps({ flex: '1 0 0' })).toEqual({ flex: '1' })
   })
 
+  it('should split comment', () => {
+    expect(organizeProps({ p: '10px /* comment */' })).toEqual({
+      p: '10px',
+    })
+  })
+
+  it('should disattach "', () => {
+    expect(organizeProps({ p: '"10px"' })).toEqual({
+      p: '10px',
+    })
+  })
+
   it('should delete empty props', () => {
     expect(organizeProps({ p: '' })).toEqual({})
     expect(organizeProps({ some: '' })).toEqual({})

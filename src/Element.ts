@@ -242,46 +242,76 @@ export class Element {
     }
 
     const originProps = await this.getProps()
+
+    if ('error' in originProps)
+      return `<${componentType} error="${originProps.error}" />`
+
     const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()
 
     if (this.node.type === 'TEXT') {
       const segs = this.node.getStyledTextSegments(SEGMENT_TYPE)
-      if (segs.length > 1) {
-        const children = (
-          await Promise.all(
-            segs.map(async (seg) => {
-              const props = propsToComponentProps(
-                organizeProps({
-                  ...mergedProps,
-                  ...Object.fromEntries(
-                    Object.entries(
-                      await propsToPropsWithTypography(
-                        (await textSegmentToTypography(seg)) as any,
-                        seg.textStyleId,
-                      ),
-                    )
-                      .filter(([_, value]) => Boolean(value))
-                      .map(([key, value]) => [key, String(value)]),
-                  ),
-                }),
-                'Text',
-                1,
-              )
-              return `<Text ${Object.entries(props)
-                .map(([key, value]) => `${key}="${value}"`)
-                .join(' ')}>${fixChildrenText(seg.characters)}</Text>`
-            }),
-          )
-        ).join('')
-        return `<>${children}</>`
-      }
+      const children = (
+        await Promise.all(
+          segs.map(async (seg) => {
+            const props = propsToComponentProps(
+              organizeProps(
+                Object.fromEntries(
+                  Object.entries(
+                    await propsToPropsWithTypography(
+                      {
+                        ...mergedProps,
+                        ...((await textSegmentToTypography(seg)) as any),
+                      },
+                      seg.textStyleId,
+                    ),
+                  )
+                    .filter(([_, value]) => Boolean(value))
+                    .map(([key, value]) => [key, String(value)]),
+                ),
+              ),
+              'Text',
+              1,
+            )
+            let text = fixChildrenText(seg.characters)
+            let textComponent: 'ul' | 'ol' | null = null
+            const textDep = segs.length > 1 ? dep + 2 : dep + 1
+
+            if (seg.listOptions.type === 'NONE') {
+              text = space(textDep) + text.replaceAll('\n', '<br />')
+            } else {
+              switch (seg.listOptions.type) {
+                case 'UNORDERED': {
+                  textComponent = 'ul'
+                  break
+                }
+                case 'ORDERED': {
+                  textComponent = 'ol'
+                  break
+                }
+              }
+              text = text
+                .split('\n')
+                .map((line) => `${space(textDep)}<li>${line}</li>`)
+                .join('\n')
+            }
+
+            return `${segs.length > 1 ? space(textDep - 1) : ''}<Text${
+              textComponent ? ` as="${textComponent}" my="0px" pl="1.5em"` : ''
+            } ${Object.entries(props)
+              .map(([key, value]) => `${key}="${value}"`)
+              .join(' ')}>\n${text}\n${space(textDep - 1)}</Text>`
+          }),
+        )
+      ).join('\n')
+      return (
+        space(dep) +
+        (segs.length > 1 ? `<>\n${children}\n${space(dep)}</>` : children)
+      )
     }
 
     const props = organizeProps(
-      this.node.type === 'TEXT'
-        ? await propsToPropsWithTypography(mergedProps, this.node.textStyleId)
-        : propsToComponentProps(mergedProps, componentType, children.length),
+      propsToComponentProps(mergedProps, componentType, children.length),
     )
 
     const hasChildren = children.length > 0 && !this.skipChildren
@@ -289,11 +319,7 @@ export class Element {
     const renderChildren = hasChildren
       ? (
           await Promise.all(
-            children.map((child) =>
-              child instanceof Element
-                ? child.render(dep + 1)
-                : fixChildrenText(child),
-            ),
+            children.map((child) => (child as Element).render(dep + 1)),
           )
         )
           .join('\n')
