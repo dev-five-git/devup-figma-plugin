@@ -395,6 +395,12 @@ const CONVERT_PROPS_VALUE_MAP = {
         value.replace(/url\(<path-to-image>\)/, 'url(/path/to/image)'),
     },
   ],
+  aspectRatio: [
+    {
+      test: /^(\d+)\/\1$/,
+      value: (value: string) => value.split('/')[0],
+    },
+  ],
 }
 export function organizeProps(props: Record<string, string>) {
   const ret = { ...props }
@@ -472,13 +478,17 @@ function shortSpaceValue(value: string) {
 
 export async function checkSvgImageChildrenType(
   node: SceneNode & ChildrenMixin,
-): Promise<{ type: 'SVG' | 'IMAGE'; fill?: string } | null> {
+): Promise<{ type: 'SVG' | 'IMAGE'; fill?: string } | null | false> {
   const children = node.children
   let hasSVG = false
   let fill: undefined | string = undefined
   let allOfRect = true
 
   for (const child of children) {
+    if (child.type === 'TEXT') {
+      // if Element has Text, it must not be an icon
+      return false
+    }
     if (child.type === 'RECTANGLE') {
       if (
         (child.fills as any).length === 1 &&
@@ -502,16 +512,16 @@ export async function checkSvgImageChildrenType(
       continue
     }
     if (
-      child.type === 'FRAME' ||
-      child.type === 'GROUP' ||
       child.type === 'BOOLEAN_OPERATION' ||
-      child.type === 'INSTANCE'
+      child.type === 'INSTANCE' ||
+      child.type === 'FRAME' ||
+      child.type === 'GROUP'
     ) {
-      if ((await checkSvgImageChildrenType(child))?.type) hasSVG = true
-      else return null
+      const res = await checkSvgImageChildrenType(child)
+      if (res === false) return false
+      if (res?.type) hasSVG = true
       continue
     }
-    return null
   }
   if (!allOfRect && hasSVG && fill)
     return {
