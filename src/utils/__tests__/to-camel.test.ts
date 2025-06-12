@@ -15,6 +15,8 @@ describe('toCamel', () => {
     expect(toCamel('to camel')).toBe('toCamel')
     expect(toCamel('To camel')).toBe('toCamel')
     expect(toCamel('DEVUPStyle')).toBe('devupStyle')
+    expect(toCamel('buttonLabel')).toBe('buttonLabel')
+    expect(toCamel('buttonL')).toBe('buttonL')
     expect(toCamel('')).toBe('')
   })
 })
