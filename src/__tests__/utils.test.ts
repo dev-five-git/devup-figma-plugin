@@ -125,6 +125,22 @@ describe('organizeProps', () => {
     ).toEqual({
       bg: 'linear-gradient(202deg, $primary 3.96%, #6D7EDC 85.94%)',
     })
+
+    expect(
+      organizeProps({
+        bg: '0px 0px 15px 0px var(--clientShadow, rgba(0, 0, 0, 0.07))',
+      }),
+    ).toEqual({
+      bg: '0 0 15px 0 $clientShadow',
+    })
+
+    expect(
+      organizeProps({
+        bg: '0px 0px 15px 0px var(--clientShadow, var(--primary, rgba(0, 0, 0, 0.07)))',
+      }),
+    ).toEqual({
+      bg: '0 0 15px 0 $clientShadow',
+    })
   })
 })
 

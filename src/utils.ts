@@ -163,63 +163,63 @@ const COLOR_PROPS = ['color', 'bg', 'borderColor']
 const SPACE_PROPS = ['m', 'p']
 const DEFAULT_PROPS_MAP = {
   flex: {
-    default: '1 0 0',
+    default: /1 0 0/,
     value: '1',
   },
   p: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   pr: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   pt: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   pb: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   px: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   py: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   pl: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   m: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   mt: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   mb: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   mr: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   ml: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   mx: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
   my: {
-    default: '0px',
+    default: /\b0(px)?\b/,
     value: null,
   },
 } as const
@@ -227,14 +227,14 @@ const DEFAULT_PROPS_MAP = {
 const CONVERT_PROPS_MAP = {
   p: [
     {
-      test: /^0px (\d*[1-9]|\d{2,})px$/,
+      test: /^0(px)? (\d*[1-9]|\d{2,})px$/,
       value: {
         prop: 'px',
         value: (value: string) => value.split(' ')[1],
       },
     },
     {
-      test: /^(\d*[1-9]|\d{2,})px 0px$/,
+      test: /^(\d*[1-9]|\d{2,})px 0(px)?$/,
       value: {
         prop: 'py',
         value: (value: string) => value.split(' ')[0],
@@ -307,14 +307,14 @@ const CONVERT_PROPS_MAP = {
   ],
   m: [
     {
-      test: /^0px (\d*[1-9]|\d{2,})px$/,
+      test: /^0(px)? (\d*[1-9]|\d{2,})px$/,
       value: {
         prop: 'mx',
         value: (value: string) => value.split(' ')[1],
       },
     },
     {
-      test: /^(\d*[1-9]|\d{2,})px 0px$/,
+      test: /^(\d*[1-9]|\d{2,})px 0(px)?$/,
       value: {
         prop: 'my',
         value: (value: string) => value.split(' ')[0],
@@ -402,6 +402,34 @@ const CONVERT_PROPS_VALUE_MAP = {
     },
   ],
 }
+
+function replaceAllVarFunctions(
+  str: string,
+  replacer: (v: string) => string,
+): string {
+  let result = ''
+  let i = 0
+  while (i < str.length) {
+    const varStart = str.indexOf('var(', i)
+    if (varStart === -1) {
+      result += str.slice(i)
+      break
+    }
+    result += str.slice(i, varStart)
+    let open = 1
+    let end = varStart + 4
+    for (; end < str.length; end++) {
+      if (str[end] === '(') open++
+      if (str[end] === ')') open--
+      if (open === 0) break
+    }
+    const varContent = str.slice(varStart, end + 1)
+    result += replacer(varContent)
+    i = end + 1
+  }
+  return result
+}
+
 export function organizeProps(props: Record<string, string>) {
   const ret = { ...props }
   for (const key of COLOR_PROPS)
@@ -435,11 +463,12 @@ export function organizeProps(props: Record<string, string>) {
       delete ret[key]
       continue
     }
+    if (ret[key].includes('0px')) ret[key] = ret[key].replace(/\b0px\b/g, '0')
     if (ret[key].startsWith('"') && ret[key].endsWith('"'))
       ret[key] = ret[key].slice(1, -1)
     if (ret[key].includes('/*')) ret[key] = ret[key].split('/*')[0].trim()
     if (ret[key].includes('var(--'))
-      ret[key] = ret[key].replace(/var\(--[^)]*\)/g, extractVariableName)
+      ret[key] = replaceAllVarFunctions(ret[key], extractVariableName)
   }
   for (const key in CONVERT_PROPS_VALUE_MAP) {
     if (!ret[key]) continue
@@ -454,8 +483,9 @@ export function organizeProps(props: Record<string, string>) {
   }
   for (const key in DEFAULT_PROPS_MAP)
     if (
-      ret[key] ===
-      DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].default
+      DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].default.test(
+        ret[key],
+      )
     ) {
       const defaultValue =
         DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].value
