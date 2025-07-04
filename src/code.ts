@@ -1,4 +1,5 @@
-import { exportDevup, importDevup } from './devup'
+import { exportDevup, importDevup } from './commands/devup'
+import { exportAssets } from './commands/exportAssets'
 import { Element } from './Element'
 
 if (figma.editorType === 'dev' && figma.mode === 'codegen') {
@@ -18,5 +19,8 @@ switch (figma.command) {
     break
   case 'import-devup':
     importDevup().finally(() => figma.closePlugin())
+    break
+  case 'export-assets':
+    exportAssets().finally(() => figma.closePlugin())
     break
 }

@@ -1,6 +1,8 @@
-import { exportDevup, importDevup } from '../devup'
+import { exportDevup, importDevup } from '../commands/devup'
+import { exportAssets } from '../commands/exportAssets'
 
-vi.mock('../devup')
+vi.mock('../commands/devup')
+vi.mock('../commands/exportAssets')
 
 beforeEach(() => {
   vi.resetModules()
@@ -30,6 +32,19 @@ it('should import devup', async () => {
   vi.mocked(importDevup).mockResolvedValueOnce()
   await import('../code')
   expect(importDevup).toBeCalledTimes(1)
+  expect(closePlugin).toBeCalledTimes(1)
+})
+
+it('should export assets', async () => {
+  const closePlugin = vi.fn()
+  ;(globalThis as any).figma = {
+    editorType: 'figma',
+    command: 'export-assets',
+    closePlugin,
+  }
+  vi.mocked(exportAssets).mockResolvedValueOnce()
+  await import('../code')
+  expect(exportAssets).toBeCalledTimes(1)
   expect(closePlugin).toBeCalledTimes(1)
 })
 

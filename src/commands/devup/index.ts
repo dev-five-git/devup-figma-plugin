@@ -1,13 +1,14 @@
-import { downloadFile } from '../utils/download-file'
-import { isVariableAlias } from '../utils/is-variable-alias'
-import { rgbaToHex } from '../utils/rgba-to-hex'
-import { styleNameToTypography } from '../utils/style-name-to-typography'
-import { textSegmentToTypography } from '../utils/text-segment-to-typography'
-import { toCamel } from '../utils/to-camel'
-import { uploadFile } from '../utils/upload-file'
-import { variableAliasToValue } from '../utils/variable-alias-to-value'
+
 import { type Devup, DevupTypography } from './types'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
+import { downloadFile } from '../../utils/download-file'
+import { isVariableAlias } from '../../utils/is-variable-alias'
+import { rgbaToHex } from '../../utils/rgba-to-hex'
+import { styleNameToTypography } from '../../utils/style-name-to-typography'
+import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
+import { toCamel } from '../../utils/to-camel'
+import { uploadFile } from '../../utils/upload-file'
+import { variableAliasToValue } from '../../utils/variable-alias-to-value'
 
 export async function exportDevup() {
   const devup: Devup = {}
