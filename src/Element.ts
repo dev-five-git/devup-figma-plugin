@@ -1,6 +1,8 @@
 import {
   checkSvgImageChildrenType,
+  createInterface,
   cssToProps,
+  filterPropsByChildrenCountAndType,
   fixChildrenText,
   formatSvg,
   organizeProps,
@@ -10,7 +12,7 @@ import {
 } from './utils'
 import { extractKeyValueFromCssVar } from './utils/extract-key-value-from-css-var'
 import { textSegmentToTypography } from './utils/text-segment-to-typography'
-import { toCamel } from './utils/to-camel'
+import { toPascal } from './utils/to-pascal'
 
 export type ComponentType =
   | 'Fragment'
@@ -45,12 +47,15 @@ export class Element {
   props?: Record<string, string>
   css?: Record<string, string>
   additionalProps?: Record<string, string>
+  parent?: Element
   // for svg
   svgVarKeyValue?: [string, string]
   componentType?: ComponentType
   skipChildren: boolean = false
-  constructor(node: SceneNode) {
+  assets: Record<string, () => Promise<Uint8Array>> = {}
+  constructor(node: SceneNode, parent?: Element) {
     this.node = node
+    this.parent = parent
   }
   async getCss(): Promise<Record<string, string>> {
     if (this.css) return this.css
@@ -96,19 +101,22 @@ export class Element {
       css['padding-right']
     )
   }
-  getImageProps(): Record<string, string> {
+  getImageProps(
+    dir: 'icons' | 'images',
+    extension: 'svg' | 'png',
+  ): Record<string, string> {
     return cssToProps(
       this.node.parent &&
         'width' in this.node.parent &&
         this.node.parent.width === this.node.width
         ? {
-            src: this.node.name,
+            src: `/${dir}/${this.node.name}.${extension}`,
             width: '100%',
             height: '',
             'aspect-ratio': `${Math.floor((this.node.width / this.node.height) * 100) / 100}`,
           }
         : {
-            src: this.node.name,
+            src: `/${dir}/${this.node.name}.${extension}`,
             width: this.node.width + 'px',
             height: this.node.height + 'px',
           },
@@ -148,7 +156,14 @@ export class Element {
           break
         }
         this.componentType = 'Image'
-        Object.assign(this.additionalProps, this.getImageProps())
+        this.addAsset(this.node, 'svg')
+        Object.assign(
+          this.additionalProps,
+          this.getImageProps(
+            this.node.width !== this.node.height ? 'images' : 'icons',
+            'svg',
+          ),
+        )
         break
       }
       case 'TEXT':
@@ -160,7 +175,11 @@ export class Element {
           (this.node.fills as any)[0].type === 'IMAGE'
         ) {
           this.componentType = 'Image'
-          Object.assign(this.additionalProps, this.getImageProps())
+          Object.assign(
+            this.additionalProps,
+            this.getImageProps('images', 'png'),
+          )
+          this.addAsset(this.node, 'png')
         }
         break
       }
@@ -180,16 +199,40 @@ export class Element {
           break
         const res = await checkSvgImageChildrenType(this.node)
         if (res) {
-          if (res.type === 'SVG' && res.fill) {
-            this.componentType = 'svg'
-            this.skipChildren = true
-            this.svgVarKeyValue = extractKeyValueFromCssVar(res.fill)
+          if (res.type === 'SVG' && res.fill.size > 0) {
+            if (res.fill.size === 1) {
+              // mask image
+              this.componentType = 'Box'
+              this.skipChildren = true
+
+              const props = this.getImageProps('icons', 'svg')
+              props['maskImage'] = `url(${props.src})`
+              delete props.src
+              delete props.aspectRatio
+              Object.assign(this.additionalProps, {
+                ...props,
+                bg: res.fill.values().next().value,
+                maskSize: 'contain',
+                maskRepeat: 'no-repeat',
+              })
+              this.addAsset(this.node, 'svg')
+            } else {
+              this.componentType = 'svg'
+              // render string
+              this.skipChildren = false
+
+              this.addAsset(this.node, 'svg')
+            }
             break
           }
 
           this.componentType = 'Image'
           this.skipChildren = true
-          Object.assign(this.additionalProps, this.getImageProps())
+          Object.assign(
+            this.additionalProps,
+            this.getImageProps('icons', 'svg'),
+          )
+          this.addAsset(this.node, 'svg')
         }
         break
       }
@@ -211,32 +254,47 @@ export class Element {
     if (this.node.type === 'TEXT')
       return this.node.characters ? [this.node.characters] : []
     if (!('children' in this.node)) return []
-    return this.node.children.map((node) => new Element(node))
+    return this.node.children.map((node) => new Element(node, this))
+  }
+
+  async getAssets(): Promise<Record<string, () => Promise<Uint8Array>>> {
+    await this.render()
+    return this.assets
+  }
+  addAsset(node: SceneNode, type: 'svg' | 'png') {
+    if (this.parent) this.parent.addAsset(node, type)
+    else
+      this.assets[node.name + '.' + type] = () =>
+        node.exportAsync({
+          format: type === 'svg' ? 'SVG' : 'PNG',
+        })
   }
 
   async render(dep: number = 0): Promise<string> {
     if (!this.node.visible) return ''
+
+    if (this.node.type === 'INSTANCE') {
+      return space(dep) + `<${toPascal(this.node.name)} />`
+    }
+    if (this.node.type === 'COMPONENT_SET') {
+      return (
+        await Promise.all(
+          this.node.children
+            .map((child) => new Element(child, this))
+            .map((child) => child.render(dep)),
+        )
+      ).join('\n')
+    }
+
     const componentType = await this.getComponentType()
 
     if (componentType === 'svg') {
-      //   prue svg
-      let value = (
+      // prue svg
+      const value = (
         await this.node.exportAsync({
           format: 'SVG_STRING',
         })
       ).toString()
-
-      if (this.svgVarKeyValue) {
-        value = value.replaceAll(this.svgVarKeyValue[1], 'currentColor')
-        if (this.svgVarKeyValue[0].startsWith('$'))
-          this.svgVarKeyValue[0] =
-            '$' + toCamel(this.svgVarKeyValue[0].slice(1))
-
-        value = value.replace(
-          '<svg',
-          `<svg className={css({ color: "${this.svgVarKeyValue[0]}" })}`,
-        )
-      }
 
       return formatSvg(value, dep)
     }
@@ -246,8 +304,15 @@ export class Element {
     if ('error' in originProps)
       return `<${componentType} error="${originProps.error}" />`
 
-    const mergedProps = { ...originProps, ...this.additionalProps }
     const children = this.getChildren()
+    const mergedProps = filterPropsByChildrenCountAndType(
+      children.length,
+      componentType,
+      {
+        ...originProps,
+        ...this.additionalProps,
+      },
+    )
 
     if (this.node.type === 'TEXT') {
       const segs = this.node.getStyledTextSegments(SEGMENT_TYPE)
@@ -329,6 +394,22 @@ export class Element {
     const propsString = Object.entries(props)
       .map(([key, value]) => `${key}="${value}"`)
       .join(' ')
-    return `${space(dep)}<${componentType}${propsString ? ' ' + propsString : ''}${hasChildren ? '' : ' /'}>${hasChildren ? `\n${space(dep + 1)}${renderChildren}\n` : ''}${hasChildren ? `${space(dep)}</${componentType}>` : ''}`
+    const body = `${space(dep)}<${componentType}${propsString ? ' ' + propsString : ''}${hasChildren ? '' : ' /'}>${hasChildren ? `\n${space(dep + 1)}${renderChildren}\n` : ''}${hasChildren ? `${space(dep)}</${componentType}>` : ''}`
+    if (this.node.type === 'COMPONENT') {
+      const componentName = toPascal(this.node.name)
+      const interfaceDecl = createInterface(
+        componentName,
+        this.node.variantProperties,
+      )
+      return `${interfaceDecl ? interfaceDecl + '\n' : ''}${space(dep)}export function ${componentName}(${interfaceDecl ? `props: ${componentName}Props` : ''}) {
+  return (
+${body
+  .split('\n')
+  .map((line) => space(dep + 2) + line)
+  .join('\n')}
+  )
+}`
+    }
+    return body
   }
 }

@@ -69,8 +69,24 @@ const PAIR_ATTR = [
     short: 'boxSize',
   },
 ]
+const CLEAR_ATTR = {
+  boxSize: ['w', 'h'],
+}
 
 const IGNORED_CSS_KEYS = ['display']
+
+function equalAttributeValue(a: any, b: any) {
+  if (a === b) return true
+  // check same suffix
+  const aa = parseFloat(a)
+  const bb = parseFloat(b)
+  if (
+    a.slice(aa.toString().length - a.length) !==
+    b.slice(bb.toString().length - b.length)
+  )
+    return false
+  return Math.abs(aa - bb) < 0.0001
+}
 
 export function cssToProps(css: Record<string, string>) {
   const ret: Record<string, string> = {}
@@ -78,7 +94,11 @@ export function cssToProps(css: Record<string, string>) {
     if (!IGNORED_CSS_KEYS.includes(key))
       ret[key in SHORT_ATTR ? SHORT_ATTR[key] : toCamel(key)] = css[key]
   for (const pair of PAIR_ATTR) {
-    if (pair.keys.every((key) => ret[key] && ret[key] === ret[pair.keys[0]])) {
+    if (
+      pair.keys.every(
+        (key) => ret[key] && equalAttributeValue(ret[key], ret[pair.keys[0]]),
+      )
+    ) {
       ret[pair.short] = ret[pair.keys[0]]
       pair.keys.forEach((key) => delete ret[key])
     }
@@ -481,6 +501,13 @@ export function organizeProps(props: Record<string, string>) {
       }
     }
   }
+  for (const key in CLEAR_ATTR) {
+    if (!ret[key]) continue
+    for (const clear of CLEAR_ATTR[key as keyof typeof CLEAR_ATTR]) {
+      delete ret[clear]
+    }
+  }
+
   for (const key in DEFAULT_PROPS_MAP)
     if (
       DEFAULT_PROPS_MAP[key as keyof typeof DEFAULT_PROPS_MAP].default.test(
@@ -493,6 +520,12 @@ export function organizeProps(props: Record<string, string>) {
       if (defaultValue === null) delete ret[key]
       else ret[key] = defaultValue
     }
+
+  if (ret['aspectRatio'] === '1' && !!ret['w'] !== !!ret['h']) {
+    ret['boxSize'] = ret['h'] || ret['w']
+    delete ret['w']
+    delete ret['h']
+  }
   return ret
 }
 
@@ -505,13 +538,30 @@ function shortSpaceValue(value: string) {
     return `${split[0]} ${split[1]} ${split[2]}`
   return value
 }
+export function filterPropsByChildrenCountAndType(
+  childrenCount: number,
+  componentType: ComponentType,
+  props: Record<string, string>,
+): Record<string, string> {
+  if (
+    ['Flex', 'VStack', 'Center'].includes(componentType) &&
+    childrenCount === 1
+  ) {
+    delete props['alignItems']
+    delete props['justifyContent']
+    delete props['gap']
+  }
+  return props
+}
 
 export async function checkSvgImageChildrenType(
   node: SceneNode & ChildrenMixin,
-): Promise<{ type: 'SVG' | 'IMAGE'; fill?: string } | null | false> {
+): Promise<
+  { type: 'SVG'; fill: Set<string> } | { type: 'IMAGE' } | null | false
+> {
   const children = node.children
   let hasSVG = false
-  let fill: undefined | string = undefined
+  const fill: Set<string> = new Set()
   let allOfRect = true
 
   for (const child of children) {
@@ -537,7 +587,9 @@ export async function checkSvgImageChildrenType(
       child.type === 'LINE'
     ) {
       const css = await child.getCSSAsync()
-      if (css['fill'] && css['fill'].startsWith('var(--')) fill = css['fill']
+      if (css['fill'] && css['fill'].startsWith('var(--')) {
+        fill.add(css['fill'])
+      }
       hasSVG = true
       continue
     }
@@ -558,9 +610,20 @@ export async function checkSvgImageChildrenType(
       type: 'SVG',
       fill,
     }
-  if (!allOfRect && hasSVG)
+  // Frame SVG
+  // if (hasSVG && !allOfRect && children.length === 1)
+  //   return {
+  //     type: 'SVG',
+  //     fill,
+  //   }
+  // if (!allOfRect && hasSVG)
+  //   return {
+  //     type: 'IMAGE',
+  //   }
+  if (allOfRect && children.length > 1)
     return {
-      type: 'IMAGE',
+      type: 'SVG',
+      fill,
     }
   return null
 }
@@ -580,4 +643,16 @@ export function formatSvg(svg: string, dep: number = 0) {
 }
 export function fixChildrenText(children: string) {
   return children.replace(/([{}&<>]+)/g, '{"$1"}')
+}
+
+export function createInterface(
+  componentName: string,
+  props: Record<string, string> | null,
+): string | null {
+  if (!props || Object.keys(props).length === 0) return null
+  return `export interface ${componentName}Props {
+${Object.keys(props)
+  .map((key) => `  ${key}: unknown`)
+  .join('\n')}
+}`
 }

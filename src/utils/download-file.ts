@@ -3,14 +3,26 @@
  * @param fileName
  * @param data
  */
-export async function downloadFile(fileName: string, data: string) {
-  figma.showUI(downloadFileUi(fileName, data), {
+export async function downloadFile(
+  fileName: string,
+  data: string | Uint8Array,
+) {
+  figma.showUI(downloadFileUi(), {
     visible: false,
   })
-  return new Promise((resolve) => {
+
+  const pro = new Promise((resolve) => {
     figma.ui.onmessage = resolve
   })
+
+  figma.ui.postMessage({
+    type: 'download',
+    fileName,
+    data,
+  })
+
+  return pro
 }
-function downloadFileUi(fileName: string, data: string) {
-  return `<script>const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([${JSON.stringify(data)}],{type:'text/plain'}));a.download=${JSON.stringify(fileName)};a.click();URL.revokeObjectURL(a.href);window.parent.postMessage({ pluginMessage: undefined }, '*')</script>`
+function downloadFileUi() {
+  return `<script>onmessage=(event)=>{console.log(event);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([event.data.pluginMessage.data]));a.download=event.data.pluginMessage.fileName;a.click();URL.revokeObjectURL(a.href);window.parent.postMessage({ pluginMessage: undefined }, '*')}</script>`
 }

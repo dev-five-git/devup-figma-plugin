@@ -14,6 +14,7 @@ function createNode(
     layoutPositioning = 'AUTO',
     layoutSizingHorizontal,
     styledTextSegments = [],
+    variantProperties,
     ...props
   }: {
     [_: string]: any
@@ -23,6 +24,7 @@ function createNode(
     children?: SceneNode[]
     layoutPositioning?: string
     styledTextSegments?: any[]
+    variantProperties?: Record<string, string>
   } = {},
 ): SceneNode {
   const ret = {
@@ -40,6 +42,7 @@ function createNode(
     height: props.height ? parseInt(props.height) : undefined,
     name,
     fills,
+    variantProperties,
     children: children ?? [],
   } as unknown as SceneNode
   ;(ret as any).children.forEach((child: any) => {
@@ -123,6 +126,37 @@ describe('Element', () => {
     })
 
     describe('Image', () => {
+      it('should render Image when children is single image', async () => {
+        // frame, frame, [vector, vector]
+        const element = createElement('FRAME', {
+          width: '120px',
+          height: '120px',
+          name: 'image',
+          children: [
+            createNode('FRAME', {
+              width: '120px',
+              height: '120px',
+              children: [
+                createNode('RECTANGLE', {
+                  width: '20px',
+                  height: '20px',
+                  fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+                }),
+                createNode('RECTANGLE', {
+                  width: '20px',
+                  height: '20px',
+                  fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+                }),
+              ],
+            }),
+          ],
+        })
+        expect(await element.getComponentType()).toEqual('Image')
+        expect(await element.render()).toEqual(
+          '<Image boxSize="120px" src="/icons/image.svg" />',
+        )
+      })
+
       it('VECTOR', async () => {
         const element = createElement('VECTOR', {
           name: 'image',
@@ -131,7 +165,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Image')
         expect(await element.render()).toEqual(
-          '<Image boxSize="60px" src="image" />',
+          '<Image boxSize="60px" src="/icons/image.svg" />',
         )
       })
       it('STAR', async () => {
@@ -142,7 +176,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Image')
         expect(await element.render()).toEqual(
-          '<Image boxSize="60px" src="image" />',
+          '<Image boxSize="60px" src="/icons/image.svg" />',
         )
       })
 
@@ -150,18 +184,24 @@ describe('Element', () => {
         const element = createElement('FRAME', {
           width: '100px',
           height: '120px',
-          children: [createNode('VECTOR', { width: '60px', height: '60px' })],
+          children: [
+            createNode('VECTOR', {
+              name: 'image',
+              width: '60px',
+              height: '60px',
+            }),
+          ],
         })
         expect(await element.getComponentType()).toEqual('Box')
         expect(await element.render()).toEqual(
-          '<Box w="100px" h="120px">\n  <Image boxSize="60px" />\n</Box>',
+          '<Box w="100px" h="120px">\n  <Image boxSize="60px" src="/icons/image.svg" />\n</Box>',
         )
       })
 
       describe('Overlap', async () => {
         it('should render Image with overlap', async () => {
           {
-            const element = createElement('INSTANCE', {
+            const element = createElement('FRAME', {
               name: 'image',
               width: '60px',
               height: '60px',
@@ -176,7 +216,7 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Image')
             expect(await element.render()).toEqual(
-              '<Image boxSize="60px" src="image" />',
+              '<Image boxSize="60px" src="/icons/image.svg" />',
             )
           }
           {
@@ -208,14 +248,14 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Box')
             expect(await element.render()).toEqual(
-              '<Box w="100px" h="120px">\n  <Box w="100%" h="120px">\n    <Image boxSize="60px" src="image" />\n  </Box>\n</Box>',
+              '<Box w="100px" h="120px">\n  <Box w="100%" h="120px">\n    <Image boxSize="60px" src="/icons/image.svg" />\n  </Box>\n</Box>',
             )
           }
         })
 
-        it('should render Image with overlap', async () => {
+        it('should render Image with overlap2', async () => {
           {
-            const element = createElement('INSTANCE', {
+            const element = createElement('FRAME', {
               name: 'image',
               width: '60px',
               height: '60px',
@@ -227,7 +267,7 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Image')
             expect(await element.render()).toEqual(
-              '<Image boxSize="60px" src="image" />',
+              '<Image boxSize="60px" src="/icons/image.svg" />',
             )
           }
           {
@@ -294,7 +334,7 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Image')
             expect(await element.render()).toEqual(
-              '<Image boxSize="60px" src="image" />',
+              '<Image boxSize="60px" src="/icons/image.svg" />',
             )
           }
         })
@@ -359,7 +399,7 @@ describe('Element', () => {
             expect(await element.getComponentType()).toEqual('Flex')
             expect(await element.render()).toEqual(
               `<Flex alignItems="center" gap="20px">
-  <Image boxSize="60px" src="image" />
+  <Image boxSize="60px" src="/icons/image.svg" />
   <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
     Text
   </Text>
@@ -413,7 +453,7 @@ describe('Element', () => {
             expect(await element.getComponentType()).toEqual('Flex')
             expect(await element.render())
               .toEqual(`<Flex alignItems="center" gap="20px">
-  <svg className={css({ color: "$containerBackground" })}>
+  <svg>
     <path/>
   </svg>
   <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
@@ -472,7 +512,7 @@ describe('Element', () => {
             expect(await element.getComponentType()).toEqual('Flex')
             expect(await element.render()).toEqual(
               `<Flex alignItems="center">
-  <Image boxSize="20px" src="image" />
+  <Image boxSize="20px" src="/icons/image.svg" />
   <Box>
     <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
       Text
@@ -489,7 +529,7 @@ describe('Element', () => {
             'align-self': 'stretch',
             children: [
               createNode('INSTANCE', {
-                name: 'image',
+                name: 'Instance',
                 width: '60px',
                 height: '60px',
                 children: [
@@ -513,8 +553,8 @@ describe('Element', () => {
           expect(await element.getComponentType()).toEqual('Flex')
           expect(await element.render()).toEqual(
             `<Flex alignItems="center">
-  <Image boxSize="60px" src="image" />
-  <Image w="17px" h="28px" src="image" />
+  <Instance />
+  <Image w="17px" h="28px" src="/images/image.svg" />
 </Flex>`,
           )
         })
@@ -561,33 +601,11 @@ describe('Element', () => {
             ],
           })
           expect(await element.render()).toEqual(
-            '<VStack w="60px">\n  <Image w="100%" src="image" aspectRatio="1" />\n  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    Text\n  </Text>\n</VStack>',
+            '<VStack w="60px">\n  <Image src="/icons/image.svg" aspectRatio="1" boxSize="100%" />\n  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    Text\n  </Text>\n</VStack>',
           )
         })
       })
-      it('should Image has not padding', async () => {
-        const element = createElement('INSTANCE', {
-          display: 'flex',
-          width: '28px',
-          height: '28px',
-          'justify-content': 'center',
-          'align-items': 'center',
-          padding: '10px',
-          name: 'image',
-          children: [
-            createNode('VECTOR', {
-              width: '28px',
-              height: '28px',
-              'flex-shrink': '0',
-              fill: '#231815',
-            }),
-          ],
-        })
-        expect(await element.getComponentType()).toEqual('Image')
-        expect(await element.render()).toEqual(
-          '<Image boxSize="28px" src="image" />',
-        )
-      })
+
       describe('Rectangle', () => {
         it('should render Image with rectangle', async () => {
           {
@@ -603,7 +621,7 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Image')
             expect(await element.render()).toEqual(
-              '<Image w="60px" h="68px" src="image" />',
+              '<Image w="60px" h="68px" src="/images/image.png" />',
             )
           }
           {
@@ -636,7 +654,7 @@ describe('Element', () => {
             expect(await element.render())
               .toEqual(`<Flex w="6px" bg="$menuHover">
   <Box h="318px" flex="1" borderRadius="100px" bg="$third" />
-  <Image w="100%" src="image" aspectRatio="1" />
+  <Image src="/images/image.png" aspectRatio="1" boxSize="100%" />
 </Flex>`)
           }
         })
@@ -673,11 +691,12 @@ describe('Element', () => {
     })
 
     describe('Svg', () => {
-      it('should render variant svg', async () => {
+      it('should render variant svg mask image', async () => {
         {
           const element = createElement('FRAME', {
             width: '24px',
             height: '24px',
+            name: 'image',
             children: [
               createNode('VECTOR', {
                 width: '20.001px',
@@ -688,8 +707,59 @@ describe('Element', () => {
             ],
           })
           expect(await element.render()).toEqual(
-            '<svg className={css({ color: "$title" })}>\n  <path/>\n</svg>',
+            '<Box boxSize="24px" maskImage="url(/icons/image.svg)" bg="$title" maskSize="contain" maskRepeat="no-repeat" />',
           )
+        }
+      })
+      it('should render variant svg mask image', async () => {
+        {
+          const element = createElement('FRAME', {
+            width: '24px',
+            height: '24px',
+            name: 'image',
+            children: [
+              createNode('VECTOR', {
+                width: '20.001px',
+                height: '20px',
+                'flex-shrink': '0',
+                fill: 'var(--title, #1A1A1A)',
+              }),
+
+              createNode('VECTOR', {
+                width: '20.001px',
+                height: '20px',
+                'flex-shrink': '0',
+                fill: 'var(--title, #1A1A1A)',
+              }),
+            ],
+          })
+          expect(await element.render()).toEqual(
+            '<Box boxSize="24px" maskImage="url(/icons/image.svg)" bg="$title" maskSize="contain" maskRepeat="no-repeat" />',
+          )
+        }
+
+        {
+          const element = createElement('FRAME', {
+            width: '24px',
+            height: '24px',
+            name: 'image',
+            children: [
+              createNode('VECTOR', {
+                width: '20.001px',
+                height: '20px',
+                'flex-shrink': '0',
+                fill: 'var(--title, #1A1A1A)',
+              }),
+
+              createNode('VECTOR', {
+                width: '20.001px',
+                height: '20px',
+                'flex-shrink': '0',
+                fill: 'var(--text, #1A1A1A)',
+              }),
+            ],
+          })
+          expect(await element.render()).toEqual('<svg>\n  <path/>\n</svg>')
         }
       })
     })
@@ -1089,8 +1159,9 @@ describe('Element', () => {
     it('should remove width props when parent is page', async () => {
       const element = createElement('PAGE' as any, {
         children: [
-          createNode('INSTANCE', {
+          createNode('FRAME', {
             width: '1920px',
+            name: 'instance',
           }),
         ],
       })
@@ -1099,8 +1170,9 @@ describe('Element', () => {
     it('should remove width props when parent is section', async () => {
       const element = createElement('PAGE' as any, {
         children: [
-          createNode('INSTANCE', {
+          createNode('FRAME', {
             width: '1920px',
+            name: 'instance',
           }),
         ],
       })
@@ -1127,6 +1199,70 @@ describe('Element', () => {
       }
     })
   })
+
+  describe('Instance', () => {
+    it('should render Instance', async () => {
+      const element = createElement('INSTANCE', {
+        name: 'Instance',
+      })
+      expect(await element.render()).toEqual('<Instance />')
+    })
+  })
+
+  describe('Component', () => {
+    it('should render Component', async () => {
+      expect(
+        await createElement('COMPONENT', {
+          name: 'Component',
+        }).render(),
+      ).toEqual(
+        `export function Component() {
+  return (
+    <Box />
+  )
+}`,
+      )
+
+      expect(
+        await createElement('COMPONENT', {
+          name: 'Component',
+          variantProperties: {
+            color: 'red',
+          },
+        }).render(),
+      ).toEqual(
+        `export interface ComponentProps {
+  color: unknown
+}
+export function Component(props: ComponentProps) {
+  return (
+    <Box />
+  )
+}`,
+      )
+    })
+  })
+  describe('ComponentSet', () => {
+    it('should render ComponentSet', async () => {
+      expect(
+        await createElement('COMPONENT_SET', {
+          name: 'ComponentSet',
+          children: [
+            createNode('COMPONENT', {
+              name: 'Component',
+            }),
+          ],
+        }).render(),
+      ).toEqual(
+        `export function Component() {
+  return (
+    <Box />
+  )
+}`,
+      )
+    })
+  })
+
   describe('Position', () => {
     it('should be relative', async () => {
       const element = createElement('FRAME', {
@@ -1174,12 +1310,82 @@ describe('Element', () => {
       const element = createElement('FRAME', {
         layoutSizingHorizontal: 'HUG',
         children: [
-          createNode('INSTANCE', {
+          createNode('FRAME', {
             width: '1920px',
+            name: 'instance',
           }),
         ],
       })
       expect(await element.render()).toEqual('<Box>\n  <Box />\n</Box>')
+    })
+  })
+  describe('Assets', () => {
+    it('should render Assets', async () => {
+      {
+        const element = createElement('FRAME', {
+          name: 'image',
+          children: [
+            createNode('VECTOR', {
+              name: 'image',
+              width: 100,
+              height: 100,
+            }),
+          ],
+        })
+        await element.render()
+        expect(await element.getAssets()).toEqual({
+          'image.svg': expect.any(Function),
+        })
+      }
+      {
+        const element = createElement('FRAME', {
+          name: 'root',
+          width: '100px',
+          height: '100px',
+          children: [
+            createNode('TEXT', {
+              width: '100px',
+              height: '100px',
+              name: 'text',
+              characters: 'Text',
+              styledTextSegments: [
+                {
+                  characters: 'Text',
+                  start: 0,
+                  end: 1,
+                  fontName: {
+                    family: 'Roboto',
+                    style: 'Italic',
+                  },
+                  textDecoration: 'NONE',
+                  textCase: 'ORIGINAL',
+                  letterSpacing: {
+                    value: 20,
+                    unit: 'PIXELS',
+                  },
+                  lineHeight: {
+                    value: 20,
+                    unit: 'PIXELS',
+                  },
+                  fontSize: 16,
+                  listOptions: {
+                    type: 'NONE',
+                  },
+                },
+              ],
+            }),
+            createNode('VECTOR', {
+              name: 'image',
+              width: '100px',
+              height: '100px',
+            }),
+          ],
+        })
+        await element.render()
+        expect(await element.getAssets()).toEqual({
+          'image.svg': expect.any(Function),
+        })
+      }
     })
   })
 })

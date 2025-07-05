@@ -1,13 +1,20 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "types": ["vitest/importMeta", "vitest/globals", "@figma/plugin-typings"],
-    "lib": ["ESNext"],
+    "types": [
+      "vitest/importMeta",
+      "vitest/globals",
+      "@figma/plugin-typings"
+    ],
+    "lib": [
+      "ESNext"
+    ],
     "strict": true,
     "module": "ESNext",
     "outDir": "./dist",
     "isolatedModules": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "esModuleInterop": true
   },
   "include": [
     "./src",
