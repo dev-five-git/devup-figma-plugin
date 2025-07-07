@@ -553,7 +553,7 @@ describe('Element', () => {
           expect(await element.getComponentType()).toEqual('Flex')
           expect(await element.render()).toEqual(
             `<Flex alignItems="center">
-  <Instance />
+  <Image boxSize="60px" src="/icons/Instance.svg" />
   <Image w="17px" h="28px" src="/images/image.svg" />
 </Flex>`,
           )

@@ -186,6 +186,7 @@ export class Element {
       case 'FRAME':
       case 'BOOLEAN_OPERATION':
       case 'GROUP':
+      case 'COMPONENT':
       case 'INSTANCE': {
         if (this.node.children.length > 1 && (await this.hasSpaceProps())) break
         // has instance type children, skip
@@ -273,9 +274,6 @@ export class Element {
   async render(dep: number = 0): Promise<string> {
     if (!this.node.visible) return ''
 
-    if (this.node.type === 'INSTANCE') {
-      return space(dep) + `<${toPascal(this.node.name)} />`
-    }
     if (this.node.type === 'COMPONENT_SET') {
       return (
         await Promise.all(
@@ -395,6 +393,10 @@ export class Element {
       .map(([key, value]) => `${key}="${value}"`)
       .join(' ')
     const body = `${space(dep)}<${componentType}${propsString ? ' ' + propsString : ''}${hasChildren ? '' : ' /'}>${hasChildren ? `\n${space(dep + 1)}${renderChildren}\n` : ''}${hasChildren ? `${space(dep)}</${componentType}>` : ''}`
+
+    if (this.node.type === 'INSTANCE' && this.componentType !== 'Image')
+      return space(dep) + `<${toPascal(this.node.name)} />`
+
     if (this.node.type === 'COMPONENT') {
       const componentName = toPascal(this.node.name)
       const interfaceDecl = createInterface(
