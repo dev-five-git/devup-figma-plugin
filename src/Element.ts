@@ -265,10 +265,19 @@ export class Element {
   addAsset(node: SceneNode, type: 'svg' | 'png') {
     if (this.parent) this.parent.addAsset(node, type)
     else
-      this.assets[node.name + '.' + type] = () =>
-        node.exportAsync({
-          format: type === 'svg' ? 'SVG' : 'PNG',
+      this.assets[node.name + '.' + type] = async () => {
+        const isSvg = type === 'svg'
+        const data = await node.exportAsync({
+          format: isSvg ? 'SVG' : 'PNG',
+          constraint: isSvg
+            ? undefined
+            : {
+                type: 'SCALE',
+                value: 1.5,
+              },
         })
+        return data
+      }
   }
 
   async render(dep: number = 0): Promise<string> {

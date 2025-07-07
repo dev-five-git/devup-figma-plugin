@@ -4,7 +4,7 @@ module.exports = {
     code: './src/code.ts',
   },
   resolve: {
-    extensions: ['.ts'],
+    extensions: ['.ts', '.js'],
   },
   output: {
     chunkFilename: 'code.js',
