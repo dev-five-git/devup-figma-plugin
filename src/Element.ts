@@ -190,7 +190,7 @@ export class Element {
       case 'INSTANCE': {
         if (this.node.children.length > 1 && (await this.hasSpaceProps())) break
         // has instance type children, skip
-        if (this.node.children.some((child) => child.type === 'INSTANCE')) break
+        // if (this.node.children.some((child) => child.type === 'INSTANCE')) break
         // if child is square, It is an icon asset
         if (
           this.node.width !== this.node.height &&

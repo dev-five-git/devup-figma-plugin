@@ -522,42 +522,42 @@ describe('Element', () => {
             )
           }
         })
-        it('should split Element when children have instance type', async () => {
-          const element = createElement('FRAME', {
-            display: 'flex',
-            'align-items': 'center',
-            'align-self': 'stretch',
-            children: [
-              createNode('INSTANCE', {
-                name: 'Instance',
-                width: '60px',
-                height: '60px',
-                children: [
-                  createNode('VECTOR', {
-                    width: '17.003px',
-                    height: '28.741px',
-                    'flex-shrink': '0',
-                    fill: '#231815',
-                  }),
-                ],
-              }),
-              createNode('VECTOR', {
-                name: 'image',
-                width: '17.003px',
-                height: '28.741px',
-                'flex-shrink': '0',
-                fill: '#231815',
-              }),
-            ],
-          })
-          expect(await element.getComponentType()).toEqual('Flex')
-          expect(await element.render()).toEqual(
-            `<Flex alignItems="center">
-  <Image boxSize="60px" src="/icons/Instance.svg" />
-  <Image w="17px" h="28px" src="/images/image.svg" />
-</Flex>`,
-          )
-        })
+        //         it('should split Element when children have instance type', async () => {
+        //           const element = createElement('FRAME', {
+        //             display: 'flex',
+        //             'align-items': 'center',
+        //             'align-self': 'stretch',
+        //             children: [
+        //               createNode('INSTANCE', {
+        //                 name: 'Instance',
+        //                 width: '60px',
+        //                 height: '60px',
+        //                 children: [
+        //                   createNode('VECTOR', {
+        //                     width: '17.003px',
+        //                     height: '28.741px',
+        //                     'flex-shrink': '0',
+        //                     fill: '#231815',
+        //                   }),
+        //                 ],
+        //               }),
+        //               createNode('VECTOR', {
+        //                 name: 'image',
+        //                 width: '17.003px',
+        //                 height: '28.741px',
+        //                 'flex-shrink': '0',
+        //                 fill: '#231815',
+        //               }),
+        //             ],
+        //           })
+        //           expect(await element.getComponentType()).toEqual('Flex')
+        //           expect(await element.render()).toEqual(
+        //             `<Flex alignItems="center">
+        //   <Image boxSize="60px" src="/icons/Instance.svg" />
+        //   <Image w="17px" h="28px" src="/images/image.svg" />
+        // </Flex>`,
+        //           )
+        //         })
         it('should render Image with aspect ratio', async () => {
           const element = createElement('FRAME', {
             display: 'flex',
@@ -760,6 +760,17 @@ describe('Element', () => {
             ],
           })
           expect(await element.render()).toEqual('<svg>\n  <path/>\n</svg>')
+        }
+        {
+          const element = createElement('VECTOR', {
+            width: '24px',
+            height: '25px',
+            name: 'image',
+            children: [],
+          })
+          expect(await element.render()).toEqual(
+            '<Image w="24px" h="25px" src="/images/image.svg" />',
+          )
         }
       })
     })
