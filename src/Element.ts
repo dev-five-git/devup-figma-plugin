@@ -5,6 +5,7 @@ import {
   filterPropsByChildrenCountAndType,
   fixChildrenText,
   formatSvg,
+  getElementProps,
   organizeProps,
   propsToComponentProps,
   propsToPropsWithTypography,
@@ -12,6 +13,7 @@ import {
 } from './utils'
 import { extractKeyValueFromCssVar } from './utils/extract-key-value-from-css-var'
 import { textSegmentToTypography } from './utils/text-segment-to-typography'
+import { toCamel } from './utils/to-camel'
 import { toPascal } from './utils/to-pascal'
 
 export type ComponentType =
@@ -403,8 +405,40 @@ export class Element {
       .join(' ')
     const body = `${space(dep)}<${componentType}${propsString ? ' ' + propsString : ''}${hasChildren ? '' : ' /'}>${hasChildren ? `\n${space(dep + 1)}${renderChildren}\n` : ''}${hasChildren ? `${space(dep)}</${componentType}>` : ''}`
 
-    if (this.node.type === 'INSTANCE' && this.componentType !== 'Image')
-      return space(dep) + `<${toPascal(this.node.name)} />`
+    if (this.node.type === 'INSTANCE' && this.componentType !== 'Image') {
+      const { componentProperties } = this.node
+      let componentChildren = ''
+      const props = Object.entries(componentProperties)
+        .filter(([key, value]) => {
+          if (
+            value.type === 'TEXT' &&
+            toCamel(key.split('#')[0]) === 'children'
+          ) {
+            componentChildren += value.value
+            return false
+          }
+          return true
+        })
+        .map(getElementProps)
+        .join(' ')
+      const content =
+        space(dep) +
+        `<${toPascal(this.node.name)}${props ? ' ' + props : ''}${
+          !componentChildren
+            ? ' />'
+            : `>\n${space(dep + 1)}${componentChildren}\n${space(dep)}</${toPascal(this.node.name)}>`
+        }`
+
+      if (!this.parent) {
+        const mainComponent = await this.node.getMainComponentAsync()
+        if (mainComponent) {
+          const mainComponentElement = new Element(mainComponent)
+          const mainComponentChildren = await mainComponentElement.render(dep)
+          return `${content}\n\n/*\n${mainComponentChildren}\n*/`
+        }
+      }
+      return content
+    }
 
     if (this.node.type === 'COMPONENT') {
       const componentName = toPascal(this.node.name)

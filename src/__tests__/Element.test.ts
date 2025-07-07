@@ -15,16 +15,20 @@ function createNode(
     layoutSizingHorizontal,
     styledTextSegments = [],
     variantProperties,
+    componentProperties,
+    getMainComponentAsync,
     ...props
   }: {
     [_: string]: any
     characters?: string
     name?: string
+    componentProperties?: ComponentProperties
     textStyleId?: string
     children?: SceneNode[]
     layoutPositioning?: string
     styledTextSegments?: any[]
     variantProperties?: Record<string, string>
+    getMainComponentAsync?: () => Promise<ComponentNode | null>
   } = {},
 ): SceneNode {
   const ret = {
@@ -44,6 +48,8 @@ function createNode(
     fills,
     variantProperties,
     children: children ?? [],
+    componentProperties,
+    getMainComponentAsync: getMainComponentAsync ?? (async () => null),
   } as unknown as SceneNode
   ;(ret as any).children.forEach((child: any) => {
     ;(child as any).parent = ret
@@ -1213,10 +1219,69 @@ describe('Element', () => {
 
   describe('Instance', () => {
     it('should render Instance', async () => {
-      const element = createElement('INSTANCE', {
-        name: 'Instance',
-      })
-      expect(await element.render()).toEqual('<Instance />')
+      {
+        const element = createElement('INSTANCE', {
+          name: 'Instance',
+          componentProperties: {},
+        })
+        expect(await element.render()).toEqual('<Instance />')
+      }
+      {
+        const element = createElement('INSTANCE', {
+          name: 'Instance',
+          componentProperties: {
+            children: { type: 'TEXT', value: 'Hello' },
+          },
+        })
+        expect(await element.render()).toEqual(
+          '<Instance>\n  Hello\n</Instance>',
+        )
+      }
+      {
+        const element = createElement('INSTANCE', {
+          name: 'Instance',
+          componentProperties: {
+            children: { type: 'TEXT', value: 'Hello' },
+            color: { type: 'TEXT', value: 'red' },
+            width: { type: 'TEXT', value: '100px' },
+            height: { type: 'TEXT', value: '100px' },
+            danger: { type: 'BOOLEAN', value: true },
+          },
+        })
+        expect(await element.render()).toEqual(
+          '<Instance color="red" width="100px" height="100px" danger>\n  Hello\n</Instance>',
+        )
+      }
+      {
+        const element = createElement('INSTANCE', {
+          name: 'Instance',
+          componentProperties: {
+            children: { type: 'TEXT', value: 'Hello' },
+            color: { type: 'TEXT', value: 'red' },
+            width: { type: 'TEXT', value: '100px' },
+            height: { type: 'TEXT', value: '100px' },
+            danger: { type: 'BOOLEAN', value: true },
+          },
+          getMainComponentAsync: async () =>
+            createNode('COMPONENT', {
+              name: 'MainComponent',
+              children: [],
+            }),
+        })
+        expect(await element.render()).toEqual(
+          `<Instance color="red" width="100px" height="100px" danger>
+  Hello
+</Instance>
+
+/*
+export function MainComponent() {
+  return (
+    <Box />
+  )
+}
+*/`,
+        )
+      }
     })
   })
 

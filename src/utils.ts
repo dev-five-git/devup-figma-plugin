@@ -652,7 +652,14 @@ export function createInterface(
   if (!props || Object.keys(props).length === 0) return null
   return `export interface ${componentName}Props {
 ${Object.keys(props)
-  .map((key) => `  ${key}: unknown`)
+  .map((key) => `  ${toCamel(key)}: unknown`)
   .join('\n')}
 }`
+}
+
+export function getElementProps(props: [string, ComponentProperties[string]]) {
+  const [key, value] = props
+  const propKey = toCamel(key.split('#')[0])
+  if (value.type === 'BOOLEAN' && value.value) return propKey
+  return `${propKey}="${value.value}"`
 }
