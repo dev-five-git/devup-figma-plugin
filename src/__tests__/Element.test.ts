@@ -994,7 +994,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
-          '<>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    a\n  </Text>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="700" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    b\n  </Text>\n</>',
+          '<Text>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    a\n  </Text>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="700" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    b\n  </Text>\n</Text>',
         )
       })
       it('should render Text with list', async () => {
@@ -1066,6 +1066,215 @@ describe('Element', () => {
             '<Text as="ol" my="0px" pl="1.5em" fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  <li>a</li>\n</Text>',
           )
         }
+      })
+      it('should render many Text with typography and color', async () => {
+        const getStyleByIdAsync = vi
+          .fn()
+          .mockResolvedValueOnce({
+            fontName: {
+              family: 'Roboto',
+              style: 'Italic',
+            },
+            name: 'button-title',
+          })
+          .mockResolvedValueOnce({
+            fontName: {
+              family: 'Roboto',
+              style: 'Bold',
+            },
+            name: 'button-title-2',
+          })
+          .mockResolvedValue({
+            fontName: {
+              family: 'Roboto',
+              style: 'Italic',
+            },
+            name: 'button-title',
+          })
+
+        const getVariableByIdAsync = vi.fn().mockResolvedValueOnce({
+          name: 'red',
+        })
+
+        ;(globalThis as any).figma = {
+          getStyleByIdAsync,
+          variables: {
+            getVariableByIdAsync,
+          },
+          util: {
+            rgba: (color: RGBA) => {
+              return {
+                r: color.r,
+                g: color.g,
+                b: color.b,
+                a: color.a ?? 1,
+              }
+            },
+          },
+        }
+        const element = createElement('TEXT', {
+          characters: 'a',
+          'font-family': 'Roboto',
+          'font-style': 'Italic',
+          'font-weight': '400',
+          'font-size': '16px',
+          textStyleId: '1',
+          styledTextSegments: [
+            {
+              characters: 'a ',
+              start: 0,
+              end: 1,
+              textStyleId: '1',
+              fontName: {
+                family: 'Roboto',
+                style: 'Italic',
+              },
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              fontSize: 16,
+              listOptions: {
+                type: 'NONE',
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  color: {
+                    r: 1,
+                    g: 0,
+                    b: 0,
+                    a: 1,
+                  },
+                  visible: true,
+                },
+              ],
+            },
+            {
+              textStyleId: '2',
+              characters: 'b',
+              start: 0,
+              end: 1,
+              fontName: {
+                family: 'Roboto',
+                style: 'Bold',
+              },
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              fontSize: 16,
+              listOptions: {
+                type: 'NONE',
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                    a: 1,
+                  },
+                  visible: true,
+                },
+              ],
+            },
+            {
+              textStyleId: '1',
+              characters: ' c',
+              start: 0,
+              end: 1,
+              fontName: {
+                family: 'Roboto',
+                style: 'Italic',
+              },
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              fontSize: 16,
+              listOptions: {
+                type: 'NONE',
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  color: {
+                    r: 1,
+                    g: 0,
+                    b: 0,
+                    a: 1,
+                  },
+                  visible: true,
+                },
+              ],
+            },
+            {
+              textStyleId: '1',
+              characters: ' d ',
+              start: 0,
+              end: 1,
+              fontName: {
+                family: 'Roboto',
+                style: 'Italic',
+              },
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              letterSpacing: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              lineHeight: {
+                value: 20,
+                unit: 'PIXELS',
+              },
+              fontSize: 16,
+              listOptions: {
+                type: 'NONE',
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  color: {
+                    r: 1,
+                    g: 0,
+                    b: 0,
+                    a: 1,
+                  },
+                  boundVariables: {
+                    color: {
+                      id: '1',
+                    },
+                  },
+                  visible: true,
+                },
+              ],
+            },
+          ],
+        })
+        expect(await element.getComponentType()).toEqual('Text')
+        expect(await element.render()).toEqual(
+          '<Text color="#FF0000" typography="buttonTitle">\n  a{" "}\n  <Text color="#FFFFFF" typography="buttonTitle2">\n    b\n  </Text>\n  {" "}c\n  <Text color="$red">\n    {" "}d{" "}\n  </Text>\n</Text>',
+        )
       })
     })
     describe('Flex', () => {

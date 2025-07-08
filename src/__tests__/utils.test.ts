@@ -236,6 +236,11 @@ describe('formatSvg', () => {
 
 describe('fixChildrenText', () => {
   it.each([
+    ['aa', 'aa'],
+    [' aa', '{" "}aa'],
+    ['aa ', 'aa{" "}'],
+    [' aa ', '{" "}aa{" "}'],
+    ['  aa   ', '{"  "}aa{"   "}'],
     ['{', '{"{"}'],
     ['}', '{"}"}'],
     ['&', '{"&"}'],

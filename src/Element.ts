@@ -1,5 +1,6 @@
 import {
   checkSvgImageChildrenType,
+  colorFromFills,
   createInterface,
   cssToProps,
   filterPropsByChildrenCountAndType,
@@ -325,34 +326,73 @@ export class Element {
 
     if (this.node.type === 'TEXT') {
       const segs = this.node.getStyledTextSegments(SEGMENT_TYPE)
+
+      // select main color, 가장 자주 사용되는 색상
+      const propsArray = await Promise.all(
+        segs.map(async (seg) =>
+          propsToComponentProps(
+            organizeProps(
+              Object.fromEntries(
+                Object.entries(
+                  await propsToPropsWithTypography(
+                    {
+                      ...mergedProps,
+                      ...((await textSegmentToTypography(seg)) as any),
+                      color: await colorFromFills(seg.fills as any),
+                    },
+                    seg.textStyleId,
+                  ),
+                )
+                  .filter(([_, value]) => Boolean(value))
+                  .map(([key, value]) => [key, String(value)]),
+              ),
+            ),
+            'Text',
+            1,
+          ),
+        ),
+      )
+      let mainColor = ''
+      let mainColorCount = 0
+      let mainTypography = ''
+      let mainTypographyCount = 0
+
+      propsArray.forEach((props) => {
+        const filterdColor = propsArray.filter((p) => p.color === props.color)
+        if (filterdColor.length > mainColorCount) {
+          mainColor = props.color
+          mainColorCount = filterdColor.length
+        }
+
+        const filterdTypography = propsArray.filter(
+          (p) => p.typography === props.typography,
+        )
+        if (filterdTypography.length > mainTypographyCount) {
+          mainTypography = props.typography
+          mainTypographyCount = filterdTypography.length
+        }
+      })
+
       const children = (
         await Promise.all(
-          segs.map(async (seg) => {
-            const props = propsToComponentProps(
-              organizeProps(
-                Object.fromEntries(
-                  Object.entries(
-                    await propsToPropsWithTypography(
-                      {
-                        ...mergedProps,
-                        ...((await textSegmentToTypography(seg)) as any),
-                      },
-                      seg.textStyleId,
-                    ),
-                  )
-                    .filter(([_, value]) => Boolean(value))
-                    .map(([key, value]) => [key, String(value)]),
-                ),
-              ),
-              'Text',
-              1,
-            )
+          segs.map(async (seg, idx) => {
+            const props = propsArray[idx]
+            if (segs.length > 1 && mainColor === props.color) delete props.color
+            if (segs.length > 1 && mainTypography === props.typography)
+              delete props.typography
             let text = fixChildrenText(seg.characters)
             let textComponent: 'ul' | 'ol' | null = null
             const textDep = segs.length > 1 ? dep + 2 : dep + 1
 
+            const propsStr = Object.entries(props)
+              .map(([key, value]) => `${key}="${value}"`)
+              .join(' ')
+            const pureText = segs.length > 1 && !propsStr
+
             if (seg.listOptions.type === 'NONE') {
-              text = space(textDep) + text.replaceAll('\n', '<br />')
+              text =
+                space(pureText ? textDep - 1 : textDep) +
+                text.replaceAll('\n', '<br />')
             } else {
               switch (seg.listOptions.type) {
                 case 'UNORDERED': {
@@ -369,18 +409,29 @@ export class Element {
                 .map((line) => `${space(textDep)}<li>${line}</li>`)
                 .join('\n')
             }
+            if (pureText) return text
 
             return `${segs.length > 1 ? space(textDep - 1) : ''}<Text${
               textComponent ? ` as="${textComponent}" my="0px" pl="1.5em"` : ''
-            } ${Object.entries(props)
-              .map(([key, value]) => `${key}="${value}"`)
-              .join(' ')}>\n${text}\n${space(textDep - 1)}</Text>`
+            } ${propsStr}>\n${text}\n${space(textDep - 1)}</Text>`
           }),
         )
       ).join('\n')
+
+      const propsStr = Object.entries(
+        organizeProps({
+          color: mainColor,
+          typography: mainTypography,
+        }),
+      )
+        .map(([key, value]) => `${key}="${value}"`)
+        .join(' ')
+
       return (
         space(dep) +
-        (segs.length > 1 ? `<>\n${children}\n${space(dep)}</>` : children)
+        (segs.length > 1
+          ? `<Text${propsStr ? ' ' + propsStr : ''}>\n${children}\n${space(dep)}</Text>`
+          : children)
       )
     }
 

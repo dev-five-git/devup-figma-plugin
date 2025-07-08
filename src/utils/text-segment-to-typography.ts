@@ -1,4 +1,4 @@
-import { DevupTypography } from '../devup/types'
+import { DevupTypography } from '../commands/devup/types'
 
 export function textSegmentToTypography(
   segment: Pick<

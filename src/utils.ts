@@ -1,4 +1,5 @@
 import { ComponentType } from './Element'
+import { rgbaToHex } from './utils/rgba-to-hex'
 import { toCamel } from './utils/to-camel'
 
 const PROPS_DEFAULT = {
@@ -662,7 +663,9 @@ export function formatSvg(svg: string, dep: number = 0) {
     .trimEnd()
 }
 export function fixChildrenText(children: string) {
-  return children.replace(/([{}&<>]+)/g, '{"$1"}')
+  return children
+    .replace(/([{}&<>]+)/g, '{"$1"}')
+    .replace(/(^\s+)|(\s+$)/g, (match) => `{"${' '.repeat(match.length)}"}`)
 }
 
 export function createInterface(
@@ -682,4 +685,28 @@ export function getElementProps(props: [string, ComponentProperties[string]]) {
   const propKey = toCamel(key.split('#')[0])
   if (value.type === 'BOOLEAN' && value.value) return propKey
   return `${propKey}="${value.value}"`
+}
+
+export const colorFromFills = async (
+  fills:
+    | ReadonlyArray<
+        Paint & {
+          boundVariables?: { color: VariableAlias }
+          color?: RGB
+        }
+      >
+    | undefined,
+): Promise<string> => {
+  const fill = fills?.find((fill) => fill.visible)
+  if (fill && fill.color) {
+    if (fill.boundVariables?.color?.id) {
+      const variable = await figma.variables.getVariableByIdAsync(
+        fill.boundVariables.color.id as string,
+      )
+      if (variable?.name) return `$${variable.name}`
+    }
+
+    return rgbaToHex(figma.util.rgba(fill.color))
+  }
+  return ''
 }
