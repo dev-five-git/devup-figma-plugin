@@ -1,5 +1,5 @@
 import { downloadFile } from '../../utils/download-file'
-import { exportAssets } from '../exportAssets'
+import { exportComponents } from '../exportComponents'
 vi.mock('download-file', () => ({
   downloadFile: vi.fn().mockResolvedValue(undefined),
 }))
@@ -74,7 +74,7 @@ const notifyMock = vi.fn()
 const showUIMock = vi.fn()
 const postMessageMock = vi.fn()
 
-describe('exportAssets', () => {
+describe('exportComponents', () => {
   beforeEach(() => {
     ;(globalThis as any).figma = {
       currentPage: {
@@ -92,16 +92,16 @@ describe('exportAssets', () => {
     vi.resetAllMocks()
   })
 
-  it('should notify and return if no assets found', async () => {
+  it('should notify and return if no components found', async () => {
     const node = createNode('RECTANGLE', {
       fills: [],
     })
     ;(globalThis as any).figma.currentPage.selection = [node]
-    await exportAssets()
-    expect(notifyMock).toHaveBeenCalledWith('No assets found')
+    await exportComponents()
+    expect(notifyMock).toHaveBeenCalledWith('No components found')
   })
 
-  it('should not export assets if all children are invisible', async () => {
+  it('should not export components if all children are invisible', async () => {
     const node = createNode('GROUP', {
       fills: [],
       children: [
@@ -112,13 +112,14 @@ describe('exportAssets', () => {
       ],
     })
     ;(globalThis as any).figma.currentPage.selection = [node]
-    await exportAssets()
+    await exportComponents()
     expect(downloadFile).not.toHaveBeenCalled()
   })
 
-  it('should export assets and call downloadFile', async () => {
-    const node = createNode('RECTANGLE', {
+  it('should export components and call downloadFile', async () => {
+    const node = createNode('COMPONENT', {
       fills: [],
+      name: 'Component',
       children: [
         createNode('VECTOR', {
           fills: [],
@@ -143,29 +144,28 @@ describe('exportAssets', () => {
       ],
     })
     ;(globalThis as any).figma.currentPage.selection = [node]
-    await exportAssets()
+    await exportComponents()
     expect(downloadFile).toHaveBeenCalledWith(
       'TestPage.zip',
       expect.any(Uint8Array),
     )
     expect(notifyMock).toHaveBeenCalledWith(
-      'Assets exported',
+      'Components exported',
       expect.any(Object),
     )
   })
 
-  it('should raise error if exportAsync fails', async () => {
-    const node = createNode('RECTANGLE', {
-      fills: [
-        {
-          type: 'IMAGE',
-        },
+  it('should raise error', async () => {
+    const node = createNode('COMPONENT', {
+      children: [
+        createNode('RECTANGLE', {
+          fills: [],
+        }),
       ],
     })
     ;(globalThis as any).figma.currentPage.selection = [node]
-    ;(node.exportAsync as any) = vi.fn().mockRejectedValue('test')
-    await exportAssets()
-    expect(notifyMock).toHaveBeenCalledWith('Error exporting assets', {
+    await exportComponents()
+    expect(notifyMock).toHaveBeenCalledWith('Error exporting components', {
       timeout: 3000,
       error: true,
     })

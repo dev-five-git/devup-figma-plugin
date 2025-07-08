@@ -24,5 +24,5 @@ export async function downloadFile(
   return pro
 }
 function downloadFileUi() {
-  return `<script>onmessage=(event)=>{console.log(event);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([event.data.pluginMessage.data]));a.download=event.data.pluginMessage.fileName;a.click();URL.revokeObjectURL(a.href);window.parent.postMessage({ pluginMessage: undefined }, '*')}</script>`
+  return `<script>onmessage=(event)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([event.data.pluginMessage.data]));a.download=event.data.pluginMessage.fileName;a.click();URL.revokeObjectURL(a.href);window.parent.postMessage({ pluginMessage: undefined }, '*')}</script>`
 }

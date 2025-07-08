@@ -591,10 +591,7 @@ export async function checkSvgImageChildrenType(
       return false
     }
     if (child.type === 'RECTANGLE') {
-      if (
-        (child.fills as any).length === 1 &&
-        (child.fills as any)[0].type === 'IMAGE'
-      ) {
+      if ((child.fills as any).find((fill: any) => fill.type === 'IMAGE')) {
         return null
       }
       continue

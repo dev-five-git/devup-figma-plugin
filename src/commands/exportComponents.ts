@@ -3,40 +3,40 @@ import JSZip from 'jszip'
 import { Element } from '../Element'
 import { downloadFile } from '../utils/download-file'
 
-export async function exportAssets() {
+export async function exportComponents() {
   try {
-    figma.notify('Exporting assets...')
+    figma.notify('Exporting components...')
     const elements = await Promise.all(
       figma.currentPage.selection.map(async (node) => new Element(node)),
     )
 
-    const assets = await Promise.all(
-      elements.map(async (element) => element.getAssets()),
+    const components = await Promise.all(
+      elements.map((element) => element.getComponents()),
     )
 
-    const assetCount = assets.reduce(
-      (acc, asset) => acc + Object.keys(asset).length,
+    const componentCount = components.reduce(
+      (acc, component) => acc + Object.keys(component).length,
       0,
     )
 
-    if (assetCount === 0) {
-      figma.notify('No assets found')
+    if (componentCount === 0) {
+      figma.notify('No components found')
       return
     }
 
-    figma.notify(`Assets exported ${assetCount} assets`, {
+    figma.notify(`Components exported ${componentCount} components`, {
       timeout: 3000,
     })
     const zip = new JSZip()
-    for (const asset of assets) {
-      for (const [name, data] of Object.entries(asset)) {
+    for (const component of components) {
+      for (const [name, data] of Object.entries(component)) {
         zip.file(name, await data())
       }
     }
 
     await Promise.all(
-      assets.map(async (asset) => {
-        return Object.entries(asset).map(async ([name, data]) => {
+      components.map(async (component) => {
+        return Object.entries(component).map(async ([name, data]) => {
           const content = await data()
           zip.file(name, content)
         })
@@ -46,12 +46,12 @@ export async function exportAssets() {
       `${figma.currentPage.name}.zip`,
       await zip.generateAsync({ type: 'uint8array' }),
     )
-    figma.notify('Assets exported', {
+    figma.notify('Components exported', {
       timeout: 3000,
     })
   } catch (error) {
     console.error(error)
-    figma.notify('Error exporting assets', {
+    figma.notify('Error exporting components', {
       timeout: 3000,
       error: true,
     })

@@ -56,6 +56,7 @@ export class Element {
   componentType?: ComponentType
   skipChildren: boolean = false
   assets: Record<string, () => Promise<Uint8Array>> = {}
+  components: Record<string, () => Promise<string>> = {}
   constructor(node: SceneNode, parent?: Element) {
     this.node = node
     this.parent = parent
@@ -174,14 +175,25 @@ export class Element {
         break
       case 'RECTANGLE': {
         if (
-          (this.node.fills as any).length === 1 &&
-          (this.node.fills as any)[0].type === 'IMAGE'
+          (this.node.fills as any).find((fill: any) => fill.type === 'IMAGE')
         ) {
-          this.componentType = 'Image'
+          const css = await this.getCss()
+          this.componentType =
+            (this.node.fills as any).length === 1 ? 'Image' : 'Box'
           Object.assign(
             this.additionalProps,
             this.getImageProps('images', 'png'),
           )
+          if (this.componentType !== 'Image') {
+            this.additionalProps.bg = css.background.replace(
+              '<path-to-image>',
+              this.additionalProps.src,
+            )
+
+            delete this.additionalProps.src
+          } else {
+            this.additionalProps.bg = ''
+          }
           this.addAsset(this.node, 'png')
         }
         break
@@ -266,20 +278,43 @@ export class Element {
     return this.assets
   }
   addAsset(node: SceneNode, type: 'svg' | 'png') {
+    if (
+      type === 'svg' &&
+      this.getChildren().length &&
+      this.getChildren().every((c) => typeof c !== 'string' && !c.node.visible)
+    ) {
+      return
+    }
     if (this.parent) this.parent.addAsset(node, type)
     else
       this.assets[node.name + '.' + type] = async () => {
         const isSvg = type === 'svg'
-        const data = await node.exportAsync({
+        const options: ExportSettings = {
           format: isSvg ? 'SVG' : 'PNG',
-          constraint: isSvg
-            ? undefined
-            : {
-                type: 'SCALE',
-                value: 1.5,
-              },
-        })
+        }
+        if (options.format !== 'SVG') {
+          ;(options as any).constraint = {
+            type: 'SCALE',
+            value: 1.5,
+          }
+        } else {
+          ;(options as any).useAbsoluteBounds = true
+        }
+        const data = await node.exportAsync(options)
         return data
+      }
+  }
+
+  async getComponents(): Promise<Record<string, () => Promise<string>>> {
+    await this.render()
+    return this.components
+  }
+
+  addComponent(node: SceneNode) {
+    if (this.parent) this.parent.addComponent(node)
+    else
+      this.components[toPascal(node.name) + '.tsx'] = async () => {
+        return (await new Element(node).render()).trim()
       }
   }
 
@@ -303,6 +338,7 @@ export class Element {
       const value = (
         await this.node.exportAsync({
           format: 'SVG_STRING',
+          useAbsoluteBounds: true,
         })
       ).toString()
 
@@ -492,6 +528,7 @@ export class Element {
     }
 
     if (this.node.type === 'COMPONENT') {
+      this.addComponent(this.node)
       const componentName = toPascal(this.node.name)
       const interfaceDecl = createInterface(
         componentName,

@@ -17,6 +17,7 @@ function createNode(
     variantProperties,
     componentProperties,
     getMainComponentAsync,
+    visible = true,
     ...props
   }: {
     [_: string]: any
@@ -40,7 +41,7 @@ function createNode(
     textStyleId,
     parent,
     characters,
-    visible: true,
+    visible,
     layoutPositioning,
     width: props.width ? parseInt(props.width) : undefined,
     height: props.height ? parseInt(props.height) : undefined,
@@ -649,6 +650,7 @@ describe('Element', () => {
                   width: '6px',
                   height: '6px',
                   name: 'image',
+                  background: 'url(/images/image.png)',
                   fills: [
                     {
                       type: 'IMAGE',
@@ -693,6 +695,31 @@ describe('Element', () => {
   <Box w="100%" h="6px" />
 </Flex>`)
         })
+      })
+
+      it('should render Rectangle with multiple fills', async () => {
+        const element = createElement('RECTANGLE', {
+          width: '6px',
+          height: '6px',
+          background: 'url(/images/image.png)',
+          fills: [
+            {
+              type: 'SOLID',
+              color: {
+                r: 1,
+                g: 0,
+                b: 0,
+                a: 1,
+              },
+            },
+            {
+              type: 'IMAGE',
+            },
+          ],
+        })
+        expect(await element.render()).toEqual(
+          `<Box bg="url(/images/image.png)" boxSize="6px" />`,
+        )
       })
     })
 

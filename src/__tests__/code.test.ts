@@ -1,8 +1,10 @@
 import { exportDevup, importDevup } from '../commands/devup'
 import { exportAssets } from '../commands/exportAssets'
+import { exportComponents } from '../commands/exportComponents'
 
 vi.mock('../commands/devup')
 vi.mock('../commands/exportAssets')
+vi.mock('../commands/exportComponents')
 
 beforeEach(() => {
   vi.resetModules()
@@ -47,7 +49,18 @@ it('should export assets', async () => {
   expect(exportAssets).toBeCalledTimes(1)
   expect(closePlugin).toBeCalledTimes(1)
 })
-
+it('should export components', async () => {
+  const closePlugin = vi.fn()
+  ;(globalThis as any).figma = {
+    editorType: 'figma',
+    command: 'export-components',
+    closePlugin,
+  }
+  vi.mocked(exportComponents).mockResolvedValueOnce()
+  await import('../code')
+  expect(exportComponents).toBeCalledTimes(1)
+  expect(closePlugin).toBeCalledTimes(1)
+})
 describe('codegen', () => {
   it('should generate code', async () => {
     const closePlugin = vi.fn()

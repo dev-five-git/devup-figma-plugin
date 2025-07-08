@@ -1,5 +1,6 @@
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
+import { exportComponents } from './commands/exportComponents'
 import { Element } from './Element'
 
 if (figma.editorType === 'dev' && figma.mode === 'codegen') {
@@ -22,5 +23,8 @@ switch (figma.command) {
     break
   case 'export-assets':
     exportAssets().finally(() => figma.closePlugin())
+    break
+  case 'export-components':
+    exportComponents().finally(() => figma.closePlugin())
     break
 }

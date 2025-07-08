@@ -36,6 +36,10 @@
     {
       "name": "Export Assets",
       "command": "export-assets"
+    },
+    {
+      "name": "Export Components",
+      "command": "export-components"
     }
   ]
 }
