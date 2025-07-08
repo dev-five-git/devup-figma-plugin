@@ -242,6 +242,26 @@ const DEFAULT_PROPS_MAP = {
     default: /\b0(px)?\b/,
     value: null,
   },
+  textDecorationSkipInk: {
+    default: /\bauto\b/,
+    value: null,
+  },
+  textDecorationThickness: {
+    default: /\bauto\b/,
+    value: null,
+  },
+  textDecorationStyle: {
+    default: /\bsolid\b/,
+    value: null,
+  },
+  textDecorationColor: {
+    default: /\bauto\b/,
+    value: null,
+  },
+  textUnderlineOffset: {
+    default: /\bauto\b/,
+    value: null,
+  },
 } as const
 
 const CONVERT_PROPS_MAP = {
