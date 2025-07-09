@@ -164,10 +164,12 @@ describe('exportComponents', () => {
       ],
     })
     ;(globalThis as any).figma.currentPage.selection = [node]
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     await exportComponents()
     expect(notifyMock).toHaveBeenCalledWith('Error exporting components', {
       timeout: 3000,
       error: true,
     })
+    vi.spyOn(console, 'error').mockRestore()
   })
 })

@@ -163,11 +163,13 @@ describe('exportAssets', () => {
       ],
     })
     ;(globalThis as any).figma.currentPage.selection = [node]
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     ;(node.exportAsync as any) = vi.fn().mockRejectedValue('test')
     await exportAssets()
     expect(notifyMock).toHaveBeenCalledWith('Error exporting assets', {
       timeout: 3000,
       error: true,
     })
+    vi.spyOn(console, 'error').mockRestore()
   })
 })

@@ -196,6 +196,9 @@ export class Element {
           }
           this.addAsset(this.node, 'png')
         }
+        const css = await this.getCss()
+        if (this.node.width === 1 && !('width' in css))
+          this.additionalProps.w = '1px'
         break
       }
       case 'FRAME':
@@ -286,8 +289,14 @@ export class Element {
       return
     }
     if (this.parent) this.parent.addAsset(node, type)
-    else
-      this.assets[node.name + '.' + type] = async () => {
+    else {
+      let key = node.name
+      let idx = 0
+      while (key + '.' + type in this.assets) {
+        key = node.name + '_' + idx
+        idx++
+      }
+      this.assets[key + '.' + type] = async () => {
         const isSvg = type === 'svg'
         const options: ExportSettings = {
           format: isSvg ? 'SVG' : 'PNG',
@@ -303,6 +312,7 @@ export class Element {
         const data = await node.exportAsync(options)
         return data
       }
+    }
   }
 
   async getComponents(): Promise<Record<string, () => Promise<string>>> {

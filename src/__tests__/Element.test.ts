@@ -18,6 +18,7 @@ function createNode(
     componentProperties,
     getMainComponentAsync,
     visible = true,
+    css,
     ...props
   }: {
     [_: string]: any
@@ -34,7 +35,7 @@ function createNode(
 ): SceneNode {
   const ret = {
     type,
-    getCSSAsync: async () => props,
+    getCSSAsync: async () => css ?? props,
     exportAsync: async () => '<svg>\n<path/>\n</svg>',
     getStyledTextSegments: () => styledTextSegments,
     layoutSizingHorizontal,
@@ -1450,6 +1451,15 @@ describe('Element', () => {
         expect(await element.getComponentType()).toEqual('Box')
         expect(await element.render()).toEqual('<Box bg="red" />')
       }
+      {
+        const element = createElement('RECTANGLE', {
+          width: '1px',
+          height: '10px',
+          fills: [],
+          css: { height: '10px' },
+        })
+        expect(await element.render()).toEqual('<Box h="10px" w="1px" />')
+      }
     })
   })
 
@@ -1696,6 +1706,7 @@ export function Component(props: ComponentProps) {
         await element.render()
         expect(await element.getAssets()).toEqual({
           'image.svg': expect.any(Function),
+          'image_0.svg': expect.any(Function),
         })
       }
     })
