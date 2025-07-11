@@ -9,6 +9,10 @@ import {
 describe('organizeProps', () => {
   it('should organize props', () => {
     expect(organizeProps({})).toEqual({})
+
+    expect(organizeProps({ aspectRatio: '1/1' })).toEqual({
+      aspectRatio: '1',
+    })
   })
   it.each(['p', 'm'])('should organize space props', (pro) => {
     expect(organizeProps({ [pro]: '10px 10px 10px 10px' })).toEqual({
@@ -66,6 +70,11 @@ describe('organizeProps', () => {
       [pro + 'y']: '10px',
       [pro + 'r']: '8px',
       [pro + 'l']: '6px',
+    })
+    expect(organizeProps({ [pro]: '10px 9px 8px 9px' })).toEqual({
+      [pro + 't']: '10px',
+      [pro + 'x']: '9px',
+      [pro + 'b']: '8px',
     })
   })
 

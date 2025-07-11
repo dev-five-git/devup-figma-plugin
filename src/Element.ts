@@ -1,34 +1,23 @@
+import { render, renderFunction, renderInterfaceFromNode } from './render'
+import { type ComponentType, type DevupNode, InstanceSymbol } from './types'
 import {
+  addSelectorProps,
   checkSvgImageChildrenType,
   colorFromFills,
-  createInterface,
   cssToProps,
   filterPropsByChildrenCountAndType,
   fixChildrenText,
   formatSvg,
-  getElementProps,
+  getComponentName,
   organizeProps,
   propsToComponentProps,
   propsToPropsWithTypography,
-  space,
 } from './utils'
 import { extractKeyValueFromCssVar } from './utils/extract-key-value-from-css-var'
 import { textSegmentToTypography } from './utils/text-segment-to-typography'
 import { toCamel } from './utils/to-camel'
 import { toPascal } from './utils/to-pascal'
 
-export type ComponentType =
-  | 'Fragment'
-  | 'Box'
-  | 'Text'
-  | 'Button'
-  | 'Input'
-  | 'Flex'
-  | 'VStack'
-  | 'Center'
-  | 'Image'
-  | 'Grid'
-  | 'svg'
 const SEGMENT_TYPE = [
   'fontName',
   'fontWeight',
@@ -45,27 +34,25 @@ const SEGMENT_TYPE = [
   'hyperlink',
 ] as (keyof Omit<StyledTextSegment, 'characters' | 'start' | 'end'>)[]
 
-export class Element {
-  node: SceneNode
+export class Element<T extends SceneNode = SceneNode> {
+  node: T
   props?: Record<string, string>
   css?: Record<string, string>
   additionalProps?: Record<string, string>
-  parent?: Element
+  parent?: Element<SceneNode>
   // for svg
   svgVarKeyValue?: [string, string]
   componentType?: ComponentType
   skipChildren: boolean = false
   assets: Record<string, () => Promise<Uint8Array>> = {}
   components: Record<string, () => Promise<string>> = {}
-  constructor(node: SceneNode, parent?: Element) {
+  constructor(node: T, parent?: Element<T>) {
     this.node = node
     this.parent = parent
   }
   async getCss(): Promise<Record<string, string>> {
     if (this.css) return this.css
-    this.css = await this.node.getCSSAsync().catch(() => ({
-      error: 'getCSSAsync Error',
-    }))
+    this.css = await this.node.getCSSAsync()
     if (this.css['width']?.endsWith('px') && this.node.parent) {
       if (
         this.node.parent.type === 'SECTION' ||
@@ -85,7 +72,6 @@ export class Element {
     return this.css
   }
   async getProps(): Promise<Record<string, string>> {
-    if (this.props) return this.props
     return (this.props = cssToProps(await this.getCss()))
   }
 
@@ -207,9 +193,6 @@ export class Element {
       case 'COMPONENT':
       case 'INSTANCE': {
         if (this.node.children.length > 1 && (await this.hasSpaceProps())) break
-        // has instance type children, skip
-        // if (this.node.children.some((child) => child.type === 'INSTANCE')) break
-        // if child is square, It is an icon asset
         if (
           this.node.width !== this.node.height &&
           this.node.children.length === 1 &&
@@ -277,7 +260,7 @@ export class Element {
   }
 
   async getAssets(): Promise<Record<string, () => Promise<Uint8Array>>> {
-    await this.render()
+    await this.run()
     return this.assets
   }
   addAsset(node: SceneNode, type: 'svg' | 'png') {
@@ -316,29 +299,105 @@ export class Element {
   }
 
   async getComponents(): Promise<Record<string, () => Promise<string>>> {
-    await this.render()
+    await this.run()
     return this.components
   }
 
   addComponent(node: SceneNode) {
-    if (this.parent) this.parent.addComponent(node)
-    else
-      this.components[toPascal(node.name) + '.tsx'] = async () => {
-        return (await new Element(node).render()).trim()
-      }
+    this.components[toPascal(node.name) + '.tsx'] = async () => {
+      return await new Element(node).render()
+    }
   }
 
-  async render(dep: number = 0): Promise<string> {
-    if (!this.node.visible) return ''
+  async render(): Promise<string> {
+    const result = await this.run()
+
+    if (!result) return ''
 
     if (this.node.type === 'COMPONENT_SET') {
-      return (
-        await Promise.all(
-          this.node.children
-            .map((child) => new Element(child, this))
-            .map((child) => child.render(dep)),
+      const componentName = getComponentName(this.node)
+
+      const interfaceDecl = await renderInterfaceFromNode(this.node)
+      return `${interfaceDecl ? interfaceDecl + '\n\n' : ''}${renderFunction(componentName, result, !!interfaceDecl)}`
+    }
+    if (this.node.type === 'COMPONENT') {
+      const componentName = getComponentName(this.node)
+      const interfaceDecl = await renderInterfaceFromNode(this.node)
+      return `${interfaceDecl ? interfaceDecl + '\n\n' : ''}${renderFunction(componentName, result, !!interfaceDecl, this.node.variantProperties)}`
+    }
+    if (this.node.type === 'INSTANCE') {
+      const mainComponent = await this.node.getMainComponentAsync()
+      if (mainComponent) {
+        return `${render(result)}\n\n/*\n${await new Element(mainComponent).render()}\n*/`
+      }
+    }
+
+    return render(result)
+  }
+
+  async run(dep: number = 0): Promise<DevupNode | null> {
+    if (!this.node.visible) return null
+
+    if (this.node.type === 'COMPONENT_SET') {
+      this.addComponent(this.node)
+      const defaultVariantProperties =
+        this.node.defaultVariant.variantProperties ?? {}
+      const hasEffect = Object.keys(
+        this.node.componentPropertyDefinitions,
+      ).some((prop) => toCamel(prop.split('#')[0]) === 'effect')
+      const elements = this.node.children
+        .filter((child) => child.type === 'COMPONENT')
+        .map((child) => new Element(child))
+      if (elements.length === 0) return null
+      const defaultElement = new Element(this.node.defaultVariant)
+      const defaultEffectElements = hasEffect
+        ? elements
+            .map((el) => {
+              const { variantProperties } = el.node
+              const effect = Object.entries(variantProperties!).find(
+                ([key, _]) => key.toLowerCase() === 'effect',
+              )
+              return [effect?.[1], el] as const
+            })
+            .filter(([effect, el]) => {
+              if (effect?.toLowerCase() === 'default') return false
+              const { variantProperties } = el.node
+              for (const [key, value] of Object.entries(variantProperties!)) {
+                if (key.toLowerCase() === 'effect') continue
+                const [_, defaultValue] = Object.entries(
+                  defaultVariantProperties,
+                ).find(([_key, _]) => key.toLowerCase() === _key.toLowerCase())!
+                if (defaultValue?.toLowerCase() !== value.toLowerCase())
+                  return false
+              }
+              return true
+            })
+        : elements.map((el) => [undefined, el] as const)
+
+      const resultInfo = await defaultElement!.run(dep)
+
+      if (hasEffect) {
+        const promiseObj: Record<
+          string,
+          Promise<DevupNode | null>
+        > = defaultEffectElements.reduce(
+          (acc, el) => {
+            acc[toCamel(el[0]!)] = el[1].run(dep)
+            return acc
+          },
+          {} as Record<string, Promise<DevupNode | null>>,
         )
-      ).join('\n')
+        const resolvedObj: Record<
+          string,
+          Exclude<DevupNode, string>
+        > = Object.fromEntries(
+          await Promise.all(
+            Object.entries(promiseObj).map(async ([k, v]) => [k, await v]),
+          ),
+        )
+        addSelectorProps(resultInfo!, resolvedObj)
+      }
+      return resultInfo
     }
 
     const componentType = await this.getComponentType()
@@ -357,9 +416,6 @@ export class Element {
 
     const originProps = await this.getProps()
 
-    if ('error' in originProps)
-      return `<${componentType} error="${originProps.error}" />`
-
     const children = this.getChildren()
     const mergedProps = filterPropsByChildrenCountAndType(
       children.length,
@@ -373,7 +429,7 @@ export class Element {
     if (this.node.type === 'TEXT') {
       const segs = this.node.getStyledTextSegments(SEGMENT_TYPE)
 
-      // select main color, 가장 자주 사용되는 색상
+      // select main color
       const propsArray = await Promise.all(
         segs.map(async (seg) =>
           propsToComponentProps(
@@ -419,66 +475,59 @@ export class Element {
         }
       })
 
-      const children = (
-        await Promise.all(
-          segs.map(async (seg, idx) => {
-            const props = propsArray[idx]
-            if (segs.length > 1 && mainColor === props.color) delete props.color
-            if (segs.length > 1 && mainTypography === props.typography)
-              delete props.typography
-            let text = fixChildrenText(seg.characters)
-            let textComponent: 'ul' | 'ol' | null = null
-            const textDep = segs.length > 1 ? dep + 2 : dep + 1
+      const children = await Promise.all(
+        segs.map(async (seg, idx): Promise<DevupNode | DevupNode[]> => {
+          const props = propsArray[idx]
+          if (segs.length > 1 && mainColor === props.color) delete props.color
+          if (segs.length > 1 && mainTypography === props.typography)
+            delete props.typography
+          let text: DevupNode | DevupNode[] = fixChildrenText(seg.characters)
+          let textComponent: 'ul' | 'ol' | null = null
 
-            const propsStr = Object.entries(props)
-              .map(([key, value]) => `${key}="${value}"`)
-              .join(' ')
-            const pureText = segs.length > 1 && !propsStr
-
-            if (seg.listOptions.type === 'NONE') {
-              text =
-                space(pureText ? textDep - 1 : textDep) +
-                text.replaceAll('\n', '<br />')
-            } else {
-              switch (seg.listOptions.type) {
-                case 'UNORDERED': {
-                  textComponent = 'ul'
-                  break
-                }
-                case 'ORDERED': {
-                  textComponent = 'ol'
-                  break
-                }
+          if (seg.listOptions.type === 'NONE') {
+            text = text.replaceAll('\n', '<br />')
+          } else {
+            switch (seg.listOptions.type) {
+              case 'UNORDERED': {
+                textComponent = 'ul'
+                break
               }
-              text = text
-                .split('\n')
-                .map((line) => `${space(textDep)}<li>${line}</li>`)
-                .join('\n')
+              case 'ORDERED': {
+                textComponent = 'ol'
+                break
+              }
             }
-            if (pureText) return text
+            text = text.split('\n').map((line) => ({
+              children: [line],
+              componentType: 'li',
+              props: {},
+            }))
+          }
+          const resultProps = {
+            ...props,
+            ...(textComponent
+              ? { as: textComponent, my: '0px', pl: '1.5em' }
+              : {}),
+          }
+          if (Object.keys(resultProps).length === 0) return text
+          return {
+            children: Array.isArray(text) ? text : [text],
+            componentType: 'Text',
+            props: resultProps,
+          }
+        }),
+      )
+      const resultChildren = children.flat()
+      if (resultChildren.length === 1) return resultChildren[0]
 
-            return `${segs.length > 1 ? space(textDep - 1) : ''}<Text${
-              textComponent ? ` as="${textComponent}" my="0px" pl="1.5em"` : ''
-            } ${propsStr}>\n${text}\n${space(textDep - 1)}</Text>`
-          }),
-        )
-      ).join('\n')
-
-      const propsStr = Object.entries(
-        organizeProps({
+      return {
+        children: resultChildren,
+        componentType: 'Text',
+        props: organizeProps({
           color: mainColor,
           typography: mainTypography,
         }),
-      )
-        .map(([key, value]) => `${key}="${value}"`)
-        .join(' ')
-
-      return (
-        space(dep) +
-        (segs.length > 1
-          ? `<Text${propsStr ? ' ' + propsStr : ''}>\n${children}\n${space(dep)}</Text>`
-          : children)
-      )
+      }
     }
 
     const props = organizeProps(
@@ -487,72 +536,51 @@ export class Element {
 
     const hasChildren = children.length > 0 && !this.skipChildren
 
-    const renderChildren = hasChildren
-      ? (
-          await Promise.all(
-            children.map((child) => (child as Element).render(dep + 1)),
-          )
-        )
-          .join('\n')
-          .trim()
-      : ''
-
-    const propsString = Object.entries(props)
-      .map(([key, value]) => `${key}="${value}"`)
-      .join(' ')
-    const body = `${space(dep)}<${componentType}${propsString ? ' ' + propsString : ''}${hasChildren ? '' : ' /'}>${hasChildren ? `\n${space(dep + 1)}${renderChildren}\n` : ''}${hasChildren ? `${space(dep)}</${componentType}>` : ''}`
-
     if (this.node.type === 'INSTANCE' && this.componentType !== 'Image') {
-      const { componentProperties } = this.node
-      let componentChildren = ''
-      const props = Object.entries(componentProperties)
-        .filter(([key, value]) => {
-          if (
-            value.type === 'TEXT' &&
-            toCamel(key.split('#')[0]) === 'children'
-          ) {
-            componentChildren += value.value
-            return false
-          }
-          return true
-        })
-        .map(getElementProps)
-        .join(' ')
-      const content =
-        space(dep) +
-        `<${toPascal(this.node.name)}${props ? ' ' + props : ''}${
-          !componentChildren
-            ? ' />'
-            : `>\n${space(dep + 1)}${componentChildren}\n${space(dep)}</${toPascal(this.node.name)}>`
-        }`
-
-      if (!this.parent) {
-        const mainComponent = await this.node.getMainComponentAsync()
-        if (mainComponent) {
-          const mainComponentElement = new Element(mainComponent)
-          const mainComponentChildren = await mainComponentElement.render(dep)
-          return `${content}\n\n/*\n${mainComponentChildren}\n*/`
-        }
+      const children: DevupNode[] = []
+      const props = Object.fromEntries(
+        Object.entries(this.node.componentProperties)
+          .filter(([key, value]) => {
+            const lowKey = key.toLowerCase().split('#')[0]
+            if (lowKey === 'children') {
+              children.push(String(value.value))
+              return false
+            }
+            return lowKey !== 'effect' && lowKey !== 'children'
+          })
+          .map(([key, value]) => [
+            toCamel(key.split('#')[0]),
+            value.type === 'INSTANCE_SWAP'
+              ? InstanceSymbol
+              : typeof value.value === 'string'
+                ? toCamel(value.value)
+                : value.value,
+          ]),
+      )
+      return {
+        children,
+        componentType: await getComponentName(this.node),
+        props,
       }
-      return content
     }
 
+    const runChildren = hasChildren
+      ? await Promise.all(
+          children.map((child) => (child as Element).run(dep + 1)),
+        )
+      : []
     if (this.node.type === 'COMPONENT') {
       this.addComponent(this.node)
-      const componentName = toPascal(this.node.name)
-      const interfaceDecl = createInterface(
-        componentName,
-        this.node.variantProperties,
-      )
-      return `${interfaceDecl ? interfaceDecl + '\n' : ''}${space(dep)}export function ${componentName}(${interfaceDecl ? `props: ${componentName}Props` : ''}) {
-  return (
-${body
-  .split('\n')
-  .map((line) => space(dep + 2) + line)
-  .join('\n')}
-  )
-}`
+      return {
+        children: runChildren.filter(Boolean) as DevupNode[],
+        componentType,
+        props,
+      }
     }
-    return body
+    return {
+      children: runChildren.filter(Boolean) as DevupNode[],
+      componentType,
+      props,
+    }
   }
 }

@@ -6,7 +6,7 @@ function createNode(
   type: SceneNode['type'],
   {
     characters,
-    children,
+    children = [],
     textStyleId,
     name,
     fills,
@@ -17,6 +17,8 @@ function createNode(
     variantProperties,
     componentProperties,
     getMainComponentAsync,
+    componentPropertyDefinitions = {},
+    defaultVariant = {},
     visible = true,
     css,
     ...props
@@ -31,6 +33,8 @@ function createNode(
     styledTextSegments?: any[]
     variantProperties?: Record<string, string>
     getMainComponentAsync?: () => Promise<ComponentNode | null>
+    componentPropertyDefinitions?: ComponentPropertyDefinitions
+    defaultVariant?: Record<string, string>
   } = {},
 ): SceneNode {
   const ret = {
@@ -40,8 +44,10 @@ function createNode(
     getStyledTextSegments: () => styledTextSegments,
     layoutSizingHorizontal,
     textStyleId,
+    defaultVariant,
     parent,
     characters,
+    componentPropertyDefinitions,
     visible,
     layoutPositioning,
     width: props.width ? parseInt(props.width) : undefined,
@@ -49,7 +55,7 @@ function createNode(
     name,
     fills,
     variantProperties,
-    children: children ?? [],
+    children: children,
     componentProperties,
     getMainComponentAsync: getMainComponentAsync ?? (async () => null),
   } as unknown as SceneNode
@@ -82,6 +88,7 @@ describe('Element', () => {
         const element = createElement('ELLIPSE')
         expect(await element.getComponentType()).toEqual('Box')
         expect(await element.render()).toEqual('<Box borderRadius="50%" />')
+        expect(await element.render()).toEqual('<Box borderRadius="50%" />')
         expect(await element.getProps()).toEqual({})
       }
       {
@@ -90,7 +97,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Box')
         expect(await element.render()).toEqual(
-          '<Box borderRadius="50%" bg="red" />',
+          '<Box bg="red" borderRadius="50%" />',
         )
       }
     })
@@ -202,7 +209,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Box')
         expect(await element.render()).toEqual(
-          '<Box w="100px" h="120px">\n  <Image boxSize="60px" src="/icons/image.svg" />\n</Box>',
+          '<Box h="120px" w="100px">\n  <Image boxSize="60px" src="/icons/image.svg" />\n</Box>',
         )
       })
 
@@ -256,7 +263,7 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Box')
             expect(await element.render()).toEqual(
-              '<Box w="100px" h="120px">\n  <Box w="100%" h="120px">\n    <Image boxSize="60px" src="/icons/image.svg" />\n  </Box>\n</Box>',
+              '<Box h="120px" w="100px">\n  <Box h="120px" w="100%">\n    <Image boxSize="60px" src="/icons/image.svg" />\n  </Box>\n</Box>',
             )
           }
         })
@@ -408,7 +415,13 @@ describe('Element', () => {
             expect(await element.render()).toEqual(
               `<Flex alignItems="center" gap="20px">
   <Image boxSize="60px" src="/icons/image.svg" />
-  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
+  <Text
+    fontFamily="Roboto"
+    fontSize="16px"
+    fontStyle="italic"
+    letterSpacing="20px"
+    lineHeight="20px"
+  >
     Text
   </Text>
 </Flex>`,
@@ -459,15 +472,22 @@ describe('Element', () => {
               ],
             })
             expect(await element.getComponentType()).toEqual('Flex')
-            expect(await element.render())
-              .toEqual(`<Flex alignItems="center" gap="20px">
+            expect(await element.render()).toEqual(
+              `<Flex alignItems="center" gap="20px">
   <svg>
     <path/>
   </svg>
-  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
+  <Text
+    fontFamily="Roboto"
+    fontSize="16px"
+    fontStyle="italic"
+    letterSpacing="20px"
+    lineHeight="20px"
+  >
     Text
   </Text>
-</Flex>`)
+</Flex>`,
+            )
           }
 
           {
@@ -522,7 +542,13 @@ describe('Element', () => {
               `<Flex alignItems="center">
   <Image boxSize="20px" src="/icons/image.svg" />
   <Box>
-    <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">
+    <Text
+      fontFamily="Roboto"
+      fontSize="16px"
+      fontStyle="italic"
+      letterSpacing="20px"
+      lineHeight="20px"
+    >
       Text
     </Text>
   </Box>
@@ -530,42 +556,6 @@ describe('Element', () => {
             )
           }
         })
-        //         it('should split Element when children have instance type', async () => {
-        //           const element = createElement('FRAME', {
-        //             display: 'flex',
-        //             'align-items': 'center',
-        //             'align-self': 'stretch',
-        //             children: [
-        //               createNode('INSTANCE', {
-        //                 name: 'Instance',
-        //                 width: '60px',
-        //                 height: '60px',
-        //                 children: [
-        //                   createNode('VECTOR', {
-        //                     width: '17.003px',
-        //                     height: '28.741px',
-        //                     'flex-shrink': '0',
-        //                     fill: '#231815',
-        //                   }),
-        //                 ],
-        //               }),
-        //               createNode('VECTOR', {
-        //                 name: 'image',
-        //                 width: '17.003px',
-        //                 height: '28.741px',
-        //                 'flex-shrink': '0',
-        //                 fill: '#231815',
-        //               }),
-        //             ],
-        //           })
-        //           expect(await element.getComponentType()).toEqual('Flex')
-        //           expect(await element.render()).toEqual(
-        //             `<Flex alignItems="center">
-        //   <Image boxSize="60px" src="/icons/Instance.svg" />
-        //   <Image w="17px" h="28px" src="/images/image.svg" />
-        // </Flex>`,
-        //           )
-        //         })
         it('should render Image with aspect ratio', async () => {
           const element = createElement('FRAME', {
             display: 'flex',
@@ -609,7 +599,13 @@ describe('Element', () => {
             ],
           })
           expect(await element.render()).toEqual(
-            '<VStack w="60px">\n  <Image src="/icons/image.svg" aspectRatio="1" boxSize="100%" />\n  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    Text\n  </Text>\n</VStack>',
+            `<VStack w="60px">\n  <Image aspectRatio="1" boxSize="100%" src="/icons/image.svg" />\n  <Text
+    fontFamily="Roboto"
+    fontSize="16px"
+    fontStyle="italic"
+    letterSpacing="20px"
+    lineHeight="20px"
+  >\n    Text\n  </Text>\n</VStack>`,
           )
         })
       })
@@ -629,7 +625,7 @@ describe('Element', () => {
             })
             expect(await element.getComponentType()).toEqual('Image')
             expect(await element.render()).toEqual(
-              '<Image w="60px" h="68px" src="/images/image.png" />',
+              '<Image h="68px" src="/images/image.png" w="60px" />',
             )
           }
           {
@@ -660,11 +656,12 @@ describe('Element', () => {
                 }),
               ],
             })
-            expect(await element.render())
-              .toEqual(`<Flex w="6px" bg="$menuHover">
-  <Box h="318px" flex="1" borderRadius="100px" bg="$third" />
-  <Image src="/images/image.png" aspectRatio="1" boxSize="100%" />
-</Flex>`)
+            expect(await element.render()).toEqual(
+              `<Flex bg="$menuHover" w="6px">
+  <Box bg="$third" borderRadius="100px" flex="1" h="318px" />
+  <Image aspectRatio="1" boxSize="100%" src="/images/image.png" />
+</Flex>`,
+            )
           }
         })
         it('should render Rectangle', async () => {
@@ -690,11 +687,12 @@ describe('Element', () => {
               }),
             ],
           })
-          expect(await element.render())
-            .toEqual(`<Flex w="6px" gap="10px" bg="$menuHover">
-  <Box h="318px" flex="1" borderRadius="100px" bg="$third" />
-  <Box w="100%" h="6px" />
-</Flex>`)
+          expect(await element.render()).toEqual(
+            `<Flex bg="$menuHover" gap="10px" w="6px">
+  <Box bg="$third" borderRadius="100px" flex="1" h="318px" />
+  <Box h="6px" w="100%" />
+</Flex>`,
+          )
         })
       })
 
@@ -719,7 +717,7 @@ describe('Element', () => {
           ],
         })
         expect(await element.render()).toEqual(
-          `<Box bg="url(/images/image.png)" boxSize="6px" />`,
+          '<Box bg="url(/images/image.png)" boxSize="6px" />',
         )
       })
     })
@@ -741,7 +739,13 @@ describe('Element', () => {
             ],
           })
           expect(await element.render()).toEqual(
-            '<Box boxSize="24px" maskImage="url(/icons/image.svg)" bg="$title" maskSize="contain" maskRepeat="no-repeat" />',
+            `<Box
+  bg="$title"
+  boxSize="24px"
+  maskImage="url(/icons/image.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>`,
           )
         }
       })
@@ -768,7 +772,13 @@ describe('Element', () => {
             ],
           })
           expect(await element.render()).toEqual(
-            '<Box boxSize="24px" maskImage="url(/icons/image.svg)" bg="$title" maskSize="contain" maskRepeat="no-repeat" />',
+            `<Box
+  bg="$title"
+  boxSize="24px"
+  maskImage="url(/icons/image.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>`,
           )
         }
 
@@ -803,7 +813,7 @@ describe('Element', () => {
             children: [],
           })
           expect(await element.render()).toEqual(
-            '<Image w="24px" h="25px" src="/images/image.svg" />',
+            '<Image h="25px" src="/images/image.svg" w="24px" />',
           )
         }
       })
@@ -841,9 +851,16 @@ describe('Element', () => {
             ],
           })
           expect(await element.getComponentType()).toEqual('Text')
-          expect(await element.render()).toEqual(
-            '<Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  a\n</Text>',
-          )
+          expect(await element.render()).toEqual(`<Text
+  fontFamily="Roboto"
+  fontSize="16px"
+  fontStyle="italic"
+  fontWeight="400"
+  letterSpacing="20px"
+  lineHeight="20px"
+>
+  a
+</Text>`)
         }
         {
           const element = createElement('TEXT', {
@@ -877,7 +894,15 @@ describe('Element', () => {
           })
           expect(await element.getComponentType()).toEqual('Text')
           expect(await element.render()).toEqual(
-            '<Text fontFamily="Roboto" lineHeight="30px" fontStyle="italic" fontSize="16px" letterSpacing="20px">\n  a\n</Text>',
+            `<Text
+  fontFamily="Roboto"
+  fontSize="16px"
+  fontStyle="italic"
+  letterSpacing="20px"
+  lineHeight="30px"
+>
+  a
+</Text>`,
           )
         }
       })
@@ -913,7 +938,15 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
-          '<Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  a\n</Text>',
+          `<Text
+  fontFamily="Roboto"
+  fontSize="16px"
+  fontStyle="italic"
+  letterSpacing="20px"
+  lineHeight="20px"
+>
+  a
+</Text>`,
         )
       })
       it('should render Text with typography', async () => {
@@ -1022,7 +1055,30 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
-          '<Text>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="400" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    a\n  </Text>\n  <Text fontFamily="Roboto" fontStyle="italic" fontWeight="700" fontSize="16px" textTransform="upper" lineHeight="20px" letterSpacing="20px">\n    b\n  </Text>\n</Text>',
+          `<Text>
+  <Text
+    fontFamily="Roboto"
+    fontSize="16px"
+    fontStyle="italic"
+    fontWeight="400"
+    letterSpacing="20px"
+    lineHeight="20px"
+    textTransform="upper"
+  >
+    a
+  </Text>
+  <Text
+    fontFamily="Roboto"
+    fontSize="16px"
+    fontStyle="italic"
+    fontWeight="700"
+    letterSpacing="20px"
+    lineHeight="20px"
+    textTransform="upper"
+  >
+    b
+  </Text>
+</Text>`,
         )
       })
       it('should render Text with list', async () => {
@@ -1057,7 +1113,18 @@ describe('Element', () => {
           })
           expect(await element.getComponentType()).toEqual('Text')
           expect(await element.render()).toEqual(
-            '<Text as="ul" my="0px" pl="1.5em" fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  <li>a</li>\n</Text>',
+            `<Text
+  as="ul"
+  fontFamily="Roboto"
+  fontSize="16px"
+  fontStyle="italic"
+  letterSpacing="20px"
+  lineHeight="20px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>a</li>
+</Text>`,
           )
         }
         {
@@ -1091,7 +1158,18 @@ describe('Element', () => {
           })
           expect(await element.getComponentType()).toEqual('Text')
           expect(await element.render()).toEqual(
-            '<Text as="ol" my="0px" pl="1.5em" fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n  <li>a</li>\n</Text>',
+            `<Text
+  as="ol"
+  fontFamily="Roboto"
+  fontSize="16px"
+  fontStyle="italic"
+  letterSpacing="20px"
+  lineHeight="20px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>a</li>
+</Text>`,
           )
         }
       })
@@ -1362,7 +1440,17 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Center')
         expect(await element.render()).toEqual(
-          '<Center>\n  <Text fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    I am centered\n  </Text>\n</Center>',
+          `<Center>
+  <Text
+    fontFamily="Roboto"
+    fontSize="16px"
+    fontStyle="italic"
+    letterSpacing="20px"
+    lineHeight="20px"
+  >
+    I am centered
+  </Text>
+</Center>`,
         )
       })
     })
@@ -1377,38 +1465,7 @@ describe('Element', () => {
       })
     })
   })
-  describe('Error Node', () => {
-    it('should throw error', async () => {
-      const element = createElement('TEXT', {
-        styledTextSegments: [
-          {
-            characters: 'a',
-            start: 0,
-            end: 1,
-            fontName: {
-              family: 'Roboto',
-              style: 'Italic',
-            },
-            textDecoration: 'NONE',
-            textCase: 'ORIGINAL',
-            letterSpacing: {
-              value: 20,
-              unit: 'PIXELS',
-            },
-            lineHeight: {
-              value: 20,
-              unit: 'PIXELS',
-            },
-            fontSize: 16,
-          },
-        ],
-      })
-      element.node.getCSSAsync = vi.fn().mockRejectedValue({})
-      expect(await element.render()).toEqual(
-        '<Text error="getCSSAsync Error" />',
-      )
-    })
-  })
+
   describe('Page', () => {
     it('should remove width props when parent is page', async () => {
       const element = createElement('PAGE' as any, {
@@ -1479,9 +1536,7 @@ describe('Element', () => {
             children: { type: 'TEXT', value: 'Hello' },
           },
         })
-        expect(await element.render()).toEqual(
-          '<Instance>\n  Hello\n</Instance>',
-        )
+        expect(await element.render()).toEqual('<Instance>Hello</Instance>')
       }
       {
         const element = createElement('INSTANCE', {
@@ -1495,7 +1550,7 @@ describe('Element', () => {
           },
         })
         expect(await element.render()).toEqual(
-          '<Instance color="red" width="100px" height="100px" danger>\n  Hello\n</Instance>',
+          '<Instance color="red" danger height="100px" width="100px">\n  Hello\n</Instance>',
         )
       }
       {
@@ -1515,19 +1570,89 @@ describe('Element', () => {
             }),
         })
         expect(await element.render()).toEqual(
-          `<Instance color="red" width="100px" height="100px" danger>
+          `<Instance color="red" danger height="100px" width="100px">
   Hello
 </Instance>
 
 /*
 export function MainComponent() {
-  return (
-    <Box />
-  )
+  return <Box />
 }
 */`,
         )
       }
+    })
+    it('should render Instance with children', async () => {
+      const element = createElement('INSTANCE', {
+        name: 'MyInstance',
+        componentProperties: {
+          children: { type: 'TEXT', value: 'Hello' },
+        },
+      })
+      expect(await element.render()).toEqual('<MyInstance>Hello</MyInstance>')
+    })
+
+    it('should render Instance with children and many props', async () => {
+      const element = createElement('INSTANCE', {
+        name: 'MyInstance',
+        componentProperties: {
+          children: { type: 'TEXT', value: 'Hello' },
+          color: { type: 'TEXT', value: 'red' },
+          width: { type: 'TEXT', value: '100px' },
+          height: { type: 'TEXT', value: '100px' },
+          danger: { type: 'BOOLEAN', value: true },
+          text: { type: 'TEXT', value: 'hello' },
+          text2: { type: 'TEXT', value: 'hello' },
+          node: { type: 'INSTANCE_SWAP' },
+        },
+      })
+      expect(await element.render()).toEqual(
+        `<MyInstance
+  color="red"
+  danger
+  height="100px"
+  node={<Instance />}
+  text="hello"
+  text2="hello"
+  width="100px"
+>
+  Hello
+</MyInstance>`,
+      )
+    })
+    it('should render Instance with interface', async () => {
+      const componentSet = createElement('COMPONENT_SET', {
+        name: 'MyInstance',
+        componentPropertyDefinitions: {
+          type: { type: 'VARIANT', value: 'Hello', variantOptions: ['Hello'] },
+        },
+        defaultVariant: createNode('COMPONENT', {
+          name: 'MyInstance',
+          variantProperties: {
+            type: 'Hello',
+          },
+        }),
+      })
+      ;(componentSet.node as any).defaultVariant.parent = componentSet.node
+      const element = createElement('INSTANCE', {
+        name: 'MyInstance',
+        getMainComponentAsync: async () =>
+          (componentSet.node as any).defaultVariant,
+        componentProperties: {
+          type: { type: 'VARIANT', value: 'hello' },
+        },
+      })
+      expect(await element.render()).toEqual(`<MyInstance type="hello" />
+
+/*
+export interface MyInstanceProps {
+  type: 'hello'
+}
+
+export function MyInstance({ type = "hello" }: MyInstanceProps) {
+  return <Box />
+}
+*/`)
     })
   })
 
@@ -1539,49 +1664,455 @@ export function MainComponent() {
         }).render(),
       ).toEqual(
         `export function Component() {
-  return (
-    <Box />
-  )
+  return <Box />
 }`,
       )
+      const el = await createElement('COMPONENT_SET', {
+        name: 'Component',
+        componentPropertyDefinitions: {
+          children: { type: 'TEXT', value: 'Hello' },
+          color: { type: 'TEXT', value: 'red' },
+        },
+        children: [
+          createNode('COMPONENT', {
+            name: 'Component',
+            variantProperties: {
+              color: 'red',
+            },
+          }),
+        ],
+      })
+      expect(await new Element((el.node as any).children[0]).render()).toEqual(
+        `export interface ComponentProps {
+  children: React.ReactNode
+  color: string
+}
 
-      expect(
-        await createElement('COMPONENT', {
+export function Component({ color = "red" }: ComponentProps) {
+  return <Box />
+}`,
+      )
+    })
+
+    it('should render Component with interface and defaultProps', async () => {
+      const el = await createElement('COMPONENT_SET', {
+        name: 'Component',
+        componentPropertyDefinitions: {
+          children: { type: 'TEXT', value: 'Hello' },
+          color: { type: 'TEXT', value: 'red' },
+        },
+        defaultVariant: createNode('COMPONENT', {
           name: 'Component',
           variantProperties: {
             color: 'red',
           },
-        }).render(),
-      ).toEqual(
+        }),
+        children: [
+          createNode('COMPONENT', {
+            name: 'Component',
+            variantProperties: {
+              color: 'red',
+            },
+          }),
+        ],
+      })
+      // COMPONENT_SET 바로 아래의 COMPONENT를 렌더링하고, default value가 걸려 있는지 확인
+      expect(await new Element((el.node as any).children[0]).render()).toEqual(
         `export interface ComponentProps {
-  color: unknown
+  children: React.ReactNode
+  color: string
 }
-export function Component(props: ComponentProps) {
-  return (
-    <Box />
-  )
+
+export function Component({ color = "red" }: ComponentProps) {
+  return <Box />
 }`,
       )
     })
   })
   describe('ComponentSet', () => {
     it('should render ComponentSet', async () => {
+      {
+        expect(
+          await createElement('COMPONENT_SET', {
+            name: 'Component',
+            componentPropertyDefinitions: {},
+            defaultVariant: createNode('COMPONENT', {
+              name: 'Component',
+            }),
+            children: [
+              createNode('COMPONENT', {
+                name: 'Component',
+              }),
+            ],
+          }).render(),
+        ).toEqual(
+          `export function Component() {
+  return <Box />
+}`,
+        )
+      }
+      {
+        expect(
+          await createElement('COMPONENT_SET', {
+            name: 'Component',
+            componentPropertyDefinitions: {
+              type: {
+                type: 'VARIANT',
+                value: 'Hello',
+                variantOptions: undefined,
+              },
+            },
+            defaultVariant: createNode('COMPONENT', {
+              name: 'Component',
+            }),
+            children: [
+              createNode('COMPONENT', {
+                name: 'Component',
+              }),
+            ],
+          }).render(),
+        ).toEqual(
+          `export interface ComponentProps {
+  type: string
+}
+
+export function Component(props: ComponentProps) {
+  return <Box />
+}`,
+        )
+      }
+    })
+    it('should render ComponentSet with interface', async () => {
       expect(
         await createElement('COMPONENT_SET', {
-          name: 'ComponentSet',
+          name: 'Component',
+          componentPropertyDefinitions: {
+            children: { type: 'TEXT', value: 'Hello' },
+            text: {
+              type: 'VARIANT',
+              value: 'Hello',
+              variantOptions: ['Hello', 'World'],
+            },
+            color: { type: 'BOOLEAN', defaultValue: true },
+            node: { type: 'INSTANCE_SWAP' },
+          },
+          defaultVariant: createNode('COMPONENT', {
+            name: 'Component',
+          }),
           children: [
             createNode('COMPONENT', {
               name: 'Component',
             }),
           ],
         }).render(),
-      ).toEqual(
-        `export function Component() {
+      ).toEqual(`export interface ComponentProps {
+  children: React.ReactNode
+  text: 'hello' | 'world'
+  color?: boolean
+  node: React.ReactNode
+}
+
+export function Component(props: ComponentProps) {
+  return <Box />
+}`)
+    })
+
+    it('should render componentSet with effect', async () => {
+      {
+        const el = await createElement('COMPONENT_SET', {
+          name: 'ComponentSet',
+          componentPropertyDefinitions: {
+            effect: {
+              type: 'VARIANT',
+              value: 'default',
+              variantOptions: ['default', 'hover', 'active'],
+            },
+            text: {
+              type: 'VARIANT',
+              value: 'Hello',
+              variantOptions: ['Hello', 'World'],
+            },
+          },
+          children: [
+            createNode('COMPONENT', {
+              color: 'red',
+              name: 'ComponentSet',
+              variantProperties: {
+                effect: 'default',
+                text: 'Hello',
+              },
+            }),
+            createNode('COMPONENT', {
+              bg: 'red',
+              color: 'red',
+              name: 'ComponentSet',
+              variantProperties: {
+                effect: 'hover',
+                text: 'Hello',
+              },
+            }),
+            createNode('COMPONENT', {
+              bg: 'blue',
+              color: 'green',
+              name: 'ComponentSet',
+              variantProperties: {
+                effect: 'active',
+                text: 'Hello',
+              },
+            }),
+          ],
+        })
+        ;(el.node as any).defaultVariant = (el.node as any).children[0]
+        expect(await new Element(el.node as any).render()).toEqual(
+          `export interface ComponentSetProps {
+  text: 'hello' | 'world'
+}
+
+export function ComponentSet(props: ComponentSetProps) {
   return (
-    <Box />
+    <Box
+      _active={{
+        "bg": "blue",
+        "color": "green"
+      }}
+      _hover={{
+        "bg": "red"
+      }}
+      color="red"
+    />
   )
 }`,
-      )
+        )
+      }
+      {
+        const el = await createElement('COMPONENT_SET', {
+          name: 'ComponentSet',
+          componentPropertyDefinitions: {
+            effect: {
+              type: 'VARIANT',
+              value: 'default',
+              variantOptions: ['default', 'hover', 'active'],
+            },
+            text: {
+              type: 'VARIANT',
+              value: 'Hello',
+              variantOptions: ['Hello', 'World'],
+            },
+          },
+          children: [
+            createNode('COMPONENT', {
+              color: 'red',
+              name: 'ComponentSet',
+              variantProperties: {
+                effect: 'default',
+                text: 'Hello',
+              },
+              children: [
+                createNode('TEXT', {
+                  characters: 'Hello',
+                  color: 'blue',
+                  styledTextSegments: [
+                    {
+                      characters: 'Hello',
+                      start: 0,
+                      end: 1,
+                      fontName: {
+                        family: 'Roboto',
+                        style: 'Italic',
+                      },
+                      textDecoration: 'NONE',
+                      textCase: 'ORIGINAL',
+                      letterSpacing: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      lineHeight: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      fontSize: 16,
+                      listOptions: {
+                        type: 'NONE',
+                      },
+                    },
+                  ],
+                }),
+              ],
+            }),
+            createNode('COMPONENT', {
+              bg: 'red',
+              color: 'red',
+              name: 'ComponentSet',
+              variantProperties: {
+                effect: 'hover',
+                text: 'Hello',
+              },
+              children: [
+                createNode('TEXT', {
+                  characters: 'Hello',
+                  styledTextSegments: [
+                    {
+                      characters: 'Hello',
+                      start: 0,
+                      end: 1,
+                      fontName: {
+                        family: 'Roboto',
+                        style: 'Italic',
+                      },
+                      textDecoration: 'NONE',
+                      textCase: 'ORIGINAL',
+                      letterSpacing: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      lineHeight: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      fontSize: 16,
+                      listOptions: {
+                        type: 'NONE',
+                      },
+                    },
+                  ],
+                }),
+              ],
+            }),
+            createNode('COMPONENT', {
+              bg: 'blue',
+              color: 'green',
+              name: 'ComponentSet',
+              variantProperties: {
+                effect: 'active',
+                text: 'Hello',
+              },
+              children: [
+                createNode('TEXT', {
+                  characters: 'Hello',
+                  styledTextSegments: [
+                    {
+                      characters: 'Hello',
+                      start: 0,
+                      end: 1,
+                      fontName: {
+                        family: 'Roboto',
+                        style: 'Italic',
+                      },
+                      textDecoration: 'NONE',
+                      textCase: 'ORIGINAL',
+                      letterSpacing: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      lineHeight: {
+                        value: 20,
+                        unit: 'PIXELS',
+                      },
+                      fontSize: 16,
+                      listOptions: {
+                        type: 'NONE',
+                      },
+                    },
+                  ],
+                }),
+              ],
+            }),
+          ],
+        })
+        ;(el.node as any).defaultVariant = (el.node as any).children[0]
+        expect(await new Element(el.node as any).render())
+          .toEqual(`export interface ComponentSetProps {
+  text: 'hello' | 'world'
+}
+
+export function ComponentSet(props: ComponentSetProps) {
+  return (
+    <Box
+      _active={{
+        "bg": "blue",
+        "color": "green"
+      }}
+      _hover={{
+        "bg": "red"
+      }}
+      color="red"
+    >
+      <Text
+        fontFamily="Roboto"
+        fontSize="16px"
+        fontStyle="italic"
+        letterSpacing="20px"
+        lineHeight="20px"
+      >
+        Hello
+      </Text>
+    </Box>
+  )
+}`)
+      }
+    })
+    it('should render empty componentSet', async () => {
+      const el = await createElement('COMPONENT_SET', {
+        name: 'ComponentSet',
+        componentPropertyDefinitions: {},
+      })
+      expect(await new Element(el.node as any).render()).toEqual('')
+    })
+    it('should render componentSet with effect and other props', async () => {
+      const el = await createElement('COMPONENT_SET', {
+        name: 'ComponentSet',
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            value: 'default',
+            variantOptions: ['default', 'hover', 'active'],
+          },
+          type: {
+            type: 'VARIANT',
+            value: 'button',
+            variantOptions: ['button', 'input'],
+          },
+        },
+        children: [
+          createNode('COMPONENT', {
+            name: 'ComponentSet',
+            variantProperties: {
+              effect: 'default',
+              type: 'button',
+            },
+            children: [
+              createNode('TEXT', {
+                characters: 'button',
+              }),
+            ],
+          }),
+          createNode('COMPONENT', {
+            name: 'ComponentSet',
+            variantProperties: {
+              effect: 'hover',
+              type: 'input',
+            },
+            children: [
+              createNode('TEXT', {
+                characters: 'button',
+              }),
+            ],
+          }),
+        ],
+      })
+      ;(el.node as any).defaultVariant = (el.node as any).children[0]
+      expect(await new Element(el.node as any).render())
+        .toEqual(`export interface ComponentSetProps {
+  type: 'button' | 'input'
+}
+
+export function ComponentSet(props: ComponentSetProps) {
+  return (
+    <Box>
+      <Text />
+    </Box>
+  )
+}`)
     })
   })
 
@@ -1622,7 +2153,18 @@ export function Component(props: ComponentProps) {
         ],
       })
       expect(await element.render()).toEqual(
-        '<Box position="relative">\n  <Text pos="absolute" fontFamily="Roboto" fontStyle="italic" fontSize="16px" lineHeight="20px" letterSpacing="20px">\n    I am centered\n  </Text>\n</Box>',
+        `<Box position="relative">
+  <Text
+    fontFamily="Roboto"
+    fontSize="16px"
+    fontStyle="italic"
+    letterSpacing="20px"
+    lineHeight="20px"
+    pos="absolute"
+  >
+    I am centered
+  </Text>
+</Box>`,
       )
     })
   })
@@ -1654,7 +2196,7 @@ export function Component(props: ComponentProps) {
             }),
           ],
         })
-        await element.render()
+        await element.run()
         expect(await element.getAssets()).toEqual({
           'image.svg': expect.any(Function),
         })
@@ -1703,7 +2245,7 @@ export function Component(props: ComponentProps) {
             }),
           ],
         })
-        await element.render()
+        await element.run()
         expect(await element.getAssets()).toEqual({
           'image.svg': expect.any(Function),
           'image_0.svg': expect.any(Function),

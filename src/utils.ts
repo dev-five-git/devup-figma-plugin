@@ -1,6 +1,7 @@
-import { ComponentType } from './Element'
+import type { ComponentPropValue, ComponentType, DevupNode } from './types'
 import { rgbaToHex } from './utils/rgba-to-hex'
 import { toCamel } from './utils/to-camel'
+import { toPascal } from './utils/to-pascal'
 
 const PROPS_DEFAULT = {
   alignItems: 'flex-start',
@@ -328,23 +329,6 @@ const CONVERT_PROPS_MAP = {
         },
       ],
     },
-    {
-      test: /^\d+px (\d+)px \d+px \1px$/,
-      value: [
-        {
-          prop: 'px',
-          value: (value: string) => value.split(' ')[1],
-        },
-        {
-          prop: 'pt',
-          value: (value: string) => value.split(' ')[0],
-        },
-        {
-          prop: 'pb',
-          value: (value: string) => value.split(' ')[2],
-        },
-      ],
-    },
   ],
   m: [
     {
@@ -405,23 +389,6 @@ const CONVERT_PROPS_MAP = {
         {
           prop: 'ml',
           value: (value: string) => value.split(' ')[3],
-        },
-      ],
-    },
-    {
-      test: /^\d+px (\d+)px \d+px \1px$/,
-      value: [
-        {
-          prop: 'mx',
-          value: (value: string) => value.split(' ')[1],
-        },
-        {
-          prop: 'mt',
-          value: (value: string) => value.split(' ')[0],
-        },
-        {
-          prop: 'mb',
-          value: (value: string) => value.split(' ')[2],
         },
       ],
     },
@@ -628,16 +595,6 @@ export async function checkSvgImageChildrenType(
       type: 'SVG',
       fill,
     }
-  // Frame SVG
-  // if (hasSVG && !allOfRect && children.length === 1)
-  //   return {
-  //     type: 'SVG',
-  //     fill,
-  //   }
-  // if (!allOfRect && hasSVG)
-  //   return {
-  //     type: 'IMAGE',
-  //   }
   if (allOfRect && children.length > 1)
     return {
       type: 'SVG',
@@ -664,24 +621,90 @@ export function fixChildrenText(children: string) {
     .replace(/([{}&<>]+)/g, '{"$1"}')
     .replace(/(^\s+)|(\s+$)/g, (match) => `{"${' '.repeat(match.length)}"}`)
 }
-
-export function createInterface(
-  componentName: string,
-  props: Record<string, string> | null,
-): string | null {
-  if (!props || Object.keys(props).length === 0) return null
-  return `export interface ${componentName}Props {
-${Object.keys(props)
-  .map((key) => `  ${toCamel(key)}: unknown`)
-  .join('\n')}
-}`
+export function getComponentName(node: SceneNode) {
+  if (node.type === 'COMPONENT_SET') return toPascal(node.name)
+  if (node.type === 'COMPONENT')
+    return toPascal(
+      node.parent?.type === 'COMPONENT_SET' ? node.parent.name : node.name,
+    )
+  return toPascal(node.name)
 }
 
-export function getElementProps(props: [string, ComponentProperties[string]]) {
-  const [key, value] = props
-  const propKey = toCamel(key.split('#')[0])
-  if (value.type === 'BOOLEAN' && value.value) return propKey
-  return `${propKey}="${value.value}"`
+export function addSelectorProps(
+  node: DevupNode,
+  selectorNode: Record<string, Exclude<DevupNode, string>>,
+) {
+  if (typeof node === 'string') return
+  const result: string[] = []
+  for (const [key, value] of Object.entries(selectorNode)) {
+    const filteredProps = Object.entries(value.props).filter(([key, value]) => {
+      if (node.props[key] === value) return false
+      return true
+    })
+    if (filteredProps.length > 0)
+      node.props['_' + toCamel(key)] = Object.fromEntries(filteredProps)
+  }
+  node.children.forEach((child, idx) => {
+    const tmp: Record<string, Exclude<DevupNode, string>> = {}
+    for (const [key, value] of Object.entries(selectorNode)) {
+      tmp[key] = value.children[idx] as Exclude<DevupNode, string>
+    }
+    addSelectorProps(child, tmp)
+  })
+  return result
+}
+
+export function getComponentPropertyType(
+  definitions: ComponentPropertyDefinitions,
+): Record<string, ComponentPropValue> {
+  const ret: Record<string, ComponentPropValue> = {}
+  for (const [key, value] of Object.entries(definitions)) {
+    const propertyKey = toCamel(key.split('#')[0])
+
+    if (propertyKey === 'children') {
+      ret[propertyKey] = {
+        type: 'React.ReactNode',
+        optional: !!value.defaultValue,
+        defaultValue: '',
+      }
+      continue
+    }
+    if (propertyKey === 'effect') continue
+
+    switch (value.type) {
+      case 'BOOLEAN':
+        ret[propertyKey] = {
+          type: 'boolean',
+          optional: !!value.defaultValue,
+          defaultValue: value.defaultValue,
+        }
+        break
+      case 'TEXT':
+        ret[propertyKey] = {
+          type: 'string',
+          optional: !!value.defaultValue,
+          defaultValue: value.defaultValue,
+        }
+        break
+      case 'INSTANCE_SWAP':
+        ret[propertyKey] = {
+          type: 'React.ReactNode',
+          optional: !!value.defaultValue,
+          defaultValue: value.defaultValue,
+        }
+        break
+      case 'VARIANT':
+        ret[propertyKey] = {
+          type:
+            value.variantOptions?.map((v) => `'${toCamel(v)}'`).join(' | ') ||
+            'string',
+          optional: !!value.defaultValue,
+          defaultValue: value.defaultValue,
+        }
+        break
+    }
+  }
+  return ret
 }
 
 export const colorFromFills = async (
