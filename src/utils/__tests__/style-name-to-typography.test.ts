@@ -3,30 +3,34 @@ import { styleNameToTypography } from '../style-name-to-typography'
 describe('styleNameToTypography', () => {
   it('should convert styleName to Typography', () => {
     expect(styleNameToTypography('mobile/font')).toEqual({
-      type: 'mobile',
+      level: 0,
       name: 'font',
     })
 
     expect(styleNameToTypography('desktop/font')).toEqual({
-      type: 'desktop',
+      level: 4,
       name: 'font',
     })
 
     expect(styleNameToTypography('tablet/font')).toEqual({
-      type: 'tablet',
+      level: 2,
       name: 'font',
     })
 
     expect(styleNameToTypography('mobile/font')).toEqual({
-      type: 'mobile',
+      level: 0,
       name: 'font',
     })
     expect(styleNameToTypography('mobile/font-name')).toEqual({
-      type: 'mobile',
+      level: 0,
       name: 'fontName',
     })
     expect(styleNameToTypography('font-name')).toEqual({
-      type: 'mobile',
+      level: 0,
+      name: 'fontName',
+    })
+    expect(styleNameToTypography('4/font-name')).toEqual({
+      level: 4,
       name: 'fontName',
     })
   })
