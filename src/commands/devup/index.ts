@@ -49,23 +49,14 @@ export async function exportDevup() {
 
   const typography: Record<string, (null | DevupTypography)[]> = {}
   await Promise.all(
-    texts.map(async (text) => {
-      if (typeof text.textStyleId !== 'string') return
-      const style = await figma.getStyleByIdAsync(text.textStyleId)
-      if (style && ids.has(style.id)) {
-        const { type, name } = styleNameToTypography(style.name)
-        if (typography[name]) {
-          if (type === 'mobile' && typography[name][0]) {
-            return
-          }
-          if (type === 'tablet' && typography[name][2]) {
-            return
-          }
-          if (type === 'desktop' && typography[name][4]) {
-            return
-          }
-        }
-        const segs = text.getStyledTextSegments([
+    texts
+    .filter((text) => typeof text.textStyleId === 'string')
+    .map(async (text) => {
+      const style = await figma.getStyleByIdAsync(text.textStyleId as string)
+      if (!(style && ids.has(style.id))) return
+        const { level , name } = styleNameToTypography(style.name)
+        if (typography[name]&&typography[name][level]) return
+        for (const seg of text.getStyledTextSegments([
           'fontName',
           'fontWeight',
           'fontSize',
@@ -79,21 +70,13 @@ export async function exportDevup() {
           'listOptions',
           'indentation',
           'hyperlink',
-        ])
-        for (const seg of segs) {
+        ])) {
           if (seg) {
             const typo = textSegmentToTypography(seg as StyledTextSegment)
-            typography[name] ??= [null, null, null, null, null]
-            if (type === 'mobile') {
-              typography[name][0] = typo
-            } else if (type === 'tablet') {
-              typography[name][2] = typo
-            } else if (type === 'desktop') {
-              typography[name][4] = typo
-            }
+            typography[name] ??= [null, null, null, null, null, null]
+            typography[name][level] = typo
           }
         }
-      }
     }),
   )
   if (Object.keys(typography).length > 0) {
