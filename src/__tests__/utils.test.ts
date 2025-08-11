@@ -3,6 +3,7 @@ import {
   fixChildrenText,
   formatSvg,
   organizeProps,
+  shortSpaceValue,
   space,
 } from '../utils'
 
@@ -264,5 +265,21 @@ describe('fixChildrenText', () => {
     ['{wow{wow{wow}', '{"{"}wow{"{"}wow{"{"}wow{"}"}'],
   ])('should fix children text with special characters', (input, output) => {
     expect(fixChildrenText(input)).toEqual(output)
+  })
+})
+
+describe('shortSpaceValue', () => {
+  it.each([
+    ['10px 20px 30px 40px', '10px 20px 30px 40px'],
+    ['10px 10px 10px 10px', '10px'],
+    ['10px 20px 10px 20px', '10px 20px'],
+    ['var(--primary)', 'var(--primary)'],
+    ['var(--primary, 10px)', 'var(--primary, 10px)'],
+    [
+      'var(--primary, 10px) var(--secondary, 20px)',
+      'var(--primary, 10px) var(--secondary, 20px)',
+    ],
+  ])('should short space value', (input, output) => {
+    expect(shortSpaceValue(input)).toEqual(output)
   })
 })

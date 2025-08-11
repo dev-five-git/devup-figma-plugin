@@ -142,6 +142,13 @@ function extractVariableName(value: string) {
   return '$' + toCamel(match?.[1].split(',')[0].trim()!)
 }
 
+function extractVariableValue(value: string) {
+  if (!value.startsWith('var(--')) return value
+  const match = value.match(/var\(--([\w-]+), (.*)\)/)
+
+  return match![2]
+}
+
 export function propsToComponentProps(
   props: Record<string, string>,
   componentType: ComponentType,
@@ -181,7 +188,37 @@ export function propsToComponentProps(
   }
   return ret
 }
-const COLOR_PROPS = ['color', 'bg', 'borderColor']
+const COLOR_PROPS = [
+  'accentColor',
+  'background',
+  'bg',
+  'backgroundColor',
+  'bgColor',
+  'border',
+  'borderBlockEnd',
+  'borderBlockStart',
+  'borderBottom',
+  'borderColor',
+  'borderInlineEnd',
+  'borderInlineStart',
+  'borderLeft',
+  'borderLeftColor',
+  'borderRight',
+  'borderRightColor',
+  'borderTop',
+  'borderTopColor',
+  'caret-color',
+  'color',
+  'columnRuleColor',
+  'floodColor',
+  'fill',
+  'lightingColor',
+  'outlineColor',
+  'scrollbarColor',
+  'strokeColor',
+  'textDecorationColor',
+  'textEmphasisColor',
+]
 const SPACE_PROPS = ['m', 'p']
 const DEFAULT_PROPS_MAP = {
   flex: {
@@ -441,9 +478,8 @@ function replaceAllVarFunctions(
 export function organizeProps(props: Record<string, string>) {
   const ret = { ...props }
   for (const key of COLOR_PROPS)
-    if (ret[key]) ret[key] = extractVariableName(ret[key])
-  for (const key of SPACE_PROPS)
-    if (ret[key]) ret[key] = shortSpaceValue(ret[key])
+    if (ret[key])
+      ret[key] = replaceAllVarFunctions(ret[key], extractVariableName)
 
   for (const key in PROPS_DEFAULT)
     if (ret[key] === PROPS_DEFAULT[key as keyof typeof PROPS_DEFAULT])
@@ -476,8 +512,11 @@ export function organizeProps(props: Record<string, string>) {
       ret[key] = ret[key].slice(1, -1)
     if (ret[key].includes('/*')) ret[key] = ret[key].split('/*')[0].trim()
     if (ret[key].includes('var(--'))
-      ret[key] = replaceAllVarFunctions(ret[key], extractVariableName)
+      // extract pure value from var
+      ret[key] = replaceAllVarFunctions(ret[key], extractVariableValue)
   }
+  for (const key of SPACE_PROPS)
+    if (ret[key]) ret[key] = shortSpaceValue(ret[key])
   for (const key in CONVERT_PROPS_VALUE_MAP) {
     if (!ret[key]) continue
     for (const convert of CONVERT_PROPS_VALUE_MAP[
@@ -517,7 +556,7 @@ export function organizeProps(props: Record<string, string>) {
   return ret
 }
 
-function shortSpaceValue(value: string) {
+export function shortSpaceValue(value: string) {
   const split = value.split(' ')
   if (split.every((v) => v === split[0])) return split[0]
   if (split.length === 4 && split[1] === split[3] && split[0] === split[2])
