@@ -125,7 +125,7 @@ export class Element<T extends SceneNode = SceneNode> {
       )
     )
       this.additionalProps = {
-        position: 'relative',
+        pos: 'relative',
       }
     else {
       this.additionalProps = {}

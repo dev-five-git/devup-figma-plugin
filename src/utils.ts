@@ -93,8 +93,12 @@ function equalAttributeValue(a: any, b: any) {
 export function cssToProps(css: Record<string, string>) {
   const ret: Record<string, string> = {}
   for (const key in css)
-    if (!IGNORED_CSS_KEYS.includes(key))
-      ret[key in SHORT_ATTR ? SHORT_ATTR[key] : toCamel(key)] = css[key]
+    if (!IGNORED_CSS_KEYS.includes(key)) {
+      let newKey = key in SHORT_ATTR ? SHORT_ATTR[key] : toCamel(key)
+      if (newKey.startsWith('webkit'))
+        newKey = newKey.replace('webkit', 'Webkit')
+      ret[newKey] = css[key]
+    }
   for (const pair of PAIR_ATTR) {
     if (
       pair.keys.every(
@@ -136,14 +140,12 @@ export function space(depth: number) {
 }
 
 function extractVariableName(value: string) {
-  if (!value.startsWith('var(--')) return value
   const match = value.match(/var\(--([\w-]+)/)
   // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
   return '$' + toCamel(match?.[1].split(',')[0].trim()!)
 }
 
 function extractVariableValue(value: string) {
-  if (!value.startsWith('var(--')) return value
   const match = value.match(/var\(--([\w-]+), (.*)\)/)
 
   return match![2]
@@ -219,7 +221,6 @@ const COLOR_PROPS = [
   'textDecorationColor',
   'textEmphasisColor',
 ]
-const SPACE_PROPS = ['m', 'p']
 const DEFAULT_PROPS_MAP = {
   flex: {
     default: /1 0 0/,
@@ -306,6 +307,15 @@ const DEFAULT_PROPS_MAP = {
 const CONVERT_PROPS_MAP = {
   p: [
     {
+      test: /^(\d+)px \1px( \1px)?( \1px)?$/,
+      value: [
+        {
+          prop: 'p',
+          value: (value: string) => value.split(' ')[0],
+        },
+      ],
+    },
+    {
       test: /^0(px)? (\d*[1-9]|\d{2,})px$/,
       value: {
         prop: 'px',
@@ -350,6 +360,36 @@ const CONVERT_PROPS_MAP = {
       ],
     },
     {
+      test: /^(\d+)px (\d+)px \1px \2px$/,
+      value: [
+        {
+          prop: 'py',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'px',
+          value: (value: string) => value.split(' ')[1],
+        },
+      ],
+    },
+    {
+      test: /^(\d+)px (\d+)px \d+px \2px$/,
+      value: [
+        {
+          prop: 'pt',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'pb',
+          value: (value: string) => value.split(' ')[2],
+        },
+        {
+          prop: 'px',
+          value: (value: string) => value.split(' ')[1],
+        },
+      ],
+    },
+    {
       test: /^(\d+)px \d+px \1px \d+px$/,
       value: [
         {
@@ -368,6 +408,15 @@ const CONVERT_PROPS_MAP = {
     },
   ],
   m: [
+    {
+      test: /^(\d+)px \1px( \1px)?( \1px)?$/,
+      value: [
+        {
+          prop: 'm',
+          value: (value: string) => value.split(' ')[0],
+        },
+      ],
+    },
     {
       test: /^0(px)? (\d*[1-9]|\d{2,})px$/,
       value: {
@@ -413,6 +462,36 @@ const CONVERT_PROPS_MAP = {
       ],
     },
     {
+      test: /^(\d+)px (\d+)px \1px \2px$/,
+      value: [
+        {
+          prop: 'my',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'mx',
+          value: (value: string) => value.split(' ')[1],
+        },
+      ],
+    },
+    {
+      test: /^(\d+)px (\d+)px \d+px \2px$/,
+      value: [
+        {
+          prop: 'mt',
+          value: (value: string) => value.split(' ')[0],
+        },
+        {
+          prop: 'mb',
+          value: (value: string) => value.split(' ')[2],
+        },
+        {
+          prop: 'mx',
+          value: (value: string) => value.split(' ')[1],
+        },
+      ],
+    },
+    {
       test: /^(\d+)px \d+px \1px \d+px$/,
       value: [
         {
@@ -430,7 +509,7 @@ const CONVERT_PROPS_MAP = {
       ],
     },
   ],
-} as const
+}
 
 const CONVERT_PROPS_VALUE_MAP = {
   bg: [
@@ -497,7 +576,7 @@ export function organizeProps(props: Record<string, string>) {
           const { prop, value } = convert
           ret[prop] = value(ret[key])
         }
-        delete ret[key]
+        if (!convertValue.map((c) => c.prop).includes(key)) delete ret[key]
         break
       }
     }
@@ -515,8 +594,6 @@ export function organizeProps(props: Record<string, string>) {
       // extract pure value from var
       ret[key] = replaceAllVarFunctions(ret[key], extractVariableValue)
   }
-  for (const key of SPACE_PROPS)
-    if (ret[key]) ret[key] = shortSpaceValue(ret[key])
   for (const key in CONVERT_PROPS_VALUE_MAP) {
     if (!ret[key]) continue
     for (const convert of CONVERT_PROPS_VALUE_MAP[
@@ -556,15 +633,6 @@ export function organizeProps(props: Record<string, string>) {
   return ret
 }
 
-export function shortSpaceValue(value: string) {
-  const split = value.split(' ')
-  if (split.every((v) => v === split[0])) return split[0]
-  if (split.length === 4 && split[1] === split[3] && split[0] === split[2])
-    return `${split[0]} ${split[1]}`
-  if (split.length === 4 && split[1] === split[3])
-    return `${split[0]} ${split[1]} ${split[2]}`
-  return value
-}
 export function filterPropsByChildrenCountAndType(
   childrenCount: number,
   componentType: ComponentType,

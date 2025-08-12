@@ -1517,6 +1517,20 @@ describe('Element', () => {
         })
         expect(await element.render()).toEqual('<Box h="10px" w="1px" />')
       }
+      {
+        const element = createElement('RECTANGLE', {
+          height: '10px',
+          fills: [],
+          css: {
+            height: '10px',
+            width: 'var(--width, 10px)',
+            '-webkit-width': '10px',
+          },
+        })
+        expect(await element.render()).toEqual(
+          '<Box h="10px" w="10px" WebkitWidth="10px" />',
+        )
+      }
     })
   })
 
@@ -2153,7 +2167,7 @@ export function ComponentSet(props: ComponentSetProps) {
         ],
       })
       expect(await element.render()).toEqual(
-        `<Box position="relative">
+        `<Box pos="relative">
   <Text
     fontFamily="Roboto"
     fontSize="16px"
