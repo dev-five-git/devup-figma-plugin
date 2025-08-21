@@ -9,6 +9,7 @@ import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
 import { toCamel } from '../../utils/to-camel'
 import { uploadFile } from '../../utils/upload-file'
 import { variableAliasToValue } from '../../utils/variable-alias-to-value'
+import { optimizeHex } from '../../utils/optimize-hex'
 
 export async function exportDevup() {
   const devup: Devup = {}
@@ -31,11 +32,11 @@ export async function exportDevup() {
             if (nextValue === null) return
             if (typeof nextValue === 'boolean' || typeof nextValue === 'number')
               return
-            colors[toCamel(variable.name)] = rgbaToHex(
+            colors[toCamel(variable.name)] = optimizeHex(rgbaToHex(
               figma.util.rgba(nextValue),
-            )
+            ))
           } else {
-            colors[toCamel(variable.name)] = rgbaToHex(figma.util.rgba(value))
+            colors[toCamel(variable.name)] = optimizeHex(rgbaToHex(figma.util.rgba(value)))
           }
         }),
       )

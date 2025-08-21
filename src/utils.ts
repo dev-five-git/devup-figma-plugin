@@ -1,4 +1,6 @@
 import type { ComponentPropValue, ComponentType, DevupNode } from './types'
+import { optimizeHex } from './utils/optimize-hex'
+import { optimizeRgbaFunc } from './utils/optimize-rgba-func'
 import { rgbaToHex } from './utils/rgba-to-hex'
 import { toCamel } from './utils/to-camel'
 import { toPascal } from './utils/to-pascal'
@@ -558,7 +560,9 @@ export function organizeProps(props: Record<string, string>) {
   const ret = { ...props }
   for (const key of COLOR_PROPS)
     if (ret[key])
-      ret[key] = replaceAllVarFunctions(ret[key], extractVariableName)
+      ret[key] = optimizeHex(
+        optimizeRgbaFunc(replaceAllVarFunctions(ret[key], extractVariableName)),
+      )
 
   for (const key in PROPS_DEFAULT)
     if (ret[key] === PROPS_DEFAULT[key as keyof typeof PROPS_DEFAULT])
@@ -631,22 +635,6 @@ export function organizeProps(props: Record<string, string>) {
     delete ret['h']
   }
   return ret
-}
-
-export function filterPropsByChildrenCountAndType(
-  childrenCount: number,
-  componentType: ComponentType,
-  props: Record<string, string>,
-): Record<string, string> {
-  if (
-    ['Flex', 'VStack', 'Center'].includes(componentType) &&
-    childrenCount === 1
-  ) {
-    delete props['alignItems']
-    delete props['justifyContent']
-    delete props['gap']
-  }
-  return props
 }
 
 export async function checkSvgImageChildrenType(

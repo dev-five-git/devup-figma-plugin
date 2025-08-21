@@ -101,8 +101,8 @@ describe('devup/index', () => {
     const parsed = JSON.parse(
       typeof data === 'string' ? data : Buffer.from(data).toString('utf-8'),
     ) as Devup
-    expect(parsed.theme?.colors?.light?.primary).toBe('#FF0000')
-    expect(parsed.theme?.colors?.dark?.primary).toBe('#000000')
+    expect(parsed.theme?.colors?.light?.primary).toBe('#F00')
+    expect(parsed.theme?.colors?.dark?.primary).toBe('#000')
     expect(parsed.theme?.typography?.title).toBeTruthy()
   })
 

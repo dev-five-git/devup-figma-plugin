@@ -11,8 +11,12 @@ function createNode(
     name,
     fills,
     parent,
+    x,
+    y,
     layoutPositioning = 'AUTO',
     layoutSizingHorizontal,
+    layoutMode,
+    constraints,
     styledTextSegments = [],
     variantProperties,
     componentProperties,
@@ -21,6 +25,10 @@ function createNode(
     defaultVariant = {},
     visible = true,
     css,
+    paddingTop = 0,
+    paddingBottom = 0,
+    paddingLeft = 0,
+    paddingRight = 0,
     ...props
   }: {
     [_: string]: any
@@ -43,6 +51,10 @@ function createNode(
     exportAsync: async () => '<svg>\n<path/>\n</svg>',
     getStyledTextSegments: () => styledTextSegments,
     layoutSizingHorizontal,
+    layoutMode,
+    constraints,
+    x,
+    y,
     textStyleId,
     defaultVariant,
     parent,
@@ -50,6 +62,10 @@ function createNode(
     componentPropertyDefinitions,
     visible,
     layoutPositioning,
+    paddingTop,
+    paddingBottom,
+    paddingLeft,
+    paddingRight,
     width: props.width ? parseInt(props.width) : undefined,
     height: props.height ? parseInt(props.height) : undefined,
     name,
@@ -106,6 +122,7 @@ describe('Element', () => {
       const outer = createNode('RECTANGLE', {
         width: '60px',
         fills: [],
+        layoutMode: 'HORIZONTAL',
       })
       const inner = createNode('RECTANGLE', {
         width: '60px',
@@ -138,6 +155,37 @@ describe('Element', () => {
           '<Box border="solid 1px $containerBackground" />',
         )
       }
+      {
+        const element = createElement('RECTANGLE', {
+          border: 'solid 1px rgba(0, 0, 0, 0.16)',
+          fills: [],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box border="solid 1px #00000029" />',
+        )
+      }
+      {
+        const element = createElement('RECTANGLE', {
+          border: 'solid 1px rgba(0, 0, 0, 1)',
+          fills: [],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box border="solid 1px #000" />',
+        )
+      }
+
+      {
+        const element = createElement('RECTANGLE', {
+          border: 'solid 1px rgba(0, 0, 0, 0.20)',
+          fills: [],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box border="solid 1px #0003" />',
+        )
+      }
     })
 
     describe('Image', () => {
@@ -147,10 +195,12 @@ describe('Element', () => {
           width: '120px',
           height: '120px',
           name: 'image',
+          layoutMode: 'HORIZONTAL',
           children: [
             createNode('FRAME', {
               width: '120px',
               height: '120px',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('RECTANGLE', {
                   width: '20px',
@@ -199,6 +249,7 @@ describe('Element', () => {
         const element = createElement('FRAME', {
           width: '100px',
           height: '120px',
+          layoutMode: 'HORIZONTAL',
           children: [
             createNode('VECTOR', {
               name: 'image',
@@ -220,6 +271,7 @@ describe('Element', () => {
               name: 'image',
               width: '60px',
               height: '60px',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('VECTOR', {
                   fills: [],
@@ -238,16 +290,19 @@ describe('Element', () => {
             const element = createElement('FRAME', {
               width: '100px',
               height: '120px',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('RECTANGLE', {
                   width: '100px',
                   fills: [],
                   height: '120px',
+                  layoutMode: 'HORIZONTAL',
                   children: [
                     createNode('FRAME', {
                       name: 'image',
                       width: '60px',
                       height: '60px',
+                      layoutMode: 'HORIZONTAL',
                       children: [
                         createNode('VECTOR', {
                           fills: [],
@@ -274,6 +329,7 @@ describe('Element', () => {
               name: 'image',
               width: '60px',
               height: '60px',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('VECTOR', {
                   fills: [],
@@ -291,17 +347,20 @@ describe('Element', () => {
               width: '60px',
               height: '60px',
               'flex-shrink': '0',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('GROUP', {
                   width: '60px',
                   height: '59.691px',
                   'flex-shrink': '0',
+                  layoutMode: 'HORIZONTAL',
                   children: [
                     createNode('GROUP', {
                       width: '60px',
                       height: '59.691px',
                       'flex-shrink': '0',
                       filter: 'drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.16))',
+                      layoutMode: 'HORIZONTAL',
                       children: [
                         createNode('VECTOR', {
                           width: '60px',
@@ -315,11 +374,13 @@ describe('Element', () => {
                       width: '44.047px',
                       height: '28.741px',
                       'flex-shrink': '0',
+                      layoutMode: 'HORIZONTAL',
                       children: [
                         createNode('GROUP', {
                           width: '44.047px',
                           height: '28.741px',
                           'flex-shrink': '0',
+                          layoutMode: 'HORIZONTAL',
                           children: [
                             createNode('VECTOR', {
                               width: '17.003px',
@@ -363,9 +424,11 @@ describe('Element', () => {
               'align-items': 'center',
               gap: '20px',
               'align-self': 'stretch',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('GROUP', {
                   display: 'flex',
+                  layoutMode: 'HORIZONTAL',
                   'justify-content': 'center',
                   'align-items': 'center',
                   width: '60px',
@@ -434,6 +497,7 @@ describe('Element', () => {
               'align-items': 'center',
               gap: '20px',
               'align-self': 'stretch',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('VECTOR', {
                   width: '17.003px',
@@ -495,6 +559,7 @@ describe('Element', () => {
               display: 'flex',
               'align-items': 'center',
               'align-self': 'stretch',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('VECTOR', {
                   name: 'image',
@@ -504,6 +569,7 @@ describe('Element', () => {
                   fill: '#231815',
                 }),
                 createNode('GROUP', {
+                  layoutMode: 'HORIZONTAL',
                   children: [
                     createNode('TEXT', {
                       characters: 'Text',
@@ -561,6 +627,7 @@ describe('Element', () => {
             display: 'flex',
             width: '60px',
             'flex-direction': 'column',
+            layoutMode: 'HORIZONTAL',
             children: [
               createNode('VECTOR', {
                 name: 'image',
@@ -635,6 +702,7 @@ describe('Element', () => {
               'align-items': 'flex-start',
               'align-self': 'stretch',
               background: 'var(--menuHover, #F6F4FF)',
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('RECTANGLE', {
                   height: '318px',
@@ -666,6 +734,7 @@ describe('Element', () => {
         })
         it('should render Rectangle', async () => {
           const element = createElement('FRAME', {
+            layoutMode: 'HORIZONTAL',
             display: 'flex',
             width: '6px',
             'align-items': 'flex-start',
@@ -729,6 +798,7 @@ describe('Element', () => {
             width: '24px',
             height: '24px',
             name: 'image',
+            layoutMode: 'HORIZONTAL',
             children: [
               createNode('VECTOR', {
                 width: '20.001px',
@@ -755,6 +825,7 @@ describe('Element', () => {
             width: '24px',
             height: '24px',
             name: 'image',
+            layoutMode: 'HORIZONTAL',
             children: [
               createNode('VECTOR', {
                 width: '20.001px',
@@ -1379,7 +1450,7 @@ describe('Element', () => {
         })
         expect(await element.getComponentType()).toEqual('Text')
         expect(await element.render()).toEqual(
-          '<Text color="#FF0000" typography="buttonTitle">\n  a{" "}\n  <Text color="#FFFFFF" typography="buttonTitle2">\n    b\n  </Text>\n  {" "}c\n  <Text color="$red">\n    {" "}d{" "}\n  </Text>\n</Text>',
+          '<Text color="#F00" typography="buttonTitle">\n  a{" "}\n  <Text color="#FFF" typography="buttonTitle2">\n    b\n  </Text>\n  {" "}c\n  <Text color="$red">\n    {" "}d{" "}\n  </Text>\n</Text>',
         )
       })
     })
@@ -1399,11 +1470,121 @@ describe('Element', () => {
           expect(await element.getComponentType()).toEqual('Flex')
           expect(await element.render()).toEqual('<Flex />')
         }
+        {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            width: '100px',
+            height: '100px',
+            fills: [],
+            'justify-content': 'center',
+            layoutMode: 'HORIZONTAL',
+            children: [
+              createNode('RECTANGLE', {
+                width: '100px',
+                height: '100px',
+                fills: [],
+              }),
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('Flex')
+          expect(await element.render()).toEqual(
+            '<Flex boxSize="100px">\n  <Box h="100px" w="100%" />\n</Flex>',
+          )
+        }
+
+        {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            width: '100px',
+            height: '100px',
+            fills: [],
+            'justify-content': 'center',
+            layoutMode: 'HORIZONTAL',
+            children: [
+              createNode('RECTANGLE', {
+                width: '80px',
+                height: '100px',
+                fills: [],
+              }),
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('Flex')
+          expect(await element.render()).toEqual(
+            '<Flex boxSize="100px" justifyContent="center">\n  <Box h="100px" w="80px" />\n</Flex>',
+          )
+        }
+        {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            width: '100px',
+            height: '100px',
+            fills: [],
+            'align-items': 'center',
+            layoutMode: 'HORIZONTAL',
+            children: [
+              createNode('RECTANGLE', {
+                width: '100px',
+                height: '80px',
+                fills: [],
+              }),
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('Flex')
+          expect(await element.render()).toEqual(
+            '<Flex alignItems="center" boxSize="100px">\n  <Box h="80px" w="100%" />\n</Flex>',
+          )
+        }
+
+        {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            width: '100px',
+            height: '100px',
+            fills: [],
+            'justify-content': 'center',
+            'flex-direction': 'column',
+            layoutMode: 'VERTICAL',
+            children: [
+              createNode('RECTANGLE', {
+                width: '100px',
+                height: '80px',
+                fills: [],
+              }),
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('VStack')
+          expect(await element.render()).toEqual(
+            '<VStack boxSize="100px" justifyContent="center">\n  <Box h="80px" w="100%" />\n</VStack>',
+          )
+        }
+        {
+          const element = createElement('FRAME', {
+            display: 'flex',
+            width: '100px',
+            height: '100px',
+            fills: [],
+            'align-items': 'center',
+            layoutMode: 'VERTICAL',
+            'flex-direction': 'column',
+            children: [
+              createNode('RECTANGLE', {
+                width: '80px',
+                height: '100px',
+                fills: [],
+              }),
+            ],
+          })
+          expect(await element.getComponentType()).toEqual('VStack')
+          expect(await element.render()).toEqual(
+            '<VStack alignItems="center" boxSize="100px">\n  <Box h="100px" w="80px" />\n</VStack>',
+          )
+        }
       })
     })
     describe('Center', () => {
       it('should render Center', async () => {
         const element = createElement('FRAME', {
+          layoutMode: 'HORIZONTAL',
           children: [
             createNode('TEXT', {
               characters: 'I am centered',
@@ -1469,6 +1650,7 @@ describe('Element', () => {
   describe('Page', () => {
     it('should remove width props when parent is page', async () => {
       const element = createElement('PAGE' as any, {
+        layoutMode: 'HORIZONTAL',
         children: [
           createNode('FRAME', {
             width: '1920px',
@@ -1480,6 +1662,7 @@ describe('Element', () => {
     })
     it('should remove width props when parent is section', async () => {
       const element = createElement('PAGE' as any, {
+        layoutMode: 'HORIZONTAL',
         children: [
           createNode('FRAME', {
             width: '1920px',
@@ -1529,6 +1712,83 @@ describe('Element', () => {
         })
         expect(await element.render()).toEqual(
           '<Box h="10px" w="10px" WebkitWidth="10px" />',
+        )
+      }
+    })
+  })
+
+  describe('Absolute Position', () => {
+    it('should render Absolute Position', async () => {
+      {
+        const element = createElement('FRAME', {
+          fills: [],
+          width: '100px',
+          height: '100px',
+          children: [
+            createNode('RECTANGLE', {
+              fills: [],
+              width: '50px',
+              height: '50px',
+              x: 25,
+              y: 25,
+              constraints: {
+                horizontal: 'MIN',
+                vertical: 'MIN',
+              },
+            }),
+          ],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box boxSize="100px" pos="relative">\n  <Box boxSize="50px" left="25px" pos="absolute" top="25px" />\n</Box>',
+        )
+      }
+      {
+        const element = createElement('FRAME', {
+          fills: [],
+          width: '100px',
+          height: '100px',
+          children: [
+            createNode('RECTANGLE', {
+              fills: [],
+              width: '50px',
+              height: '50px',
+              x: 25,
+              y: 25,
+              constraints: {
+                horizontal: 'MAX',
+                vertical: 'MAX',
+              },
+            }),
+          ],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box boxSize="100px" pos="relative">\n  <Box bottom="75px" boxSize="50px" pos="absolute" right="75px" />\n</Box>',
+        )
+      }
+      {
+        const element = createElement('FRAME', {
+          fills: [],
+          width: '100px',
+          height: '100px',
+          children: [
+            createNode('RECTANGLE', {
+              fills: [],
+              width: '50px',
+              height: '50px',
+              x: 25,
+              y: 25,
+              constraints: {
+                horizontal: 'STRETCH',
+                vertical: 'STRETCH',
+              },
+            }),
+          ],
+        })
+        expect(await element.getComponentType()).toEqual('Box')
+        expect(await element.render()).toEqual(
+          '<Box boxSize="100px" pos="relative">\n  <Box\n    bottom="0"\n    boxSize="50px"\n    left="0"\n    pos="absolute"\n    right="0"\n    top="0"\n  />\n</Box>',
         )
       }
     })
@@ -2000,6 +2260,7 @@ export function ComponentSet(props: ComponentSetProps) {
                 effect: 'active',
                 text: 'Hello',
               },
+              layoutMode: 'HORIZONTAL',
               children: [
                 createNode('TEXT', {
                   characters: 'Hello',
@@ -2137,7 +2398,13 @@ export function ComponentSet(props: ComponentSetProps) {
           createNode('TEXT', {
             position: 'absolute',
             characters: 'I am centered',
+            x: 0,
+            y: 0,
             layoutPositioning: 'ABSOLUTE',
+            constraints: {
+              horizontal: 'MIN',
+              vertical: 'MIN',
+            },
             styledTextSegments: [
               {
                 characters: 'I am centered',
@@ -2172,9 +2439,11 @@ export function ComponentSet(props: ComponentSetProps) {
     fontFamily="Roboto"
     fontSize="16px"
     fontStyle="italic"
+    left="0"
     letterSpacing="20px"
     lineHeight="20px"
     pos="absolute"
+    top="0"
   >
     I am centered
   </Text>
@@ -2187,6 +2456,7 @@ export function ComponentSet(props: ComponentSetProps) {
     it('should remove width when parent is HUG', async () => {
       const element = createElement('FRAME', {
         layoutSizingHorizontal: 'HUG',
+        layoutMode: 'HORIZONTAL',
         children: [
           createNode('FRAME', {
             width: '1920px',
@@ -2220,6 +2490,7 @@ export function ComponentSet(props: ComponentSetProps) {
           name: 'root',
           width: '100px',
           height: '100px',
+          layoutMode: 'HORIZONTAL',
           children: [
             createNode('TEXT', {
               width: '100px',

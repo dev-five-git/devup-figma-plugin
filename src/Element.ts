@@ -5,7 +5,6 @@ import {
   checkSvgImageChildrenType,
   colorFromFills,
   cssToProps,
-  filterPropsByChildrenCountAndType,
   fixChildrenText,
   formatSvg,
   getComponentName,
@@ -33,6 +32,14 @@ const SEGMENT_TYPE = [
   'indentation',
   'hyperlink',
 ] as (keyof Omit<StyledTextSegment, 'characters' | 'start' | 'end'>)[]
+export const commonIsAbsolutePosition = (node: SceneNode) => {
+  return !!(
+    ('layoutPositioning' in node && node.layoutPositioning === 'ABSOLUTE') ||
+    (node.parent &&
+      (('layoutMode' in node.parent && node.parent.layoutMode === 'NONE') ||
+        ('layoutMode' in node.parent && !node.parent.layoutMode)))
+  )
+}
 
 export class Element<T extends SceneNode = SceneNode> {
   node: T
@@ -53,12 +60,52 @@ export class Element<T extends SceneNode = SceneNode> {
   async getCss(): Promise<Record<string, string>> {
     if (this.css) return this.css
     this.css = await this.node.getCSSAsync()
+    if (
+      this.node.type !== 'COMPONENT' &&
+      this.node.type !== 'COMPONENT_SET' &&
+      this.parent &&
+      this.node.parent &&
+      this.node.parent.type !== 'COMPONENT' &&
+      this.node.parent.type !== 'COMPONENT_SET' &&
+      'width' in this.node.parent &&
+      'height' in this.node.parent &&
+      'constraints' in this.node &&
+      commonIsAbsolutePosition(this.node)
+    ) {
+      const { horizontal, vertical } = this.node.constraints
+      this.css['pos'] = 'absolute'
+      switch (horizontal) {
+        case 'MIN':
+          this.css['left'] = this.node.x + 'px'
+          break
+        case 'MAX':
+          this.css['right'] = this.node.parent.width - this.node.x + 'px'
+          break
+        default:
+          this.css['left'] = '0px'
+          this.css['right'] = '0px'
+          break
+      }
+      switch (vertical) {
+        case 'MIN':
+          this.css['top'] = this.node.y + 'px'
+          break
+        case 'MAX':
+          this.css['bottom'] = this.node.parent.height - this.node.y + 'px'
+          break
+        default:
+          this.css['top'] = '0px'
+          this.css['bottom'] = '0px'
+          break
+      }
+    }
     if (this.css['width']?.endsWith('px') && this.node.parent) {
       if (
         this.node.parent.type === 'SECTION' ||
         this.node.parent.type === 'PAGE' ||
         // inline case
-        (this.node.parent as any).layoutSizingHorizontal == 'HUG'
+        ('layoutSizingHorizontal' in this.node.parent &&
+          this.node.parent.layoutSizingHorizontal == 'HUG')
       )
         delete this.css['width']
       else if (
@@ -117,15 +164,14 @@ export class Element<T extends SceneNode = SceneNode> {
     if (this.componentType) return this.componentType
 
     if (
+      this.node.type !== 'COMPONENT' &&
+      this.node.type !== 'COMPONENT_SET' &&
       'children' in this.node &&
-      this.node.children.some(
-        (child) =>
-          'layoutPositioning' in child &&
-          child.layoutPositioning === 'ABSOLUTE',
-      )
+      this.node.children.some(commonIsAbsolutePosition)
     )
       this.additionalProps = {
         pos: 'relative',
+        p: '',
       }
     else {
       this.additionalProps = {}
@@ -334,6 +380,43 @@ export class Element<T extends SceneNode = SceneNode> {
 
     return render(result)
   }
+  filterPropsByChildrenCountAndType(
+    componentType: ComponentType,
+    props: Record<string, string>,
+  ): Record<string, string> {
+    const children = this.getChildren()
+    const childrenCount = children.length
+    if (childrenCount === 1) {
+      let fullWidth = false
+      let fullHeight = false
+      if (children[0] instanceof Element && 'paddingTop' in this.node) {
+        fullHeight =
+          children[0].node.height >=
+          this.node.height - this.node.paddingTop - this.node.paddingBottom
+        fullWidth =
+          children[0].node.width >=
+          this.node.width - this.node.paddingLeft - this.node.paddingRight
+      }
+      switch (componentType) {
+        case 'Center':
+          delete props['alignItems']
+          delete props['justifyContent']
+          delete props['gap']
+          break
+        case 'VStack':
+          if (fullWidth) delete props['alignItems']
+          if (fullHeight) delete props['justifyContent']
+          delete props['gap']
+          break
+        case 'Flex':
+          if (fullHeight) delete props['alignItems']
+          if (fullWidth) delete props['justifyContent']
+          delete props['gap']
+          break
+      }
+    }
+    return props
+  }
 
   async run(dep: number = 0): Promise<DevupNode | null> {
     if (!this.node.visible) return null
@@ -415,16 +498,12 @@ export class Element<T extends SceneNode = SceneNode> {
     }
 
     const originProps = await this.getProps()
-
     const children = this.getChildren()
-    const mergedProps = filterPropsByChildrenCountAndType(
-      children.length,
-      componentType,
-      {
-        ...originProps,
-        ...this.additionalProps,
-      },
-    )
+
+    const mergedProps = this.filterPropsByChildrenCountAndType(componentType, {
+      ...originProps,
+      ...this.additionalProps,
+    })
 
     if (this.node.type === 'TEXT') {
       const segs = this.node.getStyledTextSegments(SEGMENT_TYPE)

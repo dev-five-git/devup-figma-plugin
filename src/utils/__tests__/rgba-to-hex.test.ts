@@ -25,7 +25,7 @@ describe('rgbaToHex', () => {
         b: 1,
         a: 1,
       }),
-    ).toBe('#FFFFFF')
+    ).toBe('#FFFFFFFF')
     expect(
       rgbaToHex({
         r: 0,
@@ -33,6 +33,6 @@ describe('rgbaToHex', () => {
         b: 0,
         a: 1,
       }),
-    ).toBe('#000000')
+    ).toBe('#000000FF')
   })
 })
