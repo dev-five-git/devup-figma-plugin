@@ -12,9 +12,9 @@ export function styleNameToTypography(name: string): {
   if (lower.startsWith('mobile/'))
     return { level: 0, name: toCamel(name.slice(7)) }
   if (lower.includes('/')) {
-    const [type, name] = lower.split('/')
+    const [type, _name] = name.split('/')
     const typeNumber = parseInt(type)
-    if (!isNaN(typeNumber)) return { level: typeNumber, name: toCamel(name) }
+    if (!isNaN(typeNumber)) return { level: typeNumber, name: toCamel(_name) }
   }
 
   return { level: 0, name: toCamel(name) }

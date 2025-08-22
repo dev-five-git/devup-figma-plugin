@@ -25,10 +25,12 @@ function createNode(
     defaultVariant = {},
     visible = true,
     css,
+    maxWidth,
     paddingTop = 0,
     paddingBottom = 0,
     paddingLeft = 0,
     paddingRight = 0,
+    counterAxisAlignItems,
     ...props
   }: {
     [_: string]: any
@@ -57,6 +59,7 @@ function createNode(
     y,
     textStyleId,
     defaultVariant,
+    maxWidth,
     parent,
     characters,
     componentPropertyDefinitions,
@@ -66,6 +69,7 @@ function createNode(
     paddingBottom,
     paddingLeft,
     paddingRight,
+    counterAxisAlignItems,
     width: props.width ? parseInt(props.width) : undefined,
     height: props.height ? parseInt(props.height) : undefined,
     name,
@@ -783,6 +787,36 @@ describe('Element', () => {
           `<Flex justifyContent="center">
   <Box boxSize="6px" />
 </Flex>`,
+        )
+      })
+
+      it('should render Child with width of Flex if single child and VStack has align-items: center', async () => {
+        const element = createElement('FRAME', {
+          display: 'flex',
+          'align-items': 'center',
+          'flex-direction': 'column',
+          layoutMode: 'VERTICAL',
+          fills: [],
+          counterAxisAlignItems: 'CENTER',
+          css: {
+            'align-items': 'center',
+            'flex-direction': 'column',
+            display: 'flex',
+          },
+          children: [
+            createNode('RECTANGLE', {
+              maxWidth: '1000px',
+              fills: [],
+              css: {
+                'max-width': '1000px',
+              },
+            }),
+          ],
+        })
+        expect(await element.render()).toEqual(
+          `<VStack alignItems="center">
+  <Box maxW="1000px" w="100%" />
+</VStack>`,
         )
       })
 

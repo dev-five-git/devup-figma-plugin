@@ -33,5 +33,10 @@ describe('styleNameToTypography', () => {
       level: 4,
       name: 'fontName',
     })
+
+    expect(styleNameToTypography('4/fontName')).toEqual({
+      level: 4,
+      name: 'fontName',
+    })
   })
 })

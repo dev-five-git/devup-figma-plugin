@@ -99,20 +99,32 @@ export class Element<T extends SceneNode = SceneNode> {
           break
       }
     }
-    if (this.css['width']?.endsWith('px') && this.node.parent) {
+    if (this.node.parent) {
+      if (this.css['width']?.endsWith('px')) {
+        if (
+          this.node.parent.type === 'SECTION' ||
+          this.node.parent.type === 'PAGE' ||
+          // inline case
+          ('layoutSizingHorizontal' in this.node.parent &&
+            this.node.parent.layoutSizingHorizontal == 'HUG')
+        )
+          delete this.css['width']
+        else if (
+          'width' in this.node.parent &&
+          this.node.width === this.node.parent.width
+        ) {
+          this.css['width'] = '100%'
+        }
+      }
+
+      // In VStack with align-items: center, if max-width is set, set width to 100%
       if (
-        this.node.parent.type === 'SECTION' ||
-        this.node.parent.type === 'PAGE' ||
-        // inline case
-        ('layoutSizingHorizontal' in this.node.parent &&
-          this.node.parent.layoutSizingHorizontal == 'HUG')
-      )
-        delete this.css['width']
-      else if (
-        'width' in this.node.parent &&
-        this.node.width === this.node.parent.width
+        this.node.maxWidth &&
+        'layoutMode' in this.node.parent &&
+        this.node.parent.layoutMode === 'VERTICAL' &&
+        this.node.parent.counterAxisAlignItems === 'CENTER'
       ) {
-        this.css['width'] = '100%'
+        if (this.css['max-width']) this.css['width'] = '100%'
       }
     }
     // Image has not padding
