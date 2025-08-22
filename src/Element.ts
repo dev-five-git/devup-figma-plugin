@@ -288,6 +288,16 @@ export class Element<T extends SceneNode = SceneNode> {
     if (this.componentType) return this.componentType
     const css = await this.getCss()
     if (css.display === 'flex' || css.display === 'inline-flex') {
+      if (
+        css['justify-content'] === 'space-between' &&
+        this.getChildren().length === 1
+      ) {
+        // node act like center if has a single child and align is auto
+        // but align auto transform to justify-content: space-between
+        // so we need to transform it to center
+        css['justify-content'] = 'center'
+      }
+
       this.componentType =
         css['justify-content'] === 'center' && css['align-items'] === 'center'
           ? 'Center'

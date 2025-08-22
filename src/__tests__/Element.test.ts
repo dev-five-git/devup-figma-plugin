@@ -765,6 +765,27 @@ describe('Element', () => {
         })
       })
 
+      it('should render Flex with single child and justify-content: space-between', async () => {
+        const element = createElement('FRAME', {
+          display: 'flex',
+          'justify-content': 'space-between',
+          layoutMode: 'HORIZONTAL',
+          fills: [],
+          children: [
+            createNode('RECTANGLE', {
+              width: '6px',
+              height: '6px',
+              fills: [],
+            }),
+          ],
+        })
+        expect(await element.render()).toEqual(
+          `<Flex justifyContent="center">
+  <Box boxSize="6px" />
+</Flex>`,
+        )
+      })
+
       it('should render Rectangle with multiple fills', async () => {
         const element = createElement('RECTANGLE', {
           width: '6px',

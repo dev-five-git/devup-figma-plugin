@@ -222,6 +222,7 @@ const COLOR_PROPS = [
   'strokeColor',
   'textDecorationColor',
   'textEmphasisColor',
+  'boxShadow',
 ]
 const DEFAULT_PROPS_MAP = {
   flex: {
