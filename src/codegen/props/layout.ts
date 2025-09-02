@@ -1,4 +1,5 @@
 import { addPx } from '../utils/add-px'
+import { getPageNode } from '../utils/get-page-node'
 import { isChildWidthShrinker } from '../utils/is-child-width-shrinker'
 
 export function getMinMaxProps(
@@ -51,7 +52,14 @@ function _getLayoutProps(
     const ret = _getTextLayoutProps(node)
     if (ret) return ret
   }
+  const aspectRatio =
+    'targetAspectRatio' in node ? node.targetAspectRatio : undefined
+  const rootNode = 'children' in node ? getPageNode(node) : null
+
   return {
+    aspectRatio: aspectRatio
+      ? Math.floor((aspectRatio.x / aspectRatio.y) * 100) / 100
+      : undefined,
     flex:
       wType === 'FILL' &&
       node.parent &&
@@ -60,13 +68,15 @@ function _getLayoutProps(
         ? 1
         : undefined,
     w:
-      wType === 'FIXED'
-        ? addPx(node.width)
-        : wType === 'FILL' &&
-            node.parent &&
-            isChildWidthShrinker(node.parent, 'width')
-          ? '100%'
-          : undefined,
+      rootNode === node && node.width === 1920
+        ? undefined
+        : wType === 'FIXED'
+          ? addPx(node.width)
+          : wType === 'FILL' &&
+              node.parent &&
+              isChildWidthShrinker(node.parent, 'width')
+            ? '100%'
+            : undefined,
     h:
       hType === 'FIXED'
         ? addPx(node.height)

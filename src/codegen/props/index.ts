@@ -24,20 +24,6 @@ export function filterPropsWithComponent(
   props: Record<string, unknown>,
 ): Record<string, unknown> {
   const newProps: Record<string, unknown> = {}
-  if (component === 'Image') {
-    const w = props.w
-    const h = props.h
-    if (w && h) {
-      newProps.aspectRatio =
-        Math.floor(
-          ((parseFloat(w as string) as number) /
-            (parseFloat(h as string) as number)) *
-            100,
-        ) / 100
-    } else if (props.boxSize) {
-      newProps.aspectRatio = '1'
-    }
-  }
   for (const [key, value] of Object.entries(props)) {
     switch (component) {
       case 'Flex':
@@ -51,8 +37,7 @@ export function filterPropsWithComponent(
         if (['flexDir', 'display'].includes(key)) continue
         break
       case 'Image':
-        if (['w', 'h', 'display', 'alignItems', 'justifyContent'].includes(key))
-          continue
+        if (['display', 'alignItems', 'justifyContent'].includes(key)) continue
         break
     }
     newProps[key] = value
