@@ -1,5 +1,4 @@
 import { addPx } from '../utils/add-px'
-import { getPageNode } from '../utils/get-parge-node'
 import { isChildWidthShrinker } from '../utils/is-child-width-shrinker'
 
 export function getMinMaxProps(
@@ -16,37 +15,65 @@ export function getMinMaxProps(
 export function getLayoutProps(
   node: SceneNode,
 ): Record<string, boolean | string | number | undefined | null> {
-  if (node.parent) {
-    const h =
-      'height' in node.parent && node.parent.height === node.height
-        ? undefined
-        : addPx(node.height)
+  const ret = _getLayoutProps(node)
+  if (ret.w && ret.h === ret.w) {
+    ret.boxSize = ret.w
+    delete ret.w
+    delete ret.h
+  }
+  return ret
+}
 
-    if (!isChildWidthShrinker(node.parent)) {
+function _getTextLayoutProps(
+  node: TextNode,
+): Record<string, boolean | string | number | undefined | null> | null {
+  switch (node.textAutoResize) {
+    case 'WIDTH_AND_HEIGHT':
+      return {}
+    case 'HEIGHT':
       return {
-        h,
+        w: addPx(node.width),
       }
-    }
-    if (
-      node.parent &&
-      'width' in node.parent &&
-      node.width === node.parent.width
-    ) {
-      return {
-        w: '100%',
-        h,
-      }
-    }
-    const pageNode = getPageNode(node.parent)
-    if (pageNode && 'width' in pageNode && node.width === pageNode.width) {
-      return {
-        w: '100%',
-        h,
-      }
-    }
+    case 'NONE':
+    case 'TRUNCATE':
+      return null
+  }
+}
+
+function _getLayoutProps(
+  node: SceneNode,
+): Record<string, boolean | string | number | undefined | null> {
+  const hType =
+    'layoutSizingVertical' in node ? node.layoutSizingVertical : 'FILL'
+  const wType =
+    'layoutSizingHorizontal' in node ? node.layoutSizingHorizontal : 'FILL'
+  if (node.type === 'TEXT' && hType === 'FIXED' && wType === 'FIXED') {
+    const ret = _getTextLayoutProps(node)
+    if (ret) return ret
   }
   return {
-    w: node.width === 1920 ? '100%' : addPx(node.width),
-    h: addPx(node.height),
+    flex:
+      wType === 'FILL' &&
+      node.parent &&
+      'layoutMode' in node.parent &&
+      node.parent.layoutMode === 'HORIZONTAL'
+        ? 1
+        : undefined,
+    w:
+      wType === 'FIXED'
+        ? addPx(node.width)
+        : wType === 'FILL' &&
+            node.parent &&
+            isChildWidthShrinker(node.parent, 'width')
+          ? '100%'
+          : undefined,
+    h:
+      hType === 'FIXED'
+        ? addPx(node.height)
+        : hType === 'FILL' &&
+            node.parent &&
+            isChildWidthShrinker(node.parent, 'height')
+          ? '100%'
+          : undefined,
   }
 }

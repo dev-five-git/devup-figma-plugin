@@ -1,11 +1,12 @@
-import { getProps } from '../props'
-
-export function getDevupComponentByNode(node: SceneNode) {
+export function getDevupComponentByNode(
+  node: SceneNode,
+  props: Record<string, unknown>,
+) {
   switch (node.type) {
     case 'TEXT':
       return 'Text'
     default:
-      return getDevupComponentByProps(getProps(node))
+      return getDevupComponentByProps(props)
   }
 }
 

@@ -1,20 +1,27 @@
 import { getAutoLayoutProps } from './auto-layout'
+import { getBackgroundProps } from './background'
+import { getBorderRadiusProps } from './border-radius'
 import { getLayoutProps, getMinMaxProps } from './layout'
+import { getPaddingProps } from './padding'
+import { getTextAlignProps } from './text-align'
 
-export function getProps(
+export async function getProps(
   node: SceneNode,
-): Record<string, boolean | string | number | undefined | null> {
+): Promise<Record<string, boolean | string | number | undefined | null>> {
   return {
     ...getAutoLayoutProps(node),
     ...getMinMaxProps(node),
     ...getLayoutProps(node),
+    ...getBorderRadiusProps(node),
+    ...(await getBackgroundProps(node)),
+    ...getPaddingProps(node),
+    ...getTextAlignProps(node),
   }
 }
 
 export function filterPropsWithComponent(
   component: string,
   props: Record<string, unknown>,
-  childrenCount: number,
 ): Record<string, unknown> {
   const newProps: Record<string, unknown> = {}
   if (component === 'Image') {
@@ -27,10 +34,11 @@ export function filterPropsWithComponent(
             (parseFloat(h as string) as number)) *
             100,
         ) / 100
+    } else if (props.boxSize) {
+      newProps.aspectRatio = '1'
     }
   }
   for (const [key, value] of Object.entries(props)) {
-    if (childrenCount <= 0 && ['gap', 'flexDir'].includes(key)) continue
     switch (component) {
       case 'Flex':
       case 'Grid':

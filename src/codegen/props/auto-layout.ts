@@ -11,32 +11,65 @@ export function getAutoLayoutProps(
     return {}
   const { layoutMode } = node.inferredAutoLayout
   if (layoutMode === 'GRID') return getGridProps(node)
+  const hasChildren = node.children.filter((c) => c.visible).length > 1
   return {
     display: {
       HORIZONTAL: 'flex',
       VERTICAL: 'flex',
     }[layoutMode],
-    flexDir: {
-      HORIZONTAL: 'row',
-      VERTICAL: 'column',
-    }[layoutMode],
-    gap: addPx(node.inferredAutoLayout.itemSpacing),
-    justifyContent: {
-      MIN: 'flex-start',
-      MAX: 'flex-end',
-      CENTER: 'center',
-      SPACE_BETWEEN: 'space-between',
-    }[node.primaryAxisAlignItems],
-    alignItems: node.counterAxisAlignItems
+    flexDir: hasChildren
       ? {
-          MIN: 'flex-start',
-          MAX: 'flex-end',
-          CENTER: 'center',
-          SPACE_BETWEEN: 'space-between',
-          BASELINE: 'baseline',
-        }[node.counterAxisAlignItems]
+          HORIZONTAL: 'row',
+          VERTICAL: 'column',
+        }[layoutMode]
       : undefined,
+    gap: hasChildren ? addPx(node.inferredAutoLayout.itemSpacing) : undefined,
+    justifyContent: getJustifyContent(node),
+    alignItems: getAlignItems(node),
   }
+}
+
+function getJustifyContent(
+  node: SceneNode & BaseFrameMixin,
+): string | undefined {
+  const layoutMode = node.inferredAutoLayout!.layoutMode
+  switch (layoutMode) {
+    case 'HORIZONTAL':
+      if (node.layoutSizingHorizontal === 'HUG') return undefined
+      break
+    case 'VERTICAL':
+      if (node.layoutSizingVertical === 'HUG') return undefined
+      break
+    default:
+      break
+  }
+  return {
+    MIN: 'flex-start',
+    MAX: 'flex-end',
+    CENTER: 'center',
+    SPACE_BETWEEN: 'space-between',
+  }[node.primaryAxisAlignItems]
+}
+
+function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
+  const layoutMode = node.inferredAutoLayout!.layoutMode
+  switch (layoutMode) {
+    case 'HORIZONTAL':
+      if (node.layoutSizingVertical === 'HUG') return undefined
+      break
+    case 'VERTICAL':
+      if (node.layoutSizingHorizontal === 'HUG') return undefined
+      break
+    default:
+      break
+  }
+  return {
+    MIN: 'flex-start',
+    MAX: 'flex-end',
+    CENTER: 'center',
+    SPACE_BETWEEN: 'space-between',
+    BASELINE: 'baseline',
+  }[node.counterAxisAlignItems]
 }
 
 function getGridProps(

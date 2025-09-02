@@ -1,4 +1,5 @@
 import { colorFromFills, propsToPropsWithTypography } from '../../utils'
+import { optimizeHex } from '../../utils/optimize-hex'
 import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
 import { fixTextChild } from '../utils/fix-text-child'
 import { renderNode } from '.'
@@ -32,7 +33,8 @@ export async function renderText(node: TextNode): Promise<{
           await propsToPropsWithTypography(
             {
               ...((await textSegmentToTypography(seg)) as any),
-              color: await colorFromFills(seg.fills as any),
+              color: optimizeHex(await colorFromFills(seg.fills as any)),
+              characters: seg.characters,
             },
             seg.textStyleId,
           ),
@@ -42,24 +44,14 @@ export async function renderText(node: TextNode): Promise<{
       ),
     ),
   )
-  let mainColor = ''
-  let mainColorCount = 0
-  let mainTypography = ''
-  let mainTypographyCount = 0
+  let defaultTypographyCount = 0
+  let defaultProps: Record<string, string> = {}
 
   propsArray.forEach((props) => {
-    const filterdColor = propsArray.filter((p) => p.color === props.color)
-    if (filterdColor.length > mainColorCount) {
-      mainColor = props.color
-      mainColorCount = filterdColor.length
-    }
-
-    const filterdTypography = propsArray.filter(
-      (p) => p.typography === props.typography,
-    )
-    if (filterdTypography.length > mainTypographyCount) {
-      mainTypography = props.typography
-      mainTypographyCount = filterdTypography.length
+    if (props.characters.length >= defaultTypographyCount) {
+      defaultProps = { ...props }
+      delete defaultProps.characters
+      defaultTypographyCount = props.characters.length
     }
   })
 
@@ -73,14 +65,22 @@ export async function renderText(node: TextNode): Promise<{
         props: Record<string, string>
       }> => {
         const props = propsArray[idx]
-        if (segs.length > 1 && mainColor === props.color) delete props.color
-        if (segs.length > 1 && mainTypography === props.typography)
-          delete props.typography
+        if (segs.length > 1) {
+          for (const key in defaultProps) {
+            if (defaultProps[key as keyof typeof defaultProps] === props[key])
+              delete props[key]
+          }
+        }
         let text: string[] = [fixTextChild(seg.characters)]
         let textComponent: 'ul' | 'ol' | null = null
 
         if (seg.listOptions.type === 'NONE') {
-          text = text.map((line) => line.replaceAll('\n', '<br />'))
+          text = text.map((line) =>
+            line.replaceAll(
+              '\n',
+              "<Box as=\"br\" display={['none', null, 'initial']} />",
+            ),
+          )
         } else {
           switch (seg.listOptions.type) {
             case 'UNORDERED': {
@@ -96,12 +96,13 @@ export async function renderText(node: TextNode): Promise<{
             line.split('\n').map((line) => renderNode('li', {}, 0, [line])),
           )
         }
-        const resultProps = {
+        const resultProps: Record<string, string> = {
           ...props,
           ...(textComponent
             ? { as: textComponent, my: '0px', pl: '1.5em' }
             : {}),
         }
+        delete resultProps.characters
         if (Object.keys(resultProps).length === 0)
           return { children: text, props: {} }
         return {
@@ -113,15 +114,24 @@ export async function renderText(node: TextNode): Promise<{
   )
   const resultChildren = children.flat()
   if (resultChildren.length === 1)
-    return { children: resultChildren[0].children, props: {} }
+    return {
+      children: resultChildren[0].children,
+      props: {
+        ...defaultProps,
+        ...(defaultProps.typography
+          ? { typography: defaultProps.typography }
+          : resultChildren[0].props),
+      },
+    }
 
   return {
-    children: resultChildren.map((child) =>
-      renderNode('Text', child.props, 0, child.children),
-    ),
-    props: {
-      color: mainColor,
-      typography: mainTypography,
-    },
+    children: resultChildren.map((child) => {
+      if (Object.keys(child.props).length === 0)
+        return child.children.join(
+          "<Box as=\"br\" display={'none', null, 'initial'} />",
+        )
+      return renderNode('Text', child.props, 0, child.children)
+    }),
+    props: defaultProps,
   }
 }

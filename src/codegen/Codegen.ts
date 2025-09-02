@@ -36,12 +36,13 @@ export class Codegen {
             return await this.run(child, 0)
           })
         : []
+    const props = await getProps(node)
 
     this.components.set(
       node,
       renderNode(
-        getDevupComponentByProps(getProps(node)),
-        getProps(node),
+        getDevupComponentByProps(props),
+        props,
         2,
         await Promise.all(childrenCodes),
       ),
@@ -51,7 +52,8 @@ export class Codegen {
   async run(node: SceneNode = this.node, dep: number = 0): Promise<string> {
     const assetNode = checkAssetNode(node)
     if (assetNode) {
-      const props = getProps(node)
+      const props = await getProps(node)
+      props.src = '/icons/' + node.name + '.svg'
       const ret = renderNode('Image', props, dep, [])
       if (node === this.node) this.code = ret
       return ret
@@ -64,7 +66,7 @@ export class Codegen {
       if (node === this.node) this.code = ret
       return ret
     }
-    const props = getProps(node)
+    const props = await getProps(node)
     const childrenCodes = await Promise.all(
       'children' in node
         ? node.children.map(async (child) => {
@@ -82,7 +84,7 @@ export class Codegen {
       Object.assign(props, _props)
     }
     const ret = renderNode(
-      getDevupComponentByNode(node),
+      getDevupComponentByNode(node, props),
       props,
       dep,
       childrenCodes,

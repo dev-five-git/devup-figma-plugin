@@ -4,5 +4,6 @@ export function addPx(value: unknown) {
   const str = fixed.endsWith('.000')
     ? String(Math.round(value))
     : fixed.replace(/\.?0+$/, '')
+  if (str === '0') return undefined
   return `${str}px`
 }

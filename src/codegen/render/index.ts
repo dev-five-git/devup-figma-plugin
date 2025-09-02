@@ -12,7 +12,7 @@ export function renderNode(
 ): string {
   const filteredProps = filterProps(props)
   const propsString = propsToString(
-    filterPropsWithComponent(component, filteredProps, childrenCodes.length),
+    filterPropsWithComponent(component, filteredProps),
   )
   const hasChildren = childrenCodes.length > 0
   const tail = hasChildren ? space(deps) + `</${component}>` : ''
