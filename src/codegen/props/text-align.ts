@@ -1,7 +1,7 @@
 export function getTextAlignProps(
   node: SceneNode,
-): Record<string, boolean | string | number | undefined | null> {
-  if (node.type !== 'TEXT') return {}
+): Record<string, boolean | string | number | undefined | null> | undefined {
+  if (node.type !== 'TEXT') return
   const hType =
     'layoutSizingVertical' in node ? node.layoutSizingVertical : 'FILL'
   const wType =

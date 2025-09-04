@@ -1,0 +1,56 @@
+import { addPx } from '../utils/add-px'
+import { extractVariableName } from '../utils/extract-variable-name'
+import { fourValueShortcut } from '../utils/four-value-shortcut'
+import { replaceAllVarFunctions } from '../utils/replace-all-var-functions'
+
+export function getBorderRadiusProps(
+  node: SceneNode,
+): Record<string, boolean | string | number | undefined | null> | undefined {
+  if (
+    'cornerRadius' in node &&
+    typeof node.cornerRadius === 'number' &&
+    node.cornerRadius !== 0
+  )
+    return {
+      borderRadius: addPx(node.cornerRadius),
+    }
+  if ('topLeftRadius' in node) {
+    const value = fourValueShortcut(
+      node.topLeftRadius,
+      node.topRightRadius,
+      node.bottomRightRadius,
+      node.bottomLeftRadius,
+    )
+    if (value === '0') return
+    return {
+      borderRadius: value,
+    }
+  }
+}
+
+export async function getBorderProps(
+  node: SceneNode,
+): Promise<
+  Record<string, boolean | string | number | undefined | null> | undefined
+> {
+  if ('strokes' in node && node.strokes.length > 0) {
+    const css = await node.getCSSAsync()
+    return {
+      border: css.border
+        ? replaceAllVarFunctions(css.border, extractVariableName)
+        : undefined,
+      borderBottom: css['border-bottom']
+        ? replaceAllVarFunctions(css['border-bottom'], extractVariableName)
+        : undefined,
+      borderTop: css['border-top']
+        ? replaceAllVarFunctions(css['border-top'], extractVariableName)
+        : undefined,
+      borderLeft: css['border-left']
+        ? replaceAllVarFunctions(css['border-left'], extractVariableName)
+        : undefined,
+      borderRight: css['border-right']
+        ? replaceAllVarFunctions(css['border-right'], extractVariableName)
+        : undefined,
+    }
+  }
+}

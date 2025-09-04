@@ -2,7 +2,7 @@ import { optimizeSpace } from '../utils/optimize-space'
 
 export function getPaddingProps(
   node: SceneNode,
-): Record<string, boolean | string | number | undefined | null> {
+): Record<string, boolean | string | number | undefined | null> | undefined {
   if ('paddingLeft' in node) {
     return optimizeSpace(
       'p',
@@ -12,5 +12,4 @@ export function getPaddingProps(
       node.paddingLeft,
     )
   }
-  return {}
 }
