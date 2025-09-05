@@ -2,28 +2,32 @@ import { addPx } from '../utils/add-px'
 
 export function getAutoLayoutProps(
   node: SceneNode,
-): Record<string, boolean | string | number | undefined | null> {
+): Record<string, boolean | string | number | undefined | null> | undefined {
   if (
     !('inferredAutoLayout' in node) ||
     !node.inferredAutoLayout ||
     node.inferredAutoLayout.layoutMode === 'NONE'
   )
-    return {}
+    return
   const { layoutMode } = node.inferredAutoLayout
   if (layoutMode === 'GRID') return getGridProps(node)
-  const hasChildren = node.children.filter((c) => c.visible).length > 1
+  const childrenCount = node.children.filter((c) => c.visible).length
   return {
     display: {
       HORIZONTAL: 'flex',
       VERTICAL: 'flex',
     }[layoutMode],
-    flexDir: hasChildren
-      ? {
-          HORIZONTAL: 'row',
-          VERTICAL: 'column',
-        }[layoutMode]
-      : undefined,
-    gap: hasChildren ? addPx(node.inferredAutoLayout.itemSpacing) : undefined,
+    flexDir:
+      childrenCount > 0
+        ? {
+            HORIZONTAL: 'row',
+            VERTICAL: 'column',
+          }[layoutMode]
+        : undefined,
+    gap:
+      childrenCount > 1
+        ? addPx(node.inferredAutoLayout.itemSpacing)
+        : undefined,
     justifyContent: getJustifyContent(node),
     alignItems: getAlignItems(node),
   }

@@ -1,3 +1,4 @@
+import { checkAssetNode } from '../utils/check-asset-node'
 import { extractVariableName } from '../utils/extract-variable-name'
 import { replaceAllVarFunctions } from '../utils/replace-all-var-functions'
 
@@ -10,7 +11,7 @@ export async function getBackgroundProps(
     'fills' in node &&
     Array.isArray(node.fills) &&
     node.fills.length > 0 &&
-    !node.isAsset
+    !checkAssetNode(node)
   ) {
     const css = await node.getCSSAsync()
     return {

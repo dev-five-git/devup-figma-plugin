@@ -2,6 +2,7 @@ import { getAutoLayoutProps } from './auto-layout'
 import { getBackgroundProps } from './background'
 import { getBorderProps, getBorderRadiusProps } from './border'
 import { getLayoutProps, getMinMaxProps } from './layout'
+import { getObjectFitProps } from './object-fit'
 import { getOpacityProps } from './opacity'
 import { getPaddingProps } from './padding'
 import { getTextAlignProps } from './text-align'
@@ -19,6 +20,7 @@ export async function getProps(
     ...getOpacityProps(node),
     ...getPaddingProps(node),
     ...getTextAlignProps(node),
+    ...getObjectFitProps(node),
   }
 }
 
