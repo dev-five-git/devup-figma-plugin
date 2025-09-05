@@ -6,7 +6,12 @@ export async function getBackgroundProps(
 ): Promise<
   Record<string, boolean | string | number | undefined | null> | undefined
 > {
-  if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0) {
+  if (
+    'fills' in node &&
+    Array.isArray(node.fills) &&
+    node.fills.length > 0 &&
+    !node.isAsset
+  ) {
     const css = await node.getCSSAsync()
     return {
       bg: css.background

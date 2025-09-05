@@ -55,10 +55,41 @@ function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
   const layoutMode = node.inferredAutoLayout!.layoutMode
   switch (layoutMode) {
     case 'HORIZONTAL':
-      if (node.layoutSizingVertical === 'HUG') return undefined
+      if (node.layoutSizingVertical === 'HUG') {
+        if (node.children.length > 1)
+          for (const child of node.children)
+            if (
+              child.visible &&
+              'layoutSizingVertical' in child &&
+              child.layoutSizingVertical !== 'FILL'
+            )
+              return {
+                MIN: 'flex-start',
+                MAX: 'flex-end',
+                CENTER: 'center',
+                SPACE_BETWEEN: 'space-between',
+                BASELINE: 'baseline',
+              }[node.counterAxisAlignItems]
+        return undefined
+      }
       break
     case 'VERTICAL':
-      if (node.layoutSizingHorizontal === 'HUG') return undefined
+      if (node.layoutSizingHorizontal === 'HUG') {
+        if (node.children.length > 1)
+          for (const child of node.children)
+            if (
+              child.visible &&
+              'layoutSizingHorizontal' in child &&
+              child.layoutSizingHorizontal !== 'FILL'
+            )
+              return {
+                MIN: 'flex-start',
+                MAX: 'flex-end',
+                CENTER: 'center',
+                SPACE_BETWEEN: 'space-between',
+                BASELINE: 'baseline',
+              }[node.counterAxisAlignItems]
+      }
       break
     default:
       break
