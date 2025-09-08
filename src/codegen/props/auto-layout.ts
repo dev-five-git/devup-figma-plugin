@@ -17,13 +17,10 @@ export function getAutoLayoutProps(
       HORIZONTAL: 'flex',
       VERTICAL: 'flex',
     }[layoutMode],
-    flexDir:
-      childrenCount > 0
-        ? {
-            HORIZONTAL: 'row',
-            VERTICAL: 'column',
-          }[layoutMode]
-        : undefined,
+    flexDir: {
+      HORIZONTAL: 'row',
+      VERTICAL: 'column',
+    }[layoutMode],
     gap:
       childrenCount > 1
         ? addPx(node.inferredAutoLayout.itemSpacing)
@@ -59,6 +56,17 @@ function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
   const layoutMode = node.inferredAutoLayout!.layoutMode
   switch (layoutMode) {
     case 'HORIZONTAL':
+      if (
+        node.children.length &&
+        node.children.every(
+          (child) =>
+            child.visible &&
+            'layoutSizingVertical' in child &&
+            child.layoutSizingVertical === 'FILL' &&
+            child.maxHeight === null,
+        )
+      )
+        return
       if (node.layoutSizingVertical === 'HUG') {
         if (node.children.length > 1)
           for (const child of node.children)
@@ -74,10 +82,21 @@ function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
                 SPACE_BETWEEN: 'space-between',
                 BASELINE: 'baseline',
               }[node.counterAxisAlignItems]
-        return undefined
+        return
       }
       break
     case 'VERTICAL':
+      if (
+        node.children.length &&
+        node.children.every(
+          (child) =>
+            child.visible &&
+            'layoutSizingHorizontal' in child &&
+            child.layoutSizingHorizontal === 'FILL' &&
+            child.maxWidth === null,
+        )
+      )
+        return
       if (node.layoutSizingHorizontal === 'HUG') {
         if (node.children.length > 1)
           for (const child of node.children)
@@ -93,6 +112,7 @@ function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
                 SPACE_BETWEEN: 'space-between',
                 BASELINE: 'baseline',
               }[node.counterAxisAlignItems]
+        return
       }
       break
     default:

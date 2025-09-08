@@ -44,6 +44,20 @@ function _getTextLayoutProps(
 function _getLayoutProps(
   node: SceneNode,
 ): Record<string, boolean | string | number | undefined | null> {
+  if (
+    'layoutPositioning' in node &&
+    node.layoutPositioning === 'ABSOLUTE' &&
+    node.parent &&
+    'width' in node.parent &&
+    'height' in node.parent &&
+    node.parent.width === node.width &&
+    node.parent.height === node.height
+  ) {
+    return {
+      w: '100%',
+      h: '100%',
+    }
+  }
   const hType =
     'layoutSizingVertical' in node ? node.layoutSizingVertical : 'FILL'
   const wType =
@@ -73,16 +87,17 @@ function _getLayoutProps(
         : wType === 'FIXED'
           ? addPx(node.width)
           : wType === 'FILL' &&
-              node.parent &&
-              isChildWidthShrinker(node.parent, 'width')
+              ((node.parent && isChildWidthShrinker(node.parent, 'width')) ||
+                node.maxWidth !== null)
             ? '100%'
             : undefined,
-    h:
-      hType === 'FIXED'
+    h: aspectRatio
+      ? null
+      : hType === 'FIXED'
         ? addPx(node.height)
         : hType === 'FILL' &&
-            node.parent &&
-            isChildWidthShrinker(node.parent, 'height')
+            ((node.parent && isChildWidthShrinker(node.parent, 'height')) ||
+              node.maxHeight !== null)
           ? '100%'
           : undefined,
   }

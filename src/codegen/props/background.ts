@@ -14,10 +14,9 @@ export async function getBackgroundProps(
     !checkAssetNode(node)
   ) {
     const css = await node.getCSSAsync()
+    const bg = css.background || css.fill
     return {
-      bg: css.background
-        ? replaceAllVarFunctions(css.background, extractVariableName)
-        : undefined,
+      bg: bg ? replaceAllVarFunctions(bg, extractVariableName) : undefined,
     }
   }
 }

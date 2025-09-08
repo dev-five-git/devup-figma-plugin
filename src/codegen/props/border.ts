@@ -26,6 +26,11 @@ export function getBorderRadiusProps(
       borderRadius: value,
     }
   }
+  if (node.type === 'ELLIPSE' && !node.arcData.innerRadius) {
+    return {
+      borderRadius: '50%',
+    }
+  }
 }
 
 export async function getBorderProps(

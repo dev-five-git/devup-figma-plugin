@@ -1,10 +1,14 @@
 import { getAutoLayoutProps } from './auto-layout'
 import { getBackgroundProps } from './background'
 import { getBorderProps, getBorderRadiusProps } from './border'
+import { getEffectProps } from './effect'
+import { getEllipsisProps } from './ellipsis'
 import { getLayoutProps, getMinMaxProps } from './layout'
+import { getMaxLineProps } from './max-line'
 import { getObjectFitProps } from './object-fit'
 import { getOpacityProps } from './opacity'
 import { getPaddingProps } from './padding'
+import { getPositionProps } from './position'
 import { getTextAlignProps } from './text-align'
 
 export async function getProps(
@@ -21,6 +25,10 @@ export async function getProps(
     ...getPaddingProps(node),
     ...getTextAlignProps(node),
     ...getObjectFitProps(node),
+    ...getMaxLineProps(node),
+    ...getEllipsisProps(node),
+    ...(await getEffectProps(node)),
+    ...getPositionProps(node),
   }
 }
 

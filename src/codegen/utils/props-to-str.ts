@@ -1,6 +1,12 @@
 export function propsToString(props: Record<string, unknown>) {
   return Object.entries(props)
-    .sort((a, b) => a[0].localeCompare(b[0]))
+    .sort((a, b) => {
+      const isAUpper = /^[A-Z]/.test(a[0])
+      const isBUpper = /^[A-Z]/.test(b[0])
+      if (isAUpper && !isBUpper) return -1
+      if (!isAUpper && isBUpper) return 1
+      return a[0].localeCompare(b[0])
+    })
     .map(
       ([key, value]) =>
         `${key}${typeof value === 'boolean' ? (value ? '' : `={${value}}`) : `="${value}"`}`,
