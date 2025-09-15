@@ -3,6 +3,7 @@ import { getBackgroundProps } from './background'
 import { getBorderProps, getBorderRadiusProps } from './border'
 import { getEffectProps } from './effect'
 import { getEllipsisProps } from './ellipsis'
+import { getGridChildProps } from './grid-child'
 import { getLayoutProps, getMinMaxProps } from './layout'
 import { getMaxLineProps } from './max-line'
 import { getObjectFitProps } from './object-fit'
@@ -29,6 +30,7 @@ export async function getProps(
     ...getEllipsisProps(node),
     ...(await getEffectProps(node)),
     ...getPositionProps(node),
+    ...getGridChildProps(node),
   }
 }
 

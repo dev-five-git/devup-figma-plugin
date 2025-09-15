@@ -130,8 +130,13 @@ function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
 function getGridProps(
   node: GridLayoutMixin,
 ): Record<string, boolean | undefined | string | number | null> {
+  const sameGap = node.gridRowGap === node.gridColumnGap
   return {
-    gridTemplateColumns: node.gridColumnCount,
-    gridTemplateRows: node.gridRowCount,
+    display: 'grid',
+    gridTemplateColumns: `repeat(${node.gridColumnCount}, 1fr)`,
+    gridTemplateRows: `repeat(${node.gridRowCount}, 1fr)`,
+    rowGap: sameGap ? undefined : addPx(node.gridRowGap),
+    columnGap: sameGap ? undefined : addPx(node.gridColumnGap),
+    gap: sameGap ? addPx(node.gridRowGap) : undefined,
   }
 }

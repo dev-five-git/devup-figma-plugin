@@ -1,21 +1,36 @@
 export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
+  // vector must be svg
+  if (['VECTOR'].includes(node.type)) return 'svg'
+  // ellipse with inner radius must be svg
   if (node.type === 'ELLIPSE' && node.arcData.innerRadius) return 'svg'
   if (!('children' in node) || node.children.length === 0) {
-    return (node.isAsset &&
+    if (
       'fills' in node &&
       Array.isArray(node.fills) &&
       // if node has tile, it is not an Image, it just has a tile background
-      !node.fills.find(
+      node.fills.find(
         (fill: Paint) =>
           fill.visible &&
           (fill.type === 'PATTERN' ||
-            (fill.type === 'IMAGE' &&
-              !!fill.visible &&
-              fill.scaleMode === 'TILE')),
-      ) &&
-      !['RECTANGLE', 'ELLIPSE'].includes(node.type)) ||
-      ['VECTOR'].includes(node.type)
-      ? 'svg'
+            (fill.type === 'IMAGE' && fill.scaleMode === 'TILE')),
+      )
+    )
+      return null
+    return node.isAsset
+      ? 'fills' in node && Array.isArray(node.fills)
+        ? node.fills.some(
+            (fill: Paint) =>
+              fill.visible &&
+              fill.type === 'IMAGE' &&
+              fill.scaleMode !== 'TILE',
+          )
+          ? 'png'
+          : node.fills.every(
+                (fill: Paint) => fill.visible && fill.type === 'SOLID',
+              )
+            ? null
+            : 'svg'
+        : null
       : null
   }
   const { children } = node
