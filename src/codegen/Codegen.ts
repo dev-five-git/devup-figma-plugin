@@ -3,6 +3,7 @@ import { getProps } from './props'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import { checkAssetNode } from './utils/check-asset-node'
+import { checkSameColor } from './utils/check-same-color'
 import {
   getDevupComponentByNode,
   getDevupComponentByProps,
@@ -54,6 +55,16 @@ export class Codegen {
     if (assetNode) {
       const props = await getProps(node)
       props.src = '/icons/' + node.name + '.svg'
+      if (assetNode === 'svg') {
+        const maskColor = checkSameColor(node)
+        if (maskColor) {
+          // support mask image icon
+          props.maskImage = `url(${props.src})`
+          props.maskRepeat = 'no-repeat'
+          props.maskSize = 'contain'
+          delete props.src
+        }
+      }
       const ret = renderNode('Image', props, dep, [])
       if (node === this.node) this.code = ret
       return ret

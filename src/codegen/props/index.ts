@@ -52,7 +52,16 @@ export function filterPropsWithComponent(
         if (['flexDir', 'display'].includes(key)) continue
         break
       case 'Image':
-        if (['display', 'alignItems', 'justifyContent'].includes(key)) continue
+        if (
+          [
+            'display',
+            'alignItems',
+            'justifyContent',
+            'flexDir',
+            'gap',
+          ].includes(key)
+        )
+          continue
         break
     }
     newProps[key] = value

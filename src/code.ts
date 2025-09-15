@@ -8,11 +8,11 @@ import { getComponentName } from './utils'
 
 if (figma.editorType === 'dev' && figma.mode === 'codegen') {
   figma.codegen.on('generate', async ({ node, language }) => {
-    const time = Date.now()
-    const code = await new Element(node).render()
-    console.info(`[benchmark] devup-ui-old end ${Date.now() - time}ms`)
     switch (language) {
       case 'devup-ui-old': {
+        const time = Date.now()
+        const code = await new Element(node).render()
+        console.info(`[benchmark] devup-ui-old end ${Date.now() - time}ms`)
         return [
           {
             title: node.name,
@@ -28,11 +28,6 @@ if (figma.editorType === 'dev' && figma.mode === 'codegen') {
         const componentsCode = codegen.getComponentsCode()
         console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
         return [
-          {
-            title: node.name + ' - old',
-            language: 'JAVASCRIPT',
-            code,
-          },
           {
             title: node.name,
             language: 'TYPESCRIPT',
