@@ -54,7 +54,7 @@ export class Codegen {
     const assetNode = checkAssetNode(node)
     if (assetNode) {
       const props = await getProps(node)
-      props.src = '/icons/' + node.name + '.svg'
+      props.src = '/icons/' + node.name + '.' + assetNode
       if (assetNode === 'svg') {
         const maskColor = checkSameColor(node)
         if (maskColor) {
