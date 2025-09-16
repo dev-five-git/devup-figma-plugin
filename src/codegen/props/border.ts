@@ -38,16 +38,24 @@ export async function getBorderProps(
 ): Promise<
   Record<string, boolean | string | number | undefined | null> | undefined
 > {
-  if (!('strokes' in node && node.strokes.length > 0)) return
-  const css = await node.getCSSAsync()
   if (
-    typeof node.strokeWeight === 'number' &&
-    node.strokeWeight > 0 &&
-    node.strokeAlign !== 'INSIDE'
-  ) {
+    !(
+      'strokes' in node &&
+      node.strokes.length > 0 &&
+      typeof node.strokeWeight === 'number' &&
+      node.strokeWeight > 0
+    )
+  )
+    return
+  const css = await node.getCSSAsync()
+  if (node.strokeAlign !== 'INSIDE') {
+    const outline =
+      'border' in css
+        ? css.border
+        : `solid ${node.strokeWeight}px ${css.background}`
     return {
-      outline: css.border
-        ? replaceAllVarFunctions(css.border, extractVariableName)
+      outline: outline
+        ? replaceAllVarFunctions(outline, extractVariableName)
         : undefined,
       outlineOffset: {
         CENTER: addPx(-node.strokeWeight / 2),
@@ -55,9 +63,13 @@ export async function getBorderProps(
       }[node.strokeAlign],
     }
   }
+  const border =
+    'border' in css
+      ? css.border
+      : `solid ${node.strokeWeight}px ${css.background}`
   return {
-    border: css.border
-      ? replaceAllVarFunctions(css.border, extractVariableName)
+    border: border
+      ? replaceAllVarFunctions(border, extractVariableName)
       : undefined,
     borderBottom: css['border-bottom']
       ? replaceAllVarFunctions(css['border-bottom'], extractVariableName)

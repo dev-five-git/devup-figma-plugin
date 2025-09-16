@@ -1,6 +1,6 @@
 export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
   // vector must be svg
-  if (['VECTOR'].includes(node.type)) return 'svg'
+  if (['VECTOR', 'STAR', 'POLYGON'].includes(node.type)) return 'svg'
   // ellipse with inner radius must be svg
   if (node.type === 'ELLIPSE' && node.arcData.innerRadius) return 'svg'
   if (!('children' in node) || node.children.length === 0) {
@@ -36,11 +36,13 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
   const { children } = node
   if (children.length === 1) {
     if (
-      'paddingLeft' in node &&
-      (node.paddingLeft > 0 ||
-        node.paddingRight > 0 ||
-        node.paddingTop > 0 ||
-        node.paddingBottom > 0)
+      ('paddingLeft' in node &&
+        (node.paddingLeft > 0 ||
+          node.paddingRight > 0 ||
+          node.paddingTop > 0 ||
+          node.paddingBottom > 0)) ||
+      ('fills' in node &&
+        (Array.isArray(node.fills) ? node.fills.length > 0 : true))
     )
       return null
 

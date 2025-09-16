@@ -51,7 +51,10 @@ export function filterPropsWithComponent(
       case 'VStack':
         if (['flexDir', 'display'].includes(key)) continue
         break
+
       case 'Image':
+      case 'Box':
+        if (component === 'Box' && !('maskImage' in props)) continue
         if (
           [
             'display',
@@ -59,6 +62,9 @@ export function filterPropsWithComponent(
             'justifyContent',
             'flexDir',
             'gap',
+            'outline',
+            'outlineOffset',
+            'bg',
           ].includes(key)
         )
           continue
