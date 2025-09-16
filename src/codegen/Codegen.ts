@@ -56,16 +56,17 @@ export class Codegen {
       const props = await getProps(node)
       props.src = '/icons/' + node.name + '.' + assetNode
       if (assetNode === 'svg') {
-        const maskColor = checkSameColor(node)
+        const maskColor = await checkSameColor(node)
         if (maskColor) {
           // support mask image icon
           props.maskImage = `url(${props.src})`
           props.maskRepeat = 'no-repeat'
           props.maskSize = 'contain'
+          props.bg = maskColor
           delete props.src
         }
       }
-      const ret = renderNode('Image', props, dep, [])
+      const ret = renderNode('src' in props ? 'Image' : 'Box', props, dep, [])
       if (node === this.node) this.code = ret
       return ret
     }

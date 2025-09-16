@@ -15,8 +15,11 @@ export async function getBackgroundProps(
   ) {
     const css = await node.getCSSAsync()
     const bg = css.background || css.fill
-    return {
-      bg: bg ? replaceAllVarFunctions(bg, extractVariableName) : undefined,
+    if (bg) {
+      const resultBg = replaceAllVarFunctions(bg, extractVariableName)
+      return {
+        bg: resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png'),
+      }
     }
   }
 }

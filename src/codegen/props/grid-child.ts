@@ -15,8 +15,8 @@ export function getGridChildProps(
       node.gridColumnAnchorIndex + node.gridRowAnchorIndex * columnCount
     if (parent.children[currentIdx] !== node) {
       return {
-        gridColumnAnchorIndex: `${node.gridColumnAnchorIndex + 1} / span 1`,
-        gridRowAnchorIndex: `${node.gridRowAnchorIndex + 1} / span 1`,
+        gridColumn: `${node.gridColumnAnchorIndex + 1} / span 1`,
+        gridRow: `${node.gridRowAnchorIndex + 1} / span 1`,
       }
     }
   }
