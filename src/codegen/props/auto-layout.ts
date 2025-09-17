@@ -17,10 +17,13 @@ export function getAutoLayoutProps(
       HORIZONTAL: 'flex',
       VERTICAL: 'flex',
     }[layoutMode],
-    flexDir: {
-      HORIZONTAL: 'row',
-      VERTICAL: 'column',
-    }[layoutMode],
+    flexDir:
+      childrenCount > 1
+        ? {
+            HORIZONTAL: 'row',
+            VERTICAL: 'column',
+          }[layoutMode]
+        : undefined,
     gap:
       childrenCount > 1
         ? addPx(node.inferredAutoLayout.itemSpacing)
@@ -33,17 +36,17 @@ export function getAutoLayoutProps(
 function getJustifyContent(
   node: SceneNode & BaseFrameMixin,
 ): string | undefined {
-  const layoutMode = node.inferredAutoLayout!.layoutMode
-  switch (layoutMode) {
-    case 'HORIZONTAL':
-      if (node.layoutSizingHorizontal === 'HUG') return undefined
-      break
-    case 'VERTICAL':
-      if (node.layoutSizingVertical === 'HUG') return undefined
-      break
-    default:
-      break
-  }
+  // const layoutMode = node.inferredAutoLayout!.layoutMode
+  // switch (layoutMode) {
+  //   case 'HORIZONTAL':
+  //     if (node.layoutSizingHorizontal === 'HUG') return undefined
+  //     break
+  //   case 'VERTICAL':
+  //     if (node.layoutSizingVertical === 'HUG') return undefined
+  //     break
+  //   default:
+  //     break
+  // }
   return {
     MIN: 'flex-start',
     MAX: 'flex-end',
@@ -53,71 +56,71 @@ function getJustifyContent(
 }
 
 function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
-  const layoutMode = node.inferredAutoLayout!.layoutMode
-  switch (layoutMode) {
-    case 'HORIZONTAL':
-      if (
-        node.children.length &&
-        node.children.every(
-          (child) =>
-            child.visible &&
-            'layoutSizingVertical' in child &&
-            child.layoutSizingVertical === 'FILL' &&
-            child.maxHeight === null,
-        )
-      )
-        return
-      if (node.layoutSizingVertical === 'HUG') {
-        if (node.children.length > 1)
-          for (const child of node.children)
-            if (
-              child.visible &&
-              'layoutSizingVertical' in child &&
-              child.layoutSizingVertical !== 'FILL'
-            )
-              return {
-                MIN: 'flex-start',
-                MAX: 'flex-end',
-                CENTER: 'center',
-                SPACE_BETWEEN: 'space-between',
-                BASELINE: 'baseline',
-              }[node.counterAxisAlignItems]
-        return
-      }
-      break
-    case 'VERTICAL':
-      if (
-        node.children.length &&
-        node.children.every(
-          (child) =>
-            child.visible &&
-            'layoutSizingHorizontal' in child &&
-            child.layoutSizingHorizontal === 'FILL' &&
-            child.maxWidth === null,
-        )
-      )
-        return
-      if (node.layoutSizingHorizontal === 'HUG') {
-        if (node.children.length > 1)
-          for (const child of node.children)
-            if (
-              child.visible &&
-              'layoutSizingHorizontal' in child &&
-              child.layoutSizingHorizontal !== 'FILL'
-            )
-              return {
-                MIN: 'flex-start',
-                MAX: 'flex-end',
-                CENTER: 'center',
-                SPACE_BETWEEN: 'space-between',
-                BASELINE: 'baseline',
-              }[node.counterAxisAlignItems]
-        return
-      }
-      break
-    default:
-      break
-  }
+  // const layoutMode = node.inferredAutoLayout!.layoutMode
+  // switch (layoutMode) {
+  //   case 'HORIZONTAL':
+  //     if (
+  //       node.children.length &&
+  //       node.children.every(
+  //         (child) =>
+  //           child.visible &&
+  //           'layoutSizingVertical' in child &&
+  //           child.layoutSizingVertical === 'FILL' &&
+  //           child.maxHeight === null,
+  //       )
+  //     )
+  //       return
+  //     if (node.layoutSizingVertical === 'HUG') {
+  //       if (node.children.length > 1)
+  //         for (const child of node.children)
+  //           if (
+  //             child.visible &&
+  //             'layoutSizingVertical' in child &&
+  //             child.layoutSizingVertical !== 'FILL'
+  //           )
+  //             return {
+  //               MIN: 'flex-start',
+  //               MAX: 'flex-end',
+  //               CENTER: 'center',
+  //               SPACE_BETWEEN: 'space-between',
+  //               BASELINE: 'baseline',
+  //             }[node.counterAxisAlignItems]
+  //       return
+  //     }
+  //     break
+  //   case 'VERTICAL':
+  //     if (
+  //       node.children.length &&
+  //       node.children.every(
+  //         (child) =>
+  //           child.visible &&
+  //           'layoutSizingHorizontal' in child &&
+  //           child.layoutSizingHorizontal === 'FILL' &&
+  //           child.maxWidth === null,
+  //       )
+  //     )
+  //       return
+  //     if (node.layoutSizingHorizontal === 'HUG') {
+  //       if (node.children.length > 1)
+  //         for (const child of node.children)
+  //           if (
+  //             child.visible &&
+  //             'layoutSizingHorizontal' in child &&
+  //             child.layoutSizingHorizontal !== 'FILL'
+  //           )
+  //             return {
+  //               MIN: 'flex-start',
+  //               MAX: 'flex-end',
+  //               CENTER: 'center',
+  //               SPACE_BETWEEN: 'space-between',
+  //               BASELINE: 'baseline',
+  //             }[node.counterAxisAlignItems]
+  //       return
+  //     }
+  //     break
+  //   default:
+  //     break
+  // }
   return {
     MIN: 'flex-start',
     MAX: 'flex-end',
