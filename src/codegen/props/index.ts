@@ -66,10 +66,10 @@ export function filterPropsWithComponent(
             'gap',
             'outline',
             'outlineOffset',
-            'bg',
           ].includes(key)
         )
           continue
+        if (!('maskImage' in props) && ['bg'].includes(key)) continue
         break
     }
     newProps[key] = value
