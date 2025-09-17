@@ -11,6 +11,7 @@ import { getOpacityProps } from './opacity'
 import { getPaddingProps } from './padding'
 import { getPositionProps } from './position'
 import { getTextAlignProps } from './text-align'
+import { getTransformProps } from './transform'
 
 export async function getProps(
   node: SceneNode,
@@ -31,6 +32,7 @@ export async function getProps(
     ...(await getEffectProps(node)),
     ...getPositionProps(node),
     ...getGridChildProps(node),
+    ...getTransformProps(node),
   }
 }
 
@@ -54,7 +56,7 @@ export function filterPropsWithComponent(
 
       case 'Image':
       case 'Box':
-        if (component === 'Box' && !('maskImage' in props)) continue
+        if (component === 'Box' && !('maskImage' in props)) break
         if (
           [
             'display',

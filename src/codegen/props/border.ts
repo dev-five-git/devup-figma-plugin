@@ -50,8 +50,8 @@ export async function getBorderProps(
   const css = await node.getCSSAsync()
   if (node.strokeAlign !== 'INSIDE') {
     const outline =
-      'border' in css
-        ? css.border
+      'outline' in css
+        ? css.outline
         : `solid ${node.strokeWeight}px ${css.background}`
     return {
       outline: outline
