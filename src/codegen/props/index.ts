@@ -8,6 +8,7 @@ import { getLayoutProps, getMinMaxProps } from './layout'
 import { getMaxLineProps } from './max-line'
 import { getObjectFitProps } from './object-fit'
 import { getOpacityProps } from './opacity'
+import { getOverflowProps } from './overflow'
 import { getPaddingProps } from './padding'
 import { getPositionProps } from './position'
 import { getTextAlignProps } from './text-align'
@@ -33,6 +34,7 @@ export async function getProps(
     ...getPositionProps(node),
     ...getGridChildProps(node),
     ...getTransformProps(node),
+    ...getOverflowProps(node),
   }
 }
 

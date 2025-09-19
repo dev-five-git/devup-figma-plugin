@@ -7,18 +7,26 @@ export function getPositionProps(
     'parent' in node &&
     node.parent &&
     'width' in node.parent &&
-    'constraints' in node &&
     'layoutPositioning' in node &&
     node.layoutPositioning === 'ABSOLUTE'
   ) {
-    const { horizontal, vertical } = node.constraints
+    const constraints =
+      'constraints' in node
+        ? node.constraints
+        : 'children' in node &&
+            node.children[0] &&
+            'constraints' in node.children[0]
+          ? node.children[0].constraints
+          : undefined
+    if (!constraints) return
+    const { horizontal, vertical } = constraints
     let left, right, top, bottom: string | undefined
     switch (horizontal) {
       case 'MIN':
         left = addPx(node.x) ?? '0px'
         break
       case 'MAX':
-        right = addPx(node.parent?.width - node.x) ?? '0px'
+        right = addPx(node.parent?.width - node.x - node.width) ?? '0px'
         break
       default:
         left = '0px'
@@ -30,7 +38,7 @@ export function getPositionProps(
         top = addPx(node.y) ?? '0px'
         break
       case 'MAX':
-        bottom = addPx(node.parent.height - node.y) ?? '0px'
+        bottom = addPx(node.parent.height - node.y - node.height) ?? '0px'
         break
       default:
         top = '0px'

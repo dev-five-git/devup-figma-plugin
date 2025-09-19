@@ -17,13 +17,10 @@ export function getAutoLayoutProps(
       HORIZONTAL: 'flex',
       VERTICAL: 'flex',
     }[layoutMode],
-    flexDir:
-      childrenCount > 1
-        ? {
-            HORIZONTAL: 'row',
-            VERTICAL: 'column',
-          }[layoutMode]
-        : undefined,
+    flexDir: {
+      HORIZONTAL: 'row',
+      VERTICAL: 'column',
+    }[layoutMode],
     gap:
       childrenCount > 1
         ? addPx(node.inferredAutoLayout.itemSpacing)

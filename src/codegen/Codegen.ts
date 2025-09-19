@@ -71,14 +71,28 @@ export class Codegen {
       return ret
     }
 
+    const props = await getProps(node)
     if (node.type === 'INSTANCE') {
       const mainComponent = await node.getMainComponentAsync()
       if (mainComponent) await this.addComponent(mainComponent)
-      const ret = renderNode(getComponentName(node), {}, dep, [])
+      let ret = renderNode(getComponentName(mainComponent || node), {}, dep, [])
+      if (props.pos) {
+        ret = renderNode(
+          'Box',
+          {
+            pos: props.pos,
+            top: props.top,
+            left: props.left,
+            right: props.right,
+            bottom: props.bottom,
+          },
+          dep,
+          [ret],
+        )
+      }
       if (node === this.node) this.code = ret
       return ret
     }
-    const props = await getProps(node)
     const childrenCodes = await Promise.all(
       'children' in node
         ? node.children.map(async (child) => {
