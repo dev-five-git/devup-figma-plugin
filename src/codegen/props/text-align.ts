@@ -14,7 +14,7 @@ export function getTextAlignProps(
       : 'FILL'
   return {
     textAlign:
-      wType === 'HUG'
+      wType === 'HUG' && !node.characters.includes('\n')
         ? null
         : {
             // default value
