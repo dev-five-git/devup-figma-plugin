@@ -11,8 +11,13 @@ export async function getBackgroundProps(
     const bg = css.background || css.fill
     if (bg) {
       const resultBg = replaceAllVarFunctions(bg, extractVariableName)
+      const gradientText =
+        node.type === 'TEXT' &&
+        node.fills.find((fill) => fill.type.includes('GRADIENT'))
       return {
         bg: resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png'),
+        color: gradientText ? 'transparent' : undefined,
+        backgroundClip: gradientText ? 'text' : undefined,
       }
     }
   }

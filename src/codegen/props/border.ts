@@ -48,19 +48,31 @@ export async function getBorderProps(
   )
     return
   const css = await node.getCSSAsync()
-  if (node.strokeAlign !== 'INSIDE') {
+  if (node.strokeAlign !== 'INSIDE' || node.type === 'LINE') {
     const outline =
       'outline' in css
         ? css.outline
         : `solid ${node.strokeWeight}px ${css.background}`
+    const wType =
+      'layoutSizingHorizontal' in node ? node.layoutSizingHorizontal : 'FILL'
     return {
-      outline: outline
-        ? replaceAllVarFunctions(outline, extractVariableName)
-        : undefined,
-      outlineOffset: {
-        CENTER: addPx(-node.strokeWeight / 2),
-        OUTSIDE: null,
-      }[node.strokeAlign],
+      outline: outline && replaceAllVarFunctions(outline, extractVariableName),
+      outlineOffset:
+        node.type === 'LINE'
+          ? null
+          : {
+              CENTER: addPx(-node.strokeWeight / 2),
+              OUTSIDE: null,
+              INSIDE: null,
+            }[node.strokeAlign],
+      maxW:
+        node.type === 'LINE'
+          ? `calc(${wType === 'FILL' ? '100%' : `${node.width}px`} - ${node.strokeWeight * 2}px)`
+          : undefined,
+      transform:
+        node.type === 'LINE'
+          ? `translate(${addPx(node.strokeWeight)}, ${addPx(-node.strokeWeight)})`
+          : undefined,
     }
   }
   const border =
