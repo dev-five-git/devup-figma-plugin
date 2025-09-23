@@ -19,10 +19,14 @@ export class Codegen {
     return this.code
   }
 
-  getComponentsCode() {
-    return Array.from(this.components.entries())
-      .map(([node, code]) => renderComponent(getComponentName(node), code))
-      .join('\n\n')
+  getComponentsCodes() {
+    return Array.from(this.components.entries()).map(
+      ([node, code]) =>
+        [
+          getComponentName(node),
+          renderComponent(getComponentName(node), code),
+        ] as const,
+    )
   }
 
   async addComponent(node: ComponentNode) {

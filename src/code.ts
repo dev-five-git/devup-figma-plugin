@@ -25,7 +25,7 @@ if (figma.editorType === 'dev' && figma.mode === 'codegen') {
         const time = Date.now()
         const codegen = new Codegen(node)
         await codegen.run()
-        const componentsCode = codegen.getComponentsCode()
+        const componentsCodes = codegen.getComponentsCodes()
         console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
         return [
           {
@@ -38,12 +38,22 @@ if (figma.editorType === 'dev' && figma.mode === 'codegen') {
                 ? wrapComponent(getComponentName(node), codegen.getCode())
                 : codegen.getCode(),
           },
-          ...(componentsCode
+          ...(componentsCodes.length > 0
             ? ([
                 {
                   title: node.name + ' - Components',
                   language: 'TYPESCRIPT',
-                  code: componentsCode,
+                  code: componentsCodes.map((code) => code[1]).join('\n\n'),
+                },
+                {
+                  title: node.name + ' - Components CLI',
+                  language: 'BASH',
+                  code: componentsCodes
+                    .map(
+                      ([componentName, code]) =>
+                        `echo '${code}' > ${componentName}.tsx`,
+                    )
+                    .join('\n'),
                 },
               ] as const)
             : []),

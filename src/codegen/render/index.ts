@@ -19,7 +19,8 @@ export function renderNode(
   const multiProps = propsString.includes('\n')
   return [
     `${space(deps)}<${component}${propsString ? (multiProps ? `\n${paddingLeftMultiline(propsString, deps + 1)}` : ` ${propsString}`) : ''}${
-      (multiProps ? '\n' : !hasChildren ? ' ' : '') + (hasChildren ? '>' : '/>')
+      (multiProps ? '\n' + space(deps) : !hasChildren ? ' ' : '') +
+      (hasChildren ? '>' : '/>')
     }`,
     hasChildren
       ? childrenCodes
