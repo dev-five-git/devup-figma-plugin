@@ -42,10 +42,11 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
           node.paddingTop > 0 ||
           node.paddingBottom > 0)) ||
       ('fills' in node &&
-        (Array.isArray(node.fills) ? node.fills.length > 0 : true))
+        (Array.isArray(node.fills)
+          ? node.fills.find((fill) => fill.visible)
+          : true))
     )
       return null
-
     return checkAssetNode(children[0])
   }
   return children.every((child) => child.visible && checkAssetNode(child))

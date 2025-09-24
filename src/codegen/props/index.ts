@@ -1,5 +1,6 @@
 import { getAutoLayoutProps } from './auto-layout'
 import { getBackgroundProps } from './background'
+import { getBlendProps } from './blend'
 import { getBorderProps, getBorderRadiusProps } from './border'
 import { getEffectProps } from './effect'
 import { getEllipsisProps } from './ellipsis'
@@ -7,7 +8,6 @@ import { getGridChildProps } from './grid-child'
 import { getLayoutProps, getMinMaxProps } from './layout'
 import { getMaxLineProps } from './max-line'
 import { getObjectFitProps } from './object-fit'
-import { getOpacityProps } from './opacity'
 import { getOverflowProps } from './overflow'
 import { getPaddingProps } from './padding'
 import { getPositionProps } from './position'
@@ -24,7 +24,7 @@ export async function getProps(
     ...getBorderRadiusProps(node),
     ...(await getBorderProps(node)),
     ...(await getBackgroundProps(node)),
-    ...getOpacityProps(node),
+    ...getBlendProps(node),
     ...getPaddingProps(node),
     ...getTextAlignProps(node),
     ...getObjectFitProps(node),
@@ -68,6 +68,7 @@ export function filterPropsWithComponent(
             'gap',
             'outline',
             'outlineOffset',
+            'overflow',
           ].includes(key)
         )
           continue

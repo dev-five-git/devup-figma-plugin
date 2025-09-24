@@ -17,7 +17,7 @@ export async function getBackgroundProps(
       return {
         bg: resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png'),
         color: gradientText ? 'transparent' : undefined,
-        backgroundClip: gradientText ? 'text' : undefined,
+        bgClip: gradientText ? 'text' : undefined,
       }
     }
   }

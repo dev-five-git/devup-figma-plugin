@@ -44,7 +44,8 @@ export async function getBorderProps(
       node.strokes.length > 0 &&
       typeof node.strokeWeight === 'number' &&
       node.strokeWeight > 0
-    )
+    ) ||
+    node.type === 'TEXT'
   )
     return
   const css = await node.getCSSAsync()
