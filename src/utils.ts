@@ -821,8 +821,14 @@ export const colorFromFills = async (
       )
       if (variable?.name) return `$${variable.name}`
     }
+    if (fill.opacity === 0) return 'transparent'
 
-    return rgbaToHex(figma.util.rgba(fill.color))
+    return rgbaToHex(
+      figma.util.rgba({
+        ...fill.color,
+        a: fill.opacity,
+      }),
+    )
   }
   return ''
 }

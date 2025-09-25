@@ -1,4 +1,5 @@
 export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
+  if (node.type === 'TEXT') return null
   // vector must be svg
   if (['VECTOR', 'STAR', 'POLYGON'].includes(node.type)) return 'svg'
   // ellipse with inner radius must be svg

@@ -13,7 +13,9 @@ export async function getBackgroundProps(
       const resultBg = replaceAllVarFunctions(bg, extractVariableName)
       const gradientText =
         node.type === 'TEXT' &&
-        node.fills.find((fill) => fill.type.includes('GRADIENT'))
+        node.fills.find(
+          (fill) => fill.type === 'IMAGE' || fill.type.includes('GRADIENT'),
+        )
       return {
         bg: resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png'),
         color: gradientText ? 'transparent' : undefined,

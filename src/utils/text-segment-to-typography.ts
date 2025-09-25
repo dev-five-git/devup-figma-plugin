@@ -14,7 +14,7 @@ export function textSegmentToTypography(
 ): DevupTypography {
   return {
     fontFamily: segment.fontName.family,
-    fontStyle: segment.fontName.style.includes('Italic') ? 'italic' : 'normal',
+    fontStyle: segment.fontName.style.includes('Italic') ? 'italic' : undefined,
     fontWeight: segment.fontWeight,
     fontSize: segment.fontSize + 'px',
     textDecoration:

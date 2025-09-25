@@ -9,5 +9,6 @@ export async function solidToString(solid: SolidPaint) {
     )
     if (variable?.name) return `$${toCamel(variable.name)}`
   }
+  if (solid.opacity === 0) return 'transparent'
   return optimizeHex(rgbaToHex(figma.util.rgba(solid.color)))
 }
