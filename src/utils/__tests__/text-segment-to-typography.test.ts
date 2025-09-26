@@ -82,7 +82,6 @@ describe('textSegmentToTypography', () => {
       }),
     ).toEqual({
       fontFamily: 'Roboto',
-      fontStyle: 'normal',
       fontWeight: 400,
       fontSize: '16px',
       textDecoration: 'underline',
@@ -112,7 +111,6 @@ describe('textSegmentToTypography', () => {
       }),
     ).toEqual({
       fontFamily: 'Roboto',
-      fontStyle: 'normal',
       fontWeight: 400,
       fontSize: '16px',
       textDecoration: 'underline',

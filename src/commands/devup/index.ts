@@ -51,35 +51,37 @@ export async function exportDevup() {
   const typography: Record<string, (null | DevupTypography)[]> = {}
   await Promise.all(
     texts
-    .filter((text) => typeof text.textStyleId === 'string')
+    .filter((text) => (typeof text.textStyleId === 'string' && text.textStyleId) || text.textStyleId === figma.mixed)
     .map(async (text) => {
-      const style = await figma.getStyleByIdAsync(text.textStyleId as string)
-      if (!(style && ids.has(style.id))) return
-        const { level , name } = styleNameToTypography(style.name)
-        if (typography[name]&&typography[name][level]) return
-        for (const seg of text.getStyledTextSegments([
-          'fontName',
-          'fontWeight',
-          'fontSize',
-          'textDecoration',
-          'textCase',
-          'lineHeight',
-          'letterSpacing',
-          'fills',
-          'textStyleId',
-          'fillStyleId',
-          'listOptions',
-          'indentation',
-          'hyperlink',
-        ])) {
-          if (seg) {
-            const typo = textSegmentToTypography(seg as StyledTextSegment)
-            typography[name] ??= [null, null, null, null, null, null]
-            typography[name][level] = typo
-          }
+      for (const seg of text.getStyledTextSegments([
+        'fontName',
+        'fontWeight',
+        'fontSize',
+        'textDecoration',
+        'textCase',
+        'lineHeight',
+        'letterSpacing',
+        'fills',
+        'textStyleId',
+        'fillStyleId',
+        'listOptions',
+        'indentation',
+        'hyperlink',
+      ])) {
+        if (seg && seg.textStyleId) {
+          const style = await figma.getStyleByIdAsync(seg.textStyleId)
+
+          if (!(style && ids.has(style.id))) continue
+          const { level , name } = styleNameToTypography(style.name)
+          const typo = textSegmentToTypography(seg as StyledTextSegment)
+          if (typography[name]&&typography[name][level]) continue
+          typography[name] ??= [null, null, null, null, null, null]
+          typography[name][level] = typo
         }
+      }
     }),
   )
+  console.log(typography)
   if (Object.keys(typography).length > 0) {
     devup['theme'] ??= {}
     devup['theme']['typography'] = Object.entries(typography).reduce(

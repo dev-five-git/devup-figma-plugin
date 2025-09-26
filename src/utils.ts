@@ -116,13 +116,14 @@ export function cssToProps(css: Record<string, string>) {
 
 export async function propsToPropsWithTypography(
   props: Record<string, string>,
-  textStyleId: TextNode['textStyleId'],
+  textStyleId: string,
 ) {
   const ret: Record<string, string> = { ...props }
   delete ret['w']
   delete ret['h']
-  if (typeof textStyleId === 'string' && textStyleId) {
-    const style = await figma.getStyleByIdAsync(textStyleId as string)
+  const styles = await figma.getLocalTextStylesAsync()
+  if (textStyleId && styles.find((style) => style.id === textStyleId)) {
+    const style = await figma.getStyleByIdAsync(textStyleId)
     if (style) {
       const split = style.name.split('/')
       ret['typography'] = toCamel(split[split.length - 1])

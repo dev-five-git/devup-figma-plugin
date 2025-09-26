@@ -83,6 +83,7 @@ describe('devup/index', () => {
                 textCase: 'ORIGINAL',
                 lineHeight: { unit: 'PIXELS', value: 24 },
                 letterSpacing: { unit: 'PIXELS', value: 0 },
+                textStyleId: 'style1',
               },
             ],
           },
@@ -275,7 +276,15 @@ describe('devup/index', () => {
   it('should not add typography when style is not found or ids is not found', async () => {
     vi.spyOn(colorUtils, 'getDevupColorCollection').mockResolvedValue(null)
     ;(figma.root.children as any) = [
-      { findAll: () => [{ type: 'TEXT', textStyleId: 'style1' }] },
+      {
+        findAll: () => [
+          {
+            type: 'TEXT',
+            textStyleId: 'style1',
+            getStyledTextSegments: () => [{ textStyleId: 'style1' }],
+          },
+        ],
+      },
     ]
     ;(figma.getLocalTextStylesAsync as any).mockResolvedValue([
       { id: 'style2', name: 'mobile/Title' },

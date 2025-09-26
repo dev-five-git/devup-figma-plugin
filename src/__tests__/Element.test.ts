@@ -2585,6 +2585,9 @@ export function ComponentSet(props: ComponentSetProps) {
             }),
           ],
         })
+        ;(globalThis as any).figma = {
+          getLocalTextStylesAsync: () => Promise.resolve([]),
+        }
         await element.run()
         expect(await element.getAssets()).toEqual({
           'image.svg': expect.any(Function),
