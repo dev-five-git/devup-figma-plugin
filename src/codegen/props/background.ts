@@ -1,23 +1,35 @@
-import { extractVariableName } from '../utils/extract-variable-name'
-import { replaceAllVarFunctions } from '../utils/replace-all-var-functions'
+import paintToCSS from '../utils/paint-to-css'
 
 export async function getBackgroundProps(
   node: SceneNode,
 ): Promise<
   Record<string, boolean | string | number | undefined | null> | undefined
 > {
-  if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0) {
-    const css = await node.getCSSAsync()
-    const bg = css.background || css.fill
-    if (bg) {
-      const resultBg = replaceAllVarFunctions(bg, extractVariableName)
-      const gradientText =
-        node.type === 'TEXT' &&
-        node.fills.find(
-          (fill) => fill.type === 'IMAGE' || fill.type.includes('GRADIENT'),
-        )
+  if ('fills' in node && node.fills !== figma.mixed) {
+    const gradientText =
+      node.type === 'TEXT' &&
+      node.fills.find(
+        (fill) =>
+          fill.visible &&
+          (fill.type === 'IMAGE' || fill.type.includes('GRADIENT')),
+      )
+
+    const cssFills: string[] = []
+
+    for (let i = 0; i < node.fills.length; i++) {
+      const fill = node.fills[i]
+      if (fill.opacity === 0 || !fill.visible) continue
+      const cssFill = await paintToCSS(fill, node)
+      if (cssFill) {
+        cssFills.push(cssFill)
+      }
+    }
+
+    if (cssFills.length > 0) {
+      const combinedBg = cssFills.join(', ')
+
       return {
-        bg: resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png'),
+        bg: combinedBg,
         color: gradientText ? 'transparent' : undefined,
         bgClip: gradientText ? 'text' : undefined,
       }
