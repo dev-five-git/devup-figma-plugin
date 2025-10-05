@@ -14,7 +14,7 @@ interface Point {
  * hence gradually removing getCSSAsync() dependency.
  * For now, SOLID, and GRADIENT_LINEAR types are implemented.
  */
-export default async function paintToCSS(
+export async function paintToCSS(
   fill: Paint,
   node: SceneNode,
 ): Promise<string | null> {

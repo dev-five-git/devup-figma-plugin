@@ -1,4 +1,4 @@
-import paintToCSS from '../utils/paint-to-css'
+import { paintToCSS } from '../utils/paint-to-css'
 
 export async function getBackgroundProps(
   node: SceneNode,
