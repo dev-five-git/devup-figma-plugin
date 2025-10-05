@@ -61,8 +61,9 @@ export function convertGradientLinear(
   gradientData: GradientPaint,
   width: number,
   height: number,
-): string {
-  // Handle gradient opacity
+): string | null {
+  // Handle opacity & visibility:
+  if (!gradientData.visible) return null
   if (gradientData.opacity === 0) return 'transparent'
 
   // 1. Calculate actual start and end points of Figma gradient
