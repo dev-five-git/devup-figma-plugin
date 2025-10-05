@@ -97,7 +97,7 @@ export function convertGradientLinear(
 
   // 6. Map Figma gradient stops to CSS space
   const stops = _mapGradientStops(
-    gradientData.gradientStops as ColorStop[],
+    gradientData.gradientStops,
     start,
     end,
     cssStart,
@@ -186,7 +186,7 @@ function _calculateCSSStartEnd(
 }
 
 function _mapGradientStops(
-  stops: ColorStop[],
+  stops: readonly ColorStop[],
   figmaStartPoint: Point,
   figmaEndPoint: Point,
   cssStartPoint: Point,
