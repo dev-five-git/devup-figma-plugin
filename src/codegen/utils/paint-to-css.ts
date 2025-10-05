@@ -22,11 +22,7 @@ export async function paintToCSS(
     case 'SOLID':
       return convertSolid(fill)
     case 'GRADIENT_LINEAR':
-      return convertGradientLinear(
-        fill as GradientPaint,
-        node.width,
-        node.height,
-      )
+      return convertGradientLinear(fill, node.width, node.height)
     case 'GRADIENT_RADIAL':
     case 'GRADIENT_ANGULAR':
     case 'GRADIENT_DIAMOND':
