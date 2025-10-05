@@ -1,7 +1,8 @@
+import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { extractVariableName } from './extract-variable-name'
+import { fmtPct } from './fmtPct'
 import { replaceAllVarFunctions } from './replace-all-var-functions'
-
 interface Point {
   x: number
   y: number
@@ -46,11 +47,13 @@ async function getDefaultCSSBackground(node: SceneNode): Promise<string> {
 
 function convertSolid(fill: SolidPaint): string {
   if (fill.opacity === 0) return 'transparent'
-  return rgbaToHex(
-    figma.util.rgba({
-      ...fill.color,
-      a: fill.opacity,
-    }),
+  return optimizeHex(
+    rgbaToHex(
+      figma.util.rgba({
+        ...fill.color,
+        a: fill.opacity,
+      }),
+    ),
   )
 }
 
@@ -105,7 +108,8 @@ export function convertGradientLinear(
   // 7. Generate CSS linear gradient string
   return `linear-gradient(${cssAngle}deg, ${stops
     .map(
-      (stop) => `${rgbaToHex(stop.color)} ${(stop.position * 100).toFixed(2)}%`,
+      (stop) =>
+        `${optimizeHex(rgbaToHex(stop.color))} ${fmtPct(stop.position * 100)}%`,
     )
     .join(', ')})`
 }
