@@ -45,7 +45,13 @@ async function getDefaultCSSBackground(node: SceneNode): Promise<string> {
 }
 
 function convertSolid(fill: SolidPaint): string {
-  return `${fill.color}`
+  if (fill.opacity === 0) return 'transparent'
+  return rgbaToHex(
+    figma.util.rgba({
+      ...fill.color,
+      a: fill.opacity,
+    }),
+  )
 }
 
 export function convertGradientLinear(
@@ -53,6 +59,9 @@ export function convertGradientLinear(
   width: number,
   height: number,
 ): string {
+  // Handle gradient opacity
+  if (gradientData.opacity === 0) return 'transparent'
+
   // 1. Calculate actual start and end points of Figma gradient
   const { start, end } = _calculateActualPositions(
     gradientData.gradientTransform,
@@ -90,6 +99,7 @@ export function convertGradientLinear(
     end,
     cssStart,
     cssEnd,
+    gradientData.opacity,
   )
 
   // 7. Generate CSS linear gradient string
@@ -177,6 +187,7 @@ function _mapGradientStops(
   figmaEndPoint: Point,
   cssStartPoint: Point,
   cssEndPoint: Point,
+  opacity: number = 1,
 ) {
   const figmaVector = {
     x: figmaEndPoint.x - figmaStartPoint.x,
@@ -203,9 +214,15 @@ function _mapGradientStops(
     const dot = pointFromStart.x * cssVector.x + pointFromStart.y * cssVector.y
     const relativePosition = cssLengthSquared === 0 ? 0 : dot / cssLengthSquared
 
+    // Apply gradient opacity to the color stop
+    const colorWithOpacity = figma.util.rgba({
+      ...stop.color,
+      a: stop.color.a * opacity,
+    })
+
     return {
       position: relativePosition,
-      color: stop.color,
+      color: colorWithOpacity,
     }
   })
 }
