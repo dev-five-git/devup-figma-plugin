@@ -1,3 +1,4 @@
+import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { extractVariableName } from './extract-variable-name'
 import { replaceAllVarFunctions } from './replace-all-var-functions'
 
@@ -8,15 +9,14 @@ interface Point {
 
 /**
  * This function converts Figma paint to CSS.
- * The purpose of this function is to natively support all css conversion, hence
- * gradually removing getCSSAsync() dependency.
- *
- * For now, SOLID, and GRADIENT_LINEAR are implemented. Other types should be implemented gradually.
+ * The purpose of this function is to natively support all css conversion,
+ * hence gradually removing getCSSAsync() dependency.
+ * For now, SOLID, and GRADIENT_LINEAR types are implemented.
  */
-export async function paintToCSS(
+export default async function paintToCSS(
   fill: Paint,
   node: SceneNode,
-): Promise<string> {
+): Promise<string | null> {
   switch (fill.type) {
     case 'SOLID':
       return convertSolid(fill)
@@ -27,68 +27,21 @@ export async function paintToCSS(
         node.height,
       )
     case 'GRADIENT_RADIAL':
-      return convertGradientRadial(fill, node)
     case 'GRADIENT_ANGULAR':
-      return convertGradientAngular(fill, node)
     case 'GRADIENT_DIAMOND':
-      return convertGradientDiamond(fill, node)
     case 'IMAGE':
-      return await convertImage(fill, node)
     case 'PATTERN':
-      return await convertPattern(fill, node)
-    case 'VIDEO':
-      return await convertVideo(fill, node)
+      return await getDefaultCSSBackground(node)
+    default:
+      return null
   }
 }
 
-function convertGradientRadial(fill: GradientPaint, node: SceneNode): string {
-  return ''
-}
-
-function convertGradientAngular(fill: GradientPaint, node: SceneNode): string {
-  return ''
-}
-
-function convertGradientDiamond(fill: GradientPaint, node: SceneNode): string {
-  return ''
-}
-
-function convertImage(fill: ImagePaint, node: SceneNode): string {
-  return ''
-}
-
-function convertPattern(fill: PatternPaint, node: SceneNode): string {
-  return ''
-}
-
-function convertVideo(fill: VideoPaint, node: SceneNode): string {
-  return ''
-}
-
-/**
- * @param node SceneNode
- * @returns PaintToCSSResponseType
- */
-const getDefaultCSS = async (node: SceneNode) => {
+async function getDefaultCSSBackground(node: SceneNode): Promise<string> {
   const css = await node.getCSSAsync()
   const bg = css.background || css.fill
-
-  if (!bg) {
-    return undefined
-  }
-
   const resultBg = replaceAllVarFunctions(bg, extractVariableName)
-  const gradientText =
-    node.type === 'TEXT' &&
-    (node.fills as Paint[]).find(
-      (fill) => fill.type === 'IMAGE' || fill.type.includes('GRADIENT'),
-    )
-
-  return {
-    bg: resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png'),
-    color: gradientText ? 'transparent' : undefined,
-    bgClip: gradientText ? 'text' : undefined,
-  }
+  return resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png')
 }
 
 function convertSolid(fill: SolidPaint): string {
@@ -142,8 +95,7 @@ export function convertGradientLinear(
   // 7. Generate CSS linear gradient string
   return `linear-gradient(${cssAngle}deg, ${stops
     .map(
-      (stop) =>
-        `${_rgbaToHex(stop.color)} ${(stop.position * 100).toFixed(2)}%`,
+      (stop) => `${rgbaToHex(stop.color)} ${(stop.position * 100).toFixed(2)}%`,
     )
     .join(', ')})`
 }
@@ -273,21 +225,4 @@ function _applyMatrixToPoint(matrix: number[][], point: number[]): Point {
     x: matrix[0][0] * point[0] + matrix[0][1] * point[1] + matrix[0][2],
     y: matrix[1][0] * point[0] + matrix[1][1] * point[1] + matrix[1][2],
   }
-}
-
-function _toHex(number: number): string {
-  return ('0' + number.toString(16)).slice(-2)
-}
-
-function _rgbaToHex(color: RGBA): string {
-  const red = Math.round(color.r * 255)
-  const green = Math.round(color.g * 255)
-  const blue = Math.round(color.b * 255)
-  const alpha = Math.round(color.a * 255)
-
-  if (color.a === 1) {
-    return `#${_toHex(red)}${_toHex(green)}${_toHex(blue)}`.toUpperCase()
-  }
-
-  return `#${_toHex(red)}${_toHex(green)}${_toHex(blue)}${_toHex(alpha)}`.toUpperCase()
 }
