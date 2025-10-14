@@ -20,10 +20,6 @@
   },
   "codegenLanguages": [
     {
-      "label": "React(Devup-UI) - old",
-      "value": "devup-ui-old"
-    },
-    {
       "label": "React(Devup-UI)",
       "value": "devup-ui"
     }

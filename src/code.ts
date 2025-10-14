@@ -3,24 +3,11 @@ import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
-import { Element } from './Element'
 import { getComponentName } from './utils'
 
 if (figma.editorType === 'dev' && figma.mode === 'codegen') {
   figma.codegen.on('generate', async ({ node, language }) => {
     switch (language) {
-      case 'devup-ui-old': {
-        const time = Date.now()
-        const code = await new Element(node).render()
-        console.info(`[benchmark] devup-ui-old end ${Date.now() - time}ms`)
-        return [
-          {
-            title: node.name,
-            language: 'JAVASCRIPT',
-            code,
-          },
-        ] as const
-      }
       case 'devup-ui': {
         const time = Date.now()
         const codegen = new Codegen(node)

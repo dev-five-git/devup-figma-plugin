@@ -1,8 +1,7 @@
 import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
-import { extractVariableName } from './extract-variable-name'
+import { checkAssetNode } from './check-asset-node'
 import { fmtPct } from './fmtPct'
-import { replaceAllVarFunctions } from './replace-all-var-functions'
 interface Point {
   x: number
   y: number
@@ -10,35 +9,208 @@ interface Point {
 
 /**
  * This function converts Figma paint to CSS.
- * The purpose of this function is to natively support all css conversion,
- * hence gradually removing getCSSAsync() dependency.
- * For now, SOLID, and GRADIENT_LINEAR types are implemented.
  */
 export async function paintToCSS(
   fill: Paint,
   node: SceneNode,
+  last: boolean,
 ): Promise<string | null> {
   switch (fill.type) {
     case 'SOLID':
-      return convertSolid(fill)
+      return last ? convertSolid(fill) : convertSolidLinearGradient(fill)
     case 'GRADIENT_LINEAR':
       return convertGradientLinear(fill, node.width, node.height)
     case 'GRADIENT_RADIAL':
+      return convertRadial(fill, node.width, node.height)
     case 'GRADIENT_ANGULAR':
+      return convertAngular(fill, node.width, node.height)
     case 'GRADIENT_DIAMOND':
+      return convertDiamond(fill, node.width, node.height)
     case 'IMAGE':
+      return convertImage(fill)
     case 'PATTERN':
-      return await getDefaultCSSBackground(node)
+      return await convertPattern(fill)
     default:
       return null
   }
 }
 
-async function getDefaultCSSBackground(node: SceneNode): Promise<string> {
-  const css = await node.getCSSAsync()
-  const bg = css.background || css.fill
-  const resultBg = replaceAllVarFunctions(bg, extractVariableName)
-  return resultBg.replace('<path-to-image>', '/icons/' + node.name + '.png')
+function convertImage(fill: ImagePaint): string {
+  if (!fill.visible) return 'transparent'
+  if (fill.opacity === 0) return 'transparent'
+
+  // Get image filename from hash or use default
+  const imageName = 'image.png'
+
+  switch (fill.scaleMode) {
+    case 'FILL':
+      return `url(/icons/${imageName}) center/cover no-repeat`
+    case 'FIT':
+      return `url(/icons/${imageName}) center/contain no-repeat`
+    case 'CROP':
+      return `url(/icons/${imageName}) center/cover no-repeat`
+    case 'TILE':
+      return `url(/icons/${imageName}) repeat`
+  }
+}
+
+function convertDiamond(
+  fill: GradientPaint,
+  _width: number,
+  _height: number,
+): string {
+  // Handle opacity & visibility:
+  if (!fill.visible) return 'transparent'
+  if (fill.opacity === 0) return 'transparent'
+
+  // 1. Map gradient stops with opacity
+  const stops = fill.gradientStops
+    .map((stop) => {
+      const colorWithOpacity = figma.util.rgba({
+        ...stop.color,
+        a: stop.color.a * (fill.opacity ?? 1),
+      })
+      return `${optimizeHex(rgbaToHex(colorWithOpacity))} ${fmtPct(stop.position * 50)}%`
+    })
+    .join(', ')
+
+  // 2. Create 4 linear gradients for diamond effect
+  // Each gradient goes from corner to center
+  const gradients = [
+    `linear-gradient(to bottom right, ${stops}) bottom right / 50.1% 50.1% no-repeat`,
+    `linear-gradient(to bottom left, ${stops}) bottom left / 50.1% 50.1% no-repeat`,
+    `linear-gradient(to top left, ${stops}) top left / 50.1% 50.1% no-repeat`,
+    `linear-gradient(to top right, ${stops}) top right / 50.1% 50.1% no-repeat`,
+  ]
+
+  // 3. Combine all gradients
+  return gradients.join(', ')
+}
+
+function convertAngular(
+  fill: GradientPaint,
+  width: number,
+  height: number,
+): string {
+  // Handle opacity & visibility:
+  if (!fill.visible) return 'transparent'
+  if (fill.opacity === 0) return 'transparent'
+
+  // 1. Calculate actual center and start angle from gradient transform
+  const { center, startAngle } = _calculateAngularPositions(
+    fill.gradientTransform,
+    width,
+    height,
+  )
+
+  // 2. Convert center to percentage values
+  const centerX = fmtPct((center.x / width) * 100)
+  const centerY = fmtPct((center.y / height) * 100)
+
+  // 3. Map gradient stops with opacity
+  const stops = fill.gradientStops
+    .map((stop) => {
+      const colorWithOpacity = figma.util.rgba({
+        ...stop.color,
+        a: stop.color.a * (fill.opacity ?? 1),
+      })
+      return `${optimizeHex(rgbaToHex(colorWithOpacity))} ${fmtPct(stop.position * 100)}%`
+    })
+    .join(', ')
+
+  // 4. Generate CSS conic gradient string with calculated start angle
+  return `conic-gradient(from ${fmtPct(startAngle)}deg at ${centerX}% ${centerY}%, ${stops})`
+}
+
+function convertRadial(
+  fill: GradientPaint,
+  width: number,
+  height: number,
+): string {
+  // Handle opacity & visibility:
+  if (!fill.visible) return 'transparent'
+  if (fill.opacity === 0) return 'transparent'
+
+  // 1. Calculate actual center and radius from gradient transform
+  const { center, radius } = _calculateRadialPositions(
+    fill.gradientTransform,
+    width,
+    height,
+  )
+
+  // 2. Convert center to percentage values
+  const centerX = fmtPct((center.x / width) * 100)
+  const centerY = fmtPct((center.y / height) * 100)
+
+  // 3. Calculate the maximum radius as percentage
+  const maxRadius = Math.max(width, height)
+  const radiusPercent = fmtPct((radius / maxRadius) * 100)
+
+  // 4. Map gradient stops with opacity
+  const stops = fill.gradientStops
+    .map((stop) => {
+      const colorWithOpacity = figma.util.rgba({
+        ...stop.color,
+        a: stop.color.a * (fill.opacity ?? 1),
+      })
+      return `${optimizeHex(rgbaToHex(colorWithOpacity))} ${fmtPct(stop.position * 100)}%`
+    })
+    .join(', ')
+
+  // 5. Generate CSS radial gradient string
+  return `radial-gradient(${radiusPercent}% at ${centerX}% ${centerY}%, ${stops})`
+}
+
+async function convertPattern(fill: PatternPaint): Promise<string> {
+  const node = await figma.getNodeByIdAsync(fill.sourceNodeId)
+  const imageExtension = node ? checkAssetNode(node as SceneNode) : null
+  const imageName = node?.name ?? 'pattern'
+  const horizontalPosition = convertPosition(
+    fill.horizontalAlignment,
+    fill.spacing.x,
+    {
+      START: 'left',
+      CENTER: 'center',
+      END: 'right',
+    },
+  )
+  const verticalPosition = convertPosition(
+    (fill as any).verticalAlignment,
+    fill.spacing.y,
+    {
+      START: 'top',
+      CENTER: 'center',
+      END: 'bottom',
+    },
+  )
+  const position = [horizontalPosition, verticalPosition]
+    .filter(Boolean)
+    .join(' ')
+  return `url(/icons/${imageName}.${imageExtension}) ${position} repeat`
+}
+
+function convertPosition(
+  horizontalAlignment: 'START' | 'CENTER' | 'END',
+  spacing: number,
+  alignmentMap: Record<'START' | 'CENTER' | 'END', string>,
+): string | null {
+  if (spacing === 0 && horizontalAlignment === 'START') {
+    return null
+  }
+  return `${alignmentMap[horizontalAlignment]} ${fmtPct(spacing * 100)}%`
+}
+
+function convertSolidLinearGradient(fill: SolidPaint): string {
+  if (fill.opacity === 0) return 'transparent'
+  const color = optimizeHex(
+    rgbaToHex(
+      figma.util.rgba({
+        ...fill.color,
+        a: fill.opacity,
+      }),
+    ),
+  )
+  return `linear-gradient(${color}, ${color})`
 }
 
 function convertSolid(fill: SolidPaint): string {
@@ -53,7 +225,7 @@ function convertSolid(fill: SolidPaint): string {
   )
 }
 
-export function convertGradientLinear(
+function convertGradientLinear(
   gradientData: GradientPaint,
   width: number,
   height: number,
@@ -243,4 +415,73 @@ function _applyMatrixToPoint(matrix: number[][], point: number[]): Point {
     x: matrix[0][0] * point[0] + matrix[0][1] * point[1] + matrix[0][2],
     y: matrix[1][0] * point[0] + matrix[1][1] * point[1] + matrix[1][2],
   }
+}
+
+function _calculateRadialPositions(
+  gradientTransform: number[][],
+  width: number,
+  height: number,
+) {
+  const matrixInverse = _inverseMatrix(gradientTransform)
+
+  // In radial gradient space, center is at [0.5, 0.5] and radius extends to [1, 0.5]
+  const normalizedCenter = _applyMatrixToPoint(matrixInverse, [0.5, 0.5])
+  const normalizedRadius = _applyMatrixToPoint(matrixInverse, [1, 0.5])
+
+  // Convert to pixel coordinates
+  const center = {
+    x: normalizedCenter.x * width,
+    y: normalizedCenter.y * height,
+  }
+
+  // Calculate radius as distance from center to the radius point
+  const radiusPoint = {
+    x: normalizedRadius.x * width,
+    y: normalizedRadius.y * height,
+  }
+
+  const radius = Math.sqrt(
+    Math.pow(radiusPoint.x - center.x, 2) +
+      Math.pow(radiusPoint.y - center.y, 2),
+  )
+
+  return { center, radius }
+}
+
+function _calculateAngularPositions(
+  gradientTransform: number[][],
+  width: number,
+  height: number,
+) {
+  const matrixInverse = _inverseMatrix(gradientTransform)
+
+  // In angular gradient space, center is at [0.5, 0.5]
+  const normalizedCenter = _applyMatrixToPoint(matrixInverse, [0.5, 0.5])
+
+  // Calculate start angle by finding the direction from center to the start point
+  // In angular gradient space, start point is at [1, 0.5] (right side)
+  const normalizedStart = _applyMatrixToPoint(matrixInverse, [1, 0.5])
+
+  // Convert to pixel coordinates
+  const center = {
+    x: normalizedCenter.x * width,
+    y: normalizedCenter.y * height,
+  }
+
+  const startPoint = {
+    x: normalizedStart.x * width,
+    y: normalizedStart.y * height,
+  }
+
+  // Calculate angle from center to start point
+  const deltaX = startPoint.x - center.x
+  const deltaY = startPoint.y - center.y
+  let startAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI)
+
+  // Convert to CSS angle (CSS starts from top, increases clockwise)
+  // Figma starts from right, increases clockwise
+  startAngle = (startAngle + 90) % 360
+  if (startAngle < 0) startAngle += 360
+
+  return { center, startAngle }
 }

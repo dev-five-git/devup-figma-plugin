@@ -1,17 +1,18 @@
 import JSZip from 'jszip'
 
-import { Element } from '../Element'
+import { Codegen } from '../codegen/Codegen'
 import { downloadFile } from '../utils/download-file'
 
 export async function exportComponents() {
   try {
     figma.notify('Exporting components...')
     const elements = await Promise.all(
-      figma.currentPage.selection.map(async (node) => new Element(node)),
+      figma.currentPage.selection.map(async (node) => new Codegen(node)),
     )
+    await Promise.all(elements.map((element) => element.run()))
 
     const components = await Promise.all(
-      elements.map((element) => element.getComponents()),
+      elements.map((element) => element.getComponentsCodes()),
     )
 
     const componentCount = components.reduce(
@@ -29,19 +30,13 @@ export async function exportComponents() {
     })
     const zip = new JSZip()
     for (const component of components) {
-      for (const [name, data] of Object.entries(component)) {
-        zip.file(name, await data())
+      for (const [_, codeList] of Object.entries(component)) {
+        for (const [name, code] of codeList) {
+          zip.file(name, code)
+        }
       }
     }
 
-    await Promise.all(
-      components.map(async (component) => {
-        return Object.entries(component).map(async ([name, data]) => {
-          const content = await data()
-          zip.file(name, content)
-        })
-      }),
-    )
     await downloadFile(
       `${figma.currentPage.name}.zip`,
       await zip.generateAsync({ type: 'uint8array' }),
