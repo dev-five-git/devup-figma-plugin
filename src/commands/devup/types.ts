@@ -8,8 +8,9 @@ export interface DevupTypography {
   textDecoration?: string
   textTransform?: string
 }
+type Theme = string
 export interface DevupTheme {
-  colors?: Record<string, Record<string, string>>
+  colors?: Record<Theme, Record<string, string>>
   typography?: Record<string, DevupTypography | (null | DevupTypography)[]>
 }
 export interface Devup {

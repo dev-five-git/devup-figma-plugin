@@ -10,8 +10,9 @@ import { toCamel } from '../../utils/to-camel'
 import { uploadFile } from '../../utils/upload-file'
 import { variableAliasToValue } from '../../utils/variable-alias-to-value'
 import { optimizeHex } from '../../utils/optimize-hex'
-
-export async function exportDevup() {
+import { downloadDevupXlsx } from './utils/download-devup-xlsx'
+import { uploadDevupXlsx } from './utils/upload-devup-xlsx'
+export async function exportDevup(output: "json" | "excel") {
   const devup: Devup = {}
 
   const collection = await getDevupColorCollection()
@@ -44,13 +45,14 @@ export async function exportDevup() {
   }
 
   await figma.loadAllPagesAsync()
-  const texts = figma.root.children.flatMap((node) => node.findAll((node) => node.type === 'TEXT')) as TextNode[]
+
+  const texts = figma.currentPage.findAllWithCriteria({ types: ['TEXT'] })
   const textStyles = await figma.getLocalTextStylesAsync()
   const ids = new Set(textStyles.map((style) => style.id))
 
   const typography: Record<string, (null | DevupTypography)[]> = {}
   await Promise.all(
-    texts
+      texts
     .filter((text) => (typeof text.textStyleId === 'string' && text.textStyleId) || text.textStyleId === figma.mixed)
     .map(async (text) => {
       for (const seg of text.getStyledTextSegments([
@@ -81,7 +83,6 @@ export async function exportDevup() {
       }
     }),
   )
-  console.log(typography)
   if (Object.keys(typography).length > 0) {
     devup['theme'] ??= {}
     devup['theme']['typography'] = Object.entries(typography).reduce(
@@ -118,11 +119,17 @@ export async function exportDevup() {
     )
   }
 
-  return downloadFile('devup.json', JSON.stringify(devup))
+  switch (output) {
+    case 'json':
+      return downloadFile('devup.json', JSON.stringify(devup))
+    case 'excel':
+      console.log("분명 엑셀")
+      return downloadDevupXlsx('devup.xlsx', JSON.stringify(devup))
+  }
 }
 
-export async function importDevup() {
-  const devup: Devup = JSON.parse(await uploadFile('.json'))
+export async function importDevup(input: "json" | "excel") {
+  let devup: Devup = input === 'json' ? JSON.parse(await uploadFile('.json')) : await uploadDevupXlsx()
   if (devup.theme?.colors) {
     const collection = (await getDevupColorCollection()) ?? (await figma.variables.createVariableCollection('Devup Colors'))
     const themes = new Set()

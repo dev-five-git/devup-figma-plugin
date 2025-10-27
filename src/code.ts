@@ -52,10 +52,16 @@ if (figma.editorType === 'dev' && figma.mode === 'codegen') {
 }
 switch (figma.command) {
   case 'export-devup':
-    exportDevup().finally(() => figma.closePlugin())
+    exportDevup('json').finally(() => figma.closePlugin())
+    break
+  case 'export-devup-excel':
+    exportDevup('excel').finally(() => figma.closePlugin())
     break
   case 'import-devup':
-    importDevup().finally(() => figma.closePlugin())
+    importDevup('json').finally(() => figma.closePlugin())
+    break
+  case 'import-devup-excel':
+    importDevup('excel').finally(() => figma.closePlugin())
     break
   case 'export-assets':
     exportAssets().finally(() => figma.closePlugin())

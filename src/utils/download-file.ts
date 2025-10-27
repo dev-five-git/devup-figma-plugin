@@ -5,7 +5,7 @@
  */
 export async function downloadFile(
   fileName: string,
-  data: string | Uint8Array,
+  data: string | Buffer | Uint8Array,
 ) {
   figma.showUI(downloadFileUi(), {
     visible: false,

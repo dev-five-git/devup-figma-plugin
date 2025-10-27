@@ -15,7 +15,7 @@
   ],
   "networkAccess": {
     "allowedDomains": [
-      "none"
+      "https://cdn.sheetjs.com"
     ]
   },
   "codegenLanguages": [
@@ -30,8 +30,16 @@
       "command": "export-devup"
     },
     {
+      "name": "Export Devup Excel",
+      "command": "export-devup-excel"
+    },
+    {
       "name": "Import Devup",
       "command": "import-devup"
+    },
+    {
+      "name": "Import Devup Excel",
+      "command": "import-devup-excel"
     },
     {
       "name": "Export Assets",
