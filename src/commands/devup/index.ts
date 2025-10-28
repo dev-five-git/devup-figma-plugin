@@ -123,7 +123,6 @@ export async function exportDevup(output: "json" | "excel") {
     case 'json':
       return downloadFile('devup.json', JSON.stringify(devup))
     case 'excel':
-      console.log("분명 엑셀")
       return downloadDevupXlsx('devup.xlsx', JSON.stringify(devup))
   }
 }
@@ -160,11 +159,13 @@ export async function importDevup(input: "json" | "excel") {
       if (Array.isArray(value)) {
         for(const v in value) {
           if(v&&value[v]) {
-
             targetStyleNames.push([`${{
               0: 'mobile',
+              1: '1',
               2: 'tablet',
+              3: '3',
               4: 'desktop',
+              5: '5',
             }[v]}/${style}`, value[v]])
           }
         }
@@ -174,57 +175,64 @@ export async function importDevup(input: "json" | "excel") {
 
       for(const [target, typography] of targetStyleNames) {
         const st = styles.find((s) => s.name === target) ?? figma.createTextStyle()
+        
         st.name = target
-
-        if(typography.fontWeight || typography.fontStyle) {
-          const fontFamily = {
-            family: typography.fontFamily ?? "Inter",
-            style: typography.fontStyle == 'italic' ? 'Italic' : 'Regular',
-          }
+        const fontFamily = {
+          family: typography.fontFamily ?? "Inter",
+          style: typography.fontStyle == 'italic' ? 'Italic' : 'Regular',
+        }
+        try{
           await figma.loadFontAsync(fontFamily)
           st.fontName = fontFamily
-        }
-        if(typography.fontSize) {
-          st.fontSize = parseInt(typography.fontSize)
-        }
-        if(typography.letterSpacing) {
-          if(typography.letterSpacing.endsWith('em')) {
-
-            st.letterSpacing = {
-              unit: 'PERCENT',
-              value: parseFloat(typography.letterSpacing),
-            }
-          } else {
-            st.letterSpacing = {
-              unit: 'PIXELS',
-              value: parseFloat(typography.letterSpacing) * 100,
-            }
+          if(typography.fontSize) {
+            st.fontSize = parseInt(typography.fontSize)
           }
-        }
-        if(typography.lineHeight) {
-          if(typography.lineHeight === 'normal') {
-            st.lineHeight = {
-              unit: 'AUTO',
-            }
-          } else {
-            if(typeof typography.lineHeight === 'string') {
-              st.lineHeight = {
-                unit: 'PIXELS',
-                value: parseInt(typography.lineHeight),
+          
+          if(typography.letterSpacing) {
+            if(typography.letterSpacing.endsWith('em')) {
+              st.letterSpacing = {
+                unit: 'PERCENT',
+                value: parseFloat(typography.letterSpacing),
               }
             } else {
-              st.lineHeight = {
-                unit: 'PERCENT',
-                value: Math.round(typography.lineHeight / 10) / 10,
+              st.letterSpacing = {
+                unit: 'PIXELS',
+                value: parseFloat(typography.letterSpacing) * 100,
               }
             }
           }
+          
+          
+          if(typography.lineHeight) {
+            if(typography.lineHeight === 'normal') {
+              st.lineHeight = {
+                unit: 'AUTO',
+              }
+            } else {
+              if(typeof typography.lineHeight === 'string') {
+                st.lineHeight = {
+                  unit: 'PIXELS',
+                  value: parseInt(typography.lineHeight),
+                }
+              } else {
+                st.lineHeight = {
+                  unit: 'PERCENT',
+                  value: Math.round(typography.lineHeight / 10) / 10,
+                }
+              }
+            }
+          }          
+          if(typography.textTransform) {
+            st.textCase = typography.textTransform.toUpperCase() as TextCase
+          }
+          if(typography.textDecoration) {
+            st.textDecoration = typography.textDecoration.toUpperCase() as TextDecoration
+          }
+          
         }
-        if(typography.textTransform) {
-          st.textCase = typography.textTransform.toUpperCase() as TextCase
-        }
-        if(typography.textDecoration) {
-          st.textDecoration = typography.textDecoration.toUpperCase() as TextDecoration
+        catch(error) {
+          console.error('Failed to create text style', error)
+          figma.notify(`Failed to create text style (${target}, ${fontFamily.family} - ${fontFamily.style})`, { error: true })
         }
       }
     }

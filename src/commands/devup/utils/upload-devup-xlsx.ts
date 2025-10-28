@@ -45,10 +45,10 @@ function uploadFileUi(accept: string) {
       }
     }
     for (const [name, value] of Object.entries(typography)) {
-      for (let i = value.length; i > 0; i--) {
-        if (value[i] === null) {
+      for (let i = value.length-1; i >= 0; i--) {
+        if (value[i] === null)
           value.pop()
-        }
+        else break
       }
       if (value.length === 1) {
         typography[name] = value[0]
