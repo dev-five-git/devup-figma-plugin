@@ -1,7 +1,7 @@
-import { colorFromFills, propsToPropsWithTypography } from '../../utils'
-import { optimizeHex } from '../../utils/optimize-hex'
+import { propsToPropsWithTypography } from '../../utils'
 import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
 import { fixTextChild } from '../utils/fix-text-child'
+import { paintToCSS } from '../utils/paint-to-css'
 import { renderNode } from '.'
 
 const SEGMENT_TYPE = [
@@ -33,7 +33,18 @@ export async function renderText(node: TextNode): Promise<{
           await propsToPropsWithTypography(
             {
               ...((await textSegmentToTypography(seg)) as any),
-              color: optimizeHex(await colorFromFills(seg.fills as any)),
+              color: (
+                await Promise.all(
+                  seg.fills.map(
+                    async (fill, idx) =>
+                      await paintToCSS(
+                        fill,
+                        node,
+                        idx === seg.fills.length - 1,
+                      ),
+                  ),
+                )
+              ).join(','),
               characters: seg.characters,
             },
             seg.textStyleId,

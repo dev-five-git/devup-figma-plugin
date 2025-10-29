@@ -2,6 +2,7 @@ import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { checkAssetNode } from './check-asset-node'
 import { fmtPct } from './fmtPct'
+import { solidToString } from './solid-to-string'
 interface Point {
   x: number
   y: number
@@ -17,7 +18,9 @@ export async function paintToCSS(
 ): Promise<string | null> {
   switch (fill.type) {
     case 'SOLID':
-      return last ? convertSolid(fill) : convertSolidLinearGradient(fill)
+      return last
+        ? await solidToString(fill)
+        : await convertSolidLinearGradient(fill)
     case 'GRADIENT_LINEAR':
       return convertGradientLinear(fill, node.width, node.height)
     case 'GRADIENT_RADIAL':
@@ -200,29 +203,10 @@ function convertPosition(
   return `${alignmentMap[horizontalAlignment]} ${fmtPct(spacing * 100)}%`
 }
 
-function convertSolidLinearGradient(fill: SolidPaint): string {
+async function convertSolidLinearGradient(fill: SolidPaint): Promise<string> {
   if (fill.opacity === 0) return 'transparent'
-  const color = optimizeHex(
-    rgbaToHex(
-      figma.util.rgba({
-        ...fill.color,
-        a: fill.opacity,
-      }),
-    ),
-  )
+  const color = await solidToString(fill)
   return `linear-gradient(${color}, ${color})`
-}
-
-function convertSolid(fill: SolidPaint): string {
-  if (fill.opacity === 0) return 'transparent'
-  return optimizeHex(
-    rgbaToHex(
-      figma.util.rgba({
-        ...fill.color,
-        a: fill.opacity,
-      }),
-    ),
-  )
 }
 
 function convertGradientLinear(

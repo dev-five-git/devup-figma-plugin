@@ -8,7 +8,7 @@ export async function getBackgroundProps(
   if ('fills' in node && node.fills !== figma.mixed) {
     const gradientText =
       node.type === 'TEXT' &&
-      node.fills.find(
+      !!node.fills.find(
         (fill) =>
           fill.visible &&
           (fill.type === 'IMAGE' || fill.type.includes('GRADIENT')),
@@ -36,7 +36,7 @@ export async function getBackgroundProps(
     if (cssFills.length > 0) {
       const combinedBg = cssFills.join(', ')
       return {
-        bg: combinedBg,
+        bg: node.type !== 'TEXT' || gradientText ? combinedBg : null,
         bgBlendMode: {
           NORMAL: null,
           MULTIPLY: 'multiply',
