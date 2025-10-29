@@ -1,5 +1,6 @@
 import { getComponentName } from '../utils'
 import { getProps } from './props'
+import { getSelectorProps } from './props/selector'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import { checkAssetNode } from './utils/check-asset-node'
@@ -10,10 +11,19 @@ import {
 } from './utils/get-devup-component'
 
 export class Codegen {
-  components: Map<SceneNode, string> = new Map()
+  components: Map<
+    SceneNode,
+    { code: string; variants: Record<string, string> }
+  > = new Map()
   code: string = ''
 
-  constructor(private node: SceneNode) {}
+  constructor(private node: SceneNode) {
+    if (node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET') {
+      this.node = node.parent
+    } else {
+      this.node = node
+    }
+  }
 
   getCode() {
     return this.code
@@ -21,10 +31,10 @@ export class Codegen {
 
   getComponentsCodes() {
     return Array.from(this.components.entries()).map(
-      ([node, code]) =>
+      ([node, { code, variants }]) =>
         [
           getComponentName(node),
-          renderComponent(getComponentName(node), code),
+          renderComponent(getComponentName(node), code, variants),
         ] as const,
     )
   }
@@ -42,16 +52,23 @@ export class Codegen {
           })
         : []
     const props = await getProps(node)
+    const selectorProps = await getSelectorProps(node)
+    const variants = {}
 
-    this.components.set(
-      node,
-      renderNode(
+    if (selectorProps) {
+      Object.assign(props, selectorProps.props)
+      Object.assign(variants, selectorProps.variants)
+    }
+
+    this.components.set(node, {
+      code: renderNode(
         getDevupComponentByProps(props),
         props,
         2,
         await Promise.all(childrenCodes),
       ),
-    )
+      variants,
+    })
   }
 
   async run(node: SceneNode = this.node, dep: number = 0): Promise<string> {
@@ -76,6 +93,16 @@ export class Codegen {
     }
 
     const props = await getProps(node)
+    if (
+      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
+      ((this.node.type === 'COMPONENT_SET' &&
+        node === this.node.defaultVariant) ||
+        this.node.type === 'COMPONENT')
+    ) {
+      await this.addComponent(
+        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
+      )
+    }
     if (node.type === 'INSTANCE') {
       const mainComponent = await node.getMainComponentAsync()
       if (mainComponent) await this.addComponent(mainComponent)

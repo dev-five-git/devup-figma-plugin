@@ -6,7 +6,7 @@ import { propsToString } from '../utils/props-to-str'
 
 export function renderNode(
   component: string,
-  props: Record<string, number | null | string | boolean | undefined>,
+  props: Record<string, number | null | string | boolean | undefined | object>,
   deps: number = 0,
   childrenCodes: string[],
 ): string {
@@ -36,8 +36,20 @@ export function renderNode(
     .join('\n')
 }
 
-export function renderComponent(component: string, code: string) {
-  return `export function ${component}() {
+export function renderComponent(
+  component: string,
+  code: string,
+  variants: Record<string, string>,
+) {
+  const hasVariants = Object.keys(variants).length > 0
+  const interfaceCode = hasVariants
+    ? `export interface ${component}Props {
+  ${Object.entries(variants)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n')}
+}\n\n`
+    : ''
+  return `${interfaceCode}export function ${component}() {
   return ${
     code.includes('\n')
       ? `(\n${code

@@ -18,7 +18,9 @@ import { getTransformProps } from './transform'
 
 export async function getProps(
   node: SceneNode,
-): Promise<Record<string, boolean | string | number | undefined | null>> {
+): Promise<
+  Record<string, boolean | string | number | undefined | null | object>
+> {
   return {
     ...getAutoLayoutProps(node),
     ...getMinMaxProps(node),

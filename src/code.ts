@@ -1,9 +1,7 @@
 import { Codegen } from './codegen/Codegen'
-import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
-import { getComponentName } from './utils'
 
 if (figma.editorType === 'dev' && figma.mode === 'codegen') {
   figma.codegen.on('generate', async ({ node, language }) => {
@@ -15,16 +13,17 @@ if (figma.editorType === 'dev' && figma.mode === 'codegen') {
         const componentsCodes = codegen.getComponentsCodes()
         console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
         return [
-          {
-            title: node.name,
-            language: 'TYPESCRIPT',
-            code:
-              node.type === 'COMPONENT' ||
-              node.type === 'COMPONENT_SET' ||
-              node.type === 'INSTANCE'
-                ? wrapComponent(getComponentName(node), codegen.getCode())
-                : codegen.getCode(),
-          },
+          ...(node.type === 'COMPONENT' ||
+          node.type === 'COMPONENT_SET' ||
+          node.type === 'INSTANCE'
+            ? []
+            : [
+                {
+                  title: node.name,
+                  language: 'TYPESCRIPT',
+                  code: codegen.getCode(),
+                } as const,
+              ]),
           ...(componentsCodes.length > 0
             ? ([
                 {

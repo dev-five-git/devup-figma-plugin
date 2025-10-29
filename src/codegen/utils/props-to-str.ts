@@ -9,7 +9,7 @@ export function propsToString(props: Record<string, unknown>) {
     })
     .map(
       ([key, value]) =>
-        `${key}${typeof value === 'boolean' ? (value ? '' : `={${value}}`) : `="${value}"`}`,
+        `${key}${typeof value === 'boolean' ? (value ? '' : `={${value}}`) : typeof value === 'object' ? `={${JSON.stringify(value, null, 2)}}` : `="${value}"`}`,
     )
     .join(
       Object.keys(props).length >= 5 ||

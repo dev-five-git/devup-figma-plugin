@@ -26,7 +26,7 @@ function _getEffectPropsFromEffect(effect: Effect): Record<string, string> {
       const color = shadow.color
 
       return {
-        boxShadow: `${addPx(offsetX, '0')} ${addPx(offsetY, '0')} ${addPx(blur, '0')} ${addPx(spread, '0')} ${optimizeHex(rgbaToHex(color))})`,
+        boxShadow: `${addPx(offsetX, '0')} ${addPx(offsetY, '0')} ${addPx(blur, '0')} ${addPx(spread, '0')} ${optimizeHex(rgbaToHex(color))}`,
       }
     }
     case 'INNER_SHADOW': {
