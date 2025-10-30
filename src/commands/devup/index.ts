@@ -46,7 +46,7 @@ export async function exportDevup(output: "json" | "excel") {
 
   await figma.loadAllPagesAsync()
 
-  const texts = figma.currentPage.findAllWithCriteria({ types: ['TEXT'] })
+  const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
   const textStyles = await figma.getLocalTextStylesAsync()
   const ids = new Set(textStyles.map((style) => style.id))
 
