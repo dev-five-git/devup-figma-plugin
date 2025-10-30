@@ -12,6 +12,7 @@ import { variableAliasToValue } from '../../utils/variable-alias-to-value'
 import { optimizeHex } from '../../utils/optimize-hex'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
 import { uploadDevupXlsx } from './utils/upload-devup-xlsx'
+import { textStyleToTypography } from '../../utils/text-style-to-typography'
 export async function exportDevup(output: "json" | "excel") {
   const devup: Devup = {}
 
@@ -48,7 +49,12 @@ export async function exportDevup(output: "json" | "excel") {
 
   const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
   const textStyles = await figma.getLocalTextStylesAsync()
-  const ids = new Set(textStyles.map((style) => style.id))
+  const ids = new Set()
+  const styles: Record<string, TextStyle> = {}
+  for(const style of textStyles) {
+    ids.add(style.id)
+    styles[style.name] = style
+  }
 
   const typography: Record<string, (null | DevupTypography)[]> = {}
   await Promise.all(
@@ -74,8 +80,8 @@ export async function exportDevup(output: "json" | "excel") {
           const style = await figma.getStyleByIdAsync(seg.textStyleId)
 
           if (!(style && ids.has(style.id))) continue
-          const { level , name } = styleNameToTypography(style.name)
-          const typo = textSegmentToTypography(seg as StyledTextSegment)
+          const { level, name } = styleNameToTypography(style.name)
+          const typo = textSegmentToTypography(seg)
           if (typography[name]&&typography[name][level]) continue
           typography[name] ??= [null, null, null, null, null, null]
           typography[name][level] = typo
@@ -83,6 +89,15 @@ export async function exportDevup(output: "json" | "excel") {
       }
     }),
   )
+
+  for(const [name, style] of Object.entries(styles)) {
+    const { level, name: styleName } = styleNameToTypography(name)
+    if(typography[styleName] && !typography[styleName][level]) {
+      typography[styleName][level] = textStyleToTypography(style)
+    }
+  }
+
+
   if (Object.keys(typography).length > 0) {
     devup['theme'] ??= {}
     devup['theme']['typography'] = Object.entries(typography).reduce(
