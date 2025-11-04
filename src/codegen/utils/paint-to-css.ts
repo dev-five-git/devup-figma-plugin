@@ -135,7 +135,7 @@ function convertRadial(
   if (fill.opacity === 0) return 'transparent'
 
   // 1. Calculate actual center and radius from gradient transform
-  const { center, radius } = _calculateRadialPositions(
+  const { center, radiusW, radiusH } = _calculateRadialPositions(
     fill.gradientTransform,
     width,
     height,
@@ -145,9 +145,9 @@ function convertRadial(
   const centerX = fmtPct((center.x / width) * 100)
   const centerY = fmtPct((center.y / height) * 100)
 
-  // 3. Calculate the maximum radius as percentage
-  const maxRadius = Math.max(width, height)
-  const radiusPercent = fmtPct((radius / maxRadius) * 100)
+  // 3. Calculate radius percentages for width and height separately
+  const radiusPercentW = fmtPct((radiusW / width) * 100)
+  const radiusPercentH = fmtPct((radiusH / height) * 100)
 
   // 4. Map gradient stops with opacity
   const stops = fill.gradientStops
@@ -159,9 +159,8 @@ function convertRadial(
       return `${optimizeHex(rgbaToHex(colorWithOpacity))} ${fmtPct(stop.position * 100)}%`
     })
     .join(', ')
-
   // 5. Generate CSS radial gradient string
-  return `radial-gradient(${radiusPercent}% at ${centerX}% ${centerY}%, ${stops})`
+  return `radial-gradient(${radiusPercentW}% ${radiusPercentH}% at ${centerX}% ${centerY}%, ${stops})`
 }
 
 async function convertPattern(fill: PatternPaint): Promise<string> {
@@ -410,7 +409,7 @@ function _calculateRadialPositions(
 
   // In radial gradient space, center is at [0.5, 0.5] and radius extends to [1, 0.5]
   const normalizedCenter = _applyMatrixToPoint(matrixInverse, [0.5, 0.5])
-  const normalizedRadius = _applyMatrixToPoint(matrixInverse, [1, 0.5])
+  const normalizedRadius = _applyMatrixToPoint(matrixInverse, [1, 1])
 
   // Convert to pixel coordinates
   const center = {
@@ -418,18 +417,28 @@ function _calculateRadialPositions(
     y: normalizedCenter.y * height,
   }
 
-  // Calculate radius as distance from center to the radius point
+  // Calculate radius point in pixel coordinates
   const radiusPoint = {
     x: normalizedRadius.x * width,
     y: normalizedRadius.y * height,
   }
 
+  // Calculate radius as distance from center to the radius point (for backward compatibility)
   const radius = Math.sqrt(
     Math.pow(radiusPoint.x - center.x, 2) +
       Math.pow(radiusPoint.y - center.y, 2),
   )
 
-  return { center, radius }
+  // Calculate separate radius for width and height in normalized space
+  // The difference in normalized space represents the actual radius ratio
+  const normalizedRadiusW = Math.abs(normalizedRadius.x - normalizedCenter.x)
+  const normalizedRadiusH = Math.abs(normalizedRadius.y - normalizedCenter.y)
+
+  // Convert normalized radius to pixel coordinates
+  const radiusW = normalizedRadiusW * width
+  const radiusH = normalizedRadiusH * height
+
+  return { center, radius, radiusW, radiusH }
 }
 
 function _calculateAngularPositions(
