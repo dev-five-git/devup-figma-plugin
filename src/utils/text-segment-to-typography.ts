@@ -17,10 +17,11 @@ export function textSegmentToTypography(
     fontStyle: segment.fontName.style.includes('Italic') ? 'italic' : undefined,
     fontWeight: segment.fontWeight,
     fontSize: segment.fontSize + 'px',
-    textDecoration:
-      segment.textDecoration.toLowerCase() === 'none'
-        ? undefined
-        : segment.textDecoration.toLowerCase(),
+    textDecoration: {
+      NONE: undefined,
+      UNDERLINE: 'underline',
+      STRIKETHROUGH: 'line-through',
+    }[segment.textDecoration],
     textTransform:
       segment.textCase === 'ORIGINAL'
         ? undefined

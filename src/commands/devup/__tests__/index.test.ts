@@ -95,7 +95,7 @@ describe('devup/index', () => {
       name: 'mobile/Title',
     })
 
-    await exportDevup()
+    await exportDevup('json')
     expect(downloadFileMock).toHaveBeenCalled()
     const [fileName, data] = downloadFileMock.mock.calls[0]
     expect(fileName).toBe('devup.json')
@@ -146,7 +146,7 @@ describe('devup/index', () => {
     )
     ;(figma.getLocalTextStylesAsync as any).mockResolvedValue([])
     ;(figma.createTextStyle as any).mockReturnValue({ name: '' })
-    await importDevup()
+    await importDevup('json')
     expect(figma.variables.createVariable).toHaveBeenCalledWith(
       'primary',
       expect.anything(),
@@ -160,7 +160,7 @@ describe('devup/index', () => {
     const downloadFileMock = vi
       .spyOn(downloadFileModule, 'downloadFile')
       .mockResolvedValue(undefined)
-    await exportDevup()
+    await exportDevup('json')
     expect(downloadFileMock).toHaveBeenCalled()
     const [_, data] = downloadFileMock.mock.calls[0]
     const parsed = JSON.parse(
@@ -179,7 +179,7 @@ describe('devup/index', () => {
     const downloadFileMock = vi
       .spyOn(downloadFileModule, 'downloadFile')
       .mockResolvedValue(undefined)
-    await exportDevup()
+    await exportDevup('json')
     const [_, data] = downloadFileMock.mock.calls[0]
     const parsed = JSON.parse(
       typeof data === 'string' ? data : Buffer.from(data).toString('utf-8'),
@@ -203,7 +203,7 @@ describe('devup/index', () => {
     const downloadFileMock = vi
       .spyOn(downloadFileModule, 'downloadFile')
       .mockResolvedValue(undefined)
-    await exportDevup()
+    await exportDevup('json')
     const [_, data] = downloadFileMock.mock.calls[0]
     const parsed = JSON.parse(
       typeof data === 'string' ? data : Buffer.from(data).toString('utf-8'),
@@ -248,7 +248,7 @@ describe('devup/index', () => {
     const downloadFileMock = vi
       .spyOn(downloadFileModule, 'downloadFile')
       .mockResolvedValue(undefined)
-    await exportDevup()
+    await exportDevup('json')
     const [_, data] = downloadFileMock.mock.calls[0]
     const parsed = JSON.parse(
       typeof data === 'string' ? data : Buffer.from(data).toString('utf-8'),
@@ -265,7 +265,7 @@ describe('devup/index', () => {
     const downloadFileMock = vi
       .spyOn(downloadFileModule, 'downloadFile')
       .mockResolvedValue(undefined)
-    await exportDevup()
+    await exportDevup('json')
     const [_, data] = downloadFileMock.mock.calls[0]
     const parsed = JSON.parse(
       typeof data === 'string' ? data : Buffer.from(data).toString('utf-8'),
@@ -293,7 +293,7 @@ describe('devup/index', () => {
     const downloadFileMock = vi
       .spyOn(downloadFileModule, 'downloadFile')
       .mockResolvedValue(undefined)
-    await exportDevup()
+    await exportDevup('json')
     const [_, data] = downloadFileMock.mock.calls[0]
     const parsed = JSON.parse(
       typeof data === 'string' ? data : Buffer.from(data).toString('utf-8'),
@@ -334,7 +334,7 @@ describe('devup/index', () => {
     const downloadFileMock = vi
       .spyOn(downloadFileModule, 'downloadFile')
       .mockResolvedValue(undefined)
-    await exportDevup()
+    await exportDevup('json')
     expect(downloadFileMock).toHaveBeenCalled()
   })
 
@@ -342,7 +342,7 @@ describe('devup/index', () => {
     vi.spyOn(uploadFileModule, 'uploadFile').mockResolvedValue(
       JSON.stringify({}),
     )
-    await importDevup()
+    await importDevup('json')
     expect(figma.variables.createVariable).not.toHaveBeenCalled()
     expect(figma.createTextStyle).not.toHaveBeenCalled()
   })
@@ -351,7 +351,7 @@ describe('devup/index', () => {
     vi.spyOn(uploadFileModule, 'uploadFile').mockResolvedValue(
       JSON.stringify({ theme: {} }),
     )
-    await importDevup()
+    await importDevup('json')
     expect(figma.variables.createVariable).not.toHaveBeenCalled()
   })
 
@@ -360,7 +360,7 @@ describe('devup/index', () => {
       JSON.stringify({ theme: { typography: { title: [null, null, null] } } }),
     )
     ;(figma.getLocalTextStylesAsync as any).mockResolvedValue([])
-    await importDevup()
+    await importDevup('json')
     expect(figma.createTextStyle).not.toHaveBeenCalled()
   })
 
@@ -385,7 +385,7 @@ describe('devup/index', () => {
     )
     ;(figma.getLocalTextStylesAsync as any).mockResolvedValue([])
     ;(figma.createTextStyle as any).mockReturnValue({ name: '' })
-    await importDevup()
+    await importDevup('json')
     expect(figma.createTextStyle).toHaveBeenCalled()
   })
 })
