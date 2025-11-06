@@ -30,8 +30,16 @@
       "command": "export-devup"
     },
     {
+      "name": "Export Devup without treeshaking",
+      "command": "export-devup-without-treeshaking"
+    },
+    {
       "name": "Export Devup Excel",
       "command": "export-devup-excel"
+    },
+    {
+      "name": "Export Devup Excel without treeshaking",
+      "command": "export-devup-excel-without-treeshaking"
     },
     {
       "name": "Import Devup",

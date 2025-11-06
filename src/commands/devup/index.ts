@@ -13,7 +13,7 @@ import { optimizeHex } from '../../utils/optimize-hex'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
 import { uploadDevupXlsx } from './utils/upload-devup-xlsx'
 import { textStyleToTypography } from '../../utils/text-style-to-typography'
-export async function exportDevup(output: "json" | "excel") {
+export async function exportDevup(output: "json" | "excel", treeshaking: boolean = true) {
   const devup: Devup = {}
 
   const collection = await getDevupColorCollection()
@@ -47,7 +47,6 @@ export async function exportDevup(output: "json" | "excel") {
 
   await figma.loadAllPagesAsync()
 
-  const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
   const textStyles = await figma.getLocalTextStylesAsync()
   const ids = new Set()
   const styles: Record<string, TextStyle> = {}
@@ -57,38 +56,50 @@ export async function exportDevup(output: "json" | "excel") {
   }
 
   const typography: Record<string, (null | DevupTypography)[]> = {}
-  await Promise.all(
-      texts
-    .filter((text) => (typeof text.textStyleId === 'string' && text.textStyleId) || text.textStyleId === figma.mixed)
-    .map(async (text) => {
-      for (const seg of text.getStyledTextSegments([
-        'fontName',
-        'fontWeight',
-        'fontSize',
-        'textDecoration',
-        'textCase',
-        'lineHeight',
-        'letterSpacing',
-        'fills',
-        'textStyleId',
-        'fillStyleId',
-        'listOptions',
-        'indentation',
-        'hyperlink',
-      ])) {
-        if (seg && seg.textStyleId) {
-          const style = await figma.getStyleByIdAsync(seg.textStyleId)
+  if (treeshaking) {
+    const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
+    await Promise.all(
+        texts
+      .filter((text) => (typeof text.textStyleId === 'string' && text.textStyleId) || text.textStyleId === figma.mixed)
+      .map(async (text) => {
+        for (const seg of text.getStyledTextSegments([
+          'fontName',
+          'fontWeight',
+          'fontSize',
+          'textDecoration',
+          'textCase',
+          'lineHeight',
+          'letterSpacing',
+          'fills',
+          'textStyleId',
+          'fillStyleId',
+          'listOptions',
+          'indentation',
+          'hyperlink',
+        ])) {
+          if (seg && seg.textStyleId) {
+            const style = await figma.getStyleByIdAsync(seg.textStyleId)
 
-          if (!(style && ids.has(style.id))) continue
-          const { level, name } = styleNameToTypography(style.name)
-          const typo = textSegmentToTypography(seg)
-          if (typography[name]&&typography[name][level]) continue
-          typography[name] ??= [null, null, null, null, null, null]
-          typography[name][level] = typo
+            if (!(style && ids.has(style.id))) continue
+            const { level, name } = styleNameToTypography(style.name)
+            const typo = textSegmentToTypography(seg)
+            if (typography[name]&&typography[name][level]) continue
+            typography[name] ??= [null, null, null, null, null, null]
+            typography[name][level] = typo
+          }
         }
-      }
-    }),
-  )
+      }),
+    )
+  }
+  else {
+    for (const [styleName, style] of Object.entries(styles)) {
+      const { level, name } = styleNameToTypography(styleName)
+      const typo = textStyleToTypography(style)
+      if (typography[name]&&typography[name][level]) continue
+      typography[name] ??= [null, null, null, null, null, null]
+      typography[name][level] = typo
+    }
+  }
 
   for(const [name, style] of Object.entries(styles)) {
     const { level, name: styleName } = styleNameToTypography(name)

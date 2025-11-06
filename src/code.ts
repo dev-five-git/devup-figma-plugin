@@ -53,8 +53,14 @@ switch (figma.command) {
   case 'export-devup':
     exportDevup('json').finally(() => figma.closePlugin())
     break
+  case 'export-devup-without-treeshaking':
+    exportDevup('json', false).finally(() => figma.closePlugin())
+    break
   case 'export-devup-excel':
     exportDevup('excel').finally(() => figma.closePlugin())
+    break
+  case 'export-devup-excel-without-treeshaking':
+    exportDevup('excel', false).finally(() => figma.closePlugin())
     break
   case 'import-devup':
     importDevup('json').finally(() => figma.closePlugin())
