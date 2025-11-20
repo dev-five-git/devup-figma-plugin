@@ -10,7 +10,10 @@ export function renderNode(
   deps: number = 0,
   childrenCodes: string[],
 ): string {
+  console.log('renderNode', props)
   const filteredProps = filterProps(props)
+
+  console.log('filteredProps', filteredProps)
   const propsString = propsToString(
     filterPropsWithComponent(component, filteredProps),
   )

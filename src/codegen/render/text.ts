@@ -124,14 +124,13 @@ export async function renderText(node: TextNode): Promise<{
     ),
   )
   const resultChildren = children.flat()
+
   if (resultChildren.length === 1)
     return {
       children: resultChildren[0].children,
       props: {
         ...defaultProps,
-        ...(defaultProps.typography
-          ? { typography: defaultProps.typography }
-          : resultChildren[0].props),
+        ...resultChildren[0].props,
       },
     }
 
