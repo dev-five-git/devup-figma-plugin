@@ -39,6 +39,7 @@ export async function getBorderProps(
 > {
   if (!('strokes' in node && node.strokes.length > 0) || node.type === 'TEXT')
     return
+  const strokeStyle = getStrokeStyle(node)
   const paintCssList = []
   for (let i = 0; i < node.strokes.length; i++) {
     const paint = node.strokes[node.strokes.length - 1 - i]
@@ -54,7 +55,7 @@ export async function getBorderProps(
     (node.strokeAlign !== 'INSIDE' || node.type === 'LINE')
   ) {
     const outline = paintCssList
-      .map((css) => `solid ${weight}px ${css}`)
+      .map((css) => `${strokeStyle} ${weight}px ${css}`)
       .join(', ')
     const wType =
       'layoutSizingHorizontal' in node ? node.layoutSizingHorizontal : 'FILL'
@@ -80,7 +81,9 @@ export async function getBorderProps(
   }
   if (weight !== figma.mixed) {
     return {
-      border: paintCssList.map((css) => `solid ${weight}px ${css}`).join(', '),
+      border: paintCssList
+        .map((css) => `${strokeStyle} ${weight}px ${css}`)
+        .join(', '),
     }
   }
   const n = node as IndividualStrokesMixin
@@ -88,23 +91,30 @@ export async function getBorderProps(
   return {
     borderBottom: n.strokeBottomWeight
       ? paintCssList
-          .map((css) => `solid ${n.strokeBottomWeight}px ${css}`)
+          .map((css) => `${strokeStyle} ${n.strokeBottomWeight}px ${css}`)
           .join(', ')
       : undefined,
     borderTop: n.strokeTopWeight
       ? paintCssList
-          .map((css) => `solid ${n.strokeTopWeight}px ${css}`)
+          .map((css) => `${strokeStyle} ${n.strokeTopWeight}px ${css}`)
           .join(', ')
       : undefined,
     borderLeft: n.strokeLeftWeight
       ? paintCssList
-          .map((css) => `solid ${n.strokeLeftWeight}px ${css}`)
+          .map((css) => `${strokeStyle} ${n.strokeLeftWeight}px ${css}`)
           .join(', ')
       : undefined,
     borderRight: n.strokeRightWeight
       ? paintCssList
-          .map((css) => `solid ${n.strokeRightWeight}px ${css}`)
+          .map((css) => `${strokeStyle} ${n.strokeRightWeight}px ${css}`)
           .join(', ')
       : undefined,
   }
+}
+
+function getStrokeStyle(node: SceneNode): 'solid' | 'dashed' {
+  if ('dashPattern' in node && Array.isArray(node.dashPattern)) {
+    return node.dashPattern.length > 0 ? 'dashed' : 'solid'
+  }
+  return 'solid'
 }
