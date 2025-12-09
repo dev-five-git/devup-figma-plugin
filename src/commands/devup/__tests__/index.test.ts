@@ -222,9 +222,8 @@ describe('devup/index', () => {
       isVariableAlias: () => true,
     }))
     // variableAliasToValue mock
-    const variableAliasToValue = await import(
-      '../../../utils/variable-alias-to-value'
-    )
+    const variableAliasToValue =
+      await import('../../../utils/variable-alias-to-value')
     vi.spyOn(
       variableAliasToValue,
       'variableAliasToValue',

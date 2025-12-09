@@ -1,19 +1,21 @@
-
-import { type Devup, DevupTypography } from './types'
-import { getDevupColorCollection } from './utils/get-devup-color-collection'
 import { downloadFile } from '../../utils/download-file'
 import { isVariableAlias } from '../../utils/is-variable-alias'
+import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { styleNameToTypography } from '../../utils/style-name-to-typography'
 import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
+import { textStyleToTypography } from '../../utils/text-style-to-typography'
 import { toCamel } from '../../utils/to-camel'
 import { uploadFile } from '../../utils/upload-file'
 import { variableAliasToValue } from '../../utils/variable-alias-to-value'
-import { optimizeHex } from '../../utils/optimize-hex'
+import { type Devup, DevupTypography } from './types'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
+import { getDevupColorCollection } from './utils/get-devup-color-collection'
 import { uploadDevupXlsx } from './utils/upload-devup-xlsx'
-import { textStyleToTypography } from '../../utils/text-style-to-typography'
-export async function exportDevup(output: "json" | "excel", treeshaking: boolean = true) {
+export async function exportDevup(
+  output: 'json' | 'excel',
+  treeshaking: boolean = true,
+) {
   const devup: Devup = {}
 
   const collection = await getDevupColorCollection()
@@ -34,11 +36,13 @@ export async function exportDevup(output: "json" | "excel", treeshaking: boolean
             if (nextValue === null) return
             if (typeof nextValue === 'boolean' || typeof nextValue === 'number')
               return
-            colors[toCamel(variable.name)] = optimizeHex(rgbaToHex(
-              figma.util.rgba(nextValue),
-            ))
+            colors[toCamel(variable.name)] = optimizeHex(
+              rgbaToHex(figma.util.rgba(nextValue)),
+            )
           } else {
-            colors[toCamel(variable.name)] = optimizeHex(rgbaToHex(figma.util.rgba(value)))
+            colors[toCamel(variable.name)] = optimizeHex(
+              rgbaToHex(figma.util.rgba(value)),
+            )
           }
         }),
       )
@@ -50,7 +54,7 @@ export async function exportDevup(output: "json" | "excel", treeshaking: boolean
   const textStyles = await figma.getLocalTextStylesAsync()
   const ids = new Set()
   const styles: Record<string, TextStyle> = {}
-  for(const style of textStyles) {
+  for (const style of textStyles) {
     ids.add(style.id)
     styles[style.name] = style
   }
@@ -59,55 +63,57 @@ export async function exportDevup(output: "json" | "excel", treeshaking: boolean
   if (treeshaking) {
     const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
     await Promise.all(
-        texts
-      .filter((text) => (typeof text.textStyleId === 'string' && text.textStyleId) || text.textStyleId === figma.mixed)
-      .map(async (text) => {
-        for (const seg of text.getStyledTextSegments([
-          'fontName',
-          'fontWeight',
-          'fontSize',
-          'textDecoration',
-          'textCase',
-          'lineHeight',
-          'letterSpacing',
-          'fills',
-          'textStyleId',
-          'fillStyleId',
-          'listOptions',
-          'indentation',
-          'hyperlink',
-        ])) {
-          if (seg && seg.textStyleId) {
-            const style = await figma.getStyleByIdAsync(seg.textStyleId)
+      texts
+        .filter(
+          (text) =>
+            (typeof text.textStyleId === 'string' && text.textStyleId) ||
+            text.textStyleId === figma.mixed,
+        )
+        .map(async (text) => {
+          for (const seg of text.getStyledTextSegments([
+            'fontName',
+            'fontWeight',
+            'fontSize',
+            'textDecoration',
+            'textCase',
+            'lineHeight',
+            'letterSpacing',
+            'fills',
+            'textStyleId',
+            'fillStyleId',
+            'listOptions',
+            'indentation',
+            'hyperlink',
+          ])) {
+            if (seg && seg.textStyleId) {
+              const style = await figma.getStyleByIdAsync(seg.textStyleId)
 
-            if (!(style && ids.has(style.id))) continue
-            const { level, name } = styleNameToTypography(style.name)
-            const typo = textSegmentToTypography(seg)
-            if (typography[name]&&typography[name][level]) continue
-            typography[name] ??= [null, null, null, null, null, null]
-            typography[name][level] = typo
+              if (!(style && ids.has(style.id))) continue
+              const { level, name } = styleNameToTypography(style.name)
+              const typo = textSegmentToTypography(seg)
+              if (typography[name] && typography[name][level]) continue
+              typography[name] ??= [null, null, null, null, null, null]
+              typography[name][level] = typo
+            }
           }
-        }
-      }),
+        }),
     )
-  }
-  else {
+  } else {
     for (const [styleName, style] of Object.entries(styles)) {
       const { level, name } = styleNameToTypography(styleName)
       const typo = textStyleToTypography(style)
-      if (typography[name]&&typography[name][level]) continue
+      if (typography[name] && typography[name][level]) continue
       typography[name] ??= [null, null, null, null, null, null]
       typography[name][level] = typo
     }
   }
 
-  for(const [name, style] of Object.entries(styles)) {
+  for (const [name, style] of Object.entries(styles)) {
     const { level, name: styleName } = styleNameToTypography(name)
-    if(typography[styleName] && !typography[styleName][level]) {
+    if (typography[styleName] && !typography[styleName][level]) {
       typography[styleName][level] = textStyleToTypography(style)
     }
   }
-
 
   if (Object.keys(typography).length > 0) {
     devup['theme'] ??= {}
@@ -153,69 +159,89 @@ export async function exportDevup(output: "json" | "excel", treeshaking: boolean
   }
 }
 
-export async function importDevup(input: "json" | "excel") {
-  let devup: Devup = input === 'json' ? JSON.parse(await uploadFile('.json')) : await uploadDevupXlsx()
+export async function importDevup(input: 'json' | 'excel') {
+  const devup: Devup =
+    input === 'json'
+      ? JSON.parse(await uploadFile('.json'))
+      : await uploadDevupXlsx()
   if (devup.theme?.colors) {
-    const collection = (await getDevupColorCollection()) ?? (await figma.variables.createVariableCollection('Devup Colors'))
+    const collection =
+      (await getDevupColorCollection()) ??
+      (await figma.variables.createVariableCollection('Devup Colors'))
     const themes = new Set()
     const colors = new Set()
     for (const [theme, value] of Object.entries(devup.theme.colors)) {
-      const modeId = collection.modes.find((mode) => mode.name === theme)?.modeId ?? collection.addMode(theme)
+      const modeId =
+        collection.modes.find((mode) => mode.name === theme)?.modeId ??
+        collection.addMode(theme)
 
       const variables = await figma.variables.getLocalVariablesAsync()
       for (const [colorKey, colorValue] of Object.entries(value)) {
-        const variable = variables.find((variable) => variable.name === colorKey) ?? figma.variables.createVariable(colorKey, collection, 'COLOR')
+        const variable =
+          variables.find((variable) => variable.name === colorKey) ??
+          figma.variables.createVariable(colorKey, collection, 'COLOR')
 
         variable.setValueForMode(modeId, figma.util.rgba(colorValue))
         colors.add(colorKey)
       }
       themes.add(theme)
     }
-    for(const theme of collection.modes.filter((mode) => !themes.has(mode.name))) 
+    for (const theme of collection.modes.filter(
+      (mode) => !themes.has(mode.name),
+    ))
       collection.removeMode(theme.modeId)
 
     const variables = await figma.variables.getLocalVariablesAsync()
-    for(const variable of variables.filter((variable) => !colors.has(variable.name)))
+    for (const variable of variables.filter(
+      (variable) => !colors.has(variable.name),
+    ))
       variable.remove()
   }
   if (devup.theme?.typography) {
     const styles = await figma.getLocalTextStylesAsync()
-    for(const [style, value] of Object.entries(devup.theme.typography)) {
-      const targetStyleNames:[target:string, typography:DevupTypography][] = []
+    for (const [style, value] of Object.entries(devup.theme.typography)) {
+      const targetStyleNames: [target: string, typography: DevupTypography][] =
+        []
       if (Array.isArray(value)) {
-        for(const v in value) {
-          if(v&&value[v]) {
-            targetStyleNames.push([`${{
-              0: 'mobile',
-              1: '1',
-              2: 'tablet',
-              3: '3',
-              4: 'desktop',
-              5: '5',
-            }[v]}/${style}`, value[v]])
+        for (const v in value) {
+          if (v && value[v]) {
+            targetStyleNames.push([
+              `${
+                {
+                  0: 'mobile',
+                  1: '1',
+                  2: 'tablet',
+                  3: '3',
+                  4: 'desktop',
+                  5: '5',
+                }[v]
+              }/${style}`,
+              value[v],
+            ])
           }
         }
       } else {
         targetStyleNames.push([`mobile/${style}`, value])
       }
 
-      for(const [target, typography] of targetStyleNames) {
-        const st = styles.find((s) => s.name === target) ?? figma.createTextStyle()
-        
+      for (const [target, typography] of targetStyleNames) {
+        const st =
+          styles.find((s) => s.name === target) ?? figma.createTextStyle()
+
         st.name = target
         const fontFamily = {
-          family: typography.fontFamily ?? "Inter",
+          family: typography.fontFamily ?? 'Inter',
           style: typography.fontStyle == 'italic' ? 'Italic' : 'Regular',
         }
-        try{
+        try {
           await figma.loadFontAsync(fontFamily)
           st.fontName = fontFamily
-          if(typography.fontSize) {
+          if (typography.fontSize) {
             st.fontSize = parseInt(typography.fontSize)
           }
-          
-          if(typography.letterSpacing) {
-            if(typography.letterSpacing.endsWith('em')) {
+
+          if (typography.letterSpacing) {
+            if (typography.letterSpacing.endsWith('em')) {
               st.letterSpacing = {
                 unit: 'PERCENT',
                 value: parseFloat(typography.letterSpacing),
@@ -227,15 +253,14 @@ export async function importDevup(input: "json" | "excel") {
               }
             }
           }
-          
-          
-          if(typography.lineHeight) {
-            if(typography.lineHeight === 'normal') {
+
+          if (typography.lineHeight) {
+            if (typography.lineHeight === 'normal') {
               st.lineHeight = {
                 unit: 'AUTO',
               }
             } else {
-              if(typeof typography.lineHeight === 'string') {
+              if (typeof typography.lineHeight === 'string') {
                 st.lineHeight = {
                   unit: 'PIXELS',
                   value: parseInt(typography.lineHeight),
@@ -247,18 +272,20 @@ export async function importDevup(input: "json" | "excel") {
                 }
               }
             }
-          }          
-          if(typography.textTransform) {
+          }
+          if (typography.textTransform) {
             st.textCase = typography.textTransform.toUpperCase() as TextCase
           }
-          if(typography.textDecoration) {
-            st.textDecoration = typography.textDecoration.toUpperCase() as TextDecoration
+          if (typography.textDecoration) {
+            st.textDecoration =
+              typography.textDecoration.toUpperCase() as TextDecoration
           }
-          
-        }
-        catch(error) {
+        } catch (error) {
           console.error('Failed to create text style', error)
-          figma.notify(`Failed to create text style (${target}, ${fontFamily.family} - ${fontFamily.style})`, { error: true })
+          figma.notify(
+            `Failed to create text style (${target}, ${fontFamily.family} - ${fontFamily.style})`,
+            { error: true },
+          )
         }
       }
     }
