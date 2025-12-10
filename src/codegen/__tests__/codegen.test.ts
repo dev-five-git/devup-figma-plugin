@@ -918,6 +918,48 @@ describe('Codegen', () => {
   Stroke
 </Text>`,
     },
+    {
+      title: 'renders frame with rotation transform',
+      node: {
+        type: 'FRAME',
+        name: 'RotatedFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        rotation: 45,
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" transform="rotate(45deg)" w="100px" />`,
+    },
+    {
+      title: 'renders frame with negative rotation transform',
+      node: {
+        type: 'FRAME',
+        name: 'NegativeRotatedFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 80,
+        height: 40,
+        rotation: -30,
+      } as unknown as FrameNode,
+      expected: `<Box h="40px" transform="rotate(-30deg)" w="80px" />`,
+    },
+    {
+      title: 'renders frame with decimal rotation transform',
+      node: {
+        type: 'FRAME',
+        name: 'DecimalRotatedFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 60,
+        rotation: 15.5,
+      } as unknown as FrameNode,
+      expected: `<Box h="60px" transform="rotate(15.5deg)" w="120px" />`,
+    },
   ])('$title', async ({ node, expected }) => {
     addParent(node)
     const codegen = new Codegen(node)
