@@ -34,6 +34,15 @@ function createTextSegment(characters: string): StyledTextSegment {
   } as unknown as StyledTextSegment
 }
 
+function addParent(parent: SceneNode) {
+  if ('children' in parent) {
+    for (const child of parent.children) {
+      ;(child as unknown as { parent: SceneNode }).parent = parent
+      addParent(child)
+    }
+  }
+}
+
 describe('Codegen', () => {
   type TestCase = {
     title: string
@@ -204,6 +213,44 @@ describe('Codegen', () => {
   gridTemplateRows="repeat(2, 1fr)"
   rowGap="12px"
 />`,
+    },
+    {
+      title: 'renders grid child positioning props when out of order',
+      node: {
+        type: 'FRAME',
+        name: 'GridWithChildren',
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'ChildB',
+            visible: true,
+            gridColumnAnchorIndex: 1,
+            gridRowAnchorIndex: 0,
+          } as unknown as SceneNode,
+          {
+            type: 'RECTANGLE',
+            name: 'ChildA',
+            visible: true,
+            gridColumnAnchorIndex: 0,
+            gridRowAnchorIndex: 0,
+          } as unknown as SceneNode,
+        ],
+        inferredAutoLayout: {
+          layoutMode: 'GRID',
+        } as unknown as InferredAutoLayoutResult,
+        gridColumnCount: 2,
+        gridRowCount: 1,
+        gridColumnGap: 0,
+        gridRowGap: 0,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 200,
+        height: 100,
+      } as unknown as FrameNode,
+      expected: `<Grid gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(1, 1fr)" h="100px" w="200px">
+  <Box boxSize="100%" gridColumn="2 / span 1" gridRow="1 / span 1" />
+  <Box boxSize="100%" gridColumn="1 / span 1" gridRow="1 / span 1" />
+</Grid>`,
     },
     {
       title: 'renders vstack auto layout props',
@@ -504,6 +551,7 @@ describe('Codegen', () => {
 </Text>`,
     },
   ])('$title', async ({ node, expected }) => {
+    addParent(node)
     const codegen = new Codegen(node)
     await codegen.run()
     expect(codegen.getCode()).toBe(expected)
