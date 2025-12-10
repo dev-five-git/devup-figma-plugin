@@ -82,6 +82,23 @@ describe('Codegen', () => {
       expected: `<Box h="50px" px="16px" py="8px" w="100px" />`,
     },
     {
+      title: 'renders padding shorthand when all sides equal',
+      node: {
+        type: 'FRAME',
+        name: 'EqualPaddingFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 80,
+        height: 40,
+        paddingTop: 12,
+        paddingRight: 12,
+        paddingBottom: 12,
+        paddingLeft: 12,
+      } as unknown as FrameNode,
+      expected: `<Box h="40px" p="12px" w="80px" />`,
+    },
+    {
       title: 'renders frame with border radius',
       node: {
         type: 'FRAME',
@@ -116,6 +133,40 @@ describe('Codegen', () => {
         children: [],
       } as unknown as GroupNode,
       expected: `<Box boxSize="100%" />`,
+    },
+    {
+      title: 'renders boxSize when width equals height',
+      node: {
+        type: 'FRAME',
+        name: 'SquareFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 64,
+        height: 64,
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="64px" />`,
+    },
+    {
+      title: 'renders min/max width/height with px',
+      node: {
+        type: 'FRAME',
+        name: 'MinMaxFrame',
+        children: [],
+        layoutSizingHorizontal: 'FILL',
+        layoutSizingVertical: 'FILL',
+        minWidth: 50,
+        minHeight: 20,
+        maxWidth: 200,
+        maxHeight: 120,
+      } as unknown as FrameNode,
+      expected: `<Box
+  boxSize="100%"
+  maxH="120px"
+  maxW="200px"
+  minH="20px"
+  minW="50px"
+/>`,
     },
     {
       title: 'renders text node with content',
@@ -177,6 +228,39 @@ describe('Codegen', () => {
   lineHeight="1.5px"
 >
   World
+</Text>`,
+    },
+    {
+      title: 'renders text node with ellipsis props',
+      node: {
+        type: 'TEXT',
+        name: 'EllipsisText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Ellipsis'),
+            characters: 'Ellipsis',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'ENDING',
+      } as unknown as TextNode,
+      expected: `<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  overflow="hidden"
+  textOverflow="ellipsis"
+>
+  Ellipsis
 </Text>`,
     },
   ])('$title', async ({ node, expected }) => {
