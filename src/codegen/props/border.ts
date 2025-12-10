@@ -79,6 +79,7 @@ export async function getBorderProps(
           : undefined,
     }
   }
+  console.log('weightwtf', weight, node)
   if (weight !== figma.mixed) {
     return {
       border: paintCssList

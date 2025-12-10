@@ -1,17 +1,52 @@
-import { beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, describe, expect, test } from 'bun:test'
 import { Codegen } from '../Codegen'
 
-beforeAll(() => {
-  ;(globalThis as { figma?: unknown }).figma = {
-    mixed: Symbol('mixed'),
-    util: {
-      rgba: () => ({ r: 1, g: 0, b: 0, a: 1 }),
+;(globalThis as { figma?: unknown }).figma = {
+  mixed: Symbol('mixed'),
+  util: {
+    //  * ```ts
+    //  * const rgba = figma.util.rgba
+    //  * const color = rgba('rgb(25% 25% 25% / 0.5)')
+    //  * ```
+    //  *
+    //  * @param color - A CSS color string, `RGB` object, or `RGBA` object.
+    //  */
+    // rgba(color: string | RGB | RGBA): RGBA
+    rgba: (color: string | RGB | RGBA): RGBA => {
+      if (typeof color === 'string') {
+        // 간단한 CSS color string 파싱
+        const rgbMatch = color.match(/rgb\(([^)]+)\)/)
+        if (rgbMatch) {
+          const values = rgbMatch[1].split(/[,\s/]+/).filter(Boolean)
+          const r = values[0]?.includes('%')
+            ? parseFloat(values[0]) / 100
+            : parseFloat(values[0] || '0') / 255
+          const g = values[1]?.includes('%')
+            ? parseFloat(values[1]) / 100
+            : parseFloat(values[1] || '0') / 255
+          const b = values[2]?.includes('%')
+            ? parseFloat(values[2]) / 100
+            : parseFloat(values[2] || '0') / 255
+          const a = values[3] ? parseFloat(values[3]) : 1
+          return { r, g, b, a }
+        }
+        return { r: 0, g: 0, b: 0, a: 1 }
+      }
+      if (typeof color === 'object') {
+        // RGB 객체인 경우 alpha 추가
+        if ('a' in color) {
+          return color
+        }
+        return { ...color, a: 1 }
+      }
+      return { r: 0, g: 0, b: 0, a: 1 }
     },
-    getLocalTextStylesAsync: () => [],
-  } as unknown as typeof figma
-  return () => {
-    ;(globalThis as { figma?: unknown }).figma = undefined
-  }
+  },
+  getLocalTextStylesAsync: () => [],
+} as unknown as typeof figma
+afterAll(() => {
+
+  ;(globalThis as { figma?: unknown }).figma = undefined
 })
 
 function createTextSegment(characters: string): StyledTextSegment {
@@ -573,6 +608,167 @@ describe('Codegen', () => {
       expected: `<Box borderRadius="8px 4px 2px 1px" boxSize="100%" />`,
     },
     {
+      title: 'renders ellipse with 50% border radius',
+      node: {
+        type: 'ELLIPSE',
+        name: 'Circle',
+        children: [],
+        arcData: {
+          innerRadius: 0,
+        },
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 100,
+      } as unknown as EllipseNode,
+      expected: `<Box borderRadius="50%" boxSize="100px" />`,
+    },
+    {
+      title: 'renders frame with stroke outline CENTER alignment',
+      node: {
+        type: 'FRAME',
+        name: 'StrokeCenterFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        strokes: [
+          {
+            type: 'SOLID',
+            color: { r: 0, g: 0, b: 1 },
+            opacity: 1,
+            visible: true,
+          },
+        ],
+        strokeWeight: 2,
+        strokeAlign: 'CENTER',
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" outline="solid 2px #00F" outlineOffset="-1px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with stroke outline OUTSIDE alignment',
+      node: {
+        type: 'FRAME',
+        name: 'StrokeOutsideFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 60,
+        strokes: [
+          {
+            type: 'SOLID',
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+            visible: true,
+          },
+        ],
+        strokeWeight: 3,
+        strokeAlign: 'OUTSIDE',
+      } as unknown as FrameNode,
+      expected: `<Box h="60px" outline="solid 3px #F00" w="120px" />`,
+    },
+    {
+      title: 'renders frame with stroke border INSIDE alignment',
+      node: {
+        type: 'FRAME',
+        name: 'StrokeInsideFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 80,
+        height: 40,
+        strokes: [
+          {
+            type: 'SOLID',
+            color: { r: 0, g: 1, b: 0 },
+            opacity: 1,
+            visible: true,
+          },
+        ],
+        strokeWeight: 1,
+        strokeAlign: 'INSIDE',
+      } as unknown as FrameNode,
+      expected: `<Box border="solid 1px #0F0" h="40px" w="80px" />`,
+    },
+    {
+      title: 'renders line with stroke outline',
+      node: {
+        type: 'LINE',
+        name: 'StrokeLine',
+        strokes: [
+          {
+            type: 'SOLID',
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+            visible: true,
+          },
+        ],
+        strokeWeight: 2,
+        strokeAlign: 'CENTER',
+      } as unknown as LineNode,
+      expected: `<Box boxSize="100%" maxW="calc(100% - 4px)" outline="solid 2px #F00" transform="translate(2px, -2px)" />`,
+    },
+    {
+      title: 'renders frame with dashed stroke',
+      node: {
+        type: 'FRAME',
+        name: 'DashedStrokeFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        strokes: [
+          {
+            type: 'SOLID',
+            color: { r: 0, g: 0, b: 1 },
+            opacity: 1,
+            visible: true,
+          },
+        ],
+        strokeWeight: 2,
+        strokeAlign: 'CENTER',
+        dashPattern: [5, 3],
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" outline="dashed 2px #00F" outlineOffset="-1px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with individual stroke weights',
+      node: {
+        type: 'FRAME',
+        name: 'IndividualStrokeFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 80,
+        strokes: [
+          {
+            type: 'SOLID',
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+            visible: true,
+          },
+        ],
+        strokeWeight: figma.mixed,
+        strokeTopWeight: 1,
+        strokeRightWeight: 2,
+        strokeBottomWeight: 3,
+        strokeLeftWeight: 4,
+        strokeAlign: 'INSIDE',
+      } as unknown as FrameNode,
+      expected: `<Box
+  borderBottom="solid 3px #F00"
+  borderLeft="solid 4px #F00"
+  borderRight="solid 2px #F00"
+  borderTop="solid 1px #F00"
+  h="80px"
+  w="120px"
+/>`,
+    },
+    {
       title: 'renders group as Box with full size',
       node: {
         type: 'GROUP',
@@ -1108,7 +1304,7 @@ describe('Codegen', () => {
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
       expected: `<Text
-  WebkitTextStroke="2px #F00"
+  WebkitTextStroke="2px #00F"
   boxSize="100%"
   color="#F00"
   fontFamily="Arial"
