@@ -169,6 +169,43 @@ describe('Codegen', () => {
 />`,
     },
     {
+      title: 'renders flex auto layout props',
+      node: {
+        type: 'FRAME',
+        name: 'FlexAutoLayout',
+        children: [],
+        inferredAutoLayout: {
+          layoutMode: 'HORIZONTAL',
+          itemSpacing: 10,
+        },
+        primaryAxisAlignItems: 'SPACE_BETWEEN',
+        counterAxisAlignItems: 'CENTER',
+      } as unknown as FrameNode,
+      expected: `<Flex alignItems="center" boxSize="100%" justifyContent="space-between" />`,
+    },
+    {
+      title: 'renders grid auto layout props',
+      node: {
+        type: 'FRAME',
+        name: 'GridAutoLayout',
+        children: [],
+        inferredAutoLayout: {
+          layoutMode: 'GRID',
+        },
+        gridColumnCount: 3,
+        gridRowCount: 2,
+        gridColumnGap: 8,
+        gridRowGap: 12,
+      } as unknown as FrameNode,
+      expected: `<Grid
+  boxSize="100%"
+  columnGap="8px"
+  gridTemplateColumns="repeat(3, 1fr)"
+  gridTemplateRows="repeat(2, 1fr)"
+  rowGap="12px"
+/>`,
+    },
+    {
       title: 'renders text node with content',
       node: {
         type: 'TEXT',
