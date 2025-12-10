@@ -7,7 +7,7 @@
 		"build": "bun build --target node src/code.ts --production --outfile=dist/code.js --format=cjs",
 		"watch": "bun build --target node src/code.ts --production --outfile=dist/code.js --format=cjs --watch",
 		"test": "bun test --coverage",
-		"lint": "biome check",
+		"lint": "biome check --error-on-warnings",
 		"lint:fix": "biome check --fix",
 		"prepare": "husky"
 	},
