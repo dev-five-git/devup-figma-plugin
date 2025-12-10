@@ -23,7 +23,7 @@ describe('uploadFile', () => {
     Object.defineProperty(obj, 'onmessage', {
       set: (fn) => {
         onmessageHandler = fn
-        onmessageSetter(fn)
+        onmessageSetter()
       },
       get: () => onmessageHandler,
       configurable: true,
@@ -37,7 +37,8 @@ describe('uploadFile', () => {
     obj.close = close
     const promise = uploadFile('.txt')
     // invoke onmessage
-    onmessageHandler('dummy')
+    // biome-ignore lint/style/noNonNullAssertion: onmessageHandler is set
+    onmessageHandler!('dummy')
     const result = await promise
     expect(close).toHaveBeenCalled()
     expect(base64Decode).toHaveBeenCalledWith('dummy')

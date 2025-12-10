@@ -3,10 +3,10 @@ import { toCamel } from './utils/to-camel'
 import { toPascal } from './utils/to-pascal'
 
 export async function propsToPropsWithTypography(
-  props: Record<string, string>,
+  props: Record<string, unknown>,
   textStyleId: string,
 ) {
-  const ret: Record<string, string> = { ...props }
+  const ret: Record<string, unknown> = { ...props }
   delete ret.w
   delete ret.h
   const styles = await figma.getLocalTextStylesAsync()
