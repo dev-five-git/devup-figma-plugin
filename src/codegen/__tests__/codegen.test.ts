@@ -61,6 +61,16 @@ describe('Codegen', () => {
       expected: `<Box boxSize="100%" />`,
     },
     {
+      title: 'renders overflow hidden when clipsContent is true',
+      node: {
+        type: 'FRAME',
+        name: 'ClippedFrame',
+        children: [],
+        clipsContent: true,
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" overflow="hidden" />`,
+    },
+    {
       title: 'renders fixed size frame',
       node: {
         type: 'FRAME',
