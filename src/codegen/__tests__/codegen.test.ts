@@ -71,6 +71,69 @@ describe('Codegen', () => {
       expected: `<Box boxSize="100%" overflow="hidden" />`,
     },
     {
+      title: 'renders objectFit contain for image asset',
+      node: {
+        type: 'RECTANGLE',
+        name: 'ObjectFitContain',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 80,
+        fills: [
+          {
+            type: 'IMAGE',
+            visible: true,
+            scaleMode: 'FIT',
+          },
+        ],
+      } as unknown as RectangleNode,
+      expected: `<Image h="80px" objectFit="contain" src="/icons/ObjectFitContain.png" w="100px" />`,
+    },
+    {
+      title: 'renders objectFit cover for image asset',
+      node: {
+        type: 'RECTANGLE',
+        name: 'ObjectFitCover',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 90,
+        fills: [
+          {
+            type: 'IMAGE',
+            visible: true,
+            scaleMode: 'CROP',
+          },
+        ],
+      } as unknown as RectangleNode,
+      expected: `<Image h="90px" objectFit="cover" src="/icons/ObjectFitCover.png" w="120px" />`,
+    },
+    {
+      title: 'omits objectFit when image scale mode is FILL',
+      node: {
+        type: 'RECTANGLE',
+        name: 'ObjectFitFill',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 110,
+        height: 70,
+        fills: [
+          {
+            type: 'IMAGE',
+            visible: true,
+            scaleMode: 'FILL',
+          },
+        ],
+      } as unknown as RectangleNode,
+      expected: `<Image h="70px" src="/icons/ObjectFitFill.png" w="110px" />`,
+    },
+    {
       title: 'renders fixed size frame',
       node: {
         type: 'FRAME',
