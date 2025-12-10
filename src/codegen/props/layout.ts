@@ -91,9 +91,8 @@ function _getLayoutProps(
                 node.maxWidth !== null)
             ? '100%'
             : undefined,
-    h: aspectRatio
-      ? null
-      : hType === 'FIXED'
+    h:
+      hType === 'FIXED'
         ? addPx(node.height)
         : hType === 'FILL' &&
             ((node.parent && isChildWidthShrinker(node.parent, 'height')) ||

@@ -1,15 +1,15 @@
 {
-	"compilerOptions": {
-		"target": "ESNext",
-		"types": ["@figma/plugin-typings", "bun"],
-		"lib": ["ESNext"],
-		"strict": true,
-		"module": "ESNext",
-		"outDir": "./dist",
-		"isolatedModules": true,
-		"moduleResolution": "node",
-		"esModuleInterop": true,
-		"skipLibCheck": true
-	},
-	"include": ["./src"]
+  "compilerOptions": {
+    "target": "es2015",
+    "types": ["@figma/plugin-typings", "bun"],
+    "lib": ["ESNext"],
+    "strict": true,
+    "module": "ESNext",
+    "outDir": "./dist",
+    "isolatedModules": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["./src"]
 }

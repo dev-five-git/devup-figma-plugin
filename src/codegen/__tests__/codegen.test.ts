@@ -134,6 +134,100 @@ describe('Codegen', () => {
       expected: `<Image h="70px" src="/icons/ObjectFitFill.png" w="110px" />`,
     },
     {
+      title: 'renders layout for absolute child same size as parent',
+      node: {
+        type: 'FRAME',
+        name: 'Parent',
+        width: 300,
+        height: 200,
+        layoutPositioning: 'AUTO',
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'AbsoluteChild',
+            layoutPositioning: 'ABSOLUTE',
+            width: 300,
+            height: 200,
+            constraints: {
+              horizontal: 'MAX',
+              vertical: 'MAX',
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" pos="relative">
+  <Box boxSize="100%" left="0px" pos="absolute" top="0px" />
+</Box>`,
+    },
+    {
+      title: 'renders flex=1 when parent is horizontal auto layout',
+      node: {
+        type: 'FRAME',
+        name: 'HorizontalParent',
+        layoutMode: 'HORIZONTAL',
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'FlexChild',
+            layoutSizingHorizontal: 'FILL',
+            layoutSizingVertical: 'FIXED',
+            height: 50,
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%">
+  <Box flex="1" h="50px" w="100%" />
+</Box>`,
+    },
+    {
+      title: 'renders aspect ratio when provided',
+      node: {
+        type: 'FRAME',
+        name: 'AspectRatioFrame',
+        children: [],
+        targetAspectRatio: { x: 4, y: 3 },
+        layoutSizingHorizontal: 'FILL',
+        layoutSizingVertical: 'FILL',
+      } as unknown as FrameNode,
+      expected: `<Box aspectRatio="1.33" boxSize="100%" />`,
+    },
+    {
+      title:
+        'renders text with width_and_height auto resize returning no size props',
+      node: {
+        type: 'TEXT',
+        name: 'TextWidthHeight',
+        children: [],
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 40,
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('AutoSize'),
+            characters: 'AutoSize',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+        characters: 'AutoSize',
+      } as unknown as TextNode,
+      expected: `<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  AutoSize
+</Text>`,
+    },
+    {
       title: 'renders single-line max line props',
       node: {
         type: 'TEXT',
