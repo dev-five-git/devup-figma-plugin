@@ -134,6 +134,74 @@ describe('Codegen', () => {
       expected: `<Image h="70px" src="/icons/ObjectFitFill.png" w="110px" />`,
     },
     {
+      title: 'renders single-line max line props',
+      node: {
+        type: 'TEXT',
+        name: 'MaxLineOne',
+        children: [],
+        textAutoResize: 'NONE',
+        strokes: [],
+        effects: [],
+        maxLines: 1,
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('OneLine'),
+            characters: 'OneLine',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  whiteSpace="nowrap"
+>
+  OneLine
+</Text>`,
+    },
+    {
+      title: 'renders multi-line max line props',
+      node: {
+        type: 'TEXT',
+        name: 'MaxLineThree',
+        children: [],
+        textAutoResize: 'NONE',
+        strokes: [],
+        effects: [],
+        maxLines: 3,
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Three lines of text'),
+            characters: 'Three lines of text',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  WebkitBoxOrient="vertical"
+  WebkitLineClamp="3"
+  boxSize="100%"
+  color="#F00"
+  display="-webkit-box"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  Three lines of text
+</Text>`,
+    },
+    {
       title: 'renders fixed size frame',
       node: {
         type: 'FRAME',
