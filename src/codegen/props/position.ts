@@ -20,7 +20,10 @@ export function getPositionProps(
           : undefined
     if (!constraints) return
     const { horizontal, vertical } = constraints
-    let left, right, top, bottom: string | undefined
+    let left: string | undefined
+    let right: string | undefined
+    let top: string | undefined
+    let bottom: string | undefined
     switch (horizontal) {
       case 'MIN':
         left = addPx(node.x) ?? '0px'

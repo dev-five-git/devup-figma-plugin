@@ -7,20 +7,20 @@ export async function propsToPropsWithTypography(
   textStyleId: string,
 ) {
   const ret: Record<string, string> = { ...props }
-  delete ret['w']
-  delete ret['h']
+  delete ret.w
+  delete ret.h
   const styles = await figma.getLocalTextStylesAsync()
   if (textStyleId && styles.find((style) => style.id === textStyleId)) {
     const style = await figma.getStyleByIdAsync(textStyleId)
     if (style) {
       const split = style.name.split('/')
-      ret['typography'] = toCamel(split[split.length - 1])
-      delete ret['fontFamily']
-      delete ret['fontSize']
-      delete ret['fontWeight']
-      delete ret['fontStyle']
-      delete ret['letterSpacing']
-      delete ret['lineHeight']
+      ret.typography = toCamel(split[split.length - 1])
+      delete ret.fontFamily
+      delete ret.fontSize
+      delete ret.fontWeight
+      delete ret.fontStyle
+      delete ret.letterSpacing
+      delete ret.lineHeight
     }
   }
   return ret
@@ -50,7 +50,7 @@ export const colorFromFills = async (
     | undefined,
 ): Promise<string> => {
   const fill = fills?.find((fill) => fill.visible)
-  if (fill && fill.color) {
+  if (fill?.color) {
     if (fill.boundVariables?.color?.id) {
       const variable = await figma.variables.getVariableByIdAsync(
         fill.boundVariables.color.id as string,

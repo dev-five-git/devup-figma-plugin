@@ -1,17 +1,20 @@
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { variableAliasToValue } from '../variable-alias-to-value'
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  // Clear mocks if needed
 })
 
 describe('variableAliasToValue', () => {
-  const getVariableByIdAsync = vi.fn()
-  ;(globalThis as any).figma = {
+  const getVariableByIdAsync = mock(
+    (): Promise<Variable | null> => Promise.resolve(null),
+  )
+  ;(globalThis as { figma?: unknown }).figma = {
     variables: {
       getVariableByIdAsync,
     },
-  } as any
-  it('should convert variableAlias to value', async () => {
+  } as unknown as typeof figma
+  test('should convert variableAlias to value', async () => {
     getVariableByIdAsync.mockResolvedValue(null)
     expect(
       await variableAliasToValue(
@@ -30,12 +33,12 @@ describe('variableAliasToValue', () => {
           type: 'VARIABLE_ALIAS',
         },
       },
-    })
+    } as unknown as Variable)
     getVariableByIdAsync.mockResolvedValueOnce({
       valuesByMode: {
         modeId: 'value',
       },
-    })
+    } as unknown as Variable)
     expect(
       await variableAliasToValue(
         {

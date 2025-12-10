@@ -27,12 +27,12 @@ if (figma.editorType === 'dev' && figma.mode === 'codegen') {
           ...(componentsCodes.length > 0
             ? ([
                 {
-                  title: node.name + ' - Components',
+                  title: `${node.name} - Components`,
                   language: 'TYPESCRIPT',
                   code: componentsCodes.map((code) => code[1]).join('\n\n'),
                 },
                 {
-                  title: node.name + ' - Components CLI',
+                  title: `${node.name} - Components CLI`,
                   language: 'BASH',
                   code: componentsCodes
                     .map(

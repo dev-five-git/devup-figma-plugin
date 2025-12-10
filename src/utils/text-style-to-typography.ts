@@ -1,4 +1,4 @@
-import { DevupTypography } from '../commands/devup/types'
+import type { DevupTypography } from '../commands/devup/types'
 import { textSegmentToTypography } from './text-segment-to-typography'
 import { toCamel } from './to-camel'
 
@@ -37,8 +37,8 @@ function getFontWeight(weight: string): number {
     case 'heavy':
       return 900
     default: {
-      const weightNumber = parseInt(weight)
-      if (!isNaN(weightNumber)) return weightNumber
+      const weightNumber = parseInt(weight, 10)
+      if (!Number.isNaN(weightNumber)) return weightNumber
       return 400
     }
   }

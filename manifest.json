@@ -1,61 +1,53 @@
 {
-  "name": "devup",
-  "id": "1412341601954480694",
-  "api": "1.0.0",
-  "main": "./dist/code.js",
-  "capabilities": [
-    "codegen",
-    "inspect"
-  ],
-  "enableProposedApi": false,
-  "documentAccess": "dynamic-page",
-  "editorType": [
-    "dev",
-    "figma"
-  ],
-  "networkAccess": {
-    "allowedDomains": [
-      "https://cdn.sheetjs.com"
-    ]
-  },
-  "codegenLanguages": [
-    {
-      "label": "React(Devup-UI)",
-      "value": "devup-ui"
-    }
-  ],
-  "menu": [
-    {
-      "name": "Export Devup",
-      "command": "export-devup"
-    },
-    {
-      "name": "Export Devup without treeshaking",
-      "command": "export-devup-without-treeshaking"
-    },
-    {
-      "name": "Export Devup Excel",
-      "command": "export-devup-excel"
-    },
-    {
-      "name": "Export Devup Excel without treeshaking",
-      "command": "export-devup-excel-without-treeshaking"
-    },
-    {
-      "name": "Import Devup",
-      "command": "import-devup"
-    },
-    {
-      "name": "Import Devup Excel",
-      "command": "import-devup-excel"
-    },
-    {
-      "name": "Export Assets",
-      "command": "export-assets"
-    },
-    {
-      "name": "Export Components",
-      "command": "export-components"
-    }
-  ]
+	"name": "devup",
+	"id": "1412341601954480694",
+	"api": "1.0.0",
+	"main": "./dist/code.js",
+	"capabilities": ["codegen", "inspect"],
+	"enableProposedApi": false,
+	"documentAccess": "dynamic-page",
+	"editorType": ["dev", "figma"],
+	"networkAccess": {
+		"allowedDomains": ["https://cdn.sheetjs.com"]
+	},
+	"codegenLanguages": [
+		{
+			"label": "React(Devup-UI)",
+			"value": "devup-ui"
+		}
+	],
+	"menu": [
+		{
+			"name": "Export Devup",
+			"command": "export-devup"
+		},
+		{
+			"name": "Export Devup without treeshaking",
+			"command": "export-devup-without-treeshaking"
+		},
+		{
+			"name": "Export Devup Excel",
+			"command": "export-devup-excel"
+		},
+		{
+			"name": "Export Devup Excel without treeshaking",
+			"command": "export-devup-excel-without-treeshaking"
+		},
+		{
+			"name": "Import Devup",
+			"command": "import-devup"
+		},
+		{
+			"name": "Import Devup Excel",
+			"command": "import-devup-excel"
+		},
+		{
+			"name": "Export Assets",
+			"command": "export-assets"
+		},
+		{
+			"name": "Export Components",
+			"command": "export-components"
+		}
+	]
 }

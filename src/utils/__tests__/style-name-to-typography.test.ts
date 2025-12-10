@@ -1,7 +1,8 @@
+import { describe, expect, test } from 'bun:test'
 import { styleNameToTypography } from '../style-name-to-typography'
 
 describe('styleNameToTypography', () => {
-  it('should convert styleName to Typography', () => {
+  test('should convert styleName to Typography', () => {
     expect(styleNameToTypography('mobile/font')).toEqual({
       level: 0,
       name: 'font',

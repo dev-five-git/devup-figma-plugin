@@ -7,7 +7,7 @@ export function fourValueShortcut(
   fourth: number,
 ): string {
   if (first === second && second === third && third === fourth)
-    return addPx(first, '0')!
+    return addPx(first, '0')
   if (first === third && second === fourth)
     return `${addPx(first, '0')} ${addPx(second, '0')}`
   if (first === third && second === fourth)

@@ -3,6 +3,7 @@ import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { checkAssetNode } from './check-asset-node'
 import { fmtPct } from './fmtPct'
 import { solidToString } from './solid-to-string'
+
 interface Point {
   x: number
   y: number
@@ -177,7 +178,13 @@ async function convertPattern(fill: PatternPaint): Promise<string> {
     },
   )
   const verticalPosition = convertPosition(
-    (fill as any).verticalAlignment,
+    'verticalAlignment' in fill
+      ? (
+          fill as PatternPaint & {
+            verticalAlignment: 'START' | 'CENTER' | 'END'
+          }
+        ).verticalAlignment
+      : 'START',
     fill.spacing.y,
     {
       START: 'top',
@@ -425,8 +432,7 @@ function _calculateRadialPositions(
 
   // Calculate radius as distance from center to the radius point (for backward compatibility)
   const radius = Math.sqrt(
-    Math.pow(radiusPoint.x - center.x, 2) +
-      Math.pow(radiusPoint.y - center.y, 2),
+    (radiusPoint.x - center.x) ** 2 + (radiusPoint.y - center.y) ** 2,
   )
 
   // Calculate separate radius for width and height in normalized space

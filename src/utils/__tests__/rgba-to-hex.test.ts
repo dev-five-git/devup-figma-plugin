@@ -1,7 +1,8 @@
+import { describe, expect, test } from 'bun:test'
 import { rgbaToHex } from '../rgba-to-hex'
 
 describe('rgbaToHex', () => {
-  it('should convert rgba to hex', () => {
+  test('should convert rgba to hex', () => {
     expect(
       rgbaToHex({
         r: 0,

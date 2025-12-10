@@ -8,7 +8,7 @@ import { textStyleToTypography } from '../../utils/text-style-to-typography'
 import { toCamel } from '../../utils/to-camel'
 import { uploadFile } from '../../utils/upload-file'
 import { variableAliasToValue } from '../../utils/variable-alias-to-value'
-import { type Devup, DevupTypography } from './types'
+import type { Devup, DevupTypography } from './types'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
 import { uploadDevupXlsx } from './utils/upload-devup-xlsx'
@@ -21,10 +21,10 @@ export async function exportDevup(
   const collection = await getDevupColorCollection()
   if (collection) {
     for (const mode of collection.modes) {
-      devup['theme'] ??= {}
-      devup['theme']['colors'] ??= {}
+      devup.theme ??= {}
+      devup.theme.colors ??= {}
       const colors: Record<string, string> = {}
-      devup['theme']['colors'][mode.name.toLowerCase()] = colors
+      devup.theme.colors[mode.name.toLowerCase()] = colors
       await Promise.all(
         collection.variableIds.map(async (varId) => {
           const variable = await figma.variables.getVariableByIdAsync(varId)
@@ -85,13 +85,13 @@ export async function exportDevup(
             'indentation',
             'hyperlink',
           ])) {
-            if (seg && seg.textStyleId) {
+            if (seg?.textStyleId) {
               const style = await figma.getStyleByIdAsync(seg.textStyleId)
 
               if (!(style && ids.has(style.id))) continue
               const { level, name } = styleNameToTypography(style.name)
               const typo = textSegmentToTypography(seg)
-              if (typography[name] && typography[name][level]) continue
+              if (typography[name]?.[level]) continue
               typography[name] ??= [null, null, null, null, null, null]
               typography[name][level] = typo
             }
@@ -102,7 +102,7 @@ export async function exportDevup(
     for (const [styleName, style] of Object.entries(styles)) {
       const { level, name } = styleNameToTypography(styleName)
       const typo = textStyleToTypography(style)
-      if (typography[name] && typography[name][level]) continue
+      if (typography[name]?.[level]) continue
       typography[name] ??= [null, null, null, null, null, null]
       typography[name][level] = typo
     }
@@ -116,8 +116,8 @@ export async function exportDevup(
   }
 
   if (Object.keys(typography).length > 0) {
-    devup['theme'] ??= {}
-    devup['theme']['typography'] = Object.entries(typography).reduce(
+    devup.theme ??= {}
+    devup.theme.typography = Object.entries(typography).reduce(
       (acc, [key, value]) => {
         const filtered = value.filter((v) => v !== null)
         if (filtered.length === 0) return acc
@@ -231,13 +231,13 @@ export async function importDevup(input: 'json' | 'excel') {
         st.name = target
         const fontFamily = {
           family: typography.fontFamily ?? 'Inter',
-          style: typography.fontStyle == 'italic' ? 'Italic' : 'Regular',
+          style: typography.fontStyle === 'italic' ? 'Italic' : 'Regular',
         }
         try {
           await figma.loadFontAsync(fontFamily)
           st.fontName = fontFamily
           if (typography.fontSize) {
-            st.fontSize = parseInt(typography.fontSize)
+            st.fontSize = parseInt(typography.fontSize, 10)
           }
 
           if (typography.letterSpacing) {
@@ -263,7 +263,7 @@ export async function importDevup(input: 'json' | 'excel') {
               if (typeof typography.lineHeight === 'string') {
                 st.lineHeight = {
                   unit: 'PIXELS',
-                  value: parseInt(typography.lineHeight),
+                  value: parseInt(typography.lineHeight, 10),
                 }
               } else {
                 st.lineHeight = {

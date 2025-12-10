@@ -11,15 +11,12 @@ export function getDevupComponentByNode(
 }
 
 export function getDevupComponentByProps(props: Record<string, unknown>) {
-  switch (props['display']) {
+  switch (props.display) {
     case 'flex':
-      if (
-        props['alignItems'] === 'center' &&
-        props['justifyContent'] === 'center'
-      ) {
+      if (props.alignItems === 'center' && props.justifyContent === 'center') {
         return 'Center'
       }
-      return props['flexDir'] === 'column' ? 'VStack' : 'Flex'
+      return props.flexDir === 'column' ? 'VStack' : 'Flex'
     case 'grid':
       return 'Grid'
     default:

@@ -6,12 +6,12 @@ export async function getEffectProps(
   node: SceneNode,
 ): Promise<Record<string, string> | undefined> {
   if ('effects' in node && node.effects.length > 0) {
-    return node.effects.reduce((acc, effect) => {
-      return {
-        ...acc,
-        ..._getEffectPropsFromEffect(effect),
-      }
-    }, {})
+    return node.effects.reduce(
+      (acc, effect) => {
+        return Object.assign(acc, _getEffectPropsFromEffect(effect))
+      },
+      {} as Record<string, string>,
+    )
   }
 }
 

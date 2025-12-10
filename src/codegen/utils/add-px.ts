@@ -1,3 +1,5 @@
+export function addPx(value: unknown, fallback: string): string
+export function addPx(value: unknown, fallback?: string): string | undefined
 export function addPx(
   value: unknown,
   fallback: string | undefined = undefined,

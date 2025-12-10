@@ -5,7 +5,7 @@ const rgbaRegex =
 export function optimizeRgbaFunc(value: string) {
   const match = value.replace(rgbaRegex, (_, r, g, b, __, a = 1) => {
     return optimizeHex(
-      `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}${Math.round(
+      `#${parseInt(r, 10).toString(16).padStart(2, '0')}${parseInt(g, 10).toString(16).padStart(2, '0')}${parseInt(b, 10).toString(16).padStart(2, '0')}${Math.round(
         a * 255,
       )
         .toString(16)

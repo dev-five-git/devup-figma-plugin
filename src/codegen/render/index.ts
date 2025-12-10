@@ -16,18 +16,18 @@ export function renderNode(
     filterPropsWithComponent(component, filteredProps),
   )
   const hasChildren = childrenCodes.length > 0
-  const tail = hasChildren ? space(deps) + `</${component}>` : ''
+  const tail = hasChildren ? `${space(deps)}</${component}>` : ''
   const multiProps = propsString.includes('\n')
   return [
     `${space(deps)}<${component}${propsString ? (multiProps ? `\n${paddingLeftMultiline(propsString, deps + 1)}` : ` ${propsString}`) : ''}${
-      (multiProps ? '\n' + space(deps) : !hasChildren ? ' ' : '') +
+      (multiProps ? `\n${space(deps)}` : !hasChildren ? ' ' : '') +
       (hasChildren ? '>' : '/>')
     }`,
     hasChildren
       ? childrenCodes
           .map(
             (child) =>
-              space(deps + 1) + child.split('\n').join('\n' + space(deps + 1)),
+              space(deps + 1) + child.split('\n').join(`\n${space(deps + 1)}`),
           )
           .join('\n')
       : '',

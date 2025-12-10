@@ -1,7 +1,8 @@
+import { describe, expect, test } from 'bun:test'
 import { toPascal } from '../to-pascal'
 
 describe('toPascal', () => {
-  it('should convert to pascal case', () => {
+  test('should convert to pascal case', () => {
     expect(toPascal('to-camel')).toBe('ToCamel')
     expect(toPascal('to/camel')).toBe('ToCamel')
     expect(toPascal('toCamel')).toBe('ToCamel')

@@ -1,10 +1,18 @@
-import { downloadFile } from '../../utils/download-file'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from 'bun:test'
+import * as downloadFileModule from '../../utils/download-file'
 import { exportComponents } from '../exportComponents'
-vi.mock('download-file', () => ({
-  downloadFile: vi.fn().mockResolvedValue(undefined),
-}))
 
-vi.mock('jszip', () => ({
+// mock jszip
+mock.module('jszip', () => ({
   default: class JSZipMock {
     files: Record<string, unknown> = {}
     file(name: string, data: unknown) {
@@ -16,9 +24,15 @@ vi.mock('jszip', () => ({
   },
 }))
 
-vi.mock('../../utils/download-file', () => ({
-  downloadFile: vi.fn().mockResolvedValue(undefined),
-}))
+const downloadFileMock = mock(() => Promise.resolve(undefined))
+
+beforeEach(() => {
+  spyOn(downloadFileModule, 'downloadFile').mockImplementation(downloadFileMock)
+})
+
+afterAll(() => {
+  spyOn(downloadFileModule, 'downloadFile').mockRestore()
+})
 
 function createNode(
   type: SceneNode['type'],
@@ -36,13 +50,13 @@ function createNode(
     visible = true,
     ...props
   }: {
-    [_: string]: any
+    [_: string]: unknown
     characters?: string
     name?: string
     textStyleId?: string
     children?: SceneNode[]
     layoutPositioning?: string
-    styledTextSegments?: any[]
+    styledTextSegments?: unknown[]
     variantProperties?: Record<string, string>
   } = {},
 ): SceneNode {
@@ -57,26 +71,30 @@ function createNode(
     characters,
     visible,
     layoutPositioning,
-    width: props.width ? parseInt(props.width) : undefined,
-    height: props.height ? parseInt(props.height) : undefined,
+    width: props.width ? parseInt(props.width as string, 10) : undefined,
+    height: props.height ? parseInt(props.height as string, 10) : undefined,
     name,
     fills,
     variantProperties,
     children: children ?? [],
   } as unknown as SceneNode
-  ;(ret as any).children.forEach((child: any) => {
-    ;(child as any).parent = ret
-  })
+  const retWithChildren = ret as SceneNode & { children: SceneNode[] }
+  for (const child of retWithChildren.children) {
+    const childWithParent = child as Omit<SceneNode, 'parent'> & {
+      parent?: SceneNode
+    }
+    childWithParent.parent = ret as SceneNode & { parent?: SceneNode }
+  }
   return ret
 }
 
-const notifyMock = vi.fn()
-const showUIMock = vi.fn()
-const postMessageMock = vi.fn()
+const notifyMock = mock(() => {})
+const showUIMock = mock(() => {})
+const postMessageMock = mock(() => {})
 
 describe('exportComponents', () => {
   beforeEach(() => {
-    ;(globalThis as any).figma = {
+    ;(globalThis as { figma?: unknown }).figma = {
       currentPage: {
         selection: [],
         name: 'TestPage',
@@ -84,24 +102,30 @@ describe('exportComponents', () => {
       notify: notifyMock,
       showUI: showUIMock,
       ui: { postMessage: postMessageMock, onmessage: null },
-    }
+    } as unknown as typeof figma
     notifyMock.mockClear()
   })
 
   afterEach(() => {
-    vi.resetAllMocks()
+    notifyMock.mockClear()
+    showUIMock.mockClear()
+    postMessageMock.mockClear()
+    downloadFileMock.mockClear()
   })
 
-  it('should notify and return if no components found', async () => {
+  test('should notify and return if no components found', async () => {
     const node = createNode('RECTANGLE', {
       fills: [],
     })
-    ;(globalThis as any).figma.currentPage.selection = [node]
+    ;(
+      (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
+        .figma?.currentPage as { selection: SceneNode[] }
+    ).selection = [node]
     await exportComponents()
     expect(notifyMock).toHaveBeenCalledWith('No components found')
   })
 
-  it('should not export components if all children are invisible', async () => {
+  test('should not export components if all children are invisible', async () => {
     const node = createNode('GROUP', {
       fills: [],
       children: [
@@ -111,12 +135,15 @@ describe('exportComponents', () => {
         }),
       ],
     })
-    ;(globalThis as any).figma.currentPage.selection = [node]
+    ;(
+      (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
+        .figma?.currentPage as { selection: SceneNode[] }
+    ).selection = [node]
     await exportComponents()
-    expect(downloadFile).not.toHaveBeenCalled()
+    expect(downloadFileMock).not.toHaveBeenCalled()
   })
 
-  it('should export components and call downloadFile', async () => {
+  test('should export components and call downloadFile', async () => {
     const node = createNode('COMPONENT', {
       fills: [],
       name: 'Component',
@@ -143,9 +170,12 @@ describe('exportComponents', () => {
         }),
       ],
     })
-    ;(globalThis as any).figma.currentPage.selection = [node]
+    ;(
+      (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
+        .figma?.currentPage as { selection: SceneNode[] }
+    ).selection = [node]
     await exportComponents()
-    expect(downloadFile).toHaveBeenCalledWith(
+    expect(downloadFileMock).toHaveBeenCalledWith(
       'TestPage.zip',
       expect.any(Uint8Array),
     )
@@ -155,7 +185,7 @@ describe('exportComponents', () => {
     )
   })
 
-  it('should raise error', async () => {
+  test('should raise error', async () => {
     const node = createNode('COMPONENT', {
       children: [
         createNode('RECTANGLE', {
@@ -163,13 +193,16 @@ describe('exportComponents', () => {
         }),
       ],
     })
-    ;(globalThis as any).figma.currentPage.selection = [node]
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    ;(
+      (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
+        .figma?.currentPage as { selection: SceneNode[] }
+    ).selection = [node]
+    const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {})
     await exportComponents()
     expect(notifyMock).toHaveBeenCalledWith('Error exporting components', {
       timeout: 3000,
       error: true,
     })
-    vi.spyOn(console, 'error').mockRestore()
+    consoleErrorSpy.mockRestore()
   })
 })

@@ -19,10 +19,10 @@ document.getElementById('cancel').onclick = () => {
   parent.postMessage({ pluginMessage: { type: 'close' } }, '*')
 }
 
-onmessage = (event) => {
+window.onmessage = (event) => {
     const message = event.data.pluginMessage;
     switch(message.type) {
-        case 'download':
+        case 'download': {
             const a = document.createElement('a');
             const { data, name } = message;
             a.href = URL.createObjectURL(new File([data], name, { type: 'application/json' }));
@@ -30,6 +30,7 @@ onmessage = (event) => {
             a.click();
             URL.revokeObjectURL(a.href);
             break;
+        }
     }
 };
 </script>

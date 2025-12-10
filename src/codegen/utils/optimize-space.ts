@@ -8,29 +8,29 @@ export function optimizeSpace(
   l: number,
 ): Record<string, string> {
   if (t === r && r === b && b === l) {
-    return { [type]: addPx(t)! }
+    return { [type]: addPx(t, '0') }
   }
   if (t === b && r === l) {
-    return { [type + 'y']: addPx(t)!, [type + 'x']: addPx(l)! }
+    return { [`${type}y`]: addPx(t, '0'), [`${type}x`]: addPx(l, '0') }
   }
   if (t === b) {
     return {
-      [type + 'y']: addPx(t)!,
-      [type + 'r']: addPx(r)!,
-      [type + 'l']: addPx(l)!,
+      [`${type}y`]: addPx(t, '0'),
+      [`${type}r`]: addPx(r, '0'),
+      [`${type}l`]: addPx(l, '0'),
     }
   }
   if (l === r) {
     return {
-      [type + 'x']: addPx(l)!,
-      [type + 't']: addPx(t)!,
-      [type + 'b']: addPx(b)!,
+      [`${type}x`]: addPx(l, '0'),
+      [`${type}t`]: addPx(t, '0'),
+      [`${type}b`]: addPx(b, '0'),
     }
   }
   return {
-    [type + 't']: addPx(t)!,
-    [type + 'r']: addPx(r)!,
-    [type + 'b']: addPx(b)!,
-    [type + 'l']: addPx(l)!,
+    [`${type}t`]: addPx(t, '0'),
+    [`${type}r`]: addPx(r, '0'),
+    [`${type}b`]: addPx(b, '0'),
+    [`${type}l`]: addPx(l, '0'),
   }
 }
