@@ -2057,4 +2057,376 @@ describe('Codegen', () => {
     await codegen.run()
     expect(codegen.getCode()).toBe(expected)
   })
+
+  type ComponentTestCase = {
+    title: string
+    node: SceneNode
+    expected: string
+    expectedComponents: Array<[string, string]>
+  }
+
+  test.each<ComponentTestCase>([
+    {
+      title: 'renders component set with variants',
+      node: (() => {
+        const defaultVariant = {
+          type: 'COMPONENT',
+          name: 'Default',
+          children: [],
+          variantProperties: { state: 'default' },
+          reactions: [],
+        } as unknown as ComponentNode
+        const hoverVariant = {
+          type: 'COMPONENT',
+          name: 'Hover',
+          children: [],
+          variantProperties: { state: 'hover' },
+          reactions: [
+            {
+              trigger: { type: 'ON_HOVER' },
+              actions: [],
+            },
+          ],
+        } as unknown as ComponentNode
+        return {
+          type: 'COMPONENT_SET',
+          name: 'Button',
+          children: [defaultVariant, hoverVariant],
+          defaultVariant,
+          componentPropertyDefinitions: {
+            state: {
+              type: 'VARIANT',
+              variantOptions: ['default', 'hover'],
+            },
+          },
+        } as unknown as ComponentSetNode
+      })(),
+      expected: `<Box boxSize="100%">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</Box>`,
+      expectedComponents: [
+        [
+          'Button',
+          `export interface ButtonProps {
+  state: default | hover
+}
+
+export function Button() {
+  return <Box boxSize="100%" />
+ }`,
+        ],
+      ],
+    },
+    {
+      title: 'renders component set with effect property',
+      node: (() => {
+        const defaultVariant = {
+          type: 'COMPONENT',
+          name: 'Default',
+          children: [],
+          variantProperties: { effect: 'default' },
+          reactions: [],
+        } as unknown as ComponentNode
+        const hoverVariant = {
+          type: 'COMPONENT',
+          name: 'Hover',
+          children: [],
+          variantProperties: { effect: 'hover' },
+          reactions: [],
+        } as unknown as ComponentNode
+        return {
+          type: 'COMPONENT_SET',
+          name: 'Button',
+          children: [defaultVariant, hoverVariant],
+          defaultVariant,
+          componentPropertyDefinitions: {
+            effect: {
+              type: 'VARIANT',
+              variantOptions: ['default', 'hover'],
+            },
+          },
+        } as unknown as ComponentSetNode
+      })(),
+      expected: `<Box boxSize="100%">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</Box>`,
+      expectedComponents: [
+        [
+          'Button',
+          `export function Button() {
+  return <Box boxSize="100%" />
+ }`,
+        ],
+      ],
+    },
+    {
+      title: 'renders component set with transition',
+      node: (() => {
+        const defaultVariant = {
+          type: 'COMPONENT',
+          name: 'Default',
+          children: [],
+          variantProperties: {},
+          reactions: [
+            {
+              trigger: { type: 'ON_HOVER' },
+              actions: [
+                {
+                  type: 'NODE',
+                  transition: {
+                    type: 'SMART_ANIMATE',
+                    duration: 0.3,
+                    easing: { type: 'EASE_IN_OUT' },
+                  },
+                },
+              ],
+            },
+          ],
+        } as unknown as ComponentNode
+        const hoverVariant = {
+          type: 'COMPONENT',
+          name: 'Hover',
+          children: [],
+          variantProperties: {},
+          reactions: [
+            {
+              trigger: { type: 'ON_HOVER' },
+              actions: [
+                {
+                  type: 'NODE',
+                  transition: {
+                    type: 'SMART_ANIMATE',
+                    duration: 0.3,
+                    easing: { type: 'EASE_IN_OUT' },
+                  },
+                },
+              ],
+            },
+          ],
+        } as unknown as ComponentNode
+        return {
+          type: 'COMPONENT_SET',
+          name: 'Button',
+          children: [defaultVariant, hoverVariant],
+          defaultVariant,
+          componentPropertyDefinitions: {},
+        } as unknown as ComponentSetNode
+      })(),
+      expected: `<Box boxSize="100%">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</Box>`,
+      expectedComponents: [
+        [
+          'Button',
+          `export function Button() {
+  return <Box boxSize="100%" />
+ }`,
+        ],
+      ],
+    },
+    {
+      title: 'renders component set with different props and transition',
+      node: (() => {
+        const defaultVariant = {
+          type: 'COMPONENT',
+          name: 'Default',
+          children: [],
+          variantProperties: {},
+          reactions: [
+            {
+              trigger: { type: 'ON_HOVER' },
+              actions: [
+                {
+                  type: 'NODE',
+                  transition: {
+                    type: 'SMART_ANIMATE',
+                    duration: 0.3,
+                    easing: { type: 'EASE_IN_OUT' },
+                  },
+                },
+              ],
+            },
+          ],
+        } as unknown as ComponentNode
+        const hoverVariant = {
+          type: 'COMPONENT',
+          name: 'Hover',
+          children: [],
+          variantProperties: {},
+          opacity: 0.8,
+          reactions: [
+            {
+              trigger: { type: 'ON_HOVER' },
+              actions: [
+                {
+                  type: 'NODE',
+                  transition: {
+                    type: 'SMART_ANIMATE',
+                    duration: 0.3,
+                    easing: { type: 'EASE_IN_OUT' },
+                  },
+                },
+              ],
+            },
+          ],
+        } as unknown as ComponentNode
+        return {
+          type: 'COMPONENT_SET',
+          name: 'Card',
+          children: [defaultVariant, hoverVariant],
+          defaultVariant,
+          componentPropertyDefinitions: {},
+        } as unknown as ComponentSetNode
+      })(),
+      expected: `<Box boxSize="100%">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" opacity="0.8" />
+</Box>`,
+      expectedComponents: [
+        [
+          'Card',
+          `export function Card() {
+  return (
+    <Box
+      _hover={{
+        "opacity": "0.8"
+      }}
+      boxSize="100%"
+      transition="0.3ms ease-in-out"
+      transitionProperty="opacity"
+    />
+  )
+ }`,
+        ],
+      ],
+    },
+    {
+      title: 'renders component with parent component set',
+      node: {
+        type: 'COMPONENT',
+        name: 'Hover',
+        parent: {
+          type: 'COMPONENT_SET',
+          name: 'Button',
+          children: [
+            {
+              type: 'COMPONENT',
+              name: 'Default',
+              children: [],
+              variantProperties: { state: 'default' },
+              reactions: [],
+            },
+            {
+              type: 'COMPONENT',
+              name: 'Hover',
+              children: [],
+              variantProperties: { state: 'hover' },
+              reactions: [
+                {
+                  trigger: { type: 'ON_HOVER' },
+                  actions: [],
+                },
+              ],
+            },
+          ],
+          defaultVariant: {
+            type: 'COMPONENT',
+            name: 'Default',
+            children: [],
+            variantProperties: { state: 'default' },
+            reactions: [],
+          },
+          componentPropertyDefinitions: {
+            state: {
+              type: 'VARIANT',
+              variantOptions: ['default', 'hover'],
+            },
+          },
+        },
+        children: [],
+        variantProperties: { state: 'hover' },
+        reactions: [
+          {
+            trigger: { type: 'ON_HOVER' },
+            actions: [],
+          },
+        ],
+      } as unknown as ComponentNode,
+      expected: `<Box boxSize="100%">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</Box>`,
+      expectedComponents: [],
+    },
+    {
+      title: 'renders component set with press trigger',
+      node: (() => {
+        const defaultVariant = {
+          type: 'COMPONENT',
+          name: 'Default',
+          children: [],
+          variantProperties: {},
+          reactions: [],
+        } as unknown as ComponentNode
+        const activeVariant = {
+          type: 'COMPONENT',
+          name: 'Active',
+          children: [],
+          variantProperties: {},
+          reactions: [
+            {
+              trigger: { type: 'ON_PRESS' },
+              actions: [],
+            },
+          ],
+        } as unknown as ComponentNode
+        return {
+          type: 'COMPONENT_SET',
+          name: 'Button',
+          children: [defaultVariant, activeVariant],
+          defaultVariant,
+          componentPropertyDefinitions: {},
+        } as unknown as ComponentSetNode
+      })(),
+      expected: `<Box boxSize="100%">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</Box>`,
+      expectedComponents: [
+        [
+          'Button',
+          `export function Button() {
+  return <Box boxSize="100%" />
+ }`,
+        ],
+      ],
+    },
+    {
+      title: 'renders simple component without variants',
+      node: {
+        type: 'COMPONENT',
+        name: 'Icon',
+        children: [],
+      } as unknown as ComponentNode,
+      expected: `<Box boxSize="100%" />`,
+      expectedComponents: [
+        [
+          'Icon',
+          `export function Icon() {
+  return <Box boxSize="100%" />
+ }`,
+        ],
+      ],
+    },
+  ])('$title', async ({ node, expected, expectedComponents }) => {
+    addParent(node)
+    const codegen = new Codegen(node)
+    await codegen.run()
+    const componentsCodes = codegen.getComponentsCodes()
+    expect(codegen.getCode()).toBe(expected)
+    expect(componentsCodes).toEqual(expectedComponents)
+  })
 })

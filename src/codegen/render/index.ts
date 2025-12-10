@@ -57,7 +57,7 @@ export function renderComponent(
           .split('\n')
           .map((line) => line)
           .join('\n')}\n${space(1)})`
-      : code
+      : code.trim().replace(/\s+/g, ' ')
   }
  }`
 }
