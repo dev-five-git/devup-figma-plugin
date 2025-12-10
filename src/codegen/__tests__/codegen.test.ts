@@ -160,6 +160,139 @@ describe('Codegen', () => {
 </Box>`,
     },
     {
+      title: 'renders absolute child with horizontal MAX constraint',
+      node: {
+        type: 'FRAME',
+        name: 'ParentWithAutoLayout',
+        width: 400,
+        height: 300,
+        inferredAutoLayout: {
+          layoutMode: 'HORIZONTAL',
+        },
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'MaxRightChild',
+            layoutPositioning: 'ABSOLUTE',
+            x: 350,
+            y: 50,
+            width: 50,
+            height: 100,
+            constraints: {
+              horizontal: 'MAX',
+              vertical: 'MIN',
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Flex boxSize="100%" pos="relative">
+  <Box boxSize="100%" pos="absolute" right="0px" top="50px" />
+</Flex>`,
+    },
+    {
+      title: 'renders absolute child with horizontal CENTER constraint',
+      node: {
+        type: 'FRAME',
+        name: 'ParentWithAutoLayout2',
+        width: 500,
+        height: 400,
+        inferredAutoLayout: {
+          layoutMode: 'VERTICAL',
+        },
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'CenterChild',
+            layoutPositioning: 'ABSOLUTE',
+            x: 200,
+            y: 150,
+            width: 100,
+            height: 100,
+            constraints: {
+              horizontal: 'CENTER',
+              vertical: 'CENTER',
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<VStack boxSize="100%" pos="relative">
+  <Box
+    bottom="0px"
+    boxSize="100%"
+    left="0px"
+    pos="absolute"
+    right="0px"
+    top="0px"
+  />
+</VStack>`,
+    },
+    {
+      title: 'renders absolute child with vertical MAX constraint',
+      node: {
+        type: 'FRAME',
+        name: 'ParentWithAutoLayout3',
+        width: 600,
+        height: 500,
+        inferredAutoLayout: {
+          layoutMode: 'HORIZONTAL',
+        },
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'MaxBottomChild',
+            layoutPositioning: 'ABSOLUTE',
+            x: 50,
+            y: 450,
+            width: 100,
+            height: 50,
+            constraints: {
+              horizontal: 'MIN',
+              vertical: 'MAX',
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Flex boxSize="100%" pos="relative">
+  <Box bottom="0px" boxSize="100%" left="50px" pos="absolute" />
+</Flex>`,
+    },
+    {
+      title: 'renders absolute child with vertical CENTER constraint',
+      node: {
+        type: 'FRAME',
+        name: 'ParentWithAutoLayout4',
+        width: 700,
+        height: 600,
+        inferredAutoLayout: {
+          layoutMode: 'VERTICAL',
+        },
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'VerticalCenterChild',
+            layoutPositioning: 'ABSOLUTE',
+            x: 300,
+            y: 250,
+            width: 100,
+            height: 100,
+            constraints: {
+              horizontal: 'MIN',
+              vertical: 'CENTER',
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<VStack boxSize="100%" pos="relative">
+  <Box
+    bottom="0px"
+    boxSize="100%"
+    left="300px"
+    pos="absolute"
+    top="0px"
+  />
+</VStack>`,
+    },
+    {
       title: 'renders flex=1 when parent is horizontal auto layout',
       node: {
         type: 'FRAME',
