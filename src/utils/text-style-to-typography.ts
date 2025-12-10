@@ -36,10 +36,8 @@ function getFontWeight(weight: string): number {
     case 'black':
     case 'heavy':
       return 900
-    default: {
-      const weightNumber = parseInt(weight, 10)
-      if (!Number.isNaN(weightNumber)) return weightNumber
-      return 400
-    }
   }
+
+  const weightNumber = Number.parseInt(weight, 10)
+  return Number.isNaN(weightNumber) ? 400 : weightNumber
 }
