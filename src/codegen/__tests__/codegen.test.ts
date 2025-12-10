@@ -1944,6 +1944,113 @@ describe('Codegen', () => {
   Gradient
 </Text>`,
     },
+    {
+      title: 'renders text node with HEIGHT auto resize and fixed sizing',
+      node: {
+        type: 'TEXT',
+        name: 'TextHeightFixed',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Height'),
+            characters: 'Height',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  Height
+</Text>`,
+    },
+    {
+      title: 'renders text node with NONE auto resize and fixed sizing',
+      node: {
+        type: 'TEXT',
+        name: 'TextNoneFixed',
+        children: [],
+        textAutoResize: 'NONE',
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('None'),
+            characters: 'None',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="50px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  None
+</Text>`,
+    },
+    {
+      title: 'renders text node with TRUNCATE auto resize and fixed sizing',
+      node: {
+        type: 'TEXT',
+        name: 'TextTruncateFixed',
+        children: [],
+        textAutoResize: 'TRUNCATE',
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Truncate'),
+            characters: 'Truncate',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="50px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  Truncate
+</Text>`,
+    },
   ])('$title', async ({ node, expected }) => {
     addParent(node)
     const codegen = new Codegen(node)
