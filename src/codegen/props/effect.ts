@@ -8,7 +8,17 @@ export async function getEffectProps(
   if ('effects' in node && node.effects.length > 0) {
     return node.effects.reduce(
       (acc, effect) => {
-        return Object.assign(acc, _getEffectPropsFromEffect(effect))
+        const props = _getEffectPropsFromEffect(effect)
+        for (const [key, value] of Object.entries(props)) {
+          if (value) {
+            if (acc[key]) {
+              acc[key] = `${acc[key]}, ${value}`
+            } else {
+              acc[key] = value
+            }
+          }
+        }
+        return acc
       },
       {} as Record<string, string>,
     )

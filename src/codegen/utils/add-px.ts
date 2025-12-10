@@ -4,7 +4,7 @@ export function addPx(
   value: unknown,
   fallback: string | undefined = undefined,
 ) {
-  if (typeof value !== 'number') return
+  if (typeof value !== 'number') return fallback
   const fixed = value.toFixed(3)
   const str = fixed.endsWith('.000')
     ? String(Math.round(value))

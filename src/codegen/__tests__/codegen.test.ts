@@ -785,6 +785,98 @@ describe('Codegen', () => {
   Ellipsis
 </Text>`,
     },
+    {
+      title: 'renders text node with single drop shadow',
+      node: {
+        type: 'TEXT',
+        name: 'TextWithShadow',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [
+          {
+            type: 'DROP_SHADOW',
+            offset: { x: 2, y: 4 },
+            radius: 6,
+            color: { r: 0, g: 0, b: 0, a: 0.5 },
+            visible: true,
+            blendMode: 'NORMAL',
+          },
+        ],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Shadow'),
+            characters: 'Shadow',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  boxShadow="2px 4px 6px 0 #00000080"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  textShadow="2px 4px 6px #00000080"
+>
+  Shadow
+</Text>`,
+    },
+    {
+      title: 'renders text node with multiple drop shadows',
+      node: {
+        type: 'TEXT',
+        name: 'TextWithMultipleShadows',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [
+          {
+            type: 'DROP_SHADOW',
+            offset: { x: 1, y: 2 },
+            radius: 3,
+            color: { r: 1, g: 0, b: 0, a: 1 },
+            visible: true,
+            blendMode: 'NORMAL',
+          },
+          {
+            type: 'DROP_SHADOW',
+            offset: { x: 4, y: 5 },
+            radius: 6,
+            color: { r: 0, g: 1, b: 0, a: 0.8 },
+            visible: true,
+            blendMode: 'NORMAL',
+          },
+        ],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('MultiShadow'),
+            characters: 'MultiShadow',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  boxShadow="1px 2px 3px 0 #F00, 4px 5px 6px 0 #0F0C"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  textShadow="1px 2px 3px #F00, 4px 5px 6px #0F0C"
+>
+  MultiShadow
+</Text>`,
+    },
   ])('$title', async ({ node, expected }) => {
     addParent(node)
     const codegen = new Codegen(node)
