@@ -1,40 +1,186 @@
-Below are the steps to get your plugin running. You can also find instructions at:
+# Devup Figma Plugin
+<p align="center">
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License: Apache-2.0" />
+  </a>
+  <a href="https://github.com/dev-five-git/devup-figma-plugin/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/dev-five-git/devup-figma-plugin/CI.yml?branch=main&label=CI" alt="Build Status" />
+  </a>
+  <a href="https://codecov.io/gh/dev-five-git/devup-figma-plugin">
+    <img src="https://img.shields.io/codecov/c/github/dev-five-git/devup-figma-plugin" alt="Codecov Coverage" />
+  </a>
+  <a href="https://github.com/dev-five-git/devup-figma-plugin">
+    <img src="https://img.shields.io/github/stars/dev-five-git/devup-figma-plugin.svg?style=social&label=Star" alt="GitHub stars" />
+  </a>
+  <a href="https://github.com/dev-five-git/devup-figma-plugin/fork">
+    <img src="https://img.shields.io/github/forks/dev-five-git/devup-figma-plugin.svg?style=social&label=Fork" alt="GitHub forks" />
+  </a>
+  <a href="https://github.com/dev-five-git/devup-figma-plugin/issues">
+    <img src="https://img.shields.io/github/issues/dev-five-git/devup-figma-plugin.svg" alt="GitHub issues" />
+  </a>
+  <a href="https://github.com/dev-five-git/devup-figma-plugin/pulls">
+    <img src="https://img.shields.io/github/issues-pr/dev-five-git/devup-figma-plugin.svg" alt="GitHub pull requests" />
+  </a>
+  <a href="https://github.com/dev-five-git/devup-figma-plugin/commits/main">
+    <img src="https://img.shields.io/github/last-commit/dev-five-git/devup-figma-plugin.svg" alt="GitHub last commit" />
+  </a>
+</p>
 
-https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+A powerful Figma plugin that generates React/TypeScript code from Figma designs and manages Devup design system configurations. This plugin enables seamless conversion of Figma components to production-ready React code and facilitates design system synchronization.
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+## Features
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+### 🎨 Code Generation
+- **React Component Generation**: Automatically converts Figma designs to React/TypeScript components using the Devup-UI format
+- **Codegen Support**: Works with Figma's Dev Mode codegen feature for real-time code preview
+- **Component Extraction**: Extracts and generates code for nested components
+- **CLI Export**: Generates bash commands for easy file creation
 
-https://nodejs.org/en/download/
+### 📦 Design System Management
+- **Export Devup Config**: Export your design system (colors, typography, components) in JSON or Excel format
+- **Import Devup Config**: Import design system configurations back into Figma
+- **Treeshaking Support**: Optimize exports by removing unused design tokens
+- **Variable Support**: Handles Figma variables and color collections with multiple modes
 
-Next, install TypeScript using the command:
+### 🚀 Component & Asset Export
+- **Component Export**: Export selected components as a ZIP file containing individual component files
+- **Asset Export**: Export design assets (currently in development)
 
-npm install -g typescript
+## Installation
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+### Prerequisites
+- [Bun](https://bun.sh/) (recommended) or Node.js
+- Figma Desktop App (for plugin development)
 
-npm install --save-dev @figma/plugin-typings
+### Setup
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd devup-figma-plugin
+```
 
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
+2. Install dependencies:
+```bash
+bun install
+```
 
-For more information, visit https://www.typescriptlang.org/
+3. Build the plugin:
+```bash
+bun run build
+```
 
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
+4. Load the plugin in Figma:
+   - Open Figma Desktop
+   - Go to `Plugins` → `Development` → `Import plugin from manifest...`
+   - Select the `manifest.json` file from this project
 
-We recommend writing TypeScript code using Visual Studio code:
+## Development
 
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-   then select "npm: watch". You will have to do this again every time
-   you reopen Visual Studio Code.
+### Available Scripts
 
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+- `bun run dev` - Start development server with hot reload
+- `bun run build` - Build the plugin for production
+- `bun run watch` - Build the plugin in watch mode
+- `bun run test` - Run tests with coverage
+- `bun run lint` - Check code for linting errors
+- `bun run lint:fix` - Fix linting errors automatically
+
+### Project Structure
+
+```
+src/
+├── code.ts                 # Main plugin entry point
+├── codegen/               # Code generation logic
+│   ├── Codegen.ts        # Main codegen class
+│   ├── props/            # Property generators (layout, colors, etc.)
+│   ├── render/           # Component rendering logic
+│   └── utils/            # Codegen utilities
+├── commands/              # Plugin commands
+│   ├── devup/            # Devup export/import functionality
+│   ├── exportAssets.ts   # Asset export command
+│   └── exportComponents.ts # Component export command
+└── utils/                 # Shared utilities
+```
+
+## Usage
+
+### Code Generation (Dev Mode)
+
+1. Open Figma in Dev Mode
+2. Select a design element (frame, component, etc.)
+3. The plugin will automatically generate React/TypeScript code in the code panel
+4. You can copy the generated code or use the provided CLI commands
+
+### Export Devup Configuration
+
+1. Select elements in your Figma file
+2. Go to `Plugins` → `Devup` → `Export Devup` (or `Export Devup Excel`)
+3. Choose whether to use treeshaking (removes unused tokens)
+4. The configuration file will be downloaded
+
+### Import Devup Configuration
+
+1. Go to `Plugins` → `Devup` → `Import Devup` (or `Import Devup Excel`)
+2. Select your Devup configuration file
+3. The design system will be imported into Figma
+
+### Export Components
+
+1. Select the components you want to export
+2. Go to `Plugins` → `Devup` → `Export Components`
+3. A ZIP file containing all component files will be downloaded
+
+## Technical Details
+
+### Code Generation
+
+The plugin converts Figma nodes to React components by:
+- Analyzing layout properties (auto-layout, padding, spacing)
+- Converting styles (colors, typography, effects)
+- Handling component variants and instances
+- Generating proper TypeScript types
+- Optimizing CSS properties
+
+### Supported Figma Features
+
+- ✅ Auto Layout
+- ✅ Components & Variants
+- ✅ Text Styles & Typography
+- ✅ Color Variables & Collections
+- ✅ Effects (shadows, blurs)
+- ✅ Borders & Strokes
+- ✅ Grid Layouts
+- ✅ Transform properties
+
+### Build Configuration
+
+- **Bundler**: Rspack
+- **Language**: TypeScript
+- **Linter**: Biome
+- **Test Runner**: Bun
+- **Package Manager**: Bun
+
+## Testing
+
+Run tests with coverage:
+```bash
+bun run test
+```
+
+Test coverage reports are generated in the `coverage/` directory.
+
+## Contributing
+
+1. Follow the existing code style (enforced by Biome)
+2. Write tests for new features
+3. Ensure all tests pass and linting checks succeed
+4. Update documentation as needed
+
+## License
+
+[Add your license information here]
+
+## Support
+
+For issues, questions, or contributions, please [open an issue](link-to-issues) or contact the maintainers.
