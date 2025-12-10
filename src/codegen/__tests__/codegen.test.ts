@@ -1318,6 +1318,205 @@ describe('Codegen', () => {
 </Text>`,
     },
     {
+      title: 'renders text node with multiple segments',
+      node: {
+        type: 'TEXT',
+        name: 'MultiSegmentText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Hello'),
+            characters: 'Hello',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+          {
+            ...createTextSegment('World'),
+            characters: 'World',
+            textStyleId: 'style2',
+            fontSize: 20,
+            fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 1 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  boxSize="100%"
+  color="#00F"
+  fontFamily="Arial"
+  fontSize="20px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  <Text color="#F00" fontSize="16px">
+    Hello
+  </Text>
+  World
+</Text>`,
+    },
+    {
+      title: 'renders text node with unordered list',
+      node: {
+        type: 'TEXT',
+        name: 'UnorderedListText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Item 1'),
+            characters: 'Item 1',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+            listOptions: {
+              type: 'UNORDERED',
+            },
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  as="ul"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    Item 1
+  </li>
+</Text>`,
+    },
+    {
+      title: 'renders text node with ordered list',
+      node: {
+        type: 'TEXT',
+        name: 'OrderedListText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Item 1'),
+            characters: 'Item 1',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+            listOptions: {
+              type: 'ORDERED',
+            },
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  as="ol"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    Item 1
+  </li>
+</Text>`,
+    },
+    {
+      title: 'renders text node with list and multiple lines',
+      node: {
+        type: 'TEXT',
+        name: 'MultiLineListText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Item 1\nItem 2'),
+            characters: 'Item 1\nItem 2',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+            listOptions: {
+              type: 'UNORDERED',
+            },
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  as="ul"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    Item 1
+  </li>
+  <li>
+    Item 2
+  </li>
+</Text>`,
+    },
+    {
+      title: 'renders text node with multiple segments without props',
+      node: {
+        type: 'TEXT',
+        name: 'MultiSegmentNoPropsText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Hello'),
+            characters: 'Hello',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+          {
+            ...createTextSegment('World'),
+            characters: 'World',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  Hello
+  World
+</Text>`,
+    },
+    {
       title: 'renders frame with rotation transform',
       node: {
         type: 'FRAME',
