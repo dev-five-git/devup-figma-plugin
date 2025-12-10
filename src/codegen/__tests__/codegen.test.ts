@@ -206,6 +206,56 @@ describe('Codegen', () => {
 />`,
     },
     {
+      title: 'renders vstack auto layout props',
+      node: {
+        type: 'FRAME',
+        name: 'VStackAutoLayout',
+        children: [
+          { visible: true } as unknown as SceneNode,
+          { visible: true } as unknown as SceneNode,
+        ],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 200,
+        inferredAutoLayout: {
+          layoutMode: 'VERTICAL',
+          itemSpacing: 16,
+        },
+        primaryAxisAlignItems: 'SPACE_BETWEEN',
+        counterAxisAlignItems: 'CENTER',
+      } as unknown as FrameNode,
+      expected: `<VStack
+  alignItems="center"
+  gap="16px"
+  h="200px"
+  justifyContent="space-between"
+  w="120px"
+>
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</VStack>`,
+    },
+    {
+      title: 'renders center auto layout props',
+      node: {
+        type: 'FRAME',
+        name: 'CenterAutoLayout',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 120,
+        inferredAutoLayout: {
+          layoutMode: 'HORIZONTAL',
+          itemSpacing: 0,
+        },
+        primaryAxisAlignItems: 'CENTER',
+        counterAxisAlignItems: 'CENTER',
+      } as unknown as FrameNode,
+      expected: `<Center boxSize="120px" />`,
+    },
+    {
       title: 'renders text node with content',
       node: {
         type: 'TEXT',
