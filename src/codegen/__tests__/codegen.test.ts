@@ -1858,6 +1858,92 @@ describe('Codegen', () => {
       } as unknown as FrameNode,
       expected: `<Box h="50px" mixBlendMode="multiply" opacity="0.75" w="100px" />`,
     },
+    {
+      title: 'renders frame with solid fill and blend mode',
+      node: {
+        type: 'FRAME',
+        name: 'SolidBlendFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'SOLID',
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+            visible: true,
+            blendMode: 'MULTIPLY',
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="#F00" bgBlendMode="multiply" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders text node with gradient fill',
+      node: {
+        type: 'TEXT',
+        name: 'GradientText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'GRADIENT_LINEAR',
+            visible: true,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Gradient'),
+            characters: 'Gradient',
+            textStyleId: 'style1',
+            fills: [
+              {
+                type: 'GRADIENT_LINEAR',
+                visible: true,
+                opacity: 1,
+                gradientStops: [
+                  { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+                  { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+                ],
+                gradientTransform: [
+                  [1, 0, 0],
+                  [0, 1, 0],
+                ],
+              },
+            ],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  bg="linear-gradient(90deg, #F00 0%, #00F 100%)"
+  bgClip="text"
+  boxSize="100%"
+  color="linear-gradient(90deg, #F00 0%, #00F 100%)"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  Gradient
+</Text>`,
+    },
   ])('$title', async ({ node, expected }) => {
     addParent(node)
     const codegen = new Codegen(node)
