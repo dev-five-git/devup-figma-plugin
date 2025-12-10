@@ -59,5 +59,4 @@ function _getEffectPropsFromEffect(effect: Effect): Record<string, string> {
         WebkitBackdropFilter: `blur(${effect.radius}px)`,
       }
   }
-  return {}
 }
