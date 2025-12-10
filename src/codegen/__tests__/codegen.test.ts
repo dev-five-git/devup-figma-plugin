@@ -343,6 +343,76 @@ describe('Codegen', () => {
       expected: `<Box h="40px" p="12px" w="80px" />`,
     },
     {
+      title: 'renders padding with top equals bottom but left right different',
+      node: {
+        type: 'FRAME',
+        name: 'TopBottomEqualPaddingFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 60,
+        paddingTop: 10,
+        paddingRight: 20,
+        paddingBottom: 10,
+        paddingLeft: 30,
+      } as unknown as FrameNode,
+      expected: `<Box
+  h="60px"
+  pl="30px"
+  pr="20px"
+  py="10px"
+  w="100px"
+/>`,
+    },
+    {
+      title: 'renders padding with left equals right but top bottom different',
+      node: {
+        type: 'FRAME',
+        name: 'LeftRightEqualPaddingFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 90,
+        height: 50,
+        paddingTop: 5,
+        paddingRight: 15,
+        paddingBottom: 25,
+        paddingLeft: 15,
+      } as unknown as FrameNode,
+      expected: `<Box
+  h="50px"
+  pb="25px"
+  pt="5px"
+  px="15px"
+  w="90px"
+/>`,
+    },
+    {
+      title: 'renders padding with all sides different',
+      node: {
+        type: 'FRAME',
+        name: 'AllDifferentPaddingFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 110,
+        height: 70,
+        paddingTop: 1,
+        paddingRight: 2,
+        paddingBottom: 3,
+        paddingLeft: 4,
+      } as unknown as FrameNode,
+      expected: `<Box
+  h="70px"
+  pb="3px"
+  pl="4px"
+  pr="2px"
+  pt="1px"
+  w="110px"
+/>`,
+    },
+    {
       title: 'renders frame with border radius',
       node: {
         type: 'FRAME',
