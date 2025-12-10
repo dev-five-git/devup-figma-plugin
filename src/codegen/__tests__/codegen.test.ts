@@ -43,6 +43,17 @@ import { Codegen } from '../Codegen'
     },
   },
   getLocalTextStylesAsync: () => [],
+  variables: {
+    getVariableByIdAsync: async (id: string) => {
+      if (id === 'var1') {
+        return {
+          name: 'Primary Color',
+          id: 'var1',
+        } as unknown as Variable
+      }
+      return null
+    },
+  },
 } as unknown as typeof figma
 afterAll(() => {
 
@@ -167,6 +178,349 @@ describe('Codegen', () => {
         ],
       } as unknown as RectangleNode,
       expected: `<Image h="70px" src="/icons/ObjectFitFill.png" w="110px" />`,
+    },
+    {
+      title: 'renders svg asset with vector node',
+      node: {
+        type: 'VECTOR',
+        name: 'VectorIcon',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as VectorNode,
+      expected: `<Image boxSize="24px" src="/icons/VectorIcon.svg" />`,
+    },
+    {
+      title: 'renders svg asset with star node',
+      node: {
+        type: 'STAR',
+        name: 'StarIcon',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as StarNode,
+      expected: `<Image boxSize="24px" src="/icons/StarIcon.svg" />`,
+    },
+    {
+      title: 'renders svg asset with polygon node',
+      node: {
+        type: 'POLYGON',
+        name: 'PolygonIcon',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as PolygonNode,
+      expected: `<Image boxSize="24px" src="/icons/PolygonIcon.svg" />`,
+    },
+    {
+      title: 'renders svg asset with ellipse inner radius',
+      node: {
+        type: 'ELLIPSE',
+        name: 'EllipseIcon',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+        arcData: {
+          innerRadius: 0.5,
+        },
+      } as unknown as EllipseNode,
+      expected: `<Image boxSize="24px" src="/icons/EllipseIcon.svg" />`,
+    },
+    {
+      title: 'renders svg asset with non-solid fills',
+      node: {
+        type: 'RECTANGLE',
+        name: 'GradientAsset',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+        fills: [
+          {
+            type: 'GRADIENT_LINEAR',
+            visible: true,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as RectangleNode,
+      expected: `<Image boxSize="24px" src="/icons/GradientAsset.svg" />`,
+    },
+    {
+      title: 'renders asset with single child and fills',
+      node: {
+        type: 'FRAME',
+        name: 'ParentAsset',
+        children: [
+          {
+            type: 'VECTOR',
+            name: 'ChildVector',
+            children: [],
+            isAsset: true,
+            layoutSizingHorizontal: 'FIXED',
+            layoutSizingVertical: 'FIXED',
+            width: 24,
+            height: 24,
+          },
+        ],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="#F00" boxSize="24px">
+  <Image boxSize="24px" src="/icons/ChildVector.svg" />
+</Box>`,
+    },
+    {
+      title: 'renders null for asset with only solid fills',
+      node: {
+        type: 'RECTANGLE',
+        name: 'SolidAsset',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as RectangleNode,
+      expected: `<Box bg="#F00" boxSize="24px" />`,
+    },
+    {
+      title: 'renders frame with bound variable color',
+      node: {
+        type: 'FRAME',
+        name: 'VariableFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+            boundVariables: {
+              color: {
+                id: 'var1',
+                type: 'COLOR',
+              },
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="$primaryColor" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders svg asset with same color mask',
+      node: {
+        type: 'VECTOR',
+        name: 'MaskIcon',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as VectorNode,
+      expected: `<Box
+  bg="#F00"
+  boxSize="24px"
+  maskImage="url(/icons/MaskIcon.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>`,
+    },
+    {
+      title: 'renders svg asset with children same color',
+      node: {
+        type: 'FRAME',
+        name: 'GroupIcon',
+        children: [
+          {
+            type: 'VECTOR',
+            name: 'Vector1',
+            children: [],
+            visible: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'VECTOR',
+            name: 'Vector2',
+            children: [],
+            visible: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+        ],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as FrameNode,
+      expected: `<Box
+  bg="#F00"
+  boxSize="24px"
+  maskImage="url(/icons/GroupIcon.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>`,
+    },
+    {
+      title: 'renders svg asset with different color children',
+      node: {
+        type: 'FRAME',
+        name: 'MixedIcon',
+        children: [
+          {
+            type: 'VECTOR',
+            name: 'Vector1',
+            children: [],
+            visible: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'VECTOR',
+            name: 'Vector2',
+            children: [],
+            visible: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 0, g: 0, b: 1 },
+                opacity: 1,
+              },
+            ],
+          },
+        ],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as FrameNode,
+      expected: `<Image boxSize="24px" src="/icons/MixedIcon.svg" />`,
+    },
+    {
+      title: 'renders svg asset with non-solid fill',
+      node: {
+        type: 'VECTOR',
+        name: 'GradientIcon',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+        fills: [
+          {
+            type: 'GRADIENT_LINEAR',
+            visible: true,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as VectorNode,
+      expected: `<Image boxSize="24px" src="/icons/GradientIcon.svg" />`,
+    },
+    {
+      title: 'renders svg asset with invisible fill',
+      node: {
+        type: 'VECTOR',
+        name: 'InvisibleIcon',
+        children: [],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: false,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as VectorNode,
+      expected: `<Image boxSize="24px" src="/icons/InvisibleIcon.svg" />`,
     },
     {
       title: 'renders layout for absolute child same size as parent',
@@ -393,6 +747,78 @@ describe('Codegen', () => {
   lineHeight="1.5px"
 >
   AutoSize
+</Text>`,
+    },
+    {
+      title: 'renders text with special characters',
+      node: {
+        type: 'TEXT',
+        name: 'SpecialText',
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 20,
+        textAutoResize: 'NONE',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Text with {braces} & <tags>'),
+            characters: 'Text with {braces} & <tags>',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+        characters: 'Text with {braces} & <tags>',
+      } as unknown as TextNode,
+      expected: `<Text
+  color="#000"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="20px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  Text with {"{"}braces{"}"} {"&"} {"<"}tags{">"}
+</Text>`,
+    },
+    {
+      title: 'renders text with leading and trailing spaces',
+      node: {
+        type: 'TEXT',
+        name: 'SpacedText',
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 20,
+        textAutoResize: 'NONE',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('  spaced  '),
+            characters: '  spaced  ',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+        characters: '  spaced  ',
+      } as unknown as TextNode,
+      expected: `<Text
+  color="#000"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="20px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  {"  "}spaced{"  "}
 </Text>`,
     },
     {
@@ -733,6 +1159,140 @@ describe('Codegen', () => {
         dashPattern: [5, 3],
       } as unknown as FrameNode,
       expected: `<Box h="50px" outline="dashed 2px #00F" outlineOffset="-1px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with page parent and width 1920',
+      node: {
+        type: 'FRAME',
+        name: 'PageFrame',
+        children: [],
+        width: 1920,
+        height: 1080,
+        parent: {
+          type: 'PAGE',
+          name: 'Page 1',
+        },
+      } as unknown as FrameNode,
+      expected: `<Box h="100%" />`,
+    },
+    {
+      title: 'renders frame with section parent',
+      node: {
+        type: 'FRAME',
+        name: 'SectionFrame',
+        children: [],
+        width: 100,
+        height: 100,
+        parent: {
+          type: 'SECTION',
+          name: 'Section 1',
+        },
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" />`,
+    },
+    {
+      title: 'renders frame with vertical center align child width shrinker',
+      node: {
+        type: 'FRAME',
+        name: 'Parent',
+        inferredAutoLayout: {
+          layoutMode: 'VERTICAL',
+          counterAxisAlignItems: 'CENTER',
+        },
+        children: [
+          {
+            type: 'FRAME',
+            name: 'Child',
+            children: [],
+            layoutSizingHorizontal: 'FILL',
+            layoutSizingVertical: 'FIXED',
+            height: 50,
+            parent: {
+              type: 'FRAME',
+              inferredAutoLayout: {
+                layoutMode: 'VERTICAL',
+                counterAxisAlignItems: 'CENTER',
+              },
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<VStack boxSize="100%">
+  <Box h="50px" w="100%" />
+</VStack>`,
+    },
+    {
+      title: 'renders frame with horizontal center align child height shrinker',
+      node: {
+        type: 'FRAME',
+        name: 'Parent',
+        inferredAutoLayout: {
+          layoutMode: 'HORIZONTAL',
+          counterAxisAlignItems: 'CENTER',
+        },
+        children: [
+          {
+            type: 'FRAME',
+            name: 'Child',
+            children: [],
+            layoutSizingHorizontal: 'FIXED',
+            layoutSizingVertical: 'FILL',
+            width: 50,
+            parent: {
+              type: 'FRAME',
+              inferredAutoLayout: {
+                layoutMode: 'HORIZONTAL',
+                counterAxisAlignItems: 'CENTER',
+              },
+            },
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Flex boxSize="100%">
+  <Box h="100%" w="50px" />
+</Flex>`,
+    },
+    {
+      title: 'renders frame with maxWidth child width shrinker',
+      node: {
+        type: 'FRAME',
+        name: 'Parent',
+        children: [
+          {
+            type: 'FRAME',
+            name: 'Child',
+            children: [],
+            layoutSizingHorizontal: 'FILL',
+            layoutSizingVertical: 'FIXED',
+            height: 50,
+            maxWidth: 200,
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%">
+  <Box h="50px" maxW="200px" w="100%" />
+</Box>`,
+    },
+    {
+      title: 'renders frame with maxHeight child height shrinker',
+      node: {
+        type: 'FRAME',
+        name: 'Parent',
+        children: [
+          {
+            type: 'FRAME',
+            name: 'Child',
+            children: [],
+            layoutSizingHorizontal: 'FIXED',
+            layoutSizingVertical: 'FILL',
+            width: 50,
+            maxHeight: 200,
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%">
+  <Box h="100%" maxH="200px" w="50px" />
+</Box>`,
     },
     {
       title: 'renders frame with individual stroke weights',
