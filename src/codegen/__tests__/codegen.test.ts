@@ -1,74 +1,42 @@
 import { describe, expect, test } from 'bun:test'
-import { renderComponent, renderNode } from '../render'
+import { Codegen } from '../Codegen'
 
-describe('renderNode', () => {
-  test.each([
-    {
-      title: 'removes component specific defaults for Flex',
-      component: 'Flex',
-      props: { display: 'flex', gap: '8px' },
-      deps: 0,
-      children: [] as string[],
-      expected: '<Flex gap="8px" />',
-    },
-    {
-      title: 'drops default props and component filtered props',
-      component: 'Center',
-      props: {
-        alignItems: 'flex-start',
-        justifyContent: 'flex-start',
-        display: 'flex',
-      },
-      deps: 0,
-      children: [] as string[],
-      expected: '<Center />',
-    },
-    {
-      title: 'indents nested children',
-      component: 'Box',
-      props: { p: '8px' },
-      deps: 1,
-      children: ['<Text />'] as string[],
-      expected: '  <Box p="8px">\n    <Text />\n  </Box>',
-    },
-  ])('$title', ({ component, props, deps, children, expected }) => {
-    const result = renderNode(component, props, deps, children)
-    expect(result).toBe(expected)
-  })
-})
-
-describe('renderComponent', () => {
+describe('Codegen', () => {
   test.each([
     {
       title: 'renders simple component without variants',
-      component: 'Button',
-      code: '<Button />',
-      variants: {} as Record<string, string>,
-      expected: `export function Button() {
-  return <Button />
- }`,
+      node: {
+        type: 'FRAME',
+        name: 'Frame',
+        children: [],
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" />`,
     },
     {
-      title: 'renders component with variants and multiline code',
-      component: 'Banner',
-      code: `<Box>
-  <Text />
-</Box>`,
-      variants: { size: '"sm" | "lg"' },
-      expected: `export interface BannerProps {
-  size: "sm" | "lg"
-}
-
-export function Banner() {
-  return (
-<Box>
-  <Text />
-</Box>
-  )
- }`,
+      title: 'renders fixed size frame',
+      node: {
+        type: 'FRAME',
+        name: 'FixedFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 120,
+        height: 80,
+      } as unknown as FrameNode,
+      expected: `<Box h="80px" w="120px" />`,
     },
-  ])('$title', ({ component, code, variants, expected }) => {
-    const result = renderComponent(component, code, variants)
-    expect(result).toBe(expected)
+    {
+      title: 'renders group as Box with full size',
+      node: {
+        type: 'GROUP',
+        name: 'Group',
+        children: [],
+      } as unknown as GroupNode,
+      expected: `<Box boxSize="100%" />`,
+    },
+  ])('$title', async ({ node, expected }) => {
+    const codegen = new Codegen(node)
+    await codegen.run()
+    expect(codegen.getCode()).toBe(expected)
   })
 })
