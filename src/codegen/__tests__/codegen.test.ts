@@ -877,6 +877,47 @@ describe('Codegen', () => {
   MultiShadow
 </Text>`,
     },
+    {
+      title: 'renders text node with stroke',
+      node: {
+        type: 'TEXT',
+        name: 'TextWithStroke',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [
+          {
+            type: 'SOLID',
+            color: { r: 0, g: 0, b: 1 },
+            opacity: 1,
+            visible: true,
+          },
+        ],
+        strokeWeight: 2,
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Stroke'),
+            characters: 'Stroke',
+            textStyleId: 'style1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text
+  WebkitTextStroke="2px #F00"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  paintOrder="stroke fill"
+>
+  Stroke
+</Text>`,
+    },
   ])('$title', async ({ node, expected }) => {
     addParent(node)
     const codegen = new Codegen(node)
