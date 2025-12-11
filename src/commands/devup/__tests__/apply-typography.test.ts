@@ -1,9 +1,21 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test'
+import {
+  afterAll,
+  afterEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from 'bun:test'
 import { applyTypography } from '../apply-typography'
 
 describe('applyTypography', () => {
   afterEach(() => {
     ;(globalThis as { figma?: unknown }).figma = undefined
+  })
+
+  afterAll(() => {
+    mock.restore()
   })
 
   test('applies typography to a newly created style', async () => {
@@ -58,7 +70,7 @@ describe('applyTypography', () => {
   test('notifies on font load failure and leaves style untouched', async () => {
     const styleObj = { name: '' } as unknown as TextStyle
     const createTextStyle = mock(() => styleObj)
-    const loadFontAsync = mock(() => Promise.reject(new Error('font')))
+    const loadFontAsync = mock(() => Promise.reject('font'))
     const notify = mock(() => {})
 
     ;(globalThis as { figma?: unknown }).figma = {
@@ -66,6 +78,7 @@ describe('applyTypography', () => {
       loadFontAsync,
       notify,
     } as unknown as typeof figma
+    spyOn(console, 'error').mockImplementation(() => {})
 
     await applyTypography(
       'mobile/title',
@@ -82,6 +95,10 @@ describe('applyTypography', () => {
     expect(notify).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create text style'),
       { error: true },
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to create text style',
+      'font',
     )
   })
 

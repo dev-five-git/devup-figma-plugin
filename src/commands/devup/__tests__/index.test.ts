@@ -1,4 +1,5 @@
 import {
+  afterAll,
   afterEach,
   beforeEach,
   describe,
@@ -21,6 +22,10 @@ import type { DevupTypography } from '../types'
 import * as downloadXlsxModule from '../utils/download-devup-xlsx'
 import * as getColorCollectionModule from '../utils/get-devup-color-collection'
 import * as uploadXlsxModule from '../utils/upload-devup-xlsx'
+
+afterAll(() => {
+  mock.restore()
+})
 
 describe('devup commands', () => {
   const downloadFileMock = mock(() => Promise.resolve(undefined))
@@ -382,7 +387,7 @@ describe('devup commands', () => {
     textSegmentToTypographySpy = spyOn(
       textSegmentToTypographyModule,
       'textSegmentToTypography',
-    ).mockReturnValue(null)
+    ).mockReturnValue(null as unknown as DevupTypography)
 
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
@@ -609,7 +614,8 @@ describe('devup commands', () => {
           name: '',
         }) as unknown as TextStyle,
     )
-    const loadFontAsync = mock(() => Promise.reject(new Error('font')))
+    const loadFontAsync = mock(() => Promise.reject('font'))
+    spyOn(console, 'error').mockImplementation(() => {})
 
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
@@ -638,6 +644,10 @@ describe('devup commands', () => {
     expect(notifyMock).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create text style'),
       expect.any(Object),
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to create text style',
+      'font',
     )
   })
 
