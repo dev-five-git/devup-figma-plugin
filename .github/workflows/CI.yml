@@ -30,7 +30,7 @@ jobs:
       - name: Lint
         run: bun run lint
       - name: Test
-        run: bun test
+        run: bun test --coverage-reporter lcov --coverage-reporter text
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v5
         with:
