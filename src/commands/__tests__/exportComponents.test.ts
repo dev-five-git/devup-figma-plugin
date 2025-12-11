@@ -24,6 +24,20 @@ mock.module('jszip', () => ({
   },
 }))
 
+const runMock = mock(() => Promise.resolve())
+const getComponentsCodesMock = mock(() => ({}))
+
+mock.module('../codegen/Codegen', () => ({
+  Codegen: class {
+    node: SceneNode
+    constructor(node: SceneNode) {
+      this.node = node
+    }
+    run = runMock
+    getComponentsCodes = getComponentsCodesMock
+  },
+}))
+
 const downloadFileMock = mock(() => Promise.resolve(undefined))
 
 beforeEach(() => {
@@ -111,6 +125,8 @@ describe('exportComponents', () => {
     showUIMock.mockClear()
     postMessageMock.mockClear()
     downloadFileMock.mockClear()
+    runMock.mockClear()
+    getComponentsCodesMock.mockClear()
   })
 
   test('should notify and return if no components found', async () => {
@@ -121,6 +137,7 @@ describe('exportComponents', () => {
       (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
         .figma?.currentPage as { selection: SceneNode[] }
     ).selection = [node]
+    getComponentsCodesMock.mockReturnValueOnce({})
     await exportComponents()
     expect(notifyMock).toHaveBeenCalledWith('No components found')
   })
@@ -139,6 +156,7 @@ describe('exportComponents', () => {
       (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
         .figma?.currentPage as { selection: SceneNode[] }
     ).selection = [node]
+    getComponentsCodesMock.mockReturnValueOnce({})
     await exportComponents()
     expect(downloadFileMock).not.toHaveBeenCalled()
   })
@@ -174,6 +192,9 @@ describe('exportComponents', () => {
       (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
         .figma?.currentPage as { selection: SceneNode[] }
     ).selection = [node]
+    getComponentsCodesMock.mockReturnValueOnce({
+      Component: [['Component.tsx', '<Component />']],
+    })
     await exportComponents()
     expect(downloadFileMock).toHaveBeenCalledWith(
       'TestPage.zip',
@@ -197,6 +218,9 @@ describe('exportComponents', () => {
       (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
         .figma?.currentPage as { selection: SceneNode[] }
     ).selection = [node]
+    getComponentsCodesMock.mockImplementation(() => {
+      throw new Error('boom')
+    })
     const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {})
     await exportComponents()
     expect(notifyMock).toHaveBeenCalledWith('Error exporting components', {
