@@ -195,7 +195,7 @@ async function convertPattern(fill: PatternPaint): Promise<string> {
   const position = [horizontalPosition, verticalPosition]
     .filter(Boolean)
     .join(' ')
-  return `url(/icons/${imageName}.${imageExtension}) ${position} repeat`
+  return `url(/icons/${imageName}.${imageExtension})${position ? ` ${position}` : ''} repeat`
 }
 
 function convertPosition(

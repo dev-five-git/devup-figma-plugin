@@ -42,7 +42,34 @@ import { Codegen } from '../Codegen'
       return { r: 0, g: 0, b: 0, a: 1 }
     },
   },
-  getLocalTextStylesAsync: () => [],
+  getLocalTextStylesAsync: () => [
+    {
+      id: 'text-style-1',
+      name: 'Typography/Heading',
+      type: 'TEXT',
+    } as unknown as TextStyle,
+  ],
+  getStyleByIdAsync: async (id: string) => {
+    if (id === 'text-style-1') {
+      return {
+        id: 'text-style-1',
+        name: 'Typography/Heading',
+        type: 'TEXT',
+      } as unknown as TextStyle
+    }
+    return null
+  },
+  getNodeByIdAsync: async (id: string) => {
+    if (id === 'pattern-node-id') {
+      return {
+        type: 'VECTOR',
+        name: 'PatternIcon',
+        children: [],
+        isAsset: true,
+      } as unknown as SceneNode
+    }
+    return null
+  },
   variables: {
     getVariableByIdAsync: async (id: string) => {
       if (id === 'var1') {
@@ -2611,6 +2638,338 @@ describe('Codegen', () => {
   Truncate
 </Text>`,
     },
+    {
+      title: 'renders text node with textStyleId and typography',
+      node: {
+        type: 'TEXT',
+        name: 'TypographyText',
+        children: [],
+        textAutoResize: 'HEIGHT',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [
+          {
+            ...createTextSegment('Heading'),
+            characters: 'Heading',
+            textStyleId: 'text-style-1',
+            fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+          },
+        ],
+        textTruncation: 'DISABLED',
+      } as unknown as TextNode,
+      expected: `<Text boxSize="100%" color="#F00" typography="heading">
+  Heading
+</Text>`,
+    },
+    {
+      title: 'renders frame with linear gradient fill',
+      node: {
+        type: 'FRAME',
+        name: 'LinearGradientFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'GRADIENT_LINEAR',
+            visible: true,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="linear-gradient(90deg, #F00 0%, #00F 100%)" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with radial gradient fill',
+      node: {
+        type: 'FRAME',
+        name: 'RadialGradientFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 100,
+        fills: [
+          {
+            type: 'GRADIENT_RADIAL',
+            visible: true,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="radial-gradient(50% 50% at 50% 50%, #F00 0%, #00F 100%)" boxSize="100px" />`,
+    },
+    {
+      title: 'renders frame with angular gradient fill',
+      node: {
+        type: 'FRAME',
+        name: 'AngularGradientFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 100,
+        fills: [
+          {
+            type: 'GRADIENT_ANGULAR',
+            visible: true,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 0.5, color: { r: 0, g: 1, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="conic-gradient(from 90deg at 50% 50%, #F00 0%, #0F0 50%, #00F 100%)" boxSize="100px" />`,
+    },
+    {
+      title: 'renders frame with diamond gradient fill',
+      node: {
+        type: 'FRAME',
+        name: 'DiamondGradientFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 100,
+        fills: [
+          {
+            type: 'GRADIENT_DIAMOND',
+            visible: true,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="linear-gradient(to bottom right, #F00 0%, #00F 50%) bottom right / 50.1% 50.1% no-repeat, linear-gradient(to bottom left, #F00 0%, #00F 50%) bottom left / 50.1% 50.1% no-repeat, linear-gradient(to top left, #F00 0%, #00F 50%) top left / 50.1% 50.1% no-repeat, linear-gradient(to top right, #F00 0%, #00F 50%) top right / 50.1% 50.1% no-repeat" boxSize="100px" />`,
+    },
+    {
+      title: 'renders frame with image fill TILE scaleMode',
+      node: {
+        type: 'FRAME',
+        name: 'TileImageFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'IMAGE',
+            visible: true,
+            opacity: 1,
+            scaleMode: 'TILE',
+            imageHash: 'hash123',
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="url(/icons/image.png) repeat" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with pattern fill',
+      node: {
+        type: 'FRAME',
+        name: 'PatternFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'PATTERN',
+            visible: true,
+            opacity: 1,
+            sourceNodeId: 'pattern-node-id',
+            spacing: { x: 0.1, y: 0.2 },
+            horizontalAlignment: 'CENTER',
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="url(/icons/PatternIcon.svg) center 10% top 20% repeat" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with pattern fill START alignment',
+      node: {
+        type: 'FRAME',
+        name: 'PatternStartFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'PATTERN',
+            visible: true,
+            opacity: 1,
+            sourceNodeId: 'pattern-node-id',
+            spacing: { x: 0, y: 0 },
+            horizontalAlignment: 'START',
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="url(/icons/PatternIcon.svg) repeat" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with pattern fill vertical alignment',
+      node: {
+        type: 'FRAME',
+        name: 'PatternVerticalFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'PATTERN',
+            visible: true,
+            opacity: 1,
+            sourceNodeId: 'pattern-node-id',
+            spacing: { x: 0.1, y: 0.2 },
+            horizontalAlignment: 'CENTER',
+            verticalAlignment: 'END',
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="url(/icons/PatternIcon.svg) center 10% bottom 20% repeat" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with multiple fills including non-last solid',
+      node: {
+        type: 'FRAME',
+        name: 'MultipleFillsFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0, g: 1, b: 0 },
+            opacity: 1,
+          },
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box bg="linear-gradient(#F00, #F00), #0F0" h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with invisible gradient fill',
+      node: {
+        type: 'FRAME',
+        name: 'InvisibleGradientFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'GRADIENT_LINEAR',
+            visible: false,
+            opacity: 1,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with zero opacity gradient fill',
+      node: {
+        type: 'FRAME',
+        name: 'ZeroOpacityGradientFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'GRADIENT_RADIAL',
+            visible: true,
+            opacity: 0,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" w="100px" />`,
+    },
+    {
+      title: 'renders frame with solid fill opacity 0',
+      node: {
+        type: 'FRAME',
+        name: 'SolidOpacityZeroFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 0,
+          },
+        ],
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" w="100px" />`,
+    },
   ])('$title', async ({ node, expected }) => {
     addParent(node)
     const codegen = new Codegen(node)
@@ -2980,6 +3339,21 @@ export function Button() {
  }`,
         ],
       ],
+    },
+    {
+      title: 'renders component with parent component set name',
+      node: {
+        type: 'COMPONENT',
+        name: 'Hover',
+        parent: {
+          type: 'COMPONENT_SET',
+          name: 'Button',
+          children: [],
+        },
+        children: [],
+      } as unknown as ComponentNode,
+      expected: `<Box boxSize="100%" />`,
+      expectedComponents: [],
     },
   ])('$title', async ({ node, expected, expectedComponents }) => {
     addParent(node)
