@@ -13,11 +13,10 @@ export function getGridChildProps(
     const columnCount = parent.gridColumnCount
     const currentIdx =
       node.gridColumnAnchorIndex + node.gridRowAnchorIndex * columnCount
-    if (parent.children[currentIdx] !== node) {
+    if (parent.children[currentIdx] !== node)
       return {
         gridColumn: `${node.gridColumnAnchorIndex + 1} / span 1`,
         gridRow: `${node.gridRowAnchorIndex + 1} / span 1`,
       }
-    }
   }
 }

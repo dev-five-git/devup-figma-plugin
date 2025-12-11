@@ -1,7 +1,8 @@
+import { describe, expect, test } from 'bun:test'
 import { toCamel } from '../to-camel'
 
 describe('toCamel', () => {
-  it('should convert camel', () => {
+  test('should convert camel', () => {
     expect(toCamel('to-camel')).toBe('toCamel')
     expect(toCamel('to/camel')).toBe('toCamel')
     expect(toCamel('toCamel')).toBe('toCamel')

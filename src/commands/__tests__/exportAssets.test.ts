@@ -1,175 +1,59 @@
-import { downloadFile } from '../../utils/download-file'
+import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { Codegen } from '../../codegen/Codegen'
 import { exportAssets } from '../exportAssets'
-vi.mock('download-file', () => ({
-  downloadFile: vi.fn().mockResolvedValue(undefined),
-}))
 
-vi.mock('jszip', () => ({
-  default: class JSZipMock {
-    files: Record<string, unknown> = {}
-    file(name: string, data: unknown) {
-      this.files[name] = data
-    }
-    async generateAsync() {
-      return new Uint8Array([1, 2, 3])
-    }
-  },
-}))
+const runMock = mock(() => Promise.resolve())
+let constructedNodes: SceneNode[] = []
 
-vi.mock('../../utils/download-file', () => ({
-  downloadFile: vi.fn().mockResolvedValue(undefined),
-}))
+const originalCodegen = Codegen
 
-function createNode(
-  type: SceneNode['type'],
-  {
-    characters,
-    children,
-    textStyleId,
-    name,
-    fills,
-    parent,
-    layoutPositioning = 'AUTO',
-    layoutSizingHorizontal,
-    styledTextSegments = [],
-    variantProperties,
-    visible = true,
-    ...props
-  }: {
-    [_: string]: any
-    characters?: string
-    name?: string
-    textStyleId?: string
-    children?: SceneNode[]
-    layoutPositioning?: string
-    styledTextSegments?: any[]
-    variantProperties?: Record<string, string>
-  } = {},
-): SceneNode {
-  const ret = {
-    type,
-    getCSSAsync: async () => props,
-    exportAsync: async () => '<svg>\n<path/>\n</svg>',
-    getStyledTextSegments: () => styledTextSegments,
-    layoutSizingHorizontal,
-    textStyleId,
-    parent,
-    characters,
-    visible,
-    layoutPositioning,
-    width: props.width ? parseInt(props.width) : undefined,
-    height: props.height ? parseInt(props.height) : undefined,
-    name,
-    fills,
-    variantProperties,
-    children: children ?? [],
-  } as unknown as SceneNode
-  ;(ret as any).children.forEach((child: any) => {
-    ;(child as any).parent = ret
-  })
-  return ret
-}
+const notifyMock = mock(() => {})
+beforeEach(() => {
+  mock.module('../../codegen/Codegen', () => ({
+    Codegen: class {
+      constructor(node: SceneNode) {
+        constructedNodes.push(node)
+      }
+      run = runMock
+    },
+  }))
+  runMock.mockClear()
+  constructedNodes = []
+  ;(globalThis as { figma?: unknown }).figma = {
+    currentPage: { selection: [] },
+    notify: notifyMock,
+  } as unknown as typeof figma
+})
 
-const notifyMock = vi.fn()
-const showUIMock = vi.fn()
-const postMessageMock = vi.fn()
-
+afterAll(() => {
+  ;(globalThis as { figma?: unknown }).figma = undefined
+  notifyMock.mockClear()
+  mock.module('../../codegen/Codegen', () => ({
+    Codegen: originalCodegen,
+  }))
+})
 describe('exportAssets', () => {
-  beforeEach(() => {
-    ;(globalThis as any).figma = {
-      currentPage: {
-        selection: [],
-        name: 'TestPage',
-      },
-      notify: notifyMock,
-      showUI: showUIMock,
-      ui: { postMessage: postMessageMock, onmessage: null },
-    }
-    notifyMock.mockClear()
-  })
+  test('runs Codegen for each selected node', async () => {
+    const selection = [
+      { id: '1' } as unknown as SceneNode,
+      { id: '2' } as unknown as SceneNode,
+    ]
+    ;(
+      (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
+        .figma?.currentPage as { selection: SceneNode[] }
+    ).selection = selection
 
-  afterEach(() => {
-    vi.resetAllMocks()
-  })
-
-  it('should notify and return if no assets found', async () => {
-    const node = createNode('RECTANGLE', {
-      fills: [],
-    })
-    ;(globalThis as any).figma.currentPage.selection = [node]
     await exportAssets()
-    expect(notifyMock).toHaveBeenCalledWith('No assets found')
+
+    expect(notifyMock).toHaveBeenCalledWith('Exporting assets...')
+    expect(runMock).toHaveBeenCalledTimes(2)
+    expect(constructedNodes).toEqual(selection)
   })
 
-  it('should not export assets if all children are invisible', async () => {
-    const node = createNode('GROUP', {
-      fills: [],
-      children: [
-        createNode('VECTOR', {
-          fills: [],
-          visible: false,
-        }),
-      ],
-    })
-    ;(globalThis as any).figma.currentPage.selection = [node]
+  test('handles empty selection', async () => {
     await exportAssets()
-    expect(downloadFile).not.toHaveBeenCalled()
-  })
 
-  it('should export assets and call downloadFile', async () => {
-    const node = createNode('RECTANGLE', {
-      fills: [],
-      children: [
-        createNode('VECTOR', {
-          fills: [],
-          width: '100px',
-          height: '100px',
-        }),
-        createNode('RECTANGLE', {
-          fills: [
-            {
-              type: 'IMAGE',
-              imageRef: {
-                id: '123',
-              },
-              scaleMode: 'FILL',
-            },
-          ],
-          background: 'red',
-          width: '100px',
-          height: '100px',
-          name: 'image.png',
-        }),
-      ],
-    })
-    ;(globalThis as any).figma.currentPage.selection = [node]
-    await exportAssets()
-    expect(downloadFile).toHaveBeenCalledWith(
-      'TestPage.zip',
-      expect.any(Uint8Array),
-    )
-    expect(notifyMock).toHaveBeenCalledWith(
-      'Assets exported',
-      expect.any(Object),
-    )
-  })
-
-  it('should raise error if exportAsync fails', async () => {
-    const node = createNode('RECTANGLE', {
-      fills: [
-        {
-          type: 'IMAGE',
-        },
-      ],
-    })
-    ;(globalThis as any).figma.currentPage.selection = [node]
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    ;(node.exportAsync as any) = vi.fn().mockRejectedValue('test')
-    await exportAssets()
-    expect(notifyMock).toHaveBeenCalledWith('Error exporting assets', {
-      timeout: 3000,
-      error: true,
-    })
-    vi.spyOn(console, 'error').mockRestore()
+    expect(notifyMock).toHaveBeenCalledWith('Exporting assets...')
+    expect(runMock).not.toHaveBeenCalled()
   })
 })

@@ -13,8 +13,9 @@ export function styleNameToTypography(name: string): {
     return { level: 0, name: toCamel(name.slice(7)) }
   if (lower.includes('/')) {
     const [type, _name] = name.split('/')
-    const typeNumber = parseInt(type)
-    if (!isNaN(typeNumber)) return { level: typeNumber, name: toCamel(_name) }
+    const typeNumber = parseInt(type, 10)
+    if (!Number.isNaN(typeNumber))
+      return { level: typeNumber, name: toCamel(_name) }
   }
 
   return { level: 0, name: toCamel(name) }

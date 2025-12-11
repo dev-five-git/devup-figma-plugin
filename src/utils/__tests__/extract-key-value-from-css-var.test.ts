@@ -1,7 +1,8 @@
+import { describe, expect, test } from 'bun:test'
 import { extractKeyValueFromCssVar } from '../extract-key-value-from-css-var'
 
 describe('extractKeyValueFromCssVar', () => {
-  it('should extract value from css var', () => {
+  test('should extract value from css var', () => {
     expect(extractKeyValueFromCssVar('var(--primary)')).toBeUndefined()
     expect(extractKeyValueFromCssVar('var(--primary, red)')).toEqual([
       '$primary',

@@ -6,69 +6,67 @@ export async function getEffectProps(
   node: SceneNode,
 ): Promise<Record<string, string> | undefined> {
   if ('effects' in node && node.effects.length > 0) {
-    return node.effects.reduce((acc, effect) => {
-      return {
-        ...acc,
-        ..._getEffectPropsFromEffect(effect),
-      }
-    }, {})
+    return node.effects.reduce(
+      (acc, effect) => {
+        const props = _getEffectPropsFromEffect(effect)
+        for (const [key, value] of Object.entries(props)) {
+          if (value) {
+            if (acc[key]) {
+              acc[key] = `${acc[key]}, ${value}`
+            } else {
+              acc[key] = value
+            }
+          }
+        }
+        return acc
+      },
+      {} as Record<string, string>,
+    )
   }
 }
 
 function _getEffectPropsFromEffect(effect: Effect): Record<string, string> {
   switch (effect.type) {
     case 'DROP_SHADOW': {
-      const shadow = effect as DropShadowEffect
-      const offsetX = shadow.offset.x
-      const offsetY = shadow.offset.y
-      const blur = shadow.radius
-      const spread = shadow.spread || 0
-      const color = shadow.color
+      const { offset, radius, spread, color } = effect
+      const { x, y } = offset
 
       return {
-        boxShadow: `${addPx(offsetX, '0')} ${addPx(offsetY, '0')} ${addPx(blur, '0')} ${addPx(spread, '0')} ${optimizeHex(rgbaToHex(color))}`,
+        boxShadow: `${addPx(x, '0')} ${addPx(y, '0')} ${addPx(radius, '0')} ${addPx(spread, '0')} ${optimizeHex(rgbaToHex(color))}`,
       }
     }
     case 'INNER_SHADOW': {
-      const shadow = effect as InnerShadowEffect
-      const offsetX = shadow.offset.x
-      const offsetY = shadow.offset.y
-      const blur = shadow.radius
-      const spread = shadow.spread || 0
-      const color = shadow.color
+      const { offset, radius, spread, color } = effect
+      const { x, y } = offset
 
       return {
-        boxShadow: `inset ${addPx(offsetX, '0')} ${addPx(offsetY, '0')} ${addPx(blur, '0')} ${addPx(spread, '0')} ${optimizeHex(rgbaToHex(color))}`,
+        boxShadow: `inset ${addPx(x, '0')} ${addPx(y, '0')} ${addPx(radius, '0')} ${addPx(spread, '0')} ${optimizeHex(rgbaToHex(color))}`,
       }
     }
-    case 'LAYER_BLUR': {
+    case 'LAYER_BLUR':
       return {
         filter: `blur(${effect.radius}px)`,
       }
-    }
-    case 'BACKGROUND_BLUR': {
+
+    case 'BACKGROUND_BLUR':
       return {
         backdropFilter: `blur(${effect.radius}px)`,
         WebkitBackdropFilter: `blur(${effect.radius}px)`,
       }
-    }
-    case 'NOISE': {
+
+    case 'NOISE':
       return {
         filter: `contrast(100%) brightness(100%)`,
       }
-    }
-    case 'TEXTURE': {
+
+    case 'TEXTURE':
       return {
         filter: `contrast(100%) brightness(100%)`,
       }
-    }
-    case 'GLASS': {
+    case 'GLASS':
       return {
         backdropFilter: `blur(${effect.radius}px)`,
         WebkitBackdropFilter: `blur(${effect.radius}px)`,
       }
-    }
-    default:
-      return {}
   }
 }

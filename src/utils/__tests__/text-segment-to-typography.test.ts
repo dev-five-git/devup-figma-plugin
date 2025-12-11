@@ -1,7 +1,8 @@
+import { describe, expect, test } from 'bun:test'
 import { textSegmentToTypography } from '../text-segment-to-typography'
 
 describe('textSegmentToTypography', () => {
-  it('should convert variableAlias to value', async () => {
+  test('should convert variableAlias to value', async () => {
     expect(
       textSegmentToTypography({
         fontName: {

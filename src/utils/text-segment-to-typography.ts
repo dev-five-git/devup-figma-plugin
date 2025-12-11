@@ -1,4 +1,4 @@
-import { DevupTypography } from '../commands/devup/types'
+import type { DevupTypography } from '../commands/devup/types'
 
 export function textSegmentToTypography(
   segment: Pick<
@@ -16,7 +16,7 @@ export function textSegmentToTypography(
     fontFamily: segment.fontName.family,
     fontStyle: segment.fontName.style.includes('Italic') ? 'italic' : undefined,
     fontWeight: segment.fontWeight,
-    fontSize: segment.fontSize + 'px',
+    fontSize: `${segment.fontSize}px`,
     textDecoration: {
       NONE: undefined,
       UNDERLINE: 'underline',
@@ -31,10 +31,10 @@ export function textSegmentToTypography(
         ? 'normal'
         : segment.lineHeight.unit === 'PERCENT'
           ? Math.round(segment.lineHeight.value / 10) / 10
-          : segment.lineHeight.value + 'px',
+          : `${segment.lineHeight.value}px`,
     letterSpacing:
       segment.letterSpacing.unit === 'PERCENT'
         ? `${Math.round(segment.letterSpacing.value) / 100}em`
-        : segment.letterSpacing.value + 'px',
+        : `${segment.letterSpacing.value}px`,
   }
 }

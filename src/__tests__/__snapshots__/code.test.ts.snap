@@ -1,0 +1,36 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`registerCodegen should register codegen 1`] = `
+[
+  {
+    "code": 
+"export function Test() {
+  return <Box boxSize="100%" />
+ }"
+,
+    "language": "TYPESCRIPT",
+    "title": "Test - Components",
+  },
+  {
+    "code": 
+"echo 'export function Test() {
+  return <Box boxSize="100%" />
+ }' > Test.tsx"
+,
+    "language": "BASH",
+    "title": "Test - Components CLI",
+  },
+]
+`;
+
+exports[`registerCodegen should register codegen 2`] = `
+[
+  {
+    "code": "<Box boxSize="100%" />",
+    "language": "TYPESCRIPT",
+    "title": "Main",
+  },
+]
+`;
+
+exports[`registerCodegen should register codegen 3`] = `[]`;

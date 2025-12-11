@@ -1,18 +1,19 @@
+import { describe, expect, mock, test } from 'bun:test'
 import { downloadFile } from '../download-file'
 
 describe('downloadFile', () => {
-  it('should download file', () => {
-    const showUI = vi.fn()
+  test('should download file', () => {
+    const showUI = mock(() => {})
 
-    const postMessage = vi.fn()
+    const postMessage = mock(() => {})
     const obj = {
       postMessage,
     }
 
-    ;(globalThis as any).figma = {
+    ;(globalThis as { figma?: unknown }).figma = {
       showUI,
       ui: obj,
-    } as any
+    } as unknown as typeof figma
     downloadFile('filename.txt', 'text')
     expect(showUI).toHaveBeenCalledWith(expect.any(String), {
       visible: false,

@@ -1,7 +1,8 @@
+import { describe, expect, test } from 'bun:test'
 import { isVariableAlias } from '../is-variable-alias'
 
 describe('isVariableAlias', () => {
-  it('should check variableAlias', () => {
+  test('should check variableAlias', () => {
     expect(
       isVariableAlias({
         r: 0,

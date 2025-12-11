@@ -1,123 +1,167 @@
-import { exportDevup, importDevup } from '../commands/devup'
-import { exportAssets } from '../commands/exportAssets'
-import { exportComponents } from '../commands/exportComponents'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+  spyOn,
+} from 'bun:test'
+import { registerCodegen, run, runCommand } from '../code'
+import * as devupModule from '../commands/devup'
+import * as exportAssetsModule from '../commands/exportAssets'
+import * as exportComponentsModule from '../commands/exportComponents'
 
-vi.mock('../commands/devup')
-vi.mock('../commands/exportAssets')
-vi.mock('../commands/exportComponents')
+beforeAll(() => {
+  ;(globalThis as { figma?: unknown }).figma = {
+    editorType: 'dev',
+    mode: 'codegen',
+    command: 'noop',
+    codegen: { on: mock(() => {}) },
+    closePlugin: mock(() => {}),
+  } as unknown as typeof figma
+})
 
 beforeEach(() => {
-  vi.resetModules()
+  spyOn(devupModule, 'exportDevup').mockImplementation(
+    mock(() => Promise.resolve()),
+  )
+  spyOn(devupModule, 'importDevup').mockImplementation(
+    mock(() => Promise.resolve()),
+  )
+  spyOn(exportAssetsModule, 'exportAssets').mockImplementation(
+    mock(() => Promise.resolve()),
+  )
+  spyOn(exportComponentsModule, 'exportComponents').mockImplementation(
+    mock(() => Promise.resolve()),
+  )
 })
 
-describe('figma', () => {
-  it('should export devup', async () => {
-    const closePlugin = vi.fn()
-    ;(globalThis as any).figma = {
+afterEach(() => {
+  ;(globalThis as { figma?: unknown }).figma = undefined
+  mock.restore()
+})
+
+describe('runCommand', () => {
+  it.each([
+    ['export-devup', ['json'], 'exportDevup'],
+    ['export-devup-without-treeshaking', ['json', false], 'exportDevup'],
+    ['export-devup-excel', ['excel'], 'exportDevup'],
+    ['export-devup-excel-without-treeshaking', ['excel', false], 'exportDevup'],
+    ['import-devup', ['json'], 'importDevup'],
+    ['import-devup-excel', ['excel'], 'importDevup'],
+    ['export-assets', [], 'exportAssets'],
+    ['export-components', [], 'exportComponents'],
+  ] as const)('dispatches %s', async (command, args, fn) => {
+    const closePlugin = mock(() => {})
+    const figmaMock = {
       editorType: 'figma',
-      command: 'export-devup',
+      command,
       closePlugin,
+    } as unknown as typeof figma
+
+    await runCommand(figmaMock as typeof figma)
+
+    switch (fn) {
+      case 'exportDevup':
+        expect(devupModule.exportDevup).toHaveBeenCalledWith(...args)
+        break
+      case 'importDevup':
+        expect(devupModule.importDevup).toHaveBeenCalledWith(...args)
+        break
+      case 'exportAssets':
+        expect(exportAssetsModule.exportAssets).toHaveBeenCalled()
+        break
+      case 'exportComponents':
+        expect(exportComponentsModule.exportComponents).toHaveBeenCalled()
+        break
     }
-    vi.mocked(exportDevup).mockResolvedValueOnce(0)
-    await import('../code')
-    expect(exportDevup).toBeCalledTimes(1)
-    expect(closePlugin).toBeCalledTimes(1)
+    expect(closePlugin).toHaveBeenCalled()
   })
 })
-it('should import devup', async () => {
-  const closePlugin = vi.fn()
-  ;(globalThis as any).figma = {
-    editorType: 'figma',
-    command: 'import-devup',
-    closePlugin,
-  }
-  vi.mocked(importDevup).mockResolvedValueOnce()
-  await import('../code')
-  expect(importDevup).toBeCalledTimes(1)
-  expect(closePlugin).toBeCalledTimes(1)
-})
 
-it('should export assets', async () => {
-  const closePlugin = vi.fn()
-  ;(globalThis as any).figma = {
-    editorType: 'figma',
-    command: 'export-assets',
-    closePlugin,
-  }
-  vi.mocked(exportAssets).mockResolvedValueOnce()
-  await import('../code')
-  expect(exportAssets).toBeCalledTimes(1)
-  expect(closePlugin).toBeCalledTimes(1)
-})
-it('should export components', async () => {
-  const closePlugin = vi.fn()
-  ;(globalThis as any).figma = {
-    editorType: 'figma',
-    command: 'export-components',
-    closePlugin,
-  }
-  vi.mocked(exportComponents).mockResolvedValueOnce()
-  await import('../code')
-  expect(exportComponents).toBeCalledTimes(1)
-  expect(closePlugin).toBeCalledTimes(1)
-})
-describe('codegen', () => {
-  it('should generate code', async () => {
-    const closePlugin = vi.fn()
-    const on = vi.fn()
-    ;(globalThis as any).figma = {
-      editorType: 'dev',
-      mode: 'codegen',
-      closePlugin,
-      codegen: {
-        on,
+describe('registerCodegen', () => {
+  it.each([
+    [
+      {
+        editorType: 'dev',
+        mode: 'codegen',
+        command: 'noop',
       },
-    }
-    await import('../code')
-    expect(closePlugin).toBeCalledTimes(0)
-    expect(on).toHaveBeenCalledExactlyOnceWith('generate', expect.any(Function))
-    const callback = vi.mocked(on).mock.calls[0][1]
+      {
+        node: {
+          type: 'COMPONENT',
+          name: 'Test',
+        },
+        language: 'devup-ui',
+      },
+    ],
+    [
+      {
+        editorType: 'dev',
+        mode: 'codegen',
+        command: 'noop',
+      },
+      {
+        node: {
+          type: 'FRAME',
+          name: 'Main',
+        },
+        language: 'devup-ui',
+      },
+    ],
+    [
+      {
+        editorType: 'dev',
+        mode: 'codegen',
+        command: 'noop',
+      },
+      {
+        node: {
+          type: 'FRAME',
+          name: 'Other',
+        },
+        language: 'other',
+      },
+    ],
+  ] as const)('should register codegen', async (figmaInfo, event) => {
+    const figmaMock = {
+      ...figmaInfo,
+      codegen: { on: mock(() => {}) },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+    registerCodegen(figmaMock)
+    expect(figmaMock.codegen.on).toHaveBeenCalledWith(
+      'generate',
+      expect.any(Function),
+    )
 
     expect(
-      await callback({
-        node: {
-          type: 'code',
-          code: 'code',
-          getCSSAsync: async () => {
-            return {
-              background: 'red',
-            }
-          },
-          visible: true,
-        },
-      }),
-    ).toEqual([
-      {
-        code: '<Box bg="red" />',
-        language: 'JAVASCRIPT',
-        title: undefined,
-      },
-    ])
-
-    expect(
-      await callback({
-        node: {
-          type: 'code',
-          code: 'code',
-          getCSSAsync: async () => {
-            return {
-              background: 'red',
-            }
-          },
-          visible: false,
-        },
-      }),
-    ).toEqual([
-      {
-        code: '',
-        language: 'JAVASCRIPT',
-        title: undefined,
-      },
-    ])
+      await (figmaMock.codegen.on as ReturnType<typeof mock>).mock.calls[0][1](
+        event,
+      ),
+    ).toMatchSnapshot()
   })
+})
+
+it('should not register codegen if figma is not defined', () => {
+  run(undefined as unknown as typeof figma)
+  expect(devupModule.exportDevup).not.toHaveBeenCalled()
+  expect(devupModule.importDevup).not.toHaveBeenCalled()
+  expect(exportAssetsModule.exportAssets).not.toHaveBeenCalled()
+  expect(exportComponentsModule.exportComponents).not.toHaveBeenCalled()
+})
+
+it('should run command', () => {
+  const figmaMock = {
+    editorType: 'figma',
+    command: 'export-devup',
+    closePlugin: mock(() => {}),
+  } as unknown as typeof figma
+  run(figmaMock as typeof figma)
+  expect(devupModule.exportDevup).toHaveBeenCalledWith('json')
+  expect(devupModule.importDevup).not.toHaveBeenCalled()
+  expect(exportAssetsModule.exportAssets).not.toHaveBeenCalled()
+  expect(exportComponentsModule.exportComponents).not.toHaveBeenCalled()
 })

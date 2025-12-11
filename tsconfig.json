@@ -1,23 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "types": [
-      "vitest/importMeta",
-      "vitest/globals",
-      "@figma/plugin-typings"
-    ],
-    "lib": [
-      "ESNext"
-    ],
+    "target": "es2015",
+    "types": ["@figma/plugin-typings", "bun"],
+    "lib": ["ESNext"],
     "strict": true,
     "module": "ESNext",
     "outDir": "./dist",
     "isolatedModules": true,
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
-  "include": [
-    "./src",
-    "./rspack.config.js"
-  ]
+  "include": ["./src"]
 }

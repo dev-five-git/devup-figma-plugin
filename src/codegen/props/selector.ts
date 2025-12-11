@@ -24,7 +24,7 @@ export async function getSelectorProps(
         async (component) =>
           [
             hasEffect
-              ? component.variantProperties!.effect
+              ? component.variantProperties?.effect
               : triggerTypeToEffect(component.reactions[0]?.trigger?.type),
             await getProps(component),
           ] as const,
@@ -60,7 +60,9 @@ export async function getSelectorProps(
       const def = difference(props, defaultProps)
       if (Object.keys(def).length === 0) continue
       result.props[`_${effect}`] = def
-      Object.keys(def).forEach((key) => diffKeys.add(key))
+      for (const key of Object.keys(def)) {
+        diffKeys.add(key)
+      }
     }
     if (transition?.type === 'SMART_ANIMATE' && diffKeys.size > 0) {
       const keys = Array.from(diffKeys)

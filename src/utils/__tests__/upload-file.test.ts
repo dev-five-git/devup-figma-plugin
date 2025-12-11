@@ -1,42 +1,44 @@
+import { describe, expect, mock, test } from 'bun:test'
 import { uploadFile } from '../upload-file'
 
 describe('uploadFile', () => {
-  it('should upload file', () => {
-    const showUI = vi.fn()
+  test('should upload file', () => {
+    const showUI = mock(() => {})
     const obj = {}
 
-    ;(globalThis as any).figma = {
+    ;(globalThis as { figma?: unknown }).figma = {
       showUI,
       ui: obj,
-    } as any
+    } as unknown as typeof figma
     uploadFile('.txt')
     expect(showUI).toHaveBeenCalledWith(expect.stringContaining('.txt'))
   })
 
-  it('should resolve with decoded value and close UI on message', async () => {
-    const showUI = vi.fn()
-    const close = vi.fn()
-    const onmessageSetter = vi.fn()
-    let onmessageHandler: any = null
-    const obj: any = {}
+  test('should resolve with decoded value and close UI on message', async () => {
+    const showUI = mock(() => {})
+    const close = mock(() => {})
+    const onmessageSetter = mock(() => {})
+    let onmessageHandler: ((data: string) => void) | null = null
+    const obj: { onmessage?: (data: string) => void; close?: () => void } = {}
     Object.defineProperty(obj, 'onmessage', {
       set: (fn) => {
         onmessageHandler = fn
-        onmessageSetter(fn)
+        onmessageSetter()
       },
       get: () => onmessageHandler,
       configurable: true,
     })
-    const base64Decode = vi.fn(() => [65, 66, 67]) // 'ABC'
-    ;(globalThis as any).figma = {
+    const base64Decode = mock(() => [65, 66, 67]) // 'ABC'
+    ;(globalThis as { figma?: unknown }).figma = {
       showUI,
       ui: obj,
       base64Decode,
-    }
+    } as unknown as typeof figma
     obj.close = close
     const promise = uploadFile('.txt')
-    // onmessage이 호출되었을 때
-    onmessageHandler('dummy')
+    // invoke onmessage
+    // biome-ignore lint/style/noNonNullAssertion: onmessageHandler is set
+    onmessageHandler!('dummy')
     const result = await promise
     expect(close).toHaveBeenCalled()
     expect(base64Decode).toHaveBeenCalledWith('dummy')

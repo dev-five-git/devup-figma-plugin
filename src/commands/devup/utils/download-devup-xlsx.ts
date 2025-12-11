@@ -39,17 +39,14 @@ function downloadFileUi() {
   }
   workbook.Sheets['Colors'] = XLSX.utils.aoa_to_sheet(colors)
 
-  console.log("devup.theme.typography", JSON.stringify(devup.theme.typography))
   const typographyKeys = Object.keys(devup.theme.typography);
   const typography = [['Name', 'Level', 'fontFamily', 'fontStyle', 'fontWeight', 'fontSize', 'lineHeight', 'letterSpacing']]
   if (typographyKeys.length > 0) {
     for (const typographyKey of typographyKeys) {
       const typographyValue = Array.isArray(devup.theme.typography[typographyKey]) ? devup.theme.typography[typographyKey] : [devup.theme.typography[typographyKey]];
-      console.log("typographyValue", typographyValue)
       for (let i = 0; i < typographyValue.length; i++) {
         const value = typographyValue[i];
         if (value) {
-          console.log("value", value)
           typography.push([typographyKey, i, value.fontFamily, value.fontStyle, value.fontWeight, value.fontSize, value.lineHeight, value.letterSpacing])
         }
       }

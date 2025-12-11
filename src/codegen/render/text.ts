@@ -32,7 +32,7 @@ export async function renderText(node: TextNode): Promise<{
         Object.entries(
           await propsToPropsWithTypography(
             {
-              ...((await textSegmentToTypography(seg)) as any),
+              ...(await textSegmentToTypography(seg)),
               color: (
                 await Promise.all(
                   seg.fills.map(
