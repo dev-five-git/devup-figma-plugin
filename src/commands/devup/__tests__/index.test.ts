@@ -8,11 +8,14 @@ import {
   test,
 } from 'bun:test'
 import * as downloadFileModule from '../../../utils/download-file'
+import * as isVariableAliasModule from '../../../utils/is-variable-alias'
 import * as optimizeHexModule from '../../../utils/optimize-hex'
 import * as rgbaToHexModule from '../../../utils/rgba-to-hex'
 import * as styleNameToTypographyModule from '../../../utils/style-name-to-typography'
+import * as textSegmentToTypographyModule from '../../../utils/text-segment-to-typography'
 import * as textStyleToTypographyModule from '../../../utils/text-style-to-typography'
 import * as uploadFileModule from '../../../utils/upload-file'
+import * as variableAliasToValueModule from '../../../utils/variable-alias-to-value'
 import { exportDevup, importDevup } from '../index'
 import type { DevupTypography } from '../types'
 import * as downloadXlsxModule from '../utils/download-devup-xlsx'
@@ -35,6 +38,9 @@ describe('devup commands', () => {
   let getColorCollectionSpy: ReturnType<typeof spyOn> | null = null
   let styleNameToTypographySpy: ReturnType<typeof spyOn> | null = null
   let textStyleToTypographySpy: ReturnType<typeof spyOn> | null = null
+  let textSegmentToTypographySpy: ReturnType<typeof spyOn> | null = null
+  let isVariableAliasSpy: ReturnType<typeof spyOn> | null = null
+  let variableAliasToValueSpy: ReturnType<typeof spyOn> | null = null
 
   beforeEach(() => {
     downloadFileSpy = spyOn(
@@ -67,9 +73,15 @@ describe('devup commands', () => {
     getColorCollectionSpy?.mockRestore()
     styleNameToTypographySpy?.mockRestore()
     textStyleToTypographySpy?.mockRestore()
+    textSegmentToTypographySpy?.mockRestore()
+    isVariableAliasSpy?.mockRestore()
+    variableAliasToValueSpy?.mockRestore()
     getColorCollectionSpy = null
     styleNameToTypographySpy = null
     textStyleToTypographySpy = null
+    textSegmentToTypographySpy = null
+    isVariableAliasSpy = null
+    variableAliasToValueSpy = null
   })
 
   test('exportDevup exports colors and downloads json', async () => {
@@ -147,6 +159,215 @@ describe('devup commands', () => {
       'devup.xlsx',
       expect.stringContaining('"typography"'),
     )
+  })
+
+  test('exportDevup treeshake true handles variable aliases and segments', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue({
+      modes: [{ modeId: 'm1', name: 'Light' }],
+      variableIds: ['var1'],
+    } as unknown as VariableCollection)
+    isVariableAliasSpy = spyOn(
+      isVariableAliasModule,
+      'isVariableAlias',
+    ).mockReturnValue(true)
+    variableAliasToValueSpy = spyOn(
+      variableAliasToValueModule,
+      'variableAliasToValue',
+    ).mockResolvedValue({ r: 1, g: 0, b: 0, a: 1 })
+    spyOn(rgbaToHexModule, 'rgbaToHex').mockReturnValue('#ff0000')
+    spyOn(optimizeHexModule, 'optimizeHex').mockImplementation((v) => v)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockReturnValue({ level: 0, name: 'heading' })
+    const typoSeg = { fontFamily: 'Inter', fontSize: 12 }
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockReturnValue(typoSeg as unknown as DevupTypography)
+    textSegmentToTypographySpy = spyOn(
+      textSegmentToTypographyModule,
+      'textSegmentToTypography',
+    ).mockReturnValue(typoSeg as unknown as DevupTypography)
+
+    const textNode = {
+      type: 'TEXT',
+      textStyleId: 'style1',
+      getStyledTextSegments: () => [{ textStyleId: 'style1' }],
+    } as unknown as TextNode
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () => [
+        { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
+      ],
+      root: {
+        findAllWithCriteria: () => [textNode],
+        children: [],
+        findAll: () => [],
+      },
+      getStyleByIdAsync: async () =>
+        ({ id: 'style1', name: 'heading/1' }) as unknown as TextStyle,
+      mixed: Symbol('mixed'),
+      variables: {
+        getVariableByIdAsync: async () =>
+          ({
+            name: 'Primary',
+            valuesByMode: { m1: { type: 'VARIABLE_ALIAS', id: 'var1' } },
+          }) as unknown as Variable,
+      },
+    } as unknown as typeof figma
+
+    await exportDevup('json', true)
+
+    expect(downloadFileMock).toHaveBeenCalledWith(
+      'devup.json',
+      expect.stringContaining('"typography"'),
+    )
+  })
+
+  test('exportDevup fills missing typography levels from styles map', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockImplementation((name: string) =>
+      name.includes('2')
+        ? ({ level: 1, name: 'heading' } as const)
+        : ({ level: 0, name: 'heading' } as const),
+    )
+    const typoSeg = { fontFamily: 'Inter', fontSize: 12 }
+    textSegmentToTypographySpy = spyOn(
+      textSegmentToTypographyModule,
+      'textSegmentToTypography',
+    ).mockReturnValue(typoSeg as unknown as DevupTypography)
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockReturnValue(typoSeg as unknown as DevupTypography)
+
+    const textNode = {
+      type: 'TEXT',
+      textStyleId: 'style1',
+      getStyledTextSegments: () => [{ textStyleId: 'style1' }],
+    } as unknown as TextNode
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () =>
+        [
+          { id: 'style1', name: 'heading/1' },
+          { id: 'style2', name: 'heading/2' },
+        ] as unknown as TextStyle[],
+      root: { findAllWithCriteria: () => [textNode], children: [] },
+      getStyleByIdAsync: async (id: string) =>
+        id === 'style1'
+          ? ({ id: 'style1', name: 'heading/1' } as unknown as TextStyle)
+          : ({ id: 'style2', name: 'heading/2' } as unknown as TextStyle),
+      mixed: Symbol('mixed'),
+      variables: { getVariableByIdAsync: async () => null },
+    } as unknown as typeof figma
+
+    await exportDevup('json', true)
+
+    const firstCall = downloadFileMock.mock.calls[0] as unknown[] | undefined
+    const data = (firstCall?.[1] as string) ?? '{}'
+    const parsed = JSON.parse(data) as {
+      theme?: { typography?: Record<string, unknown> }
+    }
+    expect(parsed.theme?.typography?.heading).toBeDefined()
+  })
+
+  test('exportDevup builds typography array when first level missing', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockImplementation((name: string) =>
+      name.includes('3')
+        ? ({ level: 3, name: 'heading' } as const)
+        : ({ level: 1, name: 'heading' } as const),
+    )
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockImplementation(
+      (style: TextStyle) => ({ id: style.id }) as unknown as DevupTypography,
+    )
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () =>
+        [
+          { id: 'style1', name: 'heading/1' },
+          { id: 'style3', name: 'heading/3' },
+        ] as unknown as TextStyle[],
+      root: { findAllWithCriteria: () => [], children: [] },
+      variables: { getVariableByIdAsync: async () => null },
+    } as unknown as typeof figma
+
+    await exportDevup('json', false)
+
+    const firstCall = downloadFileMock.mock.calls[0] as unknown[] | undefined
+    const data = (firstCall?.[1] as string) ?? '{}'
+    const parsed = JSON.parse(data) as {
+      theme?: { typography?: Record<string, unknown> }
+    }
+    expect(parsed.theme?.typography?.heading).toBeDefined()
+  })
+
+  test('exportDevup keeps full array when first level exists', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockImplementation((name: string) =>
+      name.includes('2')
+        ? ({ level: 1, name: 'heading' } as const)
+        : ({ level: 0, name: 'heading' } as const),
+    )
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockImplementation(
+      (style: TextStyle) => ({ id: style.id }) as unknown as DevupTypography,
+    )
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () =>
+        [
+          { id: 'style0', name: 'heading/0' },
+          { id: 'style1', name: 'heading/2' },
+        ] as unknown as TextStyle[],
+      root: { findAllWithCriteria: () => [], children: [] },
+      variables: { getVariableByIdAsync: async () => null },
+    } as unknown as typeof figma
+
+    await exportDevup('json', false)
+
+    const firstCall = downloadFileMock.mock.calls[0] as unknown[] | undefined
+    const data = (firstCall?.[1] as string) ?? '{}'
+    const parsed = JSON.parse(data) as {
+      theme?: { typography?: Record<string, unknown> }
+    }
+    expect(Array.isArray(parsed.theme?.typography?.heading)).toBe(true)
   })
 
   test('importDevup creates colors and typography from json', async () => {
@@ -310,5 +531,125 @@ describe('devup commands', () => {
     expect(setValueForMode).toHaveBeenCalledWith('Light-id', '#111111')
     expect(remove).toHaveBeenCalled()
     expect(createTextStyleMock).toHaveBeenCalled()
+  })
+
+  test('importDevup notifies when font load fails and covers letterSpacing/lineHeight', async () => {
+    uploadFileMock.mockResolvedValue(
+      JSON.stringify({
+        theme: {
+          typography: {
+            title: {
+              fontFamily: 'Inter',
+              fontStyle: 'italic',
+              fontSize: '18',
+              letterSpacing: '2px',
+              lineHeight: '20',
+              textTransform: 'uppercase',
+              textDecoration: 'underline',
+            },
+          },
+        },
+      }),
+    )
+
+    const notifyMock = mock(() => {})
+    const createTextStyleMock = mock(
+      () =>
+        ({
+          name: '',
+        }) as unknown as TextStyle,
+    )
+    const loadFontAsync = mock(() => Promise.reject(new Error('font')))
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        createVariableCollection: () =>
+          ({
+            modes: [],
+            addMode: () => 'm1',
+            removeMode: () => {},
+          }) as unknown as VariableCollection,
+        getLocalVariablesAsync: async () => [],
+        createVariable: () =>
+          ({
+            setValueForMode: () => {},
+            remove: () => {},
+          }) as unknown as Variable,
+      },
+      getLocalTextStylesAsync: async () => [],
+      createTextStyle: createTextStyleMock,
+      loadFontAsync,
+      notify: notifyMock,
+    } as unknown as typeof figma
+
+    await importDevup('json')
+
+    expect(notifyMock).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to create text style'),
+      expect.any(Object),
+    )
+  })
+
+  test('importDevup sets typography spacing values', async () => {
+    uploadFileMock.mockResolvedValue(
+      JSON.stringify({
+        theme: {
+          typography: {
+            body: {
+              fontFamily: 'Inter',
+              fontStyle: 'normal',
+              fontSize: '14',
+              letterSpacing: '1px',
+              lineHeight: '18',
+            },
+          },
+        },
+      }),
+    )
+
+    const createTextStyleMock = mock(
+      () =>
+        ({
+          name: '',
+        }) as unknown as TextStyle,
+    )
+    const loadFontAsync = mock(() => Promise.resolve())
+
+    const styleObj = createTextStyleMock() as TextStyle & {
+      letterSpacing?: LetterSpacing
+      lineHeight?: LineHeight
+      textCase?: TextCase
+      textDecoration?: TextDecoration
+      fontSize?: number
+      fontName?: FontName
+    }
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        createVariableCollection: () =>
+          ({
+            modes: [],
+            addMode: () => 'm1',
+            removeMode: () => {},
+          }) as unknown as VariableCollection,
+        getLocalVariablesAsync: async () => [],
+        createVariable: () =>
+          ({
+            setValueForMode: () => {},
+            remove: () => {},
+          }) as unknown as Variable,
+      },
+      getLocalTextStylesAsync: async () => [],
+      createTextStyle: () => styleObj,
+      loadFontAsync,
+      notify: mock(() => {}),
+    } as unknown as typeof figma
+
+    await importDevup('json')
+
+    expect(styleObj.letterSpacing).toMatchObject({ unit: 'PIXELS', value: 100 })
+    expect(styleObj.lineHeight).toMatchObject({ unit: 'PIXELS', value: 18 })
   })
 })
