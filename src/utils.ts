@@ -1,4 +1,3 @@
-import { rgbaToHex } from './utils/rgba-to-hex'
 import { toCamel } from './utils/to-camel'
 import { toPascal } from './utils/to-pascal'
 
@@ -37,34 +36,4 @@ export function getComponentName(node: SceneNode) {
       node.parent?.type === 'COMPONENT_SET' ? node.parent.name : node.name,
     )
   return toPascal(node.name)
-}
-
-export const colorFromFills = async (
-  fills:
-    | ReadonlyArray<
-        Paint & {
-          boundVariables?: { color: VariableAlias }
-          color?: RGB
-        }
-      >
-    | undefined,
-): Promise<string> => {
-  const fill = fills?.find((fill) => fill.visible)
-  if (fill?.color) {
-    if (fill.boundVariables?.color?.id) {
-      const variable = await figma.variables.getVariableByIdAsync(
-        fill.boundVariables.color.id as string,
-      )
-      if (variable?.name) return `$${variable.name}`
-    }
-    if (fill.opacity === 0) return 'transparent'
-
-    return rgbaToHex(
-      figma.util.rgba({
-        ...fill.color,
-        a: fill.opacity,
-      }),
-    )
-  }
-  return ''
 }
