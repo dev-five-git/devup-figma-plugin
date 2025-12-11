@@ -120,27 +120,20 @@ export async function exportDevup(
     devup.theme.typography = Object.entries(typography).reduce(
       (acc, [key, value]) => {
         const filtered = value.filter((v) => v !== null)
-        if (filtered.length === 0) return acc
+        if (filtered.length === 0) {
+          return acc
+        }
         if (filtered.length === 1) {
           acc[key] = filtered[0]
           return acc
         }
         if (value[0] === null) {
           acc[key] = [filtered[0]]
-          let init = false
-          for (let i = 0; i < value.length; i += 1) {
-            if (value[i] === null) {
-              if (init) {
-                acc[key].push(null)
-              } else {
-                if (!init) {
-                  acc[key].push(null)
-                  init = true
-                } else {
-                  acc[key].push(value[i])
-                }
-              }
-            }
+          for (let i = 1; i < value.length; i += 1) {
+            acc[key].push(value[i])
+          }
+          while (acc[key][acc[key].length - 1] === null) {
+            acc[key].pop()
           }
           return acc
         }

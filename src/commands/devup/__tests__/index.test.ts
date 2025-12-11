@@ -370,6 +370,56 @@ describe('devup commands', () => {
     expect(Array.isArray(parsed.theme?.typography?.heading)).toBe(true)
   })
 
+  test('exportDevup filters out empty typography entries', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockReturnValue({ level: 0, name: 'heading' })
+    textSegmentToTypographySpy = spyOn(
+      textSegmentToTypographyModule,
+      'textSegmentToTypography',
+    ).mockReturnValue(null)
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {},
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () => [
+        {
+          id: 'id',
+          name: 'heading/1',
+          fontName: { family: 'Inter', style: 'Regular' },
+        } as unknown as TextStyle,
+      ],
+      root: {
+        findAllWithCriteria: () => [
+          {
+            textStyleId: 'id',
+            getStyledTextSegments: () => [{ textStyleId: 'id' }],
+          } as unknown as TextNode,
+        ],
+      },
+      getStyleByIdAsync: async () =>
+        ({
+          id: 'id',
+          name: 'heading/1',
+          fontName: { family: 'Inter', style: 'Regular' },
+        }) as unknown as TextStyle,
+    } as unknown as typeof figma
+
+    await exportDevup('json')
+
+    const payload = JSON.parse(
+      (downloadFileMock.mock.calls[0] as unknown as { args: [string, string] })
+        ?.args?.[1] ?? '{}',
+    )
+    expect(payload.theme?.typography).toBeUndefined()
+  })
+
   test('importDevup creates colors and typography from json', async () => {
     getColorCollectionSpy = spyOn(
       getColorCollectionModule,
