@@ -81,7 +81,11 @@ export function runCommand(ctx: typeof figma = figma) {
   }
 }
 
-if (typeof figma !== 'undefined') {
-  registerCodegen()
-  runCommand()
+export function run(ctx: typeof figma) {
+  if (typeof ctx !== 'undefined') {
+    registerCodegen(ctx)
+    runCommand(ctx)
+  }
 }
+
+run((globalThis as { figma?: unknown }).figma as typeof figma)
