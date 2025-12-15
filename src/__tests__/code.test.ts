@@ -8,12 +8,13 @@ import {
   mock,
   spyOn,
 } from 'bun:test'
-import { registerCodegen, run, runCommand } from '../code'
 import * as devupModule from '../commands/devup'
 import * as exportAssetsModule from '../commands/exportAssets'
 import * as exportComponentsModule from '../commands/exportComponents'
 
-beforeAll(() => {
+let codeModule: typeof import('../code-impl')
+
+beforeAll(async () => {
   ;(globalThis as { figma?: unknown }).figma = {
     editorType: 'dev',
     mode: 'codegen',
@@ -21,6 +22,7 @@ beforeAll(() => {
     codegen: { on: mock(() => {}) },
     closePlugin: mock(() => {}),
   } as unknown as typeof figma
+  codeModule = await import('../code-impl')
 })
 
 beforeEach(() => {
@@ -61,7 +63,7 @@ describe('runCommand', () => {
       closePlugin,
     } as unknown as typeof figma
 
-    await runCommand(figmaMock as typeof figma)
+    await codeModule.runCommand(figmaMock as typeof figma)
 
     switch (fn) {
       case 'exportDevup':
@@ -131,7 +133,7 @@ describe('registerCodegen', () => {
       codegen: { on: mock(() => {}) },
       closePlugin: mock(() => {}),
     } as unknown as typeof figma
-    registerCodegen(figmaMock)
+    codeModule.registerCodegen(figmaMock)
     expect(figmaMock.codegen.on).toHaveBeenCalledWith(
       'generate',
       expect.any(Function),
@@ -145,23 +147,38 @@ describe('registerCodegen', () => {
   })
 })
 
-it('should not register codegen if figma is not defined', () => {
-  run(undefined as unknown as typeof figma)
+it('should not register codegen if figma is not defined', async () => {
+  codeModule.run(undefined as unknown as typeof figma)
   expect(devupModule.exportDevup).not.toHaveBeenCalled()
   expect(devupModule.importDevup).not.toHaveBeenCalled()
   expect(exportAssetsModule.exportAssets).not.toHaveBeenCalled()
   expect(exportComponentsModule.exportComponents).not.toHaveBeenCalled()
 })
 
-it('should run command', () => {
+it('should run command', async () => {
   const figmaMock = {
     editorType: 'figma',
     command: 'export-devup',
     closePlugin: mock(() => {}),
   } as unknown as typeof figma
-  run(figmaMock as typeof figma)
+  codeModule.run(figmaMock as typeof figma)
   expect(devupModule.exportDevup).toHaveBeenCalledWith('json')
   expect(devupModule.importDevup).not.toHaveBeenCalled()
   expect(exportAssetsModule.exportAssets).not.toHaveBeenCalled()
   expect(exportComponentsModule.exportComponents).not.toHaveBeenCalled()
+})
+
+it('auto-runs on module load when figma is present', async () => {
+  const codegenOn = mock(() => {})
+  ;(globalThis as { figma?: unknown }).figma = {
+    editorType: 'dev',
+    mode: 'codegen',
+    command: 'noop',
+    codegen: { on: codegenOn },
+    closePlugin: mock(() => {}),
+  } as unknown as typeof figma
+
+  await import(`../code?with-figma=${Date.now()}`)
+
+  expect(codegenOn).toHaveBeenCalledWith('generate', expect.any(Function))
 })
