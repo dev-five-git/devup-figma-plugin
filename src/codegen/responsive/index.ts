@@ -120,11 +120,6 @@ export function optimizeResponsiveValue(
     optimized.pop()
   }
 
-  // If empty, return null.
-  if (optimized.length === 0) {
-    return null
-  }
-
   // If only index 0 has value, return single value.
   if (optimized.length === 1 && optimized[0] !== null) {
     return optimized[0]
@@ -190,43 +185,6 @@ export function mergePropsToResponsive(
     }
   }
   return result
-}
-
-/**
- * Build display props for elements that exist only on some breakpoints.
- * presentBreakpoints: breakpoints where the element exists.
- */
-export function getDisplayPropsForBreakpoints(
-  presentBreakpoints: Set<BreakpointKey>,
-): Props {
-  if (presentBreakpoints.size === BREAKPOINT_ORDER.length) {
-    // No display props needed if present everywhere.
-    return {}
-  }
-
-  const displayValues: (string | null)[] = BREAKPOINT_ORDER.map((bp) =>
-    presentBreakpoints.has(bp) ? null : 'none',
-  )
-
-  // From the first present breakpoint onward, the element should show.
-  let foundFirst = false
-  for (let i = 0; i < BREAKPOINT_ORDER.length; i++) {
-    if (presentBreakpoints.has(BREAKPOINT_ORDER[i])) {
-      if (!foundFirst) {
-        foundFirst = true
-      }
-      displayValues[i] = null
-    } else {
-      displayValues[i] = 'none'
-    }
-  }
-
-  // Do not trim trailing nulls here (chakra-ui array rule); if all null, return empty object.
-  if (displayValues.every((v) => v === null)) {
-    return {}
-  }
-
-  return { display: displayValues }
 }
 
 export interface ResponsiveNodeGroup {
