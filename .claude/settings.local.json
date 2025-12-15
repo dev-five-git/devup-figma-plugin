@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(cmd /c \"npm run build 2>&1\")",
+      "Bash(bun run build:*)",
+      "Bash(bun run tsc:*)"
+    ]
+  }
+}

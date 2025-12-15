@@ -1,12 +1,12 @@
 import { Codegen } from './codegen/Codegen'
+import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
 
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
-    ctx.codegen.on('generate', async ({ node, language, ...rest }) => {
-      console.info(rest, node)
+    ctx.codegen.on('generate', async ({ node, language }) => {
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()
@@ -14,6 +14,32 @@ export function registerCodegen(ctx: typeof figma) {
           await codegen.run()
           const componentsCodes = codegen.getComponentsCodes()
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
+
+          // 반응형 코드 생성 (부모가 Section인 경우)
+          const parentSection = ResponsiveCodegen.hasParentSection(node)
+          let responsiveResult: {
+            title: string
+            language: 'TYPESCRIPT'
+            code: string
+          }[] = []
+
+          if (parentSection) {
+            try {
+              const responsiveCodegen = new ResponsiveCodegen(parentSection)
+              const responsiveCode =
+                await responsiveCodegen.generateResponsiveCode()
+              responsiveResult = [
+                {
+                  title: `${parentSection.name} - Responsive`,
+                  language: 'TYPESCRIPT' as const,
+                  code: responsiveCode,
+                },
+              ]
+            } catch (e) {
+              console.error('[responsive] Error generating responsive code:', e)
+            }
+          }
+
           return [
             ...(node.type === 'COMPONENT' ||
             node.type === 'COMPONENT_SET' ||
@@ -45,6 +71,7 @@ export function registerCodegen(ctx: typeof figma) {
                   },
                 ] as const)
               : []),
+            ...responsiveResult,
           ]
         }
       }
