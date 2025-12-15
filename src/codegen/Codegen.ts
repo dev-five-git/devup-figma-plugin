@@ -9,6 +9,7 @@ import {
   getDevupComponentByNode,
   getDevupComponentByProps,
 } from './utils/get-devup-component'
+import { buildCssUrl } from './utils/wrap-url'
 
 export class Codegen {
   components: Map<
@@ -80,7 +81,7 @@ export class Codegen {
         const maskColor = await checkSameColor(node)
         if (maskColor) {
           // support mask image icon
-          props.maskImage = `url(${props.src})`
+          props.maskImage = buildCssUrl(props.src)
           props.maskRepeat = 'no-repeat'
           props.maskSize = 'contain'
           props.bg = maskColor

@@ -3,6 +3,7 @@ import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { checkAssetNode } from './check-asset-node'
 import { fmtPct } from './fmtPct'
 import { solidToString } from './solid-to-string'
+import { buildCssUrl } from './wrap-url'
 
 interface Point {
   x: number
@@ -48,13 +49,13 @@ function convertImage(fill: ImagePaint): string {
 
   switch (fill.scaleMode) {
     case 'FILL':
-      return `url(/icons/${imageName}) center/cover no-repeat`
+      return `${buildCssUrl(`/icons/${imageName}`)} center/cover no-repeat`
     case 'FIT':
-      return `url(/icons/${imageName}) center/contain no-repeat`
+      return `${buildCssUrl(`/icons/${imageName}`)} center/contain no-repeat`
     case 'CROP':
-      return `url(/icons/${imageName}) center/cover no-repeat`
+      return `${buildCssUrl(`/icons/${imageName}`)} center/cover no-repeat`
     case 'TILE':
-      return `url(/icons/${imageName}) repeat`
+      return `${buildCssUrl(`/icons/${imageName}`)} repeat`
   }
 }
 
@@ -195,7 +196,8 @@ async function convertPattern(fill: PatternPaint): Promise<string> {
   const position = [horizontalPosition, verticalPosition]
     .filter(Boolean)
     .join(' ')
-  return `url(/icons/${imageName}.${imageExtension})${position ? ` ${position}` : ''} repeat`
+  const url = buildCssUrl(`/icons/${imageName}.${imageExtension}`)
+  return `${url}${position ? ` ${position}` : ''} repeat`
 }
 
 function convertPosition(

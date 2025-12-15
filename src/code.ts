@@ -3,9 +3,10 @@ import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
 
-export function registerCodegen(ctx: typeof figma = figma) {
+export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
-    ctx.codegen.on('generate', async ({ node, language }) => {
+    ctx.codegen.on('generate', async ({ node, language, ...rest }) => {
+      console.info(rest, node)
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()
@@ -88,4 +89,6 @@ export function run(ctx: typeof figma) {
   }
 }
 
-run((globalThis as { figma?: unknown }).figma as typeof figma)
+if (typeof figma !== 'undefined') {
+  run(figma)
+}
