@@ -144,6 +144,57 @@ describe('Codegen', () => {
       expected: `<Box boxSize="100%" overflow="hidden" />`,
     },
     {
+      title: 'renders overflowX auto when overflowDirection is HORIZONTAL',
+      node: {
+        type: 'FRAME',
+        name: 'HorizontalScroll',
+        children: [],
+        overflowDirection: 'HORIZONTAL',
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" overflowX="auto" />`,
+    },
+    {
+      title: 'renders overflowY auto when overflowDirection is VERTICAL',
+      node: {
+        type: 'FRAME',
+        name: 'VerticalScroll',
+        children: [],
+        overflowDirection: 'VERTICAL',
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" overflowY="auto" />`,
+    },
+    {
+      title: 'renders overflow auto when overflowDirection is BOTH',
+      node: {
+        type: 'FRAME',
+        name: 'BothScroll',
+        children: [],
+        overflowDirection: 'BOTH',
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" overflow="auto" />`,
+    },
+    {
+      title: 'omits overflow when overflowDirection is NONE',
+      node: {
+        type: 'FRAME',
+        name: 'NoScroll',
+        children: [],
+        overflowDirection: 'NONE',
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" />`,
+    },
+    {
+      title:
+        'omits overflow when clipsContent property exists but is explicitly false',
+      node: {
+        type: 'FRAME',
+        name: 'NonClippedFrame',
+        children: [],
+        clipsContent: false,
+      } as unknown as FrameNode,
+      expected: `<Box boxSize="100%" />`,
+    },
+    {
       title: 'renders objectFit contain for image asset',
       node: {
         type: 'RECTANGLE',
