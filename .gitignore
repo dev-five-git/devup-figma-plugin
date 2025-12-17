@@ -8,3 +8,5 @@ out/
 dist/
 code.js
 coverage
+
+.claude
