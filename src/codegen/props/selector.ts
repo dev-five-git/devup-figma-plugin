@@ -1,15 +1,22 @@
 import { fmtPct } from '../utils/fmtPct'
 import { getProps } from '.'
+import {
+  extractTransitionFromReactions,
+  generateKeyframesForEffects,
+  isSmartAnimateTransition,
+  type KeyframeAnimation,
+} from './keyframe'
+
+export interface SelectorPropsResult {
+  props: Record<string, object | string>
+  variants: Record<string, string>
+  keyframes?: KeyframeAnimation[]
+}
 
 export async function getSelectorProps(
   node: ComponentSetNode | ComponentNode,
-): Promise<
-  | {
-      props: Record<string, object | string>
-      variants: Record<string, string>
-    }
-  | undefined
-> {
+  options?: { useKeyframes?: boolean },
+): Promise<SelectorPropsResult | undefined> {
   if (node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET') {
     return getSelectorProps(node.parent)
   }
@@ -47,24 +54,39 @@ export async function getSelectorProps(
   )
 
   if (components.length > 0) {
-    const transition = node.defaultVariant.reactions
-      .flatMap(
-        (reaction) =>
-          reaction.actions?.find((action) => action.type === 'NODE')
-            ?.transition,
-      )
-      .flat()[0]
+    const transition = extractTransitionFromReactions(node.defaultVariant.reactions)
     const diffKeys = new Set<string>()
+    const effectPropsMap = new Map<string, Record<string, unknown>>()
+
     for (const [effect, props] of components) {
       if (!effect) continue
       const def = difference(props, defaultProps)
       if (Object.keys(def).length === 0) continue
       result.props[`_${effect}`] = def
+      effectPropsMap.set(effect, def)
       for (const key of Object.keys(def)) {
         diffKeys.add(key)
       }
     }
-    if (transition?.type === 'SMART_ANIMATE' && diffKeys.size > 0) {
+
+    if (isSmartAnimateTransition(transition) && diffKeys.size > 0) {
+      const useKeyframes = options?.useKeyframes ?? false
+
+      if (useKeyframes) {
+        // Generate keyframe animations
+        const keyframes = generateKeyframesForEffects(
+          defaultProps as Record<string, unknown>,
+          effectPropsMap,
+          transition,
+          node.id,
+        )
+        return {
+          ...result,
+          keyframes,
+        }
+      }
+
+      // Default: Generate CSS transitions
       const keys = Array.from(diffKeys)
       keys.sort()
       result.props.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
