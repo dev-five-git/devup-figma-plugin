@@ -8,6 +8,14 @@ function isFreelayout(node: BaseNode & ChildrenMixin) {
   )
 }
 
+function isPageRoot(node: BaseNode) {
+  return (
+    node.parent?.type === 'PAGE' ||
+    node.parent?.type === 'SECTION' ||
+    node.parent?.type === 'COMPONENT_SET'
+  )
+}
+
 export function getPositionProps(
   node: SceneNode,
 ): Record<string, string | undefined> | undefined {
@@ -15,9 +23,10 @@ export function getPositionProps(
     'parent' in node &&
     node.parent &&
     (('layoutPositioning' in node && node.layoutPositioning === 'ABSOLUTE') ||
-      isFreelayout(node.parent)) &&
-    'width' in node.parent &&
-    'height' in node.parent
+      (isFreelayout(node.parent) &&
+        'width' in node.parent &&
+        'height' in node.parent &&
+        !isPageRoot(node.parent as SceneNode)))
   ) {
     const constraints =
       'constraints' in node
@@ -29,6 +38,17 @@ export function getPositionProps(
           : undefined
     if (!constraints) return
     const { horizontal, vertical } = constraints
+    console.log(
+      'parent',
+      node.parent.type,
+      isPageRoot(node.parent as SceneNode),
+      'layoutPositioning' in node && node.layoutPositioning === 'ABSOLUTE',
+      node.parent.type,
+      isFreelayout(node.parent) &&
+        'width' in node.parent &&
+        'height' in node.parent,
+    )
+
     let left: string | undefined
     let right: string | undefined
     let top: string | undefined

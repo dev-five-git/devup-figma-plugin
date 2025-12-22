@@ -1,12 +1,12 @@
+import { getComponentName } from '../../utils'
 import { getProps } from '../props'
 import { renderNode } from '../render'
+import { renderText } from '../render/text'
 import { getDevupComponentByNode } from '../utils/get-devup-component'
 import {
-  BREAKPOINT_ORDER,
   type BreakpointKey,
   getBreakpointByWidth,
   mergePropsToResponsive,
-  optimizeResponsiveValue,
 } from './index'
 
 type PropValue = boolean | string | number | undefined | null | object
@@ -57,7 +57,19 @@ export class ResponsiveCodegen {
     const props = await getProps(node)
     const children = new Map<string, NodePropsMap[]>()
 
-    if ('children' in node) {
+    // If node is TEXT, apply typography
+    if (node.type === 'TEXT') {
+      const { props: textProps } = await renderText(node)
+      Object.assign(props, textProps)
+    }
+
+    // If node is INSTANCE or COMPONENT, don't extract children (treat as component reference)
+    const isComponent =
+      node.type === 'INSTANCE' ||
+      node.type === 'COMPONENT' ||
+      node.type === 'COMPONENT_SET'
+
+    if ('children' in node && !isComponent) {
       for (const child of node.children) {
         const childProps = await this.extractNodeProps(child, breakpoint)
         const existing = children.get(child.name) || []
@@ -109,6 +121,40 @@ export class ResponsiveCodegen {
     nodesByBreakpoint: Map<BreakpointKey, NodePropsMap>,
     depth: number,
   ): Promise<string> {
+    // Decide component type from the first node (reuse existing util).
+    const firstNodeProps = [...nodesByBreakpoint.values()][0]
+    const nodeType = firstNodeProps.nodeType
+
+    // If node is INSTANCE or COMPONENT, render as component reference (no children, no props merge)
+    if (
+      nodeType === 'INSTANCE' ||
+      nodeType === 'COMPONENT' ||
+      nodeType === 'COMPONENT_SET'
+    ) {
+      const componentName = getComponentName(firstNodeProps.node)
+      // For components, we might still need position props
+      const propsMap = new Map<BreakpointKey, Props>()
+      for (const [bp, nodeProps] of nodesByBreakpoint) {
+        // Only keep position-related props for components
+        const posProps: Props = {}
+        if (nodeProps.props.pos) posProps.pos = nodeProps.props.pos
+        if (nodeProps.props.top) posProps.top = nodeProps.props.top
+        if (nodeProps.props.left) posProps.left = nodeProps.props.left
+        if (nodeProps.props.right) posProps.right = nodeProps.props.right
+        if (nodeProps.props.bottom) posProps.bottom = nodeProps.props.bottom
+        propsMap.set(bp, posProps)
+      }
+      const mergedProps = mergePropsToResponsive(propsMap)
+
+      // If component has position props, wrap in Box
+      if (Object.keys(mergedProps).length > 0) {
+        const componentCode = renderNode(componentName, {}, depth + 1, [])
+        return renderNode('Box', mergedProps, depth, [componentCode])
+      }
+
+      return renderNode(componentName, {}, depth, [])
+    }
+
     // Merge props.
     const propsMap = new Map<BreakpointKey, Props>()
     for (const [bp, nodeProps] of nodesByBreakpoint) {
@@ -116,8 +162,6 @@ export class ResponsiveCodegen {
     }
     const mergedProps = mergePropsToResponsive(propsMap)
 
-    // Decide component type from the first node (reuse existing util).
-    const firstNodeProps = [...nodesByBreakpoint.values()][0]
     const component = getDevupComponentByNode(
       firstNodeProps.node,
       firstNodeProps.props,
@@ -162,12 +206,12 @@ export class ResponsiveCodegen {
       if (childByBreakpoint.size > 0) {
         // Add display props when a child exists only at specific breakpoints.
         if (presentBreakpoints.size < nodesByBreakpoint.size) {
-          const displayProps = this.getDisplayProps(
-            presentBreakpoints,
-            new Set(nodesByBreakpoint.keys()),
-          )
-          for (const nodeProps of childByBreakpoint.values()) {
-            Object.assign(nodeProps.props, displayProps)
+          const allBreakpointsSet = new Set(nodesByBreakpoint.keys())
+          for (const [bp, nodeProps] of childByBreakpoint) {
+            // Only set display if this breakpoint exists in section but child doesn't exist
+            if (!presentBreakpoints.has(bp) && allBreakpointsSet.has(bp)) {
+              nodeProps.props.display = 'none'
+            }
           }
         }
 
@@ -184,42 +228,6 @@ export class ResponsiveCodegen {
   }
 
   /**
-   * Build display props so a child shows only on present breakpoints.
-   */
-  private getDisplayProps(
-    presentBreakpoints: Set<BreakpointKey>,
-    allBreakpoints: Set<BreakpointKey>,
-  ): Props {
-    // Always use 5 slots: [mobile, sm, tablet, lg, pc]
-    // If the child exists on the breakpoint: null (visible); otherwise 'none' (hidden).
-    // If the Section lacks that breakpoint entirely: null.
-    const displayValues: (string | null)[] = BREAKPOINT_ORDER.map((bp) => {
-      if (!allBreakpoints.has(bp)) return null // Section lacks this breakpoint
-      return presentBreakpoints.has(bp) ? null : 'none'
-    })
-
-    // If all null, return empty object.
-    if (displayValues.every((v) => v === null)) {
-      return {}
-    }
-
-    // Remove trailing nulls only (keep leading nulls).
-    while (
-      displayValues.length > 0 &&
-      displayValues[displayValues.length - 1] === null
-    ) {
-      displayValues.pop()
-    }
-
-    // Empty array => empty object.
-    if (displayValues.length === 0) {
-      return {}
-    }
-
-    return { display: optimizeResponsiveValue(displayValues) }
-  }
-
-  /**
    * Generate code for a single node (fallback).
    * Reuses existing module.
    */
@@ -227,6 +235,31 @@ export class ResponsiveCodegen {
     node: SceneNode,
     depth: number,
   ): Promise<string> {
+    // If node is INSTANCE or COMPONENT, render as component reference
+    if (
+      node.type === 'INSTANCE' ||
+      node.type === 'COMPONENT' ||
+      node.type === 'COMPONENT_SET'
+    ) {
+      const componentName = getComponentName(node)
+      const props = await getProps(node)
+
+      // Check if component has position props
+      if (props.pos) {
+        const posProps = {
+          pos: props.pos,
+          top: props.top,
+          left: props.left,
+          right: props.right,
+          bottom: props.bottom,
+        }
+        const componentCode = renderNode(componentName, {}, depth + 1, [])
+        return renderNode('Box', posProps, depth, [componentCode])
+      }
+
+      return renderNode(componentName, {}, depth, [])
+    }
+
     const props = await getProps(node)
     const childrenCodes: string[] = []
 
@@ -235,6 +268,13 @@ export class ResponsiveCodegen {
         const childCode = await this.generateNodeCode(child, depth + 1)
         childrenCodes.push(childCode)
       }
+    }
+
+    // If node is TEXT, apply typography
+    if (node.type === 'TEXT') {
+      const { children, props: _props } = await renderText(node)
+      childrenCodes.push(...children)
+      Object.assign(props, _props)
     }
 
     const component = getDevupComponentByNode(node, props)

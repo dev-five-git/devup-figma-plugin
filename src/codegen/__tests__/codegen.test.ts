@@ -1611,7 +1611,7 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box WebkitBackdropFilter="blur(8px)" backdropFilter="blur(8px)" h="90px" w="110px" />`,
+      expected: `<Box backdropFilter="blur(8px)" h="90px" w="110px" />`,
     },
     {
       title: 'renders noise effect props',
@@ -1674,7 +1674,7 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box WebkitBackdropFilter="blur(12px)" backdropFilter="blur(12px)" h="80px" w="160px" />`,
+      expected: `<Box backdropFilter="blur(12px)" h="80px" w="160px" />`,
     },
     {
       title: 'renders text node with content',
@@ -2115,7 +2115,7 @@ describe('Codegen', () => {
         height: 50,
         rotation: 45,
       } as unknown as FrameNode,
-      expected: `<Box h="50px" transform="rotate(45deg)" w="100px" />`,
+      expected: `<Box h="50px" transform="rotate(-45deg)" w="100px" />`,
     },
     {
       title: 'renders frame with negative rotation transform',
@@ -2129,7 +2129,8 @@ describe('Codegen', () => {
         height: 40,
         rotation: -30,
       } as unknown as FrameNode,
-      expected: `<Box h="40px" transform="rotate(-30deg)" w="80px" />`,
+      // revsered rotation
+      expected: `<Box h="40px" transform="rotate(30deg)" w="80px" />`,
     },
     {
       title: 'renders frame with decimal rotation transform',
@@ -2143,7 +2144,7 @@ describe('Codegen', () => {
         height: 60,
         rotation: 15.5,
       } as unknown as FrameNode,
-      expected: `<Box h="60px" transform="rotate(15.5deg)" w="120px" />`,
+      expected: `<Box h="60px" transform="rotate(-15.5deg)" w="120px" />`,
     },
     {
       title: 'renders frame with opacity less than 1',

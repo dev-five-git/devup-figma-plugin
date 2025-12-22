@@ -1,5 +1,5 @@
 export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
-  if (node.type === 'TEXT') return null
+  if (node.type === 'TEXT' || node.type === 'COMPONENT_SET') return null
   // vector must be svg
   if (['VECTOR', 'STAR', 'POLYGON'].includes(node.type)) return 'svg'
   // ellipse with inner radius must be svg
@@ -50,7 +50,17 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
       return null
     return checkAssetNode(children[0])
   }
-  return children.every((child) => child.visible && checkAssetNode(child))
+  const fillterdChildren = children.filter((child) => child.visible)
+
+  // return children.every((child) => child.visible && checkAssetNode(child))
+  //   ? 'svg'
+  //   : null
+  console.log(fillterdChildren.map((child) => child.name).join(', '))
+  return fillterdChildren.every((child) => {
+    const result = checkAssetNode(child)
+    if (result === null) return false
+    return result === 'svg'
+  })
     ? 'svg'
     : null
 }

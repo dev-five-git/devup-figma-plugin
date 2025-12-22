@@ -5,6 +5,6 @@ export function getTransformProps(
 ): Record<string, boolean | string | number | undefined | null> | undefined {
   if ('rotation' in node && node.rotation !== 0)
     return {
-      transform: `rotate(${fmtPct(node.rotation)}deg)`,
+      transform: `rotate(${fmtPct(-node.rotation)}deg)`,
     }
 }
