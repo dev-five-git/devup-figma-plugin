@@ -34,4 +34,42 @@ describe('propsToString', () => {
   test('handles empty props', () => {
     expect(propsToString({})).toBe('')
   })
+
+  test('handles animationName with keyframes function', () => {
+    const res = propsToString({
+      animationName: 'keyframes({"0%":{"opacity":0},"100%":{"opacity":1}})',
+    })
+    expect(res).toContain('animationName={keyframes(')
+    expect(res).toContain('"0%"')
+    expect(res).toContain('"100%"')
+  })
+
+  test('handles animationName with invalid keyframes JSON', () => {
+    const res = propsToString({
+      animationName: 'keyframes(invalid-json)',
+    })
+    expect(res).toBe('animationName={keyframes(invalid-json)}')
+  })
+
+  test('handles animationName starting with keyframes but no parentheses match', () => {
+    const res = propsToString({
+      animationName: 'keyframes(',
+    })
+    expect(res).toBe('animationName={keyframes(}')
+  })
+
+  test('handles animationName without keyframes prefix', () => {
+    const res = propsToString({
+      animationName: 'fadeIn',
+    })
+    expect(res).toBe('animationName="fadeIn"')
+  })
+
+  test('handles object values', () => {
+    const res = propsToString({
+      style: { color: 'red', fontSize: 16 },
+    })
+    expect(res).toContain('style={')
+    expect(res).toContain('"color": "red"')
+  })
 })

@@ -571,4 +571,124 @@ describe('paintToCSS', () => {
     expect(res).not.toContain('$')
     expect(res).not.toContain('color-mix')
   })
+
+  test('returns null when linear gradient is not visible', async () => {
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+    } as unknown as typeof figma
+
+    const res = await paintToCSS(
+      {
+        type: 'GRADIENT_LINEAR',
+        visible: false,
+        opacity: 1,
+        gradientTransform: [
+          [1, 0, 0],
+          [0, 1, 0],
+        ],
+        gradientStops: [
+          {
+            position: 0,
+            color: { r: 1, g: 0, b: 0, a: 1 },
+          },
+        ],
+      } as unknown as GradientPaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBeNull()
+  })
+
+  test('converts image paint with FILL scaleMode', async () => {
+    const res = await paintToCSS(
+      {
+        type: 'IMAGE',
+        visible: true,
+        opacity: 1,
+        scaleMode: 'FILL',
+      } as unknown as ImagePaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBe('url(/icons/image.png) center/cover no-repeat')
+  })
+
+  test('converts image paint with FIT scaleMode', async () => {
+    const res = await paintToCSS(
+      {
+        type: 'IMAGE',
+        visible: true,
+        opacity: 1,
+        scaleMode: 'FIT',
+      } as unknown as ImagePaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBe('url(/icons/image.png) center/contain no-repeat')
+  })
+
+  test('converts image paint with CROP scaleMode', async () => {
+    const res = await paintToCSS(
+      {
+        type: 'IMAGE',
+        visible: true,
+        opacity: 1,
+        scaleMode: 'CROP',
+      } as unknown as ImagePaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBe('url(/icons/image.png) center/cover no-repeat')
+  })
+
+  test('converts solid paint when last is false (transparent)', async () => {
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        getVariableByIdAsync: mock(() => Promise.resolve(null)),
+      },
+    } as unknown as typeof figma
+
+    const res = await paintToCSS(
+      {
+        type: 'SOLID',
+        visible: true,
+        opacity: 0,
+        color: { r: 1, g: 0, b: 0 },
+      } as unknown as SolidPaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBe('transparent')
+  })
+
+  test('converts pattern with CENTER alignment', async () => {
+    ;(globalThis as { figma?: unknown }).figma = {
+      getNodeByIdAsync: mock(() =>
+        Promise.resolve({ name: 'patternNode' } as unknown as SceneNode),
+      ),
+    } as unknown as typeof figma
+
+    const res = await paintToCSS(
+      {
+        type: 'PATTERN',
+        visible: true,
+        opacity: 1,
+        sourceNodeId: '1',
+        spacing: { x: 0.5, y: 0.5 },
+        horizontalAlignment: 'CENTER',
+      } as unknown as PatternPaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toContain('url(/icons/patternNode.png)')
+    expect(res).toContain('center')
+    expect(res).toContain('repeat')
+  })
 })

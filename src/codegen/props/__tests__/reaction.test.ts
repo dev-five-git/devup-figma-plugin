@@ -684,4 +684,372 @@ describe('getReactionProps', () => {
     expect(result.animationDuration).toBe('0.5s')
     expect(result.animationIterationCount).toBe('infinite')
   })
+
+  it('should return cached child animation from parent cache', async () => {
+    const buttonChild = {
+      id: 'child1',
+      name: 'Button',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      parent: { id: 'parent' },
+    } as any
+
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [buttonChild],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0.01,
+          },
+        },
+      ],
+    } as any
+
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-new',
+          name: 'Button',
+          type: 'FRAME',
+          x: 100,
+          y: 0,
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    // First call to parent should populate cache
+    await getReactionProps(parentNode)
+
+    // Second call to child should use cached value
+    const childResult = await getReactionProps(buttonChild)
+
+    expect(childResult.animationName).toBeDefined()
+    expect(childResult.animationDelay).toBe('0.01s')
+  })
+
+  it('should handle failed node lookup gracefully', async () => {
+    const node = {
+      id: 'node1',
+      type: 'FRAME',
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'missing',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockRejectedValue(new Error('Node not found'))
+
+    const result = await getReactionProps(node)
+
+    expect(result).toEqual({})
+  })
+
+  it('should handle DOCUMENT or PAGE node types', async () => {
+    const node = {
+      id: 'node1',
+      type: 'FRAME',
+      opacity: 1,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'page-node',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const pageNode = {
+      id: 'page-node',
+      type: 'PAGE',
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(pageNode)
+
+    const result = await getReactionProps(node)
+
+    expect(result).toEqual({})
+  })
+
+  it('should handle animation chain error gracefully', async () => {
+    const node1 = {
+      id: 'node1',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node2 = {
+      id: 'node2',
+      type: 'FRAME',
+      x: 100,
+      y: 0,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node3',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockImplementation(async (id: string) => {
+      if (id === 'node2') return node2
+      if (id === 'node3') throw new Error('Failed to get node3')
+      return null
+    })
+
+    const result = await getReactionProps(node1)
+
+    expect(result.animationName).toBeDefined()
+    expect(result.animationDuration).toBe('0.5s')
+  })
+
+  it('should match children by name with loop and delay', async () => {
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1',
+          name: 'Button',
+          type: 'FRAME',
+          x: 0,
+          y: 0,
+          parent: { id: 'parent' },
+        },
+      ],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0.02,
+          },
+        },
+      ],
+    } as any
+
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-new',
+          name: 'Button',
+          type: 'FRAME',
+          x: 100,
+          y: 0,
+        },
+      ],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'parent',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    await getReactionProps(parentNode)
+
+    const childNode = parentNode.children[0]
+    const result = await getReactionProps(childNode)
+
+    expect(result.animationIterationCount).toBe('infinite')
+    expect(result.animationDelay).toBe('0.02s')
+  })
+
+  it('should handle children with no matching nodes in some steps', async () => {
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1',
+          name: 'Button',
+          type: 'FRAME',
+          x: 0,
+          y: 0,
+          parent: { id: 'parent' },
+        },
+      ],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    // Destination has no children named 'Button'
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child2',
+          name: 'Text',
+          type: 'FRAME',
+          x: 100,
+          y: 0,
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    const result = await getReactionProps(parentNode)
+
+    expect(result).toEqual({})
+  })
+
+  it('should handle parent and child nodes without children prop', async () => {
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      opacity: 1,
+      // No children property
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      x: 100,
+      y: 0,
+      opacity: 0.5,
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    const result = await getReactionProps(parentNode)
+
+    expect(result.animationName).toBeDefined()
+    expect(result.animationDuration).toBe('0.5s')
+  })
 })
