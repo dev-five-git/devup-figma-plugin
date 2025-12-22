@@ -1,4 +1,5 @@
 import { addPx } from '../utils/add-px'
+import { isPageRoot } from '../utils/is-page-root'
 
 function isFreelayout(node: BaseNode & ChildrenMixin) {
   return (
@@ -8,18 +9,8 @@ function isFreelayout(node: BaseNode & ChildrenMixin) {
   )
 }
 
-function isPageRoot(node: BaseNode) {
-  return (
-    node.parent?.type === 'PAGE' ||
-    node.parent?.type === 'SECTION' ||
-    node.parent?.type === 'COMPONENT_SET'
-  )
-}
-
-export function getPositionProps(
-  node: SceneNode,
-): Record<string, string | undefined> | undefined {
-  if (
+export function canBeAbsolute(node: SceneNode): boolean {
+  return !!(
     'parent' in node &&
     node.parent &&
     (('layoutPositioning' in node && node.layoutPositioning === 'ABSOLUTE') ||
@@ -27,7 +18,13 @@ export function getPositionProps(
         'width' in node.parent &&
         'height' in node.parent &&
         !isPageRoot(node.parent as SceneNode)))
-  ) {
+  )
+}
+
+export function getPositionProps(
+  node: SceneNode,
+): Record<string, string | undefined> | undefined {
+  if ('parent' in node && node.parent && canBeAbsolute(node)) {
     const constraints =
       'constraints' in node
         ? node.constraints
@@ -94,7 +91,8 @@ export function getPositionProps(
         node.children.some(
           (child) =>
             'layoutPositioning' in child && child.layoutPositioning === 'AUTO',
-        )))
+        ))) &&
+    !isPageRoot(node)
   ) {
     return {
       pos: 'relative',

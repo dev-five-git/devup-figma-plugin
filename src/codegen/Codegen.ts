@@ -5,6 +5,7 @@ import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
+import { findPageRoot } from './utils/find-page-root'
 import {
   getDevupComponentByNode,
   getDevupComponentByProps,
@@ -117,6 +118,10 @@ export class Codegen {
             left: props.left,
             right: props.right,
             bottom: props.bottom,
+            w:
+              (findPageRoot(node) as SceneNode)?.width === node.width
+                ? '100%'
+                : undefined,
           },
           dep,
           [ret],

@@ -55,7 +55,6 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
   // return children.every((child) => child.visible && checkAssetNode(child))
   //   ? 'svg'
   //   : null
-  console.log(fillterdChildren.map((child) => child.name).join(', '))
   return fillterdChildren.every((child) => {
     const result = checkAssetNode(child)
     if (result === null) return false

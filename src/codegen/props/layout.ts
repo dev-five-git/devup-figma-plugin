@@ -1,6 +1,7 @@
 import { addPx } from '../utils/add-px'
 import { getPageNode } from '../utils/get-page-node'
 import { isChildWidthShrinker } from '../utils/is-child-width-shrinker'
+import { canBeAbsolute } from './position'
 
 export function getMinMaxProps(
   node: SceneNode,
@@ -44,15 +45,7 @@ function _getTextLayoutProps(
 function _getLayoutProps(
   node: SceneNode,
 ): Record<string, boolean | string | number | undefined | null> {
-  if (
-    'layoutPositioning' in node &&
-    node.layoutPositioning === 'ABSOLUTE' &&
-    node.parent &&
-    'width' in node.parent &&
-    'height' in node.parent &&
-    node.parent.width === node.width &&
-    node.parent.height === node.height
-  ) {
+  if (canBeAbsolute(node)) {
     return {
       w: '100%',
       h: '100%',
