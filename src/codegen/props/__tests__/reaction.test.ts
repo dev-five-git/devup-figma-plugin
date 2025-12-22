@@ -3,8 +3,15 @@ import { getReactionProps } from '../reaction'
 
 // Mock figma global
 const mockGetNodeByIdAsync = vi.fn()
+const mockGetVariableByIdAsync = vi.fn()
 ;(global as any).figma = {
   getNodeByIdAsync: mockGetNodeByIdAsync,
+  util: {
+    rgba: (color: any) => color,
+  },
+  variables: {
+    getVariableByIdAsync: mockGetVariableByIdAsync,
+  },
 }
 
 describe('getReactionProps', () => {
@@ -232,7 +239,7 @@ describe('getReactionProps', () => {
 
     expect(result.animationName).toBeDefined()
     expect(result.animationName).toContain('bg')
-    expect(result.animationName).toContain('rgb(0, 255, 0)')
+    expect(result.animationName).toContain('#0F0') // hex format instead of rgb
   })
 
   it('should return empty object when no changes detected', async () => {
@@ -611,7 +618,7 @@ describe('getReactionProps', () => {
     expect(buttonAnimation).toContain('100%')
     expect(buttonAnimation).toContain('translate(100px, 0px)') // Position change
     expect(buttonAnimation).toContain('0.5') // Opacity change
-    expect(buttonAnimation).toContain('rgb(0, 255, 0)') // Color change
+    expect(buttonAnimation).toContain('#0F0') // Color change (hex format)
 
     // Text child should get its animation from cache
     const textResult = await getReactionProps(textChild)

@@ -1,4 +1,5 @@
 import { fmtPct } from '../utils/fmtPct'
+import { solidToString } from '../utils/solid-to-string'
 
 interface KeyframeData {
   [percentage: string]: Record<string, unknown>
@@ -604,7 +605,7 @@ async function generateSingleNodeDifferences(
         toFill.type === 'SOLID' &&
         !isSameColor(fromFill.color, toFill.color)
       ) {
-        changes.bg = rgbToString(toFill.color, toFill.opacity)
+        changes.bg = await solidToString(toFill)
       }
     }
   }
@@ -643,16 +644,4 @@ function isSameColor(color1: RGB, color2: RGB): boolean {
     Math.abs(color1.g - color2.g) < 0.01 &&
     Math.abs(color1.b - color2.b) < 0.01
   )
-}
-
-function rgbToString(color: RGB, opacity?: number): string {
-  const r = Math.round(color.r * 255)
-  const g = Math.round(color.g * 255)
-  const b = Math.round(color.b * 255)
-
-  if (opacity !== undefined && opacity < 1) {
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`
-  }
-
-  return `rgb(${r}, ${g}, ${b})`
 }
