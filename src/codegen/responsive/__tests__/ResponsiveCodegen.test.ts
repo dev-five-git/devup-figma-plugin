@@ -98,26 +98,6 @@ describe('ResponsiveCodegen', () => {
     expect(result.startsWith('render:Box')).toBeTrue()
   })
 
-  // it('returns empty display when all breakpoints present', async () => {
-  //   const section = {
-  //     type: 'SECTION',
-  //     children: [makeNode('RootMobile', 320)],
-  //   } as unknown as SectionNode
-  //   const generator = new ResponsiveCodegen(section)
-  //   const displayProps = (
-  //     generator as unknown as {
-  //       getDisplayProps: (
-  //         present: Set<BreakpointKey>,
-  //         all: Set<BreakpointKey>,
-  //       ) => Record<string, unknown>
-  //     }
-  //   ).getDisplayProps(
-  //     new Set<BreakpointKey>(BREAKPOINT_ORDER),
-  //     new Set<BreakpointKey>(BREAKPOINT_ORDER),
-  //   )
-  //   expect(displayProps).toEqual({})
-  // })
-
   it('recursively generates node code', async () => {
     const child = makeNode('child')
     const parent = makeNode('parent', undefined, [child])
