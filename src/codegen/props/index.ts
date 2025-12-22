@@ -11,6 +11,7 @@ import { getObjectFitProps } from './object-fit'
 import { getOverflowProps } from './overflow'
 import { getPaddingProps } from './padding'
 import { getPositionProps } from './position'
+import { getReactionProps } from './reaction'
 import { getTextAlignProps } from './text-align'
 import { getTextShadowProps } from './text-shadow'
 import { getTextStrokeProps } from './text-stroke'
@@ -41,6 +42,7 @@ export async function getProps(
     ...getOverflowProps(node),
     ...(await getTextStrokeProps(node)),
     ...(await getTextShadowProps(node)),
+    ...(await getReactionProps(node)),
   }
 }
 
