@@ -1052,4 +1052,382 @@ describe('getReactionProps', () => {
     expect(result.animationName).toBeDefined()
     expect(result.animationDuration).toBe('0.5s')
   })
+
+  it('should return empty when child not found in cache', async () => {
+    const childWithNoCache = {
+      id: 'child-no-cache',
+      name: 'NoCache',
+      type: 'FRAME',
+      parent: { id: 'non-existent-parent' },
+    } as any
+
+    const result = await getReactionProps(childWithNoCache)
+
+    expect(result).toEqual({})
+  })
+
+  it('should handle node with direct self-loop (currentNodeId === startNode.id)', async () => {
+    const loopNode = {
+      id: 'loop-node',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      opacity: 1,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'loop-node',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(loopNode)
+
+    const result = await getReactionProps(loopNode)
+
+    // Direct self-loop should result in empty (isLoop: true but chain is empty)
+    expect(result).toEqual({})
+  })
+
+  it('should handle chain with nested loop detection (isLoop propagation)', async () => {
+    const node1 = {
+      id: 'node1',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      opacity: 1,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node2 = {
+      id: 'node2',
+      type: 'FRAME',
+      x: 100,
+      y: 0,
+      opacity: 0.8,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node3',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node3 = {
+      id: 'node3',
+      type: 'FRAME',
+      x: 200,
+      y: 0,
+      opacity: 0.5,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node1',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockImplementation(async (id: string) => {
+      if (id === 'node2') return node2
+      if (id === 'node3') return node3
+      return null
+    })
+
+    const result = await getReactionProps(node1)
+
+    expect(result.animationName).toBeDefined()
+    expect(result.animationIterationCount).toBe('infinite')
+    expect(result.animationDuration).toBe('1s') // 0.5 + 0.5
+  })
+
+  it('should handle visited node in recursive chain (line 284)', async () => {
+    const node1 = {
+      id: 'node1',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      opacity: 1,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node2 = {
+      id: 'node2',
+      type: 'FRAME',
+      x: 50,
+      y: 0,
+      opacity: 0.8,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node3',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node3 = {
+      id: 'node3',
+      type: 'FRAME',
+      x: 100,
+      y: 0,
+      opacity: 0.5,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockImplementation(async (id: string) => {
+      if (id === 'node2') return node2
+      if (id === 'node3') return node3
+      return null
+    })
+
+    const result = await getReactionProps(node1)
+
+    expect(result.animationName).toBeDefined()
+    // Should stop at node3 when trying to revisit node2
+    expect(result.animationDuration).toBe('0.6s')
+  })
+
+  it('should handle children without matching in prev/current nodes (line 413)', async () => {
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1',
+          name: 'Button',
+          type: 'FRAME',
+          x: 0,
+          y: 0,
+          parent: { id: 'parent' },
+        },
+      ],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    // Dest has no children property
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      x: 100,
+      y: 0,
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    const result = await getReactionProps(parentNode)
+
+    expect(result).toEqual({})
+  })
+
+  it('should handle firstChild missing in animation (line 465-466)', async () => {
+    const child1 = {
+      id: 'child1',
+      name: 'Button',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      opacity: 1,
+      parent: { id: 'parent' },
+    } as any
+
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [child1],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-dest',
+          name: 'Button',
+          type: 'FRAME',
+          x: 100,
+          y: 0,
+          opacity: 0.5,
+        },
+      ],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const destNode2 = {
+      id: 'dest2',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-dest2',
+          name: 'Button',
+          type: 'FRAME',
+          x: 200,
+          y: 0,
+          opacity: 1,
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockImplementation(async (id: string) => {
+      if (id === 'dest') return destNode
+      if (id === 'dest2') return destNode2
+      return null
+    })
+
+    await getReactionProps(parentNode)
+
+    const result = await getReactionProps(child1)
+
+    expect(result.animationName).toBeDefined()
+    expect(result.animationDuration).toBe('1s')
+  })
 })

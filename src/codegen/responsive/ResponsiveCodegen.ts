@@ -9,8 +9,7 @@ import {
   mergePropsToResponsive,
 } from './index'
 
-type PropValue = boolean | string | number | undefined | null | object
-type Props = Record<string, PropValue>
+type Props = Record<string, unknown>
 
 interface NodePropsMap {
   breakpoint: BreakpointKey

@@ -691,4 +691,84 @@ describe('paintToCSS', () => {
     expect(res).toContain('center')
     expect(res).toContain('repeat')
   })
+
+  test('converts gradient with token and finalAlpha = 1 (line 222)', async () => {
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        getVariableByIdAsync: mock(() =>
+          Promise.resolve({ name: 'primary-color' }),
+        ),
+      },
+    } as unknown as typeof figma
+
+    const res = await paintToCSS(
+      {
+        type: 'GRADIENT_LINEAR',
+        visible: true,
+        opacity: 1,
+        gradientTransform: [
+          [1, 0, 0],
+          [0, 1, 0],
+        ],
+        gradientStops: [
+          {
+            position: 0,
+            color: { r: 1, g: 0, b: 0, a: 1 },
+            boundVariables: { color: { id: 'var-1' } },
+          },
+        ],
+      } as unknown as GradientPaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toContain('$primaryColor')
+    expect(res).not.toContain('color-mix')
+  })
+
+  test('converts pattern with START alignment and zero spacing (line 288)', async () => {
+    ;(globalThis as { figma?: unknown }).figma = {
+      getNodeByIdAsync: mock(() =>
+        Promise.resolve({ name: 'patternStart' } as unknown as SceneNode),
+      ),
+    } as unknown as typeof figma
+
+    const res = await paintToCSS(
+      {
+        type: 'PATTERN',
+        visible: true,
+        opacity: 1,
+        sourceNodeId: '1',
+        spacing: { x: 0, y: 0 },
+        horizontalAlignment: 'START',
+      } as unknown as PatternPaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBe('url(/icons/patternStart.png) repeat')
+  })
+
+  test('converts solid to linear gradient when not last and opacity > 0 (line 295-296)', async () => {
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        getVariableByIdAsync: mock(() => Promise.resolve(null)),
+      },
+    } as unknown as typeof figma
+
+    const res = await paintToCSS(
+      {
+        type: 'SOLID',
+        visible: true,
+        opacity: 0.5,
+        color: { r: 1, g: 0, b: 0 },
+      } as unknown as SolidPaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toContain('linear-gradient')
+  })
 })

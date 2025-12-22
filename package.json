@@ -7,7 +7,7 @@
     "dev": "rspack dev",
     "build": "rspack build",
     "watch": "rspack build --watch",
-    "test": "bun test --coverage",
+    "test": "tsc --noEmit && bun test --coverage",
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --fix",
     "prepare": "husky"

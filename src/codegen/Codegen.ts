@@ -81,7 +81,7 @@ export class Codegen {
         const maskColor = await checkSameColor(node)
         if (maskColor) {
           // support mask image icon
-          props.maskImage = buildCssUrl(props.src)
+          props.maskImage = buildCssUrl(props.src as string)
           props.maskRepeat = 'no-repeat'
           props.maskSize = 'contain'
           props.bg = maskColor

@@ -25,7 +25,7 @@ const originalGenerateResponsiveCode =
 
 describe('registerCodegen responsive error handling', () => {
   beforeEach(() => {
-    Codegen.prototype.run = runMock
+    Codegen.prototype.run = runMock as unknown as typeof Codegen.prototype.run
     Codegen.prototype.getComponentsCodes = getComponentsCodesMock
     Codegen.prototype.getCode = getCodeMock
     ResponsiveCodegen.prototype.generateResponsiveCode =
@@ -48,9 +48,8 @@ describe('registerCodegen responsive error handling', () => {
   })
 
   test('swallows responsive errors and still returns base code', async () => {
-    const handlerCalls: Parameters<
-      Parameters<typeof registerCodegen>[0]['codegen']['on']
-    >[1][] = []
+    const handlerCalls: ((event: CodegenEvent) => Promise<CodegenResult[]>)[] =
+      []
     const ctx = {
       editorType: 'dev',
       mode: 'codegen',

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import type { Devup } from '../../types'
 import { uploadDevupXlsx } from '../upload-devup-xlsx'
 
 describe('uploadDevupXlsx', () => {
@@ -83,6 +84,6 @@ describe('uploadDevupXlsx', () => {
     }
 
     const result = await promise
-    expect(result).toEqual(testData)
+    expect(result).toEqual(testData as unknown as Devup)
   })
 })

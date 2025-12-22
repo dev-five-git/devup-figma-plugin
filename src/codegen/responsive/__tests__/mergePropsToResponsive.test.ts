@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test'
-import { type BreakpointKey, mergePropsToResponsive } from '../index'
+import {
+  type BreakpointKey,
+  mergePropsToResponsive,
+  type Props,
+} from '../index'
 
 describe('mergePropsToResponsive', () => {
   const cases: {
@@ -148,7 +152,9 @@ describe('mergePropsToResponsive', () => {
 
   cases.forEach(({ name, input, expected }) => {
     it(name, () => {
-      expect(mergePropsToResponsive(input)).toEqual(expected)
+      expect(
+        mergePropsToResponsive(input as unknown as Map<BreakpointKey, Props>),
+      ).toEqual(expected as unknown as Props)
     })
   })
 })

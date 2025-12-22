@@ -6,7 +6,7 @@ import { propsToString } from '../utils/props-to-str'
 
 export function renderNode(
   component: string,
-  props: Record<string, number | null | string | boolean | undefined | object>,
+  props: Record<string, unknown>,
   deps: number = 0,
   childrenCodes: string[],
 ): string {

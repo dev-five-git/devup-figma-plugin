@@ -62,7 +62,7 @@ export function groupChildrenByBreakpoint(
 }
 
 type PropValue = boolean | string | number | undefined | null | object
-type Props = Record<string, PropValue>
+export type Props = Record<string, PropValue>
 const SPECIAL_PROPS_WITH_INITIAL = new Set(['display', 'position', 'pos'])
 
 /**
@@ -133,8 +133,8 @@ export function optimizeResponsiveValue(
  * Always 5 slots: [mobile, sm, tablet, lg, pc]; trailing nulls trimmed.
  */
 export function mergePropsToResponsive(
-  breakpointProps: Map<BreakpointKey, Props>,
-): Props {
+  breakpointProps: Map<BreakpointKey, Record<string, unknown>>,
+): Record<string, unknown> {
   const result: Props = {}
 
   // If only one breakpoint, return props as-is.

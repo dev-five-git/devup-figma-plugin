@@ -38,16 +38,6 @@ export function getPositionProps(
           : undefined
     if (!constraints) return
     const { horizontal, vertical } = constraints
-    console.log(
-      'parent',
-      node.parent.type,
-      isPageRoot(node.parent as SceneNode),
-      'layoutPositioning' in node && node.layoutPositioning === 'ABSOLUTE',
-      node.parent.type,
-      isFreelayout(node.parent) &&
-        'width' in node.parent &&
-        'height' in node.parent,
-    )
 
     let left: string | undefined
     let right: string | undefined
@@ -62,7 +52,9 @@ export function getPositionProps(
           left = addPx(node.x) ?? '0px'
           break
         case 'MAX':
-          right = addPx(node.parent.width - node.x - node.width) ?? '0px'
+          right =
+            addPx((node.parent as SceneNode).width - node.x - node.width) ??
+            '0px'
           break
         default:
           left = '0px'
@@ -74,7 +66,9 @@ export function getPositionProps(
           top = addPx(node.y) ?? '0px'
           break
         case 'MAX':
-          bottom = addPx(node.parent.height - node.y - node.height) ?? '0px'
+          bottom =
+            addPx((node.parent as SceneNode).height - node.y - node.height) ??
+            '0px'
           break
         default:
           top = '0px'
