@@ -279,11 +279,6 @@ async function buildAnimationChain(
   const currentNodeId = currentNode.id
   let isLoop = false
 
-  // Prevent infinite loops by checking if we've visited this node
-  if (visitedIds.has(currentNodeId)) {
-    return { chain, isLoop: false }
-  }
-
   // Check for circular reference back to start node (this means it's a loop!)
   if (currentNodeId === startNode.id) {
     return { chain, isLoop: true }
@@ -619,8 +614,8 @@ async function generateSingleNodeDifferences(
     if (fromNode.rotation !== toNode.rotation) {
       const existingTransform = (changes.transform as string) || ''
       changes.transform = existingTransform
-        ? `${existingTransform} rotate(${fmtPct(toNode.rotation)}deg)`
-        : `rotate(${fmtPct(toNode.rotation)}deg)`
+        ? `${existingTransform} rotate(${fmtPct(-toNode.rotation)}deg)`
+        : `rotate(${fmtPct(-toNode.rotation)}deg)`
     }
   }
 

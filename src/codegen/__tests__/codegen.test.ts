@@ -3364,4 +3364,90 @@ export function Button() {
     expect(codegen.getCode()).toBe(expected)
     expect(componentsCodes).toEqual(expectedComponents)
   })
+
+  test('renders instance with page root width and sets width to 100%', async () => {
+    const mainComponent = {
+      type: 'COMPONENT',
+      name: 'TestComponent',
+      children: [],
+      getMainComponentAsync: async () => null,
+    } as unknown as ComponentNode
+
+    const pageNode = {
+      type: 'PAGE',
+    } as unknown as PageNode
+
+    const pageRootNode = {
+      type: 'FRAME',
+      name: 'PageRoot',
+      parent: pageNode,
+      width: 1440,
+      height: 900,
+    } as unknown as FrameNode
+
+    const instanceNode = {
+      type: 'INSTANCE',
+      name: 'TestInstance',
+      parent: pageRootNode,
+      width: 1440,
+      height: 100,
+      x: 100,
+      y: 50,
+      getMainComponentAsync: async () => mainComponent,
+      layoutPositioning: 'ABSOLUTE',
+      constraints: {
+        horizontal: 'MIN',
+        vertical: 'MIN',
+      },
+    } as unknown as InstanceNode
+
+    const codegen = new Codegen(instanceNode)
+    await codegen.run()
+    const code = codegen.getCode()
+
+    expect(code).toContain('w="100%"')
+  })
+
+  test('renders instance without page root width match and does not set width to 100%', async () => {
+    const mainComponent = {
+      type: 'COMPONENT',
+      name: 'TestComponent',
+      children: [],
+      getMainComponentAsync: async () => null,
+    } as unknown as ComponentNode
+
+    const pageNode = {
+      type: 'PAGE',
+    } as unknown as PageNode
+
+    const pageRootNode = {
+      type: 'FRAME',
+      name: 'PageRoot',
+      parent: pageNode,
+      width: 1440,
+      height: 900,
+    } as unknown as FrameNode
+
+    const instanceNode = {
+      type: 'INSTANCE',
+      name: 'TestInstance',
+      parent: pageRootNode,
+      width: 800,
+      height: 100,
+      x: 100,
+      y: 50,
+      getMainComponentAsync: async () => mainComponent,
+      layoutPositioning: 'ABSOLUTE',
+      constraints: {
+        horizontal: 'MIN',
+        vertical: 'MIN',
+      },
+    } as unknown as InstanceNode
+
+    const codegen = new Codegen(instanceNode)
+    await codegen.run()
+    const code = codegen.getCode()
+
+    expect(code).not.toContain('w="100%"')
+  })
 })

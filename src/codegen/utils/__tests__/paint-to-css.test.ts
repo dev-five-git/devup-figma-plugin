@@ -771,4 +771,34 @@ describe('paintToCSS', () => {
 
     expect(res).toContain('linear-gradient')
   })
+
+  test('returns transparent when image is not visible', async () => {
+    const res = await paintToCSS(
+      {
+        type: 'IMAGE',
+        visible: false,
+        opacity: 1,
+        scaleMode: 'FILL',
+      } as unknown as ImagePaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBe('transparent')
+  })
+
+  test('returns transparent when image opacity is 0', async () => {
+    const res = await paintToCSS(
+      {
+        type: 'IMAGE',
+        visible: true,
+        opacity: 0,
+        scaleMode: 'FILL',
+      } as unknown as ImagePaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toBe('transparent')
+  })
 })

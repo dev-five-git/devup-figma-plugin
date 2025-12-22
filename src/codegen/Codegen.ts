@@ -119,6 +119,7 @@ export class Codegen {
             right: props.right,
             bottom: props.bottom,
             w:
+              // if the node is a page root, set the width to 100%
               (findPageRoot(node) as SceneNode)?.width === node.width
                 ? '100%'
                 : undefined,

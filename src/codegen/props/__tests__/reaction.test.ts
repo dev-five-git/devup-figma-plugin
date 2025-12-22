@@ -1211,6 +1211,14 @@ describe('getReactionProps', () => {
                 duration: 0.3,
               },
             },
+            {
+              type: 'NODE',
+              destinationId: 'node3',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
           ],
           trigger: {
             type: 'AFTER_TIMEOUT',
@@ -1281,7 +1289,6 @@ describe('getReactionProps', () => {
     const result = await getReactionProps(node1)
 
     expect(result.animationName).toBeDefined()
-    // Should stop at node3 when trying to revisit node2
     expect(result.animationDuration).toBe('0.6s')
   })
 
@@ -1429,5 +1436,130 @@ describe('getReactionProps', () => {
 
     expect(result.animationName).toBeDefined()
     expect(result.animationDuration).toBe('1s')
+  })
+
+  it('should return cached child animation when cache exists for child name (line 41-43)', async () => {
+    const child1 = {
+      id: 'child1',
+      name: 'AnimatedButton',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      parent: { id: 'parent' },
+    } as any
+
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [child1],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.8,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0.03,
+          },
+        },
+      ],
+    } as any
+
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-dest',
+          name: 'AnimatedButton',
+          type: 'FRAME',
+          x: 150,
+          y: 50,
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    await getReactionProps(parentNode)
+
+    const result = await getReactionProps(child1)
+
+    expect(result.animationName).toBeDefined()
+    expect(result.animationDuration).toBe('0.8s')
+    expect(result.animationDelay).toBe('0.03s')
+  })
+
+  it('should handle when parent cache exists but child name not in cache (line 43)', async () => {
+    const child1 = {
+      id: 'child1',
+      name: 'CachedButton',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      parent: { id: 'parent' },
+    } as any
+
+    const child2 = {
+      id: 'child2',
+      name: 'UncachedButton',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      parent: { id: 'parent' },
+    } as any
+
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [child1],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-dest',
+          name: 'CachedButton',
+          type: 'FRAME',
+          x: 100,
+          y: 0,
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    await getReactionProps(parentNode)
+
+    const result = await getReactionProps(child2)
+
+    expect(result).toEqual({})
   })
 })
