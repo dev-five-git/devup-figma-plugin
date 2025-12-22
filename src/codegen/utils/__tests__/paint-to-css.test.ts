@@ -572,6 +572,42 @@ describe('paintToCSS', () => {
     expect(res).not.toContain('color-mix')
   })
 
+  test('converts radial gradient with color token and full opacity (line 223)', async () => {
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        getVariableByIdAsync: mock(() =>
+          Promise.resolve({ name: 'radial-color-full' }),
+        ),
+      },
+    } as unknown as typeof figma
+
+    const res = await paintToCSS(
+      {
+        type: 'GRADIENT_RADIAL',
+        visible: true,
+        opacity: 1,
+        gradientTransform: [
+          [1, 0, 0.5],
+          [0, 1, 0.5],
+        ],
+        gradientStops: [
+          {
+            position: 0,
+            color: { r: 1, g: 0, b: 0, a: 1 },
+            boundVariables: { color: { id: 'var-radial' } },
+          },
+        ],
+      } as unknown as GradientPaint,
+      { width: 100, height: 100 } as unknown as SceneNode,
+      false,
+    )
+
+    expect(res).toContain('radial-gradient')
+    expect(res).toContain('$radialColorFull')
+    expect(res).not.toContain('color-mix')
+  })
+
   test('returns null when linear gradient is not visible', async () => {
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
