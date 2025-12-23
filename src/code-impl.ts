@@ -81,6 +81,7 @@ function generatePowerShellCLI(
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
     ctx.codegen.on('generate', async ({ node, language }) => {
+      console.log('node', node)
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()

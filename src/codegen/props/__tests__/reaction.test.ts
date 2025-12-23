@@ -462,9 +462,11 @@ describe('getReactionProps', () => {
 
     const result = await getReactionProps(node1)
 
-    // Should stop at node2 and not loop back to node1
+    // Should stop at node2 and not loop back to node1 (prevents infinite recursion)
+    // But it's detected as a loop, so duration includes return-to-initial step
     expect(result.animationName).toBeDefined()
-    expect(result.animationDuration).toBe('0.5s') // Only one transition
+    expect(result.animationDuration).toBe('1s') // 0.5s + 0.5s (return to initial)
+    expect(result.animationIterationCount).toBe('infinite')
   })
 
   it('should prevent infinite loops with self-referencing nodes', async () => {
@@ -630,7 +632,7 @@ describe('getReactionProps', () => {
     expect(textAnimation).toContain('0.8') // Opacity change
   })
 
-  it('should detect loop animations and add infinite iteration count', async () => {
+  it('should detect loop animations and add infinite iteration count with 100% returning to initial', async () => {
     const node1 = {
       id: 'node1',
       type: 'FRAME',
@@ -688,8 +690,15 @@ describe('getReactionProps', () => {
     const result = await getReactionProps(node1)
 
     expect(result.animationName).toBeDefined()
-    expect(result.animationDuration).toBe('0.5s')
+    // Duration should include the return-to-initial step: 0.5s + 0.5s = 1s
+    expect(result.animationDuration).toBe('1s')
     expect(result.animationIterationCount).toBe('infinite')
+
+    // Check that keyframes include 100% returning to initial state
+    const animationName = result.animationName as string
+    expect(animationName).toContain('100%')
+    // The 50% keyframe should contain the changes, and 100% should return to initial
+    expect(animationName).toContain('50%')
   })
 
   it('should return cached child animation from parent cache', async () => {
@@ -1211,7 +1220,11 @@ describe('getReactionProps', () => {
 
     expect(result.animationName).toBeDefined()
     expect(result.animationIterationCount).toBe('infinite')
-    expect(result.animationDuration).toBe('1s') // 0.5 + 0.5
+    // 0.5 + 0.5 for chain + 0.5 for return-to-initial = 1.5s
+    expect(result.animationDuration).toBe('1.5s')
+    // Keyframes should include 100% returning to initial state
+    const animationName = result.animationName as string
+    expect(animationName).toContain('100%')
   })
 
   it('should handle visited node in recursive chain (line 284)', async () => {
