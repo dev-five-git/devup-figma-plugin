@@ -95,6 +95,7 @@ describe('registerCodegen', () => {
         node: {
           type: 'COMPONENT',
           name: 'Test',
+          visible: true,
         },
         language: 'devup-ui',
       },
@@ -109,6 +110,7 @@ describe('registerCodegen', () => {
         node: {
           type: 'FRAME',
           name: 'Main',
+          visible: true,
         },
         language: 'devup-ui',
       },
@@ -123,6 +125,7 @@ describe('registerCodegen', () => {
         node: {
           type: 'FRAME',
           name: 'Other',
+          visible: true,
         },
         language: 'other',
       },

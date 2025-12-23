@@ -17,6 +17,7 @@ import { getTextAlignProps } from './text-align'
 import { getTextShadowProps } from './text-shadow'
 import { getTextStrokeProps } from './text-stroke'
 import { getTransformProps } from './transform'
+import { getVisibilityProps } from './visibility'
 
 export async function getProps(
   node: SceneNode,
@@ -43,6 +44,7 @@ export async function getProps(
     ...(await getTextShadowProps(node)),
     ...(await getReactionProps(node)),
     ...getCursorProps(node),
+    ...getVisibilityProps(node),
   }
 }
 

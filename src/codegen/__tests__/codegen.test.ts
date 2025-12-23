@@ -107,7 +107,27 @@ function createTextSegment(characters: string): StyledTextSegment {
   } as unknown as StyledTextSegment
 }
 
+function addVisibleToAll(node: SceneNode, visited = new Set<SceneNode>()) {
+  if (visited.has(node)) return
+  visited.add(node)
+  if (!('visible' in node)) {
+    ;(node as unknown as { visible: boolean }).visible = true
+  }
+  if ('children' in node) {
+    for (const child of node.children) {
+      addVisibleToAll(child, visited)
+    }
+  }
+  if ('parent' in node && node.parent) {
+    addVisibleToAll(node.parent as SceneNode, visited)
+  }
+  if ('defaultVariant' in node && node.defaultVariant) {
+    addVisibleToAll(node.defaultVariant as SceneNode, visited)
+  }
+}
+
 function addParent(parent: SceneNode) {
+  addVisibleToAll(parent)
   if ('children' in parent) {
     for (const child of parent.children) {
       ;(child as unknown as { parent: SceneNode }).parent = parent
@@ -2110,7 +2130,7 @@ describe('Codegen', () => {
         height: 50,
         rotation: 45,
       } as unknown as FrameNode,
-      expected: `<Box h="50px" transform="rotate(-45deg)" transformOrigin="top left" w="100px" />`,
+      expected: `<Box h="50px" transform="rotate(-45deg)" w="100px" />`,
     },
     {
       title: 'renders frame with negative rotation transform',
@@ -2125,7 +2145,7 @@ describe('Codegen', () => {
         rotation: -30,
       } as unknown as FrameNode,
       // revsered rotation
-      expected: `<Box h="40px" transform="rotate(30deg)" transformOrigin="top left" w="80px" />`,
+      expected: `<Box h="40px" transform="rotate(30deg)" w="80px" />`,
     },
     {
       title: 'renders frame with decimal rotation transform',
@@ -2139,7 +2159,7 @@ describe('Codegen', () => {
         height: 60,
         rotation: 15.5,
       } as unknown as FrameNode,
-      expected: `<Box h="60px" transform="rotate(-15.5deg)" transformOrigin="top left" w="120px" />`,
+      expected: `<Box h="60px" transform="rotate(-15.5deg)" w="120px" />`,
     },
     {
       title: 'renders frame with opacity less than 1',

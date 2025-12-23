@@ -1,4 +1,5 @@
 import { fmtPct } from '../utils/fmtPct'
+import { canBeAbsolute } from './position'
 
 export function getTransformProps(
   node: SceneNode,
@@ -6,6 +7,6 @@ export function getTransformProps(
   if ('rotation' in node && node.rotation !== 0)
     return {
       transform: `rotate(${fmtPct(-node.rotation)}deg)`,
-      transformOrigin: 'top left',
+      transformOrigin: canBeAbsolute(node) ? 'top left' : undefined,
     }
 }
