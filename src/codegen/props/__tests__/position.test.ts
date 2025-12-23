@@ -187,7 +187,12 @@ describe('position', () => {
         fills: [],
         children: [
           {
+            type: 'TEXT',
             layoutPositioning: 'ABSOLUTE',
+            visible: true,
+          },
+          {
+            type: 'TEXT',
             visible: true,
           },
         ],
@@ -206,7 +211,12 @@ describe('position', () => {
         fills: [],
         children: [
           {
+            type: 'TEXT',
             layoutPositioning: 'AUTO',
+            visible: true,
+          },
+          {
+            type: 'TEXT',
             visible: true,
           },
         ],
