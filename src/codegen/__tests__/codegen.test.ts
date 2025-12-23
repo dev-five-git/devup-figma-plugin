@@ -3466,3 +3466,686 @@ export function Button() {
     expect(code).not.toContain('w="100%"')
   })
 })
+
+describe('Codegen Tree Methods', () => {
+  describe('buildTree', () => {
+    test('builds tree for simple frame', async () => {
+      const node = {
+        type: 'FRAME',
+        name: 'SimpleFrame',
+        children: [],
+        visible: true,
+      } as unknown as FrameNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Box')
+      expect(tree.nodeType).toBe('FRAME')
+      expect(tree.nodeName).toBe('SimpleFrame')
+      expect(tree.children).toEqual([])
+    })
+
+    test('builds tree for asset node (image)', async () => {
+      const node = {
+        type: 'RECTANGLE',
+        name: 'TestImage',
+        isAsset: true,
+        children: [],
+        visible: true,
+        fills: [
+          {
+            type: 'IMAGE',
+            visible: true,
+          },
+        ],
+      } as unknown as RectangleNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Image')
+      expect(tree.props.src).toBe('/images/TestImage.png')
+      expect(tree.nodeType).toBe('RECTANGLE')
+    })
+
+    test('builds tree for SVG asset with mask color', async () => {
+      const node = {
+        type: 'VECTOR',
+        name: 'TestIcon',
+        isAsset: true,
+        children: [],
+        visible: true,
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 1, g: 0, b: 0 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as VectorNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Box')
+      expect(tree.props.maskImage).toBe('url(/icons/TestIcon.svg)')
+      expect(tree.props.maskRepeat).toBe('no-repeat')
+      expect(tree.props.maskSize).toBe('contain')
+      expect(tree.props.bg).toBe('#F00')
+      expect(tree.props.src).toBeUndefined()
+    })
+
+    test('builds tree for SVG asset without same color (returns Image)', async () => {
+      const node = {
+        type: 'FRAME',
+        name: 'MultiColorIcon',
+        isAsset: true,
+        children: [
+          {
+            type: 'VECTOR',
+            name: 'Part1',
+            visible: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'VECTOR',
+            name: 'Part2',
+            visible: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 0, g: 1, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+        ],
+        visible: true,
+        fills: [],
+      } as unknown as FrameNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Image')
+      expect(tree.props.src).toBe('/icons/MultiColorIcon.svg')
+    })
+
+    test('builds tree for frame with children', async () => {
+      const child1 = {
+        type: 'FRAME',
+        name: 'Child1',
+        children: [],
+        visible: true,
+      } as unknown as FrameNode
+
+      const child2 = {
+        type: 'FRAME',
+        name: 'Child2',
+        children: [],
+        visible: true,
+      } as unknown as FrameNode
+
+      const node = {
+        type: 'FRAME',
+        name: 'ParentFrame',
+        children: [child1, child2],
+        visible: true,
+        inferredAutoLayout: {
+          layoutMode: 'HORIZONTAL',
+          itemSpacing: 8,
+        },
+        primaryAxisAlignItems: 'MIN',
+        counterAxisAlignItems: 'MIN',
+      } as unknown as FrameNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Flex')
+      expect(tree.children.length).toBe(2)
+      expect(tree.children[0].nodeName).toBe('Child1')
+      expect(tree.children[1].nodeName).toBe('Child2')
+    })
+
+    test('builds tree for TEXT node', async () => {
+      const node = {
+        type: 'TEXT',
+        name: 'TextNode',
+        characters: 'Hello World',
+        visible: true,
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+        textAlignHorizontal: 'LEFT',
+        textAlignVertical: 'TOP',
+        strokes: [],
+        effects: [],
+        getStyledTextSegments: () => [createTextSegment('Hello World')],
+      } as unknown as TextNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Text')
+      expect(tree.nodeType).toBe('TEXT')
+      expect(tree.textChildren).toBeDefined()
+    })
+
+    test('builds tree for INSTANCE node without position wrapper', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'MainComponent',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const instanceNode = {
+        type: 'INSTANCE',
+        name: 'InstanceNode',
+        visible: true,
+        getMainComponentAsync: async () => mainComponent,
+      } as unknown as InstanceNode
+      addParent(instanceNode)
+
+      const codegen = new Codegen(instanceNode)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('MainComponent')
+      expect(tree.isComponent).toBe(true)
+      expect(tree.props).toEqual({})
+    })
+
+    test('builds tree for INSTANCE node with position wrapper (absolute)', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'AbsoluteComponent',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const parent = {
+        type: 'FRAME',
+        name: 'Parent',
+        children: [],
+        visible: true,
+        width: 500,
+      } as unknown as FrameNode
+
+      const instanceNode = {
+        type: 'INSTANCE',
+        name: 'AbsoluteInstance',
+        visible: true,
+        width: 100,
+        height: 50,
+        x: 10,
+        y: 20,
+        layoutPositioning: 'ABSOLUTE',
+        constraints: {
+          horizontal: 'MIN',
+          vertical: 'MIN',
+        },
+        getMainComponentAsync: async () => mainComponent,
+        parent,
+      } as unknown as InstanceNode
+
+      ;(parent as unknown as { children: SceneNode[] }).children = [
+        instanceNode,
+      ]
+      addParent(parent)
+
+      const codegen = new Codegen(instanceNode)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Box')
+      expect(tree.props.pos).toBe('absolute')
+      expect(tree.children.length).toBe(1)
+      expect(tree.children[0].component).toBe('AbsoluteComponent')
+      expect(tree.children[0].isComponent).toBe(true)
+    })
+
+    test('builds tree for INSTANCE with position and 100% width', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'FullWidthComponent',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const page = {
+        type: 'PAGE',
+        name: 'Page',
+        width: 200,
+        parent: null,
+      } as unknown as PageNode
+
+      const parent = {
+        type: 'FRAME',
+        name: 'PageRoot',
+        children: [],
+        visible: true,
+        width: 200,
+        parent: page,
+      } as unknown as FrameNode
+
+      const instanceNode = {
+        type: 'INSTANCE',
+        name: 'FullWidthInstance',
+        visible: true,
+        width: 200,
+        height: 50,
+        x: 0,
+        y: 0,
+        layoutPositioning: 'ABSOLUTE',
+        constraints: {
+          horizontal: 'MIN',
+          vertical: 'MIN',
+        },
+        getMainComponentAsync: async () => mainComponent,
+        parent,
+      } as unknown as InstanceNode
+
+      ;(parent as unknown as { children: SceneNode[] }).children = [
+        instanceNode,
+      ]
+      addParent(parent)
+
+      const codegen = new Codegen(instanceNode)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('Box')
+      expect(tree.props.w).toBe('100%')
+    })
+
+    test('builds tree for COMPONENT_SET node', async () => {
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'Default',
+        children: [],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'ButtonSet',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {},
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBeGreaterThan(0)
+    })
+
+    test('builds tree for COMPONENT node directly', async () => {
+      const node = {
+        type: 'COMPONENT',
+        name: 'DirectComponent',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBeGreaterThan(0)
+    })
+
+    test('builds tree with nested INSTANCE children', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'NestedComp',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const instanceChild = {
+        type: 'INSTANCE',
+        name: 'NestedInstance',
+        visible: true,
+        getMainComponentAsync: async () => mainComponent,
+      } as unknown as InstanceNode
+
+      const parent = {
+        type: 'FRAME',
+        name: 'ParentWithInstance',
+        children: [instanceChild],
+        visible: true,
+      } as unknown as FrameNode
+      addParent(parent)
+
+      const codegen = new Codegen(parent)
+      const tree = await codegen.buildTree()
+
+      expect(tree.children.length).toBe(1)
+      expect(tree.children[0].isComponent).toBe(true)
+    })
+  })
+
+  describe('getTree', () => {
+    test('builds and caches tree on first call', async () => {
+      const node = {
+        type: 'FRAME',
+        name: 'CachedFrame',
+        children: [],
+        visible: true,
+      } as unknown as FrameNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree1 = await codegen.getTree()
+      const tree2 = await codegen.getTree()
+
+      expect(tree1).toBe(tree2) // Same reference (cached)
+      expect(tree1.nodeName).toBe('CachedFrame')
+    })
+  })
+
+  describe('getComponentTrees', () => {
+    test('returns empty map when no components', async () => {
+      const node = {
+        type: 'FRAME',
+        name: 'NoComponents',
+        children: [],
+        visible: true,
+      } as unknown as FrameNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBe(0)
+    })
+
+    test('returns component trees after building', async () => {
+      const componentChild = {
+        type: 'COMPONENT',
+        name: 'ChildComp',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'Default',
+        children: [componentChild],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'CompSet',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {},
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBeGreaterThan(0)
+    })
+  })
+
+  describe('addComponentTree (via buildTree)', () => {
+    test('adds component with selector props', async () => {
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const hoverVariant = {
+        type: 'COMPONENT',
+        name: 'State=Hover',
+        children: [],
+        visible: true,
+        reactions: [],
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0, g: 0.5, b: 1 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'ButtonWithHover',
+        children: [defaultVariant, hoverVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {},
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBeGreaterThan(0)
+    })
+
+    test('does not duplicate component trees', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'SharedComp',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const instance1 = {
+        type: 'INSTANCE',
+        name: 'Instance1',
+        visible: true,
+        getMainComponentAsync: async () => mainComponent,
+      } as unknown as InstanceNode
+
+      const instance2 = {
+        type: 'INSTANCE',
+        name: 'Instance2',
+        visible: true,
+        getMainComponentAsync: async () => mainComponent,
+      } as unknown as InstanceNode
+
+      const parent = {
+        type: 'FRAME',
+        name: 'ParentWithDuplicates',
+        children: [instance1, instance2],
+        visible: true,
+      } as unknown as FrameNode
+      addParent(parent)
+
+      const codegen = new Codegen(parent)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      // Should only have 1 entry for SharedComp, not duplicates
+      expect(componentTrees.size).toBe(1)
+    })
+
+    test('handles component with INSTANCE children', async () => {
+      const nestedComponent = {
+        type: 'COMPONENT',
+        name: 'NestedComp',
+        children: [],
+        visible: true,
+      } as unknown as ComponentNode
+      addParent(nestedComponent)
+
+      const nestedInstance = {
+        type: 'INSTANCE',
+        name: 'NestedInstance',
+        visible: true,
+        getMainComponentAsync: async () => nestedComponent,
+      } as unknown as InstanceNode
+
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'ParentComp',
+        children: [nestedInstance],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'CompSetWithNestedInstance',
+        children: [mainComponent],
+        defaultVariant: mainComponent,
+        visible: true,
+        componentPropertyDefinitions: {},
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBe(2) // ParentComp and NestedComp
+    })
+  })
+
+  describe('renderTree (static)', () => {
+    test('renders simple tree to JSX', () => {
+      const tree = {
+        component: 'Box',
+        props: { w: '100px', h: '50px' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'SimpleBox',
+      }
+
+      const result = Codegen.renderTree(tree)
+      expect(result).toContain('<Box')
+      expect(result).toContain('h="50px"')
+      expect(result).toContain('w="100px"')
+    })
+
+    test('renders tree with children', () => {
+      const tree = {
+        component: 'Flex',
+        props: { direction: 'column' },
+        children: [
+          {
+            component: 'Box',
+            props: { w: '100px' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Child1',
+          },
+          {
+            component: 'Box',
+            props: { h: '50px' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Child2',
+          },
+        ],
+        nodeType: 'FRAME',
+        nodeName: 'Parent',
+      }
+
+      const result = Codegen.renderTree(tree)
+      expect(result).toContain('<Flex')
+      expect(result).toContain('direction="column"')
+      expect(result).toContain('<Box')
+    })
+
+    test('renders tree with textChildren', () => {
+      const tree = {
+        component: 'Text',
+        props: { fontSize: '16px' },
+        children: [],
+        nodeType: 'TEXT',
+        nodeName: 'TextNode',
+        textChildren: ['Hello', ' ', 'World'],
+      }
+
+      const result = Codegen.renderTree(tree)
+      expect(result).toContain('<Text')
+      expect(result).toContain('Hello')
+      expect(result).toContain('World')
+    })
+
+    test('renders nested tree with depth', () => {
+      const tree = {
+        component: 'Flex',
+        props: {},
+        children: [
+          {
+            component: 'Flex',
+            props: {},
+            children: [
+              {
+                component: 'Box',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'DeepChild',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'MiddleChild',
+          },
+        ],
+        nodeType: 'FRAME',
+        nodeName: 'Root',
+      }
+
+      const result = Codegen.renderTree(tree, 0)
+      expect(result).toContain('<Flex')
+      expect(result).toContain('<Box')
+    })
+
+    test('renders component reference (isComponent)', () => {
+      const tree = {
+        component: 'MyButton',
+        props: {},
+        children: [],
+        nodeType: 'INSTANCE',
+        nodeName: 'ButtonInstance',
+        isComponent: true,
+      }
+
+      const result = Codegen.renderTree(tree)
+      expect(result).toContain('<MyButton')
+    })
+  })
+})
