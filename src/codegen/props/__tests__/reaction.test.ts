@@ -778,9 +778,16 @@ describe('getReactionProps', () => {
 
     mockGetNodeByIdAsync.mockRejectedValue(new Error('Node not found'))
 
+    // Suppress console.error for this test
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
     const result = await getReactionProps(node)
 
     expect(result).toEqual({})
+
+    consoleErrorSpy.mockRestore()
   })
 
   it('should handle DOCUMENT or PAGE node types', async () => {
@@ -877,10 +884,17 @@ describe('getReactionProps', () => {
       return null
     })
 
+    // Suppress console.error for this test
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
     const result = await getReactionProps(node1)
 
     expect(result.animationName).toBeDefined()
     expect(result.animationDuration).toBe('0.5s')
+
+    consoleErrorSpy.mockRestore()
   })
 
   it('should match children by name with loop and delay', async () => {

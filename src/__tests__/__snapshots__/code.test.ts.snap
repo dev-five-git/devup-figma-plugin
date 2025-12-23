@@ -15,7 +15,7 @@ exports[`registerCodegen should register codegen 1`] = `
     "code": 
 "echo 'export function Test() {
   return <Box boxSize="100%" />
- }' > Test.tsx"
+ }' > src/components/Test.tsx"
 ,
     "language": "BASH",
     "title": "Test - Components CLI",

@@ -65,7 +65,7 @@ export function registerCodegen(ctx: typeof figma) {
                     code: componentsCodes
                       .map(
                         ([componentName, code]) =>
-                          `echo '${code}' > ${componentName}.tsx`,
+                          `echo '${code}' > src/components/${componentName}.tsx`,
                       )
                       .join('\n'),
                   },
