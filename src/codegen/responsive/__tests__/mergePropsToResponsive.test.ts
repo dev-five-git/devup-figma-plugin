@@ -99,7 +99,7 @@ describe('mergePropsToResponsive', () => {
         ['pc', { w: undefined }],
       ]),
       expected: {
-        w: [null, null, '10px'],
+        w: [null, null, '10px', null, 'initial'],
       },
     },
     {
@@ -112,7 +112,7 @@ describe('mergePropsToResponsive', () => {
         ['pc', { w: undefined }],
       ]),
       expected: {
-        w: '10px',
+        w: ['10px', null, null, null, 'initial'],
       },
     },
     {

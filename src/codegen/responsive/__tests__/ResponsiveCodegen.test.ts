@@ -12,13 +12,15 @@ const renderNodeMock = mock(
 )
 
 // Mock Codegen class
-const mockGetTree = mock(async () => ({
-  component: 'Box',
-  props: { id: 'test' },
-  children: [],
-  nodeType: 'FRAME',
-  nodeName: 'test',
-}))
+const mockGetTree = mock(
+  async (): Promise<NodeTree> => ({
+    component: 'Box',
+    props: { id: 'test' },
+    children: [],
+    nodeType: 'FRAME',
+    nodeName: 'test',
+  }),
+)
 
 const mockRenderTree = mock((tree: NodeTree, depth: number) =>
   renderNodeMock(tree.component, tree.props, depth, []),

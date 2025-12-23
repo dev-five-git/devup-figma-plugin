@@ -574,7 +574,7 @@ describe('Codegen', () => {
         ],
       } as unknown as FrameNode,
       expected: `<Box boxSize="100%" pos="relative">
-  <Box boxSize="100%" left="0px" pos="absolute" top="0px" />
+  <Box left="0px" pos="absolute" top="0px" w="100%" />
 </Box>`,
     },
     {
@@ -604,7 +604,7 @@ describe('Codegen', () => {
         ],
       } as unknown as FrameNode,
       expected: `<Flex boxSize="100%" pos="relative">
-  <Box boxSize="100%" pos="absolute" right="0px" top="50px" />
+  <Box pos="absolute" right="0px" top="50px" w="100%" />
 </Flex>`,
     },
     {
@@ -635,12 +635,11 @@ describe('Codegen', () => {
       } as unknown as FrameNode,
       expected: `<VStack boxSize="100%" pos="relative">
   <Box
-    bottom="0px"
-    boxSize="100%"
-    left="0px"
+    left="50%"
     pos="absolute"
-    right="0px"
-    top="0px"
+    top="50%"
+    transform="translate(-50%, -50%)"
+    w="100%"
   />
 </VStack>`,
     },
@@ -671,7 +670,7 @@ describe('Codegen', () => {
         ],
       } as unknown as FrameNode,
       expected: `<Flex boxSize="100%" pos="relative">
-  <Box bottom="0px" boxSize="100%" left="50px" pos="absolute" />
+  <Box bottom="0px" left="50px" pos="absolute" w="100%" />
 </Flex>`,
     },
     {
@@ -702,11 +701,11 @@ describe('Codegen', () => {
       } as unknown as FrameNode,
       expected: `<VStack boxSize="100%" pos="relative">
   <Box
-    bottom="0px"
-    boxSize="100%"
     left="300px"
     pos="absolute"
-    top="0px"
+    top="50%"
+    transform="translateY(-50%)"
+    w="100%"
   />
 </VStack>`,
     },

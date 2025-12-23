@@ -199,10 +199,11 @@ describe('position', () => {
 
       expect(result).toEqual({
         pos: 'absolute',
-        left: '0px',
-        right: '0px',
-        top: '0px',
-        bottom: '0px',
+        left: '50%',
+        right: undefined,
+        top: '50%',
+        bottom: undefined,
+        transform: 'translate(-50%, -50%)',
       })
     })
 

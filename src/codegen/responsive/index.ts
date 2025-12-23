@@ -68,6 +68,8 @@ const SPECIAL_PROPS_WITH_INITIAL = new Set([
   'position',
   'pos',
   'transform',
+  'w',
+  'h',
 ])
 
 /**
