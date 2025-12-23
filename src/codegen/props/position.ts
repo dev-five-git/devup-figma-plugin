@@ -18,8 +18,7 @@ export function canBeAbsolute(node: SceneNode): boolean {
       (isFreelayout(node.parent) &&
         'width' in node.parent &&
         'height' in node.parent &&
-        node.width !== node.parent.width &&
-        node.height !== node.parent.height &&
+        'constraints' in node &&
         !isPageRoot(node as SceneNode)))
   )
 }

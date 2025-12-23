@@ -196,11 +196,6 @@ export async function getReactionProps(
                       }
                     }
 
-                    // If rotation animation exists but no initialValues.transform, set it
-                    if (hasRotationAnimation && !initialValues.transform) {
-                      initialValues.transform = 'rotate(0deg)'
-                    }
-
                     // Set initial keyframe with animated properties
                     keyframes['0%'] = initialValues
 
@@ -546,11 +541,6 @@ async function generateChildAnimations(
           }
         }
       }
-    }
-
-    // If rotation animation exists but no initialValues.transform, set it
-    if (hasRotationAnimation && !initialValues.transform) {
-      initialValues.transform = 'rotate(0deg)'
     }
 
     // Set initial keyframe with animated properties

@@ -2,12 +2,14 @@ import { fmtPct } from '../utils/fmtPct'
 import { getProps } from '.'
 
 // 속성 이름을 유효한 TypeScript 식별자로 변환
+const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
+
 function sanitizePropertyName(name: string): string {
   // 1. 공백과 특수문자를 처리하여 camelCase로 변환
   const result = name
     .trim()
     // 공백이나 특수문자 뒤의 문자를 대문자로 (camelCase 변환)
-    .replace(/[\s\-_]+(.)/g, (_, chr) => chr.toUpperCase())
+    .replace(/[\s\-_]+(.)/g, toUpperCase)
     // 숫자로 시작하면 앞에 _ 추가
     .replace(/^(\d)/, '_$1')
 
@@ -73,12 +75,11 @@ export async function getSelectorProps(
   )
 
   if (components.length > 0) {
+    const findNodeAction = (action: Action) => action.type === 'NODE'
+    const getTransition = (reaction: Reaction) =>
+      reaction.actions?.find(findNodeAction)?.transition
     const transition = node.defaultVariant.reactions
-      .flatMap(
-        (reaction) =>
-          reaction.actions?.find((action) => action.type === 'NODE')
-            ?.transition,
-      )
+      .flatMap(getTransition)
       .flat()[0]
     const diffKeys = new Set<string>()
     for (const [effect, props] of components) {

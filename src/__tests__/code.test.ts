@@ -185,3 +185,32 @@ it('auto-runs on module load when figma is present', async () => {
 
   expect(codegenOn).toHaveBeenCalledWith('generate', expect.any(Function))
 })
+
+describe('extractImports', () => {
+  it('should extract keyframes import when code contains keyframes(', () => {
+    const result = codeModule.extractImports([
+      [
+        'AnimatedBox',
+        '<Box animationName={keyframes({ "0%": { opacity: 0 } })} />',
+      ],
+    ])
+    expect(result).toContain('keyframes')
+    expect(result).toContain('Box')
+  })
+
+  it('should extract keyframes import when code contains keyframes`', () => {
+    const result = codeModule.extractImports([
+      ['AnimatedBox', '<Box animationName={keyframes`from { opacity: 0 }`} />'],
+    ])
+    expect(result).toContain('keyframes')
+    expect(result).toContain('Box')
+  })
+
+  it('should not extract keyframes when not present', () => {
+    const result = codeModule.extractImports([
+      ['SimpleBox', '<Box w="100px" />'],
+    ])
+    expect(result).not.toContain('keyframes')
+    expect(result).toContain('Box')
+  })
+})

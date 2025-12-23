@@ -4148,4 +4148,39 @@ describe('Codegen Tree Methods', () => {
       expect(result).toContain('<MyButton')
     })
   })
+
+  describe('getSelectorProps with numeric property names', () => {
+    test('sanitizes property name that is only digits', async () => {
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: '123=Default',
+        children: [],
+        visible: true,
+        reactions: [],
+        variantProperties: { '123': 'Default' },
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'NumericPropertySet',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          '123': {
+            type: 'VARIANT',
+            variantOptions: ['Default', 'Active'],
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      // The numeric property name should be sanitized to 'variant'
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBeGreaterThan(0)
+    })
+  })
 })

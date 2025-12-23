@@ -14,7 +14,25 @@ describe('position', () => {
       expect(canBeAbsolute(node)).toBe(true)
     })
 
-    it('should return true for AUTO positioned node in freelayout parent', () => {
+    it('should return true for AUTO positioned node in freelayout parent with constraints', () => {
+      const node = {
+        layoutPositioning: 'AUTO',
+        constraints: {
+          horizontal: 'MIN',
+          vertical: 'MIN',
+        },
+        parent: {
+          layoutPositioning: 'AUTO',
+          width: 100,
+          height: 100,
+          type: 'FRAME',
+        },
+      } as any
+
+      expect(canBeAbsolute(node)).toBe(true)
+    })
+
+    it('should return false for AUTO positioned node in freelayout parent without constraints', () => {
       const node = {
         layoutPositioning: 'AUTO',
         parent: {
@@ -25,7 +43,7 @@ describe('position', () => {
         },
       } as any
 
-      expect(canBeAbsolute(node)).toBe(true)
+      expect(canBeAbsolute(node)).toBe(false)
     })
 
     it('should return false for node without parent', () => {
@@ -67,9 +85,59 @@ describe('position', () => {
       })
     })
 
-    it('should return absolute position props without constraints in freelayout', () => {
+    it('should return absolute position props in freelayout using fallback x/y', () => {
       const node = {
         layoutPositioning: 'AUTO',
+        x: 15,
+        y: 25,
+        width: 40,
+        height: 50,
+        constraints: {
+          horizontal: 'MIN',
+          vertical: 'MIN',
+        },
+        parent: {
+          layoutPositioning: 'AUTO',
+          type: 'FRAME',
+          width: 200,
+          height: 300,
+        },
+      } as any
+
+      const result = getPositionProps(node)
+
+      expect(result).toEqual({
+        pos: 'absolute',
+        left: '15px',
+        right: undefined,
+        top: '25px',
+        bottom: undefined,
+      })
+    })
+
+    it('should return undefined when no constraints in freelayout and canBeAbsolute is false', () => {
+      const node = {
+        layoutPositioning: 'AUTO',
+        x: 15,
+        y: 25,
+        width: 40,
+        height: 50,
+        parent: {
+          layoutPositioning: 'AUTO',
+          type: 'FRAME',
+          width: 200,
+          height: 300,
+        },
+      } as any
+
+      const result = getPositionProps(node)
+
+      expect(result).toBeUndefined()
+    })
+
+    it('should return absolute position with x/y when ABSOLUTE node has no constraints in freelayout parent', () => {
+      const node = {
+        layoutPositioning: 'ABSOLUTE',
         x: 15,
         y: 25,
         width: 40,

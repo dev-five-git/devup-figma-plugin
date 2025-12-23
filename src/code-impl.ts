@@ -4,7 +4,7 @@ import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
 
-function extractImports(
+export function extractImports(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
 ): string[] {
   const allCode = componentsCodes.map(([_, code]) => code).join('\n')
