@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { canBeAbsolute, getPositionProps } from '../position'
+
+vi.mock('../../utils/check-asset-node', () => ({
+  checkAssetNode: () => null,
+}))
+
+vi.mock('../../utils/is-page-root', () => ({
+  isPageRoot: () => false,
+}))
 
 describe('position', () => {
   describe('canBeAbsolute', () => {
@@ -183,12 +191,10 @@ describe('position', () => {
 
     it('should return relative position for parent with absolute children', () => {
       const node = {
-        type: 'COMPONENT_SET',
-        parent: null,
+        type: 'FRAME',
         children: [
           {
             layoutPositioning: 'ABSOLUTE',
-            visible: true,
           },
         ],
       } as any
@@ -201,13 +207,11 @@ describe('position', () => {
 
     it('should return relative position for freelayout parent with AUTO children', () => {
       const node = {
-        type: 'COMPONENT_SET',
+        type: 'FRAME',
         layoutPositioning: 'AUTO',
-        parent: null,
         children: [
           {
             layoutPositioning: 'AUTO',
-            visible: true,
           },
         ],
       } as any
