@@ -70,6 +70,7 @@ const SPECIAL_PROPS_WITH_INITIAL = new Set([
   'transform',
   'w',
   'h',
+  'textAlign',
 ])
 
 /**

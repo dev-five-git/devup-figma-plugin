@@ -6,6 +6,6 @@ export function getTransformProps(
   if ('rotation' in node && node.rotation !== 0)
     return {
       transform: `rotate(${fmtPct(-node.rotation)}deg)`,
-      transformOrigin: "top left"
+      transformOrigin: 'top left',
     }
 }

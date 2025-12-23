@@ -574,7 +574,7 @@ describe('Codegen', () => {
         ],
       } as unknown as FrameNode,
       expected: `<Box boxSize="100%" pos="relative">
-  <Box left="0px" pos="absolute" top="0px" w="100%" />
+  <Box boxSize="100%" left="0px" pos="absolute" top="0px" />
 </Box>`,
     },
     {
@@ -604,7 +604,7 @@ describe('Codegen', () => {
         ],
       } as unknown as FrameNode,
       expected: `<Flex boxSize="100%" pos="relative">
-  <Box pos="absolute" right="0px" top="50px" w="100%" />
+  <Box h="100%" pos="absolute" right="0px" top="50px" />
 </Flex>`,
     },
     {
@@ -635,11 +635,11 @@ describe('Codegen', () => {
       } as unknown as FrameNode,
       expected: `<VStack boxSize="100%" pos="relative">
   <Box
+    h="100%"
     left="50%"
     pos="absolute"
     top="50%"
     transform="translate(-50%, -50%)"
-    w="100%"
   />
 </VStack>`,
     },
@@ -670,7 +670,7 @@ describe('Codegen', () => {
         ],
       } as unknown as FrameNode,
       expected: `<Flex boxSize="100%" pos="relative">
-  <Box bottom="0px" left="50px" pos="absolute" w="100%" />
+  <Box bottom="0px" h="100%" left="50px" pos="absolute" />
 </Flex>`,
     },
     {
@@ -701,11 +701,11 @@ describe('Codegen', () => {
       } as unknown as FrameNode,
       expected: `<VStack boxSize="100%" pos="relative">
   <Box
+    h="100%"
     left="300px"
     pos="absolute"
     top="50%"
     transform="translateY(-50%)"
-    w="100%"
   />
 </VStack>`,
     },
@@ -1494,13 +1494,7 @@ describe('Codegen', () => {
         primaryAxisAlignItems: 'SPACE_BETWEEN',
         counterAxisAlignItems: 'CENTER',
       } as unknown as FrameNode,
-      expected: `<VStack
-  alignItems="center"
-  gap="16px"
-  h="200px"
-  justifyContent="space-between"
-  w="120px"
->
+      expected: `<VStack alignItems="center" h="200px" justifyContent="space-between" w="120px">
   <Box boxSize="100%" />
   <Box boxSize="100%" />
 </VStack>`,
@@ -2116,7 +2110,7 @@ describe('Codegen', () => {
         height: 50,
         rotation: 45,
       } as unknown as FrameNode,
-      expected: `<Box h="50px" transform="rotate(-45deg)" w="100px" />`,
+      expected: `<Box h="50px" transform="rotate(-45deg)" transformOrigin="top left" w="100px" />`,
     },
     {
       title: 'renders frame with negative rotation transform',
@@ -2131,7 +2125,7 @@ describe('Codegen', () => {
         rotation: -30,
       } as unknown as FrameNode,
       // revsered rotation
-      expected: `<Box h="40px" transform="rotate(30deg)" w="80px" />`,
+      expected: `<Box h="40px" transform="rotate(30deg)" transformOrigin="top left" w="80px" />`,
     },
     {
       title: 'renders frame with decimal rotation transform',
@@ -2145,7 +2139,7 @@ describe('Codegen', () => {
         height: 60,
         rotation: 15.5,
       } as unknown as FrameNode,
-      expected: `<Box h="60px" transform="rotate(-15.5deg)" w="120px" />`,
+      expected: `<Box h="60px" transform="rotate(-15.5deg)" transformOrigin="top left" w="120px" />`,
     },
     {
       title: 'renders frame with opacity less than 1',

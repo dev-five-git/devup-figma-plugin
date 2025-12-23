@@ -1596,4 +1596,405 @@ describe('getReactionProps', () => {
 
     expect(result).toEqual({})
   })
+
+  it('should handle rotation animation with cumulative rotation in loop (lines 188-193, 201, 290-295)', async () => {
+    const node1 = {
+      id: 'node1',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      rotation: 0,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node2 = {
+      id: 'node2',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      rotation: 90, // Rotated 90 degrees
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node1', // Loop back
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(node2)
+
+    const result = await getReactionProps(node1)
+
+    expect(result.animationName).toBeDefined()
+    expect(result.animationIterationCount).toBe('infinite')
+    // Should contain rotate in keyframes
+    const animationName = result.animationName as string
+    expect(animationName).toContain('rotate')
+    expect(animationName).toContain('100%')
+  })
+
+  it('should handle child rotation animation (lines 484, 505-506, 540-542, 553, 565-566, 607-612, 641-646)', async () => {
+    const child1 = {
+      id: 'child1',
+      name: 'RotatingChild',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      rotation: 0,
+      parent: { id: 'parent' },
+    } as any
+
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [child1],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const destNode = {
+      id: 'dest',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-dest',
+          name: 'RotatingChild',
+          type: 'FRAME',
+          x: 0,
+          y: 0,
+          rotation: 45,
+        },
+      ],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'parent', // Loop back
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(destNode)
+
+    await getReactionProps(parentNode)
+
+    const result = await getReactionProps(child1)
+
+    expect(result.animationName).toBeDefined()
+    expect(result.animationIterationCount).toBe('infinite')
+    const animationName = result.animationName as string
+    expect(animationName).toContain('rotate')
+  })
+
+  it('should handle rotation delta greater than 180 degrees (line 758)', async () => {
+    const node1 = {
+      id: 'node1',
+      type: 'FRAME',
+      rotation: 170,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    // Rotation from 170 to -170 should take the short path (+20 degrees)
+    const node2 = {
+      id: 'node2',
+      type: 'FRAME',
+      rotation: -170,
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(node2)
+
+    const result = await getReactionProps(node1)
+
+    expect(result.animationName).toBeDefined()
+    const animationName = result.animationName as string
+    expect(animationName).toContain('rotate')
+    // The delta should be normalized (170 to -170 = -340, normalized to +20)
+  })
+
+  it('should handle rotation with multi-step chain (covers cumulative rotation)', async () => {
+    const node1 = {
+      id: 'node1',
+      type: 'FRAME',
+      rotation: 0,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node2 = {
+      id: 'node2',
+      type: 'FRAME',
+      rotation: 90,
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node3',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node3 = {
+      id: 'node3',
+      type: 'FRAME',
+      rotation: 180,
+    } as any
+
+    mockGetNodeByIdAsync.mockImplementation(async (id: string) => {
+      if (id === 'node2') return node2
+      if (id === 'node3') return node3
+      return null
+    })
+
+    const result = await getReactionProps(node1)
+
+    expect(result.animationName).toBeDefined()
+    const animationName = result.animationName as string
+    expect(animationName).toContain('rotate')
+    // Should have intermediate keyframes
+    expect(animationName).toContain('50%')
+    expect(animationName).toContain('100%')
+  })
+
+  it('should set rotate(0deg) when hasRotationAnimation but no initialValues.transform (line 201)', async () => {
+    // This test covers the case where rotation animation exists but
+    // the starting transform value is not in startingValues
+    const node1 = {
+      id: 'node1',
+      type: 'FRAME',
+      rotation: 0, // Starting at 0
+      // No x, y changes, only rotation
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'node2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.5,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const node2 = {
+      id: 'node2',
+      type: 'FRAME',
+      rotation: 45, // Only rotation changes
+    } as any
+
+    mockGetNodeByIdAsync.mockResolvedValue(node2)
+
+    const result = await getReactionProps(node1)
+
+    expect(result.animationName).toBeDefined()
+    const animationName = result.animationName as string
+    // Should contain rotate(0deg) in initial keyframe
+    expect(animationName).toContain('rotate(0deg)')
+    expect(animationName).toContain('rotate(-45deg)')
+  })
+
+  it('should handle child rotation with starting values from startChild (lines 538-542)', async () => {
+    const child1 = {
+      id: 'child1',
+      name: 'RotatingIcon',
+      type: 'FRAME',
+      x: 0,
+      y: 0,
+      rotation: 0,
+      parent: { id: 'parent' },
+    } as any
+
+    const parentNode = {
+      id: 'parent',
+      type: 'FRAME',
+      children: [child1],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest1',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const destNode1 = {
+      id: 'dest1',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-dest1',
+          name: 'RotatingIcon',
+          type: 'FRAME',
+          x: 0,
+          y: 0,
+          rotation: 120,
+        },
+      ],
+      reactions: [
+        {
+          actions: [
+            {
+              type: 'NODE',
+              destinationId: 'dest2',
+              transition: {
+                type: 'SMART_ANIMATE',
+                duration: 0.3,
+              },
+            },
+          ],
+          trigger: {
+            type: 'AFTER_TIMEOUT',
+            timeout: 0,
+          },
+        },
+      ],
+    } as any
+
+    const destNode2 = {
+      id: 'dest2',
+      type: 'FRAME',
+      children: [
+        {
+          id: 'child1-dest2',
+          name: 'RotatingIcon',
+          type: 'FRAME',
+          x: 0,
+          y: 0,
+          rotation: -120,
+        },
+      ],
+    } as any
+
+    mockGetNodeByIdAsync.mockImplementation(async (id: string) => {
+      if (id === 'dest1') return destNode1
+      if (id === 'dest2') return destNode2
+      return null
+    })
+
+    await getReactionProps(parentNode)
+
+    const result = await getReactionProps(child1)
+
+    expect(result.animationName).toBeDefined()
+    const animationName = result.animationName as string
+    expect(animationName).toContain('rotate')
+  })
 })

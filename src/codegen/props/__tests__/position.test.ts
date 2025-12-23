@@ -266,5 +266,95 @@ describe('position', () => {
 
       expect(result).toBeUndefined()
     })
+
+    it('should handle SCALE horizontal constraint (default case)', () => {
+      const node = {
+        layoutPositioning: 'ABSOLUTE',
+        x: 10,
+        y: 20,
+        width: 50,
+        height: 60,
+        constraints: {
+          horizontal: 'SCALE',
+          vertical: 'MIN',
+        },
+        parent: {
+          type: 'FRAME',
+          width: 200,
+          height: 300,
+        },
+      } as any
+
+      const result = getPositionProps(node)
+
+      expect(result).toEqual({
+        pos: 'absolute',
+        left: '0px',
+        right: '0px',
+        top: '20px',
+        bottom: undefined,
+        transform: undefined,
+      })
+    })
+
+    it('should handle STRETCH vertical constraint (default case)', () => {
+      const node = {
+        layoutPositioning: 'ABSOLUTE',
+        x: 10,
+        y: 20,
+        width: 50,
+        height: 60,
+        constraints: {
+          horizontal: 'MIN',
+          vertical: 'STRETCH',
+        },
+        parent: {
+          type: 'FRAME',
+          width: 200,
+          height: 300,
+        },
+      } as any
+
+      const result = getPositionProps(node)
+
+      expect(result).toEqual({
+        pos: 'absolute',
+        left: '10px',
+        right: undefined,
+        top: '0px',
+        bottom: '0px',
+        transform: undefined,
+      })
+    })
+
+    it('should handle both SCALE constraints (default case for both)', () => {
+      const node = {
+        layoutPositioning: 'ABSOLUTE',
+        x: 10,
+        y: 20,
+        width: 50,
+        height: 60,
+        constraints: {
+          horizontal: 'SCALE',
+          vertical: 'SCALE',
+        },
+        parent: {
+          type: 'FRAME',
+          width: 200,
+          height: 300,
+        },
+      } as any
+
+      const result = getPositionProps(node)
+
+      expect(result).toEqual({
+        pos: 'absolute',
+        left: '0px',
+        right: '0px',
+        top: '0px',
+        bottom: '0px',
+        transform: undefined,
+      })
+    })
   })
 })
