@@ -162,7 +162,7 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Image h="80px" objectFit="contain" src="/icons/ObjectFitContain.png" w="100px" />`,
+      expected: `<Image h="80px" objectFit="contain" src="/images/ObjectFitContain.png" w="100px" />`,
     },
     {
       title: 'renders objectFit cover for image asset',
@@ -183,7 +183,7 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Image h="90px" objectFit="cover" src="/icons/ObjectFitCover.png" w="120px" />`,
+      expected: `<Image h="90px" objectFit="cover" src="/images/ObjectFitCover.png" w="120px" />`,
     },
     {
       title: 'omits objectFit when image scale mode is FILL',
@@ -204,7 +204,7 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Image h="70px" src="/icons/ObjectFitFill.png" w="110px" />`,
+      expected: `<Image h="70px" src="/images/ObjectFitFill.png" w="110px" />`,
     },
     {
       title: 'renders svg asset with vector node',
@@ -562,11 +562,13 @@ describe('Codegen', () => {
             type: 'RECTANGLE',
             name: 'AbsoluteChild',
             layoutPositioning: 'ABSOLUTE',
+            x: 0,
+            y: 0,
             width: 300,
             height: 200,
             constraints: {
-              horizontal: 'MAX',
-              vertical: 'MAX',
+              horizontal: 'MIN',
+              vertical: 'MIN',
             },
           },
         ],

@@ -33,45 +33,47 @@ export function getPositionProps(
             'constraints' in node.children[0]
           ? node.children[0].constraints
           : undefined
-    if (!constraints) return
+    if (!constraints) {
+      if (isFreelayout(node.parent))
+        return {
+          pos: 'absolute',
+          left: addPx(node.x) ?? '0px',
+          top: addPx(node.y) ?? '0px',
+        }
+      return
+    }
     const { horizontal, vertical } = constraints
 
     let left: string | undefined
     let right: string | undefined
     let top: string | undefined
     let bottom: string | undefined
-    if (isFreelayout(node.parent)) {
-      left = addPx(node.x) ?? '0px'
-      top = addPx(node.y) ?? '0px'
-    } else {
-      switch (horizontal) {
-        case 'MIN':
-          left = addPx(node.x) ?? '0px'
-          break
-        case 'MAX':
-          right =
-            addPx((node.parent as SceneNode).width - node.x - node.width) ??
-            '0px'
-          break
-        default:
-          left = '0px'
-          right = '0px'
-          break
-      }
-      switch (vertical) {
-        case 'MIN':
-          top = addPx(node.y) ?? '0px'
-          break
-        case 'MAX':
-          bottom =
-            addPx((node.parent as SceneNode).height - node.y - node.height) ??
-            '0px'
-          break
-        default:
-          top = '0px'
-          bottom = '0px'
-          break
-      }
+    switch (horizontal) {
+      case 'MIN':
+        left = addPx(node.x) ?? '0px'
+        break
+      case 'MAX':
+        right =
+          addPx((node.parent as SceneNode).width - node.x - node.width) ?? '0px'
+        break
+      default:
+        left = '0px'
+        right = '0px'
+        break
+    }
+    switch (vertical) {
+      case 'MIN':
+        top = addPx(node.y) ?? '0px'
+        break
+      case 'MAX':
+        bottom =
+          addPx((node.parent as SceneNode).height - node.y - node.height) ??
+          '0px'
+        break
+      default:
+        top = '0px'
+        bottom = '0px'
+        break
     }
     return {
       pos: 'absolute',
