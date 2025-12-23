@@ -190,7 +190,6 @@ describe('position', () => {
           },
         ],
       } as any
-
       const result = getPositionProps(node)
 
       expect(result).toEqual({
