@@ -184,6 +184,7 @@ describe('position', () => {
     it('should return relative position for parent with absolute children', () => {
       const node = {
         type: 'COMPONENT_SET',
+        parent: null,
         children: [
           {
             layoutPositioning: 'ABSOLUTE',
@@ -202,6 +203,7 @@ describe('position', () => {
       const node = {
         type: 'COMPONENT_SET',
         layoutPositioning: 'AUTO',
+        parent: null,
         children: [
           {
             layoutPositioning: 'AUTO',
