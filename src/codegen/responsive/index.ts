@@ -63,7 +63,12 @@ export function groupChildrenByBreakpoint(
 
 type PropValue = boolean | string | number | undefined | null | object
 export type Props = Record<string, PropValue>
-const SPECIAL_PROPS_WITH_INITIAL = new Set(['display', 'position', 'pos'])
+const SPECIAL_PROPS_WITH_INITIAL = new Set([
+  'display',
+  'position',
+  'pos',
+  'transform',
+])
 
 /**
  * Compare two prop values for equality.

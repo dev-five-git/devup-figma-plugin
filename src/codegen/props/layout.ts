@@ -47,8 +47,8 @@ function _getLayoutProps(
 ): Record<string, boolean | string | number | undefined | null> {
   if (canBeAbsolute(node)) {
     return {
-      w: '100%',
-      h: '100%',
+      w: node.type === 'TEXT' ? undefined : '100%',
+      // h: '100%',
     }
   }
   const hType =

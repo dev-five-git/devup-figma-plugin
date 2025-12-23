@@ -1,4 +1,5 @@
 import { fmtPct } from '../utils/fmtPct'
+import { isPageRoot } from '../utils/is-page-root'
 import { solidToString } from '../utils/solid-to-string'
 
 interface KeyframeData {
@@ -555,7 +556,13 @@ async function generateSingleNodeDifferences(
   const changes: Record<string, unknown> = {}
 
   // Check position changes
-  if ('x' in fromNode && 'x' in toNode && 'y' in fromNode && 'y' in toNode) {
+  if (
+    !isPageRoot(toNode.parent as BaseNode) &&
+    'x' in fromNode &&
+    'x' in toNode &&
+    'y' in fromNode &&
+    'y' in toNode
+  ) {
     if (fromNode.x !== toNode.x || fromNode.y !== toNode.y) {
       const deltaX = toNode.x - fromNode.x
       const deltaY = toNode.y - fromNode.y

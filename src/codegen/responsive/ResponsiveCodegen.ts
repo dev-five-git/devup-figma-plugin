@@ -1,27 +1,15 @@
-import { getComponentName } from '../../utils'
-import { getProps } from '../props'
+import { Codegen } from '../Codegen'
 import { renderNode } from '../render'
-import { renderText } from '../render/text'
-import { getDevupComponentByNode } from '../utils/get-devup-component'
+import type { NodeTree, Props } from '../types'
 import {
   type BreakpointKey,
   getBreakpointByWidth,
   mergePropsToResponsive,
 } from './index'
 
-type Props = Record<string, unknown>
-
-interface NodePropsMap {
-  breakpoint: BreakpointKey
-  props: Props
-  children: Map<string, NodePropsMap[]>
-  nodeType: string
-  nodeName: string
-  node: SceneNode
-}
-
 /**
  * Generate responsive code by merging children inside a Section.
+ * Uses Codegen to build NodeTree for each breakpoint, then merges them.
  */
 export class ResponsiveCodegen {
   private breakpointNodes: Map<BreakpointKey, SceneNode> = new Map()
@@ -46,48 +34,6 @@ export class ResponsiveCodegen {
   }
 
   /**
-   * Recursively extract props and children from a node.
-   * Reuses getProps.
-   */
-  private async extractNodeProps(
-    node: SceneNode,
-    breakpoint: BreakpointKey,
-  ): Promise<NodePropsMap> {
-    const props = await getProps(node)
-    const children = new Map<string, NodePropsMap[]>()
-
-    // If node is TEXT, apply typography
-    if (node.type === 'TEXT') {
-      const { props: textProps } = await renderText(node)
-      Object.assign(props, textProps)
-    }
-
-    // If node is INSTANCE or COMPONENT, don't extract children (treat as component reference)
-    const isComponent =
-      node.type === 'INSTANCE' ||
-      node.type === 'COMPONENT' ||
-      node.type === 'COMPONENT_SET'
-
-    if ('children' in node && !isComponent) {
-      for (const child of node.children) {
-        const childProps = await this.extractNodeProps(child, breakpoint)
-        const existing = children.get(child.name) || []
-        existing.push(childProps)
-        children.set(child.name, existing)
-      }
-    }
-
-    return {
-      breakpoint,
-      props,
-      children,
-      nodeType: node.type,
-      nodeName: node.name,
-      node,
-    }
-  }
-
-  /**
    * Generate responsive code.
    */
   async generateResponsiveCode(): Promise<string> {
@@ -96,93 +42,139 @@ export class ResponsiveCodegen {
     }
 
     if (this.breakpointNodes.size === 1) {
-      // If only one breakpoint, generate normal code (reuse existing path).
+      // If only one breakpoint, generate normal code using Codegen.
       const [, node] = [...this.breakpointNodes.entries()][0]
-      return await this.generateNodeCode(node, 0)
+      const codegen = new Codegen(node)
+      const tree = await codegen.getTree()
+      return Codegen.renderTree(tree, 0)
     }
 
-    // Extract props per breakpoint node.
-    const breakpointNodeProps = new Map<BreakpointKey, NodePropsMap>()
+    // Extract trees per breakpoint using Codegen.
+    const breakpointTrees = new Map<BreakpointKey, NodeTree>()
     for (const [bp, node] of this.breakpointNodes) {
-      const nodeProps = await this.extractNodeProps(node, bp)
-      breakpointNodeProps.set(bp, nodeProps)
+      const codegen = new Codegen(node)
+      const tree = await codegen.getTree()
+      breakpointTrees.set(bp, tree)
     }
 
-    // Merge responsively and generate code.
-    return await this.generateMergedCode(breakpointNodeProps, 0)
+    // Merge trees and generate code.
+    return this.generateMergedCode(breakpointTrees, 0)
   }
 
   /**
-   * Generate merged responsive code.
-   * Reuses renderNode.
+   * Convert NodeTree children array to Map by nodeName.
    */
-  private async generateMergedCode(
-    nodesByBreakpoint: Map<BreakpointKey, NodePropsMap>,
-    depth: number,
-  ): Promise<string> {
-    // Decide component type from the first node (reuse existing util).
-    const firstNodeProps = [...nodesByBreakpoint.values()][0]
-    const nodeType = firstNodeProps.nodeType
+  private treeChildrenToMap(tree: NodeTree): Map<string, NodeTree[]> {
+    const result = new Map<string, NodeTree[]>()
+    for (const child of tree.children) {
+      const existing = result.get(child.nodeName) || []
+      existing.push(child)
+      result.set(child.nodeName, existing)
+    }
+    return result
+  }
 
-    // If node is INSTANCE or COMPONENT, render as component reference (no children, no props merge)
-    if (
-      nodeType === 'INSTANCE' ||
-      nodeType === 'COMPONENT' ||
-      nodeType === 'COMPONENT_SET'
-    ) {
-      const componentName = getComponentName(firstNodeProps.node)
+  /**
+   * Generate merged responsive code from NodeTree objects.
+   */
+  private generateMergedCode(
+    treesByBreakpoint: Map<BreakpointKey, NodeTree>,
+    depth: number,
+  ): string {
+    const firstTree = [...treesByBreakpoint.values()][0]
+
+    // If node is INSTANCE or COMPONENT, render as component reference
+    if (firstTree.isComponent) {
       // For components, we might still need position props
       const propsMap = new Map<BreakpointKey, Props>()
-      for (const [bp, nodeProps] of nodesByBreakpoint) {
-        // Only keep position-related props for components
+      for (const [bp, tree] of treesByBreakpoint) {
         const posProps: Props = {}
-        if (nodeProps.props.pos) posProps.pos = nodeProps.props.pos
-        if (nodeProps.props.top) posProps.top = nodeProps.props.top
-        if (nodeProps.props.left) posProps.left = nodeProps.props.left
-        if (nodeProps.props.right) posProps.right = nodeProps.props.right
-        if (nodeProps.props.bottom) posProps.bottom = nodeProps.props.bottom
+        if (tree.props.pos) posProps.pos = tree.props.pos
+        if (tree.props.top) posProps.top = tree.props.top
+        if (tree.props.left) posProps.left = tree.props.left
+        if (tree.props.right) posProps.right = tree.props.right
+        if (tree.props.bottom) posProps.bottom = tree.props.bottom
         propsMap.set(bp, posProps)
       }
       const mergedProps = mergePropsToResponsive(propsMap)
 
       // If component has position props, wrap in Box
       if (Object.keys(mergedProps).length > 0) {
-        const componentCode = renderNode(componentName, {}, depth + 1, [])
+        const componentCode = renderNode(firstTree.component, {}, depth + 1, [])
         return renderNode('Box', mergedProps, depth, [componentCode])
       }
 
-      return renderNode(componentName, {}, depth, [])
+      return renderNode(firstTree.component, {}, depth, [])
     }
 
-    // Merge props.
+    // Handle WRAPPER nodes (position wrapper for components)
+    if (firstTree.nodeType === 'WRAPPER') {
+      const propsMap = new Map<BreakpointKey, Props>()
+      for (const [bp, tree] of treesByBreakpoint) {
+        propsMap.set(bp, tree.props)
+      }
+      const mergedProps = mergePropsToResponsive(propsMap)
+
+      // Recursively merge the inner component
+      const innerTrees = new Map<BreakpointKey, NodeTree>()
+      for (const [bp, tree] of treesByBreakpoint) {
+        if (tree.children.length > 0) {
+          innerTrees.set(bp, tree.children[0])
+        }
+      }
+
+      const innerCode =
+        innerTrees.size > 0
+          ? this.generateMergedCode(innerTrees, depth + 1)
+          : ''
+
+      return renderNode('Box', mergedProps, depth, innerCode ? [innerCode] : [])
+    }
+
+    // Merge props across breakpoints
     const propsMap = new Map<BreakpointKey, Props>()
-    for (const [bp, nodeProps] of nodesByBreakpoint) {
-      propsMap.set(bp, nodeProps.props)
+    for (const [bp, tree] of treesByBreakpoint) {
+      propsMap.set(bp, tree.props)
     }
     const mergedProps = mergePropsToResponsive(propsMap)
 
-    const component = getDevupComponentByNode(
-      firstNodeProps.node,
-      firstNodeProps.props,
-    )
+    // Handle TEXT nodes with textChildren
+    if (firstTree.textChildren && firstTree.textChildren.length > 0) {
+      // For text nodes, merge the text children
+      // Currently just using the first tree's text children
+      return renderNode(
+        firstTree.component,
+        mergedProps,
+        depth,
+        firstTree.textChildren,
+      )
+    }
 
-    // Merge child nodes (preserve order).
+    // Merge children by name
     const childrenCodes: string[] = []
     const processedChildNames = new Set<string>()
 
-    // Base order on the first breakpoint children.
-    const firstBreakpointChildren = firstNodeProps.children
-    const allChildNames: string[] = []
-
-    // Keep the first breakpoint child order.
-    for (const name of firstBreakpointChildren.keys()) {
-      allChildNames.push(name)
-      processedChildNames.add(name)
+    // Convert all trees' children to maps
+    const childrenMaps = new Map<BreakpointKey, Map<string, NodeTree[]>>()
+    for (const [bp, tree] of treesByBreakpoint) {
+      childrenMaps.set(bp, this.treeChildrenToMap(tree))
     }
 
-    // Add children that exist only in other breakpoints.
-    for (const nodeProps of nodesByBreakpoint.values()) {
-      for (const name of nodeProps.children.keys()) {
+    // Get all child names in order (first tree's order, then others)
+    const firstBreakpoint = [...treesByBreakpoint.keys()][0]
+    const firstChildrenMap = childrenMaps.get(firstBreakpoint)
+    const allChildNames: string[] = []
+
+    if (firstChildrenMap) {
+      for (const name of firstChildrenMap.keys()) {
+        allChildNames.push(name)
+        processedChildNames.add(name)
+      }
+    }
+
+    // Add children that exist only in other breakpoints
+    for (const childMap of childrenMaps.values()) {
+      for (const name of childMap.keys()) {
         if (!processedChildNames.has(name)) {
           allChildNames.push(name)
           processedChildNames.add(name)
@@ -191,11 +183,11 @@ export class ResponsiveCodegen {
     }
 
     for (const childName of allChildNames) {
-      const childByBreakpoint = new Map<BreakpointKey, NodePropsMap>()
+      const childByBreakpoint = new Map<BreakpointKey, NodeTree>()
       const presentBreakpoints = new Set<BreakpointKey>()
 
-      for (const [bp, nodeProps] of nodesByBreakpoint) {
-        const children = nodeProps.children.get(childName)
+      for (const [bp, childMap] of childrenMaps) {
+        const children = childMap.get(childName)
         if (children && children.length > 0) {
           childByBreakpoint.set(bp, children[0])
           presentBreakpoints.add(bp)
@@ -203,81 +195,28 @@ export class ResponsiveCodegen {
       }
 
       if (childByBreakpoint.size > 0) {
-        // Add display props when a child exists only at specific breakpoints.
-        if (presentBreakpoints.size < nodesByBreakpoint.size) {
-          const allBreakpointsSet = new Set(nodesByBreakpoint.keys())
-          for (const [bp, nodeProps] of childByBreakpoint) {
-            // Only set display if this breakpoint exists in section but child doesn't exist
-            if (!presentBreakpoints.has(bp) && allBreakpointsSet.has(bp)) {
-              nodeProps.props.display = 'none'
+        // Add display:none props when a child exists only at specific breakpoints
+        if (presentBreakpoints.size < treesByBreakpoint.size) {
+          for (const bp of treesByBreakpoint.keys()) {
+            if (!presentBreakpoints.has(bp)) {
+              // Child doesn't exist at this breakpoint - need to add display:none
+              // Clone the first available tree and set display:none
+              const firstChildTree = [...childByBreakpoint.values()][0]
+              const hiddenTree: NodeTree = {
+                ...firstChildTree,
+                props: { ...firstChildTree.props, display: 'none' },
+              }
+              childByBreakpoint.set(bp, hiddenTree)
             }
           }
         }
 
-        const childCode = await this.generateMergedCode(
-          childByBreakpoint,
-          depth,
-        )
+        const childCode = this.generateMergedCode(childByBreakpoint, depth)
         childrenCodes.push(childCode)
       }
     }
 
-    // Reuse renderNode.
-    return renderNode(component, mergedProps, depth, childrenCodes)
-  }
-
-  /**
-   * Generate code for a single node (fallback).
-   * Reuses existing module.
-   */
-  private async generateNodeCode(
-    node: SceneNode,
-    depth: number,
-  ): Promise<string> {
-    // If node is INSTANCE or COMPONENT, render as component reference
-    if (
-      node.type === 'INSTANCE' ||
-      node.type === 'COMPONENT' ||
-      node.type === 'COMPONENT_SET'
-    ) {
-      const componentName = getComponentName(node)
-      const props = await getProps(node)
-
-      // Check if component has position props
-      if (props.pos) {
-        const posProps = {
-          pos: props.pos,
-          top: props.top,
-          left: props.left,
-          right: props.right,
-          bottom: props.bottom,
-        }
-        const componentCode = renderNode(componentName, {}, depth + 1, [])
-        return renderNode('Box', posProps, depth, [componentCode])
-      }
-
-      return renderNode(componentName, {}, depth, [])
-    }
-
-    const props = await getProps(node)
-    const childrenCodes: string[] = []
-
-    if ('children' in node) {
-      for (const child of node.children) {
-        const childCode = await this.generateNodeCode(child, depth + 1)
-        childrenCodes.push(childCode)
-      }
-    }
-
-    // If node is TEXT, apply typography
-    if (node.type === 'TEXT') {
-      const { children, props: _props } = await renderText(node)
-      childrenCodes.push(...children)
-      Object.assign(props, _props)
-    }
-
-    const component = getDevupComponentByNode(node, props)
-    return renderNode(component, props, depth, childrenCodes)
+    return renderNode(firstTree.component, mergedProps, depth, childrenCodes)
   }
 
   /**

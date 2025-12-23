@@ -1,7 +1,7 @@
 import { addPx } from '../utils/add-px'
 import { isPageRoot } from '../utils/is-page-root'
 
-function isFreelayout(node: BaseNode & ChildrenMixin) {
+export function isFreelayout(node: BaseNode & ChildrenMixin) {
   return (
     (!('inferredAutoLayout' in node) || !node.inferredAutoLayout) &&
     'layoutPositioning' in node &&
@@ -48,6 +48,8 @@ export function getPositionProps(
     let right: string | undefined
     let top: string | undefined
     let bottom: string | undefined
+    let translateX: string | undefined
+    let translateY: string | undefined
     switch (horizontal) {
       case 'MIN':
         left = addPx(node.x) ?? '0px'
@@ -55,6 +57,10 @@ export function getPositionProps(
       case 'MAX':
         right =
           addPx((node.parent as SceneNode).width - node.x - node.width) ?? '0px'
+        break
+      case 'CENTER':
+        left = '50%'
+        translateX = '50%'
         break
       default:
         left = '0px'
@@ -70,6 +76,10 @@ export function getPositionProps(
           addPx((node.parent as SceneNode).height - node.y - node.height) ??
           '0px'
         break
+      case 'CENTER':
+        top = '50%'
+        translateY = '50%'
+        break
       default:
         top = '0px'
         bottom = '0px'
@@ -81,6 +91,14 @@ export function getPositionProps(
       right,
       top,
       bottom,
+      transform:
+        translateX && translateY
+          ? `translate(-${translateX}, -${translateY})`
+          : translateX
+            ? `translateX(-${translateX})`
+            : translateY
+              ? `translateY(-${translateY})`
+              : undefined,
     }
   }
   if (
