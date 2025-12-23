@@ -1217,7 +1217,7 @@ describe('Codegen', () => {
           name: 'Section 1',
         },
       } as unknown as FrameNode,
-      expected: `<Box boxSize="100%" />`,
+      expected: `<Box h="100%" />`,
     },
     {
       title: 'renders frame with vertical center align child width shrinker',
@@ -3024,8 +3024,8 @@ describe('Codegen', () => {
         } as unknown as ComponentSetNode
       })(),
       expected: `<Box boxSize="100%">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
+  <Box h="100%" />
+  <Box h="100%" />
 </Box>`,
       expectedComponents: [
         [
@@ -3035,7 +3035,7 @@ describe('Codegen', () => {
 }
 
 export function Button() {
-  return <Box boxSize="100%" />
+  return <Box h="100%" />
  }`,
         ],
       ],
@@ -3071,14 +3071,14 @@ export function Button() {
         } as unknown as ComponentSetNode
       })(),
       expected: `<Box boxSize="100%">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
+  <Box h="100%" />
+  <Box h="100%" />
 </Box>`,
       expectedComponents: [
         [
           'Button',
           `export function Button() {
-  return <Box boxSize="100%" />
+  return <Box h="100%" />
  }`,
         ],
       ],
@@ -3137,14 +3137,14 @@ export function Button() {
         } as unknown as ComponentSetNode
       })(),
       expected: `<Box boxSize="100%">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
+  <Box h="100%" />
+  <Box h="100%" />
 </Box>`,
       expectedComponents: [
         [
           'Button',
           `export function Button() {
-  return <Box boxSize="100%" />
+  return <Box h="100%" />
  }`,
         ],
       ],
@@ -3204,8 +3204,8 @@ export function Button() {
         } as unknown as ComponentSetNode
       })(),
       expected: `<Box boxSize="100%">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" opacity="0.8" />
+  <Box h="100%" />
+  <Box h="100%" opacity="0.8" />
 </Box>`,
       expectedComponents: [
         [
@@ -3216,7 +3216,7 @@ export function Button() {
       _hover={{
         "opacity": "0.8"
       }}
-      boxSize="100%"
+      h="100%"
       transition="0.3ms ease-in-out"
       transitionProperty="opacity"
     />
@@ -3314,14 +3314,14 @@ export function Button() {
         } as unknown as ComponentSetNode
       })(),
       expected: `<Box boxSize="100%">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
+  <Box h="100%" />
+  <Box h="100%" />
 </Box>`,
       expectedComponents: [
         [
           'Button',
           `export function Button() {
-  return <Box boxSize="100%" />
+  return <Box h="100%" />
  }`,
         ],
       ],

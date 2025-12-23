@@ -67,13 +67,10 @@ function generatePowerShellCLI(
       : ''
 
   const commands = [
-    '# 폴더가 없으면 생성',
     'New-Item -ItemType Directory -Force -Path src\\components | Out-Null',
     '',
     ...componentsCodes.map(([componentName, code]) => {
-      console.log('code', code)
       const fullCode = importStatement + code
-      // PowerShell에서 작은따옴표 안에서는 이스케이프 불필요
       return `@'\n${fullCode}\n'@ | Out-File -FilePath src\\components\\${componentName}.tsx -Encoding UTF8`
     }),
   ]
@@ -92,7 +89,6 @@ export function registerCodegen(ctx: typeof figma) {
           const componentsCodes = codegen.getComponentsCodes()
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
 
-          // 반응형 코드 생성 (부모가 Section인 경우)
           const parentSection = ResponsiveCodegen.hasParentSection(node)
           let responsiveResult: {
             title: string

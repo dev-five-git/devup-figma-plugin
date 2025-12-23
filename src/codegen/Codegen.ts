@@ -5,11 +5,11 @@ import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
-import { findPageRoot } from './utils/find-page-root'
 import {
   getDevupComponentByNode,
   getDevupComponentByProps,
 } from './utils/get-devup-component'
+import { getPageNode } from './utils/get-page-node'
 import { buildCssUrl } from './utils/wrap-url'
 
 export class Codegen {
@@ -120,7 +120,8 @@ export class Codegen {
             bottom: props.bottom,
             w:
               // if the node is a page root, set the width to 100%
-              (findPageRoot(node) as SceneNode)?.width === node.width
+              (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)
+                ?.width === node.width
                 ? '100%'
                 : undefined,
           },
