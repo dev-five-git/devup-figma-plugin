@@ -183,16 +183,10 @@ describe('position', () => {
 
     it('should return relative position for parent with absolute children', () => {
       const node = {
-        type: 'FRAME',
-        fills: [],
+        type: 'COMPONENT_SET',
         children: [
           {
-            type: 'TEXT',
             layoutPositioning: 'ABSOLUTE',
-            visible: true,
-          },
-          {
-            type: 'TEXT',
             visible: true,
           },
         ],
@@ -206,17 +200,11 @@ describe('position', () => {
 
     it('should return relative position for freelayout parent with AUTO children', () => {
       const node = {
-        type: 'FRAME',
+        type: 'COMPONENT_SET',
         layoutPositioning: 'AUTO',
-        fills: [],
         children: [
           {
-            type: 'TEXT',
             layoutPositioning: 'AUTO',
-            visible: true,
-          },
-          {
-            type: 'TEXT',
             visible: true,
           },
         ],
