@@ -95,6 +95,7 @@ describe('registerCodegen', () => {
         node: {
           type: 'COMPONENT',
           name: 'Test',
+          visible: true,
         },
         language: 'devup-ui',
       },
@@ -109,6 +110,7 @@ describe('registerCodegen', () => {
         node: {
           type: 'FRAME',
           name: 'Main',
+          visible: true,
         },
         language: 'devup-ui',
       },
@@ -123,6 +125,7 @@ describe('registerCodegen', () => {
         node: {
           type: 'FRAME',
           name: 'Other',
+          visible: true,
         },
         language: 'other',
       },
@@ -181,4 +184,33 @@ it('auto-runs on module load when figma is present', async () => {
   await import(`../code?with-figma=${Date.now()}`)
 
   expect(codegenOn).toHaveBeenCalledWith('generate', expect.any(Function))
+})
+
+describe('extractImports', () => {
+  it('should extract keyframes import when code contains keyframes(', () => {
+    const result = codeModule.extractImports([
+      [
+        'AnimatedBox',
+        '<Box animationName={keyframes({ "0%": { opacity: 0 } })} />',
+      ],
+    ])
+    expect(result).toContain('keyframes')
+    expect(result).toContain('Box')
+  })
+
+  it('should extract keyframes import when code contains keyframes`', () => {
+    const result = codeModule.extractImports([
+      ['AnimatedBox', '<Box animationName={keyframes`from { opacity: 0 }`} />'],
+    ])
+    expect(result).toContain('keyframes')
+    expect(result).toContain('Box')
+  })
+
+  it('should not extract keyframes when not present', () => {
+    const result = codeModule.extractImports([
+      ['SimpleBox', '<Box w="100px" />'],
+    ])
+    expect(result).not.toContain('keyframes')
+    expect(result).toContain('Box')
+  })
 })

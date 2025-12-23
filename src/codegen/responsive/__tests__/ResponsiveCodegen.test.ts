@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
-import { BREAKPOINT_ORDER, type BreakpointKey } from '../index'
+import type { NodeTree } from '../../types'
 
-const getPropsMock = mock(async (node: SceneNode) => ({ id: node.name }))
 const renderNodeMock = mock(
   (
     component: string,
@@ -11,22 +10,38 @@ const renderNodeMock = mock(
   ) =>
     `render:${component}:depth=${depth}:${JSON.stringify(props)}|${children.join(';')}`,
 )
-const getDevupComponentByNodeMock = mock(() => 'Box')
+
+// Mock Codegen class
+const mockGetTree = mock(
+  async (): Promise<NodeTree> => ({
+    component: 'Box',
+    props: { id: 'test' },
+    children: [],
+    nodeType: 'FRAME',
+    nodeName: 'test',
+  }),
+)
+
+const mockRenderTree = mock((tree: NodeTree, depth: number) =>
+  renderNodeMock(tree.component, tree.props, depth, []),
+)
+
+const MockCodegen = class {
+  getTree = mockGetTree
+  static renderTree = mockRenderTree
+}
 
 describe('ResponsiveCodegen', () => {
   let ResponsiveCodegen: typeof import('../ResponsiveCodegen').ResponsiveCodegen
 
   beforeEach(async () => {
-    mock.module('../../props', () => ({ getProps: getPropsMock }))
     mock.module('../../render', () => ({ renderNode: renderNodeMock }))
-    mock.module('../../utils/get-devup-component', () => ({
-      getDevupComponentByNode: getDevupComponentByNodeMock,
-    }))
+    mock.module('../../Codegen', () => ({ Codegen: MockCodegen }))
 
     ;({ ResponsiveCodegen } = await import('../ResponsiveCodegen'))
-    getPropsMock.mockClear()
     renderNodeMock.mockClear()
-    getDevupComponentByNodeMock.mockClear()
+    mockGetTree.mockClear()
+    mockRenderTree.mockClear()
   })
 
   afterEach(() => {
@@ -58,7 +73,7 @@ describe('ResponsiveCodegen', () => {
     expect(result).toBe('// No responsive variants found in section')
   })
 
-  it('falls back to single breakpoint generation', async () => {
+  it('falls back to single breakpoint generation using Codegen', async () => {
     const child = makeNode('mobile', 320, [makeNode('leaf', undefined, [])])
     const section = {
       type: 'SECTION',
@@ -66,26 +81,55 @@ describe('ResponsiveCodegen', () => {
     } as unknown as SectionNode
 
     const generator = new ResponsiveCodegen(section)
-    const nodeCode = await (
-      generator as unknown as {
-        generateNodeCode: (node: SceneNode, depth: number) => Promise<string>
-      }
-    ).generateNodeCode(child, 0)
-    expect(renderNodeMock).toHaveBeenCalled()
-
     const result = await generator.generateResponsiveCode()
 
+    expect(mockGetTree).toHaveBeenCalled()
+    expect(mockRenderTree).toHaveBeenCalled()
     expect(result.startsWith('render:Box')).toBeTrue()
-    expect(nodeCode.startsWith('render:Box')).toBeTrue()
   })
 
   it('merges breakpoints and adds display for missing child variants', async () => {
-    const onlyMobile = makeNode('OnlyMobile')
-    const sharedMobile = makeNode('Shared')
-    const sharedTablet = makeNode('Shared')
+    const onlyMobileChild: NodeTree = {
+      component: 'Box',
+      props: { id: 'OnlyMobile' },
+      children: [],
+      nodeType: 'FRAME',
+      nodeName: 'OnlyMobile',
+    }
+    const sharedChild: NodeTree = {
+      component: 'Box',
+      props: { id: 'Shared' },
+      children: [],
+      nodeType: 'FRAME',
+      nodeName: 'Shared',
+    }
 
-    const mobileRoot = makeNode('RootMobile', 320, [onlyMobile, sharedMobile])
-    const tabletRoot = makeNode('RootTablet', 1000, [sharedTablet])
+    // Mock different trees for different breakpoints
+    let callCount = 0
+    mockGetTree.mockImplementation(async () => {
+      callCount++
+      if (callCount === 1) {
+        // Mobile tree
+        return {
+          component: 'Box',
+          props: { id: 'RootMobile' },
+          children: [onlyMobileChild, sharedChild],
+          nodeType: 'FRAME',
+          nodeName: 'RootMobile',
+        }
+      }
+      // Tablet tree
+      return {
+        component: 'Box',
+        props: { id: 'RootTablet' },
+        children: [{ ...sharedChild }],
+        nodeType: 'FRAME',
+        nodeName: 'RootTablet',
+      }
+    })
+
+    const mobileRoot = makeNode('RootMobile', 320, [])
+    const tabletRoot = makeNode('RootTablet', 1000, [])
     const section = {
       type: 'SECTION',
       children: [mobileRoot, tabletRoot],
@@ -94,46 +138,23 @@ describe('ResponsiveCodegen', () => {
     const generator = new ResponsiveCodegen(section)
     const result = await generator.generateResponsiveCode()
 
-    expect(getPropsMock).toHaveBeenCalled()
+    expect(mockGetTree).toHaveBeenCalledTimes(2)
     expect(renderNodeMock.mock.calls.length).toBeGreaterThan(0)
     expect(result.startsWith('render:Box')).toBeTrue()
   })
 
-  it('returns empty display when all breakpoints present', async () => {
+  it('uses Codegen.renderTree for single breakpoint', async () => {
+    const child = makeNode('child', 320)
     const section = {
       type: 'SECTION',
-      children: [makeNode('RootMobile', 320)],
+      children: [child],
     } as unknown as SectionNode
-    const generator = new ResponsiveCodegen(section)
-    const displayProps = (
-      generator as unknown as {
-        getDisplayProps: (
-          present: Set<BreakpointKey>,
-          all: Set<BreakpointKey>,
-        ) => Record<string, unknown>
-      }
-    ).getDisplayProps(
-      new Set<BreakpointKey>(BREAKPOINT_ORDER),
-      new Set<BreakpointKey>(BREAKPOINT_ORDER),
-    )
-    expect(displayProps).toEqual({})
-  })
 
-  it('recursively generates node code', async () => {
-    const child = makeNode('child')
-    const parent = makeNode('parent', undefined, [child])
-    const section = {
-      type: 'SECTION',
-      children: [parent],
-    } as unknown as SectionNode
     const generator = new ResponsiveCodegen(section)
-    const nodeCode = await (
-      generator as unknown as {
-        generateNodeCode: (node: SceneNode, depth: number) => Promise<string>
-      }
-    ).generateNodeCode(parent, 0)
-    expect(nodeCode.startsWith('render:Box')).toBeTrue()
-    expect(renderNodeMock).toHaveBeenCalled()
+    await generator.generateResponsiveCode()
+
+    expect(mockGetTree).toHaveBeenCalled()
+    expect(mockRenderTree).toHaveBeenCalled()
   })
 
   it('static helpers detect section and parent section', () => {

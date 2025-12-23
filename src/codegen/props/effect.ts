@@ -51,7 +51,6 @@ function _getEffectPropsFromEffect(effect: Effect): Record<string, string> {
     case 'BACKGROUND_BLUR':
       return {
         backdropFilter: `blur(${effect.radius}px)`,
-        WebkitBackdropFilter: `blur(${effect.radius}px)`,
       }
 
     case 'NOISE':
@@ -66,7 +65,6 @@ function _getEffectPropsFromEffect(effect: Effect): Record<string, string> {
     case 'GLASS':
       return {
         backdropFilter: `blur(${effect.radius}px)`,
-        WebkitBackdropFilter: `blur(${effect.radius}px)`,
       }
   }
 }

@@ -1,3 +1,5 @@
+import { isDefaultProp } from '../utils/is-default-prop'
+
 // Breakpoint thresholds (by width)
 // Array indices: mobile=0, sm=1, tablet=2, lg=3, pc=4
 // Always 5 slots
@@ -62,8 +64,16 @@ export function groupChildrenByBreakpoint(
 }
 
 type PropValue = boolean | string | number | undefined | null | object
-type Props = Record<string, PropValue>
-const SPECIAL_PROPS_WITH_INITIAL = new Set(['display', 'position', 'pos'])
+export type Props = Record<string, PropValue>
+const SPECIAL_PROPS_WITH_INITIAL = new Set([
+  'display',
+  'position',
+  'pos',
+  'transform',
+  'w',
+  'h',
+  'textAlign',
+])
 
 /**
  * Compare two prop values for equality.
@@ -85,6 +95,7 @@ function isEqual(a: PropValue, b: PropValue): boolean {
  * 1. If only index 0 has a value and the rest are null, return single value.
  * 2. Consecutive identical values keep the first, later ones become null.
  * 3. Remove trailing nulls only.
+ * 4. If the first value is default for that prop, replace with null.
  *
  * Examples:
  * ["100px", null, null] -> "100px" (only first has value)
@@ -93,9 +104,11 @@ function isEqual(a: PropValue, b: PropValue): boolean {
  * [null, null, "none"] -> [null, null, "none"] (keeps leading nulls)
  * [null, null, "none", null, null] -> [null, null, "none"] (trim trailing null)
  * ["100px", "200px", "200px"] -> ["100px", "200px"] (trailing equal treated as trailing null)
+ * ["flex-start", null, "center"] -> [null, null, "center"] (first value is default for alignItems)
  */
 export function optimizeResponsiveValue(
   arr: (PropValue | null)[],
+  key?: string,
 ): PropValue | (PropValue | null)[] {
   const nonNullValues = arr.filter((v) => v !== null)
   if (nonNullValues.length === 0) return null
@@ -115,9 +128,19 @@ export function optimizeResponsiveValue(
     }
   }
 
+  // If the first value is default for that prop, replace with null.
+  if (key && optimized[0] !== null && isDefaultProp(key, optimized[0])) {
+    optimized[0] = null
+  }
+
   // Remove trailing nulls.
   while (optimized.length > 0 && optimized[optimized.length - 1] === null) {
     optimized.pop()
+  }
+
+  // If empty array after optimization, return null.
+  if (optimized.length === 0) {
+    return null
   }
 
   // If only index 0 has value, return single value.
@@ -133,8 +156,8 @@ export function optimizeResponsiveValue(
  * Always 5 slots: [mobile, sm, tablet, lg, pc]; trailing nulls trimmed.
  */
 export function mergePropsToResponsive(
-  breakpointProps: Map<BreakpointKey, Props>,
-): Props {
+  breakpointProps: Map<BreakpointKey, Record<string, unknown>>,
+): Record<string, unknown> {
   const result: Props = {}
 
   // If only one breakpoint, return props as-is.
@@ -160,26 +183,49 @@ export function mergePropsToResponsive(
       return value ?? null
     })
 
-    // For display/position family, fill last slot with 'initial' if empty after a change.
+    // For display/position family, add 'initial' at the first EXISTING breakpoint
+    // where the value changes to null (after a non-null value).
+    // This ensures proper reset for larger breakpoints.
+    let valuesToOptimize = values
     if (SPECIAL_PROPS_WITH_INITIAL.has(key)) {
-      const lastNonNull = (() => {
-        for (let i = values.length - 1; i >= 0; i--) {
-          if (values[i] !== null) return i
+      // Find the last non-null value position in original values
+      let lastNonNullIdx = -1
+      for (let i = values.length - 1; i >= 0; i--) {
+        if (values[i] !== null) {
+          lastNonNullIdx = i
+          break
         }
-        return -1
-      })()
-      const lastIndex = values.length - 1
-      if (
-        lastNonNull >= 0 &&
-        lastNonNull < lastIndex &&
-        values[lastIndex] === null
-      ) {
-        values[lastIndex] = 'initial'
+      }
+
+      // Only need 'initial' if the last non-null is not at the end (pc)
+      if (lastNonNullIdx >= 0 && lastNonNullIdx < BREAKPOINT_ORDER.length - 1) {
+        // Find the first EXISTING breakpoint after the last non-null value
+        // that has a null/undefined value (where we need to reset)
+        let initialInsertIdx = -1
+        for (let i = lastNonNullIdx + 1; i < BREAKPOINT_ORDER.length; i++) {
+          const bp = BREAKPOINT_ORDER[i]
+          // Check if this breakpoint exists in input
+          if (breakpointProps.has(bp)) {
+            initialInsertIdx = i
+            break
+          }
+        }
+
+        // Only add 'initial' if we found a position to insert
+        if (initialInsertIdx >= 0) {
+          // Work with original values array to preserve null positions
+          const newArr = [...values]
+          newArr[initialInsertIdx] = 'initial'
+          // Trim values after initialInsertIdx (they're not needed)
+          newArr.length = initialInsertIdx + 1
+          valuesToOptimize = newArr
+        }
       }
     }
 
     // Optimize: single when all same, otherwise array.
-    const optimized = optimizeResponsiveValue(values)
+    const optimized = optimizeResponsiveValue(valuesToOptimize, key)
+
     if (optimized !== null) {
       result[key] = optimized
     }

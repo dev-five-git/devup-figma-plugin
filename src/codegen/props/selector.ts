@@ -1,6 +1,29 @@
 import { fmtPct } from '../utils/fmtPct'
 import { getProps } from '.'
 
+// 속성 이름을 유효한 TypeScript 식별자로 변환
+const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
+
+function sanitizePropertyName(name: string): string {
+  // 1. 공백과 특수문자를 처리하여 camelCase로 변환
+  const result = name
+    .trim()
+    // 공백이나 특수문자 뒤의 문자를 대문자로 (camelCase 변환)
+    .replace(/[\s\-_]+(.)/g, toUpperCase)
+    // 숫자로 시작하면 앞에 _ 추가
+    .replace(/^(\d)/, '_$1')
+
+  // 2. 유효하지 않은 문자 제거 (한글, 특수문자 등)
+  const cleaned = result.replace(/[^\w$]/g, '')
+
+  // 3. 완전히 비어있거나 숫자로만 구성된 경우 기본값 사용
+  if (!cleaned || /^\d+$/.test(cleaned)) {
+    return 'variant'
+  }
+
+  return cleaned
+}
+
 export async function getSelectorProps(
   node: ComponentSetNode | ComponentNode,
 ): Promise<
@@ -36,7 +59,12 @@ export async function getSelectorProps(
   const result = Object.entries(node.componentPropertyDefinitions).reduce(
     (acc, [name, definition]) => {
       if (name !== 'effect') {
-        acc.variants[name] = definition.variantOptions?.join(' | ') || ''
+        const sanitizedName = sanitizePropertyName(name)
+        // variant 옵션값들을 문자열 리터럴로 감싸기
+        acc.variants[sanitizedName] =
+          definition.variantOptions
+            ?.map((option) => `'${option}'`)
+            .join(' | ') || ''
       }
       return acc
     },
@@ -47,12 +75,11 @@ export async function getSelectorProps(
   )
 
   if (components.length > 0) {
+    const findNodeAction = (action: Action) => action.type === 'NODE'
+    const getTransition = (reaction: Reaction) =>
+      reaction.actions?.find(findNodeAction)?.transition
     const transition = node.defaultVariant.reactions
-      .flatMap(
-        (reaction) =>
-          reaction.actions?.find((action) => action.type === 'NODE')
-            ?.transition,
-      )
+      .flatMap(getTransition)
       .flat()[0]
     const diffKeys = new Set<string>()
     for (const [effect, props] of components) {

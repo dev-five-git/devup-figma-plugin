@@ -1,5 +1,30 @@
+function hasSmartAnimateReaction(node: BaseNode | null): boolean {
+  if (!node || node.type === 'DOCUMENT' || node.type === 'PAGE') return false
+  if (
+    'reactions' in node &&
+    node.reactions?.some((reaction) =>
+      reaction.actions?.some(
+        (action) =>
+          action.type === 'NODE' && action.transition?.type === 'SMART_ANIMATE',
+      ),
+    )
+  )
+    return true
+  return false
+}
+
+function isAnimationTarget(node: SceneNode): boolean {
+  // Check if node itself has SMART_ANIMATE
+  if (hasSmartAnimateReaction(node)) return true
+  // Check if parent has SMART_ANIMATE (node is animation target as child)
+  if (node.parent && hasSmartAnimateReaction(node.parent)) return true
+  return false
+}
+
 export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
-  if (node.type === 'TEXT') return null
+  if (node.type === 'TEXT' || node.type === 'COMPONENT_SET') return null
+  // if node is an animation target (has keyframes), it should not be treated as an asset
+  if (isAnimationTarget(node)) return null
   // vector must be svg
   if (['VECTOR', 'STAR', 'POLYGON'].includes(node.type)) return 'svg'
   // ellipse with inner radius must be svg
@@ -25,7 +50,9 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
               fill.type === 'IMAGE' &&
               fill.scaleMode !== 'TILE',
           )
-          ? 'png'
+          ? node.fills.length === 1
+            ? 'png'
+            : null
           : node.fills.every(
                 (fill: Paint) => fill.visible && fill.type === 'SOLID',
               )
@@ -50,7 +77,16 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
       return null
     return checkAssetNode(children[0])
   }
-  return children.every((child) => child.visible && checkAssetNode(child))
+  const fillterdChildren = children.filter((child) => child.visible)
+
+  // return children.every((child) => child.visible && checkAssetNode(child))
+  //   ? 'svg'
+  //   : null
+  return fillterdChildren.every((child) => {
+    const result = checkAssetNode(child)
+    if (result === null) return false
+    return result === 'svg'
+  })
     ? 'svg'
     : null
 }

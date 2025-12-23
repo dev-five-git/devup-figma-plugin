@@ -1,28 +1,16 @@
-import { getProps } from '../props'
+import { Codegen } from '../Codegen'
 import { renderNode } from '../render'
-import { getDevupComponentByNode } from '../utils/get-devup-component'
+import type { NodeTree, Props } from '../types'
 import {
-  BREAKPOINT_ORDER,
+  BREAKPOINT_INDEX,
   type BreakpointKey,
   getBreakpointByWidth,
   mergePropsToResponsive,
-  optimizeResponsiveValue,
 } from './index'
-
-type PropValue = boolean | string | number | undefined | null | object
-type Props = Record<string, PropValue>
-
-interface NodePropsMap {
-  breakpoint: BreakpointKey
-  props: Props
-  children: Map<string, NodePropsMap[]>
-  nodeType: string
-  nodeName: string
-  node: SceneNode
-}
 
 /**
  * Generate responsive code by merging children inside a Section.
+ * Uses Codegen to build NodeTree for each breakpoint, then merges them.
  */
 export class ResponsiveCodegen {
   private breakpointNodes: Map<BreakpointKey, SceneNode> = new Map()
@@ -47,36 +35,6 @@ export class ResponsiveCodegen {
   }
 
   /**
-   * Recursively extract props and children from a node.
-   * Reuses getProps.
-   */
-  private async extractNodeProps(
-    node: SceneNode,
-    breakpoint: BreakpointKey,
-  ): Promise<NodePropsMap> {
-    const props = await getProps(node)
-    const children = new Map<string, NodePropsMap[]>()
-
-    if ('children' in node) {
-      for (const child of node.children) {
-        const childProps = await this.extractNodeProps(child, breakpoint)
-        const existing = children.get(child.name) || []
-        existing.push(childProps)
-        children.set(child.name, existing)
-      }
-    }
-
-    return {
-      breakpoint,
-      props,
-      children,
-      nodeType: node.type,
-      nodeName: node.name,
-      node,
-    }
-  }
-
-  /**
    * Generate responsive code.
    */
   async generateResponsiveCode(): Promise<string> {
@@ -85,61 +43,140 @@ export class ResponsiveCodegen {
     }
 
     if (this.breakpointNodes.size === 1) {
-      // If only one breakpoint, generate normal code (reuse existing path).
+      // If only one breakpoint, generate normal code using Codegen.
       const [, node] = [...this.breakpointNodes.entries()][0]
-      return await this.generateNodeCode(node, 0)
+      const codegen = new Codegen(node)
+      const tree = await codegen.getTree()
+      return Codegen.renderTree(tree, 0)
     }
 
-    // Extract props per breakpoint node.
-    const breakpointNodeProps = new Map<BreakpointKey, NodePropsMap>()
+    // Extract trees per breakpoint using Codegen.
+    const breakpointTrees = new Map<BreakpointKey, NodeTree>()
     for (const [bp, node] of this.breakpointNodes) {
-      const nodeProps = await this.extractNodeProps(node, bp)
-      breakpointNodeProps.set(bp, nodeProps)
+      const codegen = new Codegen(node)
+      const tree = await codegen.getTree()
+      breakpointTrees.set(bp, tree)
     }
 
-    // Merge responsively and generate code.
-    return await this.generateMergedCode(breakpointNodeProps, 0)
+    // Merge trees and generate code.
+    return this.generateMergedCode(breakpointTrees, 0)
   }
 
   /**
-   * Generate merged responsive code.
-   * Reuses renderNode.
+   * Convert NodeTree children array to Map by nodeName.
    */
-  private async generateMergedCode(
-    nodesByBreakpoint: Map<BreakpointKey, NodePropsMap>,
+  private treeChildrenToMap(tree: NodeTree): Map<string, NodeTree[]> {
+    const result = new Map<string, NodeTree[]>()
+    for (const child of tree.children) {
+      const existing = result.get(child.nodeName) || []
+      existing.push(child)
+      result.set(child.nodeName, existing)
+    }
+    return result
+  }
+
+  /**
+   * Generate merged responsive code from NodeTree objects.
+   */
+  private generateMergedCode(
+    treesByBreakpoint: Map<BreakpointKey, NodeTree>,
     depth: number,
-  ): Promise<string> {
-    // Merge props.
+  ): string {
+    const firstTree = [...treesByBreakpoint.values()][0]
+
+    // If node is INSTANCE or COMPONENT, render as component reference
+    if (firstTree.isComponent) {
+      // For components, we might still need position props
+      const propsMap = new Map<BreakpointKey, Props>()
+      for (const [bp, tree] of treesByBreakpoint) {
+        const posProps: Props = {}
+        if (tree.props.pos) posProps.pos = tree.props.pos
+        if (tree.props.top) posProps.top = tree.props.top
+        if (tree.props.left) posProps.left = tree.props.left
+        if (tree.props.right) posProps.right = tree.props.right
+        if (tree.props.bottom) posProps.bottom = tree.props.bottom
+        if (tree.props.display) posProps.display = tree.props.display
+        propsMap.set(bp, posProps)
+      }
+      const mergedProps = mergePropsToResponsive(propsMap)
+
+      // If component has position props, wrap in Box
+      if (Object.keys(mergedProps).length > 0) {
+        const componentCode = renderNode(firstTree.component, {}, depth + 1, [])
+        return renderNode('Box', mergedProps, depth, [componentCode])
+      }
+
+      return renderNode(firstTree.component, {}, depth, [])
+    }
+
+    // Handle WRAPPER nodes (position wrapper for components)
+    if (firstTree.nodeType === 'WRAPPER') {
+      const propsMap = new Map<BreakpointKey, Props>()
+      for (const [bp, tree] of treesByBreakpoint) {
+        propsMap.set(bp, tree.props)
+      }
+      const mergedProps = mergePropsToResponsive(propsMap)
+
+      // Recursively merge the inner component
+      const innerTrees = new Map<BreakpointKey, NodeTree>()
+      for (const [bp, tree] of treesByBreakpoint) {
+        if (tree.children.length > 0) {
+          innerTrees.set(bp, tree.children[0])
+        }
+      }
+
+      const innerCode =
+        innerTrees.size > 0
+          ? this.generateMergedCode(innerTrees, depth + 1)
+          : ''
+
+      return renderNode('Box', mergedProps, depth, innerCode ? [innerCode] : [])
+    }
+
+    // Merge props across breakpoints
     const propsMap = new Map<BreakpointKey, Props>()
-    for (const [bp, nodeProps] of nodesByBreakpoint) {
-      propsMap.set(bp, nodeProps.props)
+    for (const [bp, tree] of treesByBreakpoint) {
+      propsMap.set(bp, tree.props)
     }
     const mergedProps = mergePropsToResponsive(propsMap)
 
-    // Decide component type from the first node (reuse existing util).
-    const firstNodeProps = [...nodesByBreakpoint.values()][0]
-    const component = getDevupComponentByNode(
-      firstNodeProps.node,
-      firstNodeProps.props,
-    )
+    // Handle TEXT nodes with textChildren
+    if (firstTree.textChildren && firstTree.textChildren.length > 0) {
+      // For text nodes, merge the text children
+      // Currently just using the first tree's text children
+      return renderNode(
+        firstTree.component,
+        mergedProps,
+        depth,
+        firstTree.textChildren,
+      )
+    }
 
-    // Merge child nodes (preserve order).
+    // Merge children by name
     const childrenCodes: string[] = []
     const processedChildNames = new Set<string>()
 
-    // Base order on the first breakpoint children.
-    const firstBreakpointChildren = firstNodeProps.children
-    const allChildNames: string[] = []
-
-    // Keep the first breakpoint child order.
-    for (const name of firstBreakpointChildren.keys()) {
-      allChildNames.push(name)
-      processedChildNames.add(name)
+    // Convert all trees' children to maps
+    const childrenMaps = new Map<BreakpointKey, Map<string, NodeTree[]>>()
+    for (const [bp, tree] of treesByBreakpoint) {
+      childrenMaps.set(bp, this.treeChildrenToMap(tree))
     }
 
-    // Add children that exist only in other breakpoints.
-    for (const nodeProps of nodesByBreakpoint.values()) {
-      for (const name of nodeProps.children.keys()) {
+    // Get all child names in order (first tree's order, then others)
+    const firstBreakpoint = [...treesByBreakpoint.keys()][0]
+    const firstChildrenMap = childrenMaps.get(firstBreakpoint)
+    const allChildNames: string[] = []
+
+    if (firstChildrenMap) {
+      for (const name of firstChildrenMap.keys()) {
+        allChildNames.push(name)
+        processedChildNames.add(name)
+      }
+    }
+
+    // Add children that exist only in other breakpoints
+    for (const childMap of childrenMaps.values()) {
+      for (const name of childMap.keys()) {
         if (!processedChildNames.has(name)) {
           allChildNames.push(name)
           processedChildNames.add(name)
@@ -148,11 +185,11 @@ export class ResponsiveCodegen {
     }
 
     for (const childName of allChildNames) {
-      const childByBreakpoint = new Map<BreakpointKey, NodePropsMap>()
+      const childByBreakpoint = new Map<BreakpointKey, NodeTree>()
       const presentBreakpoints = new Set<BreakpointKey>()
 
-      for (const [bp, nodeProps] of nodesByBreakpoint) {
-        const children = nodeProps.children.get(childName)
+      for (const [bp, childMap] of childrenMaps) {
+        const children = childMap.get(childName)
         if (children && children.length > 0) {
           childByBreakpoint.set(bp, children[0])
           presentBreakpoints.add(bp)
@@ -160,85 +197,43 @@ export class ResponsiveCodegen {
       }
 
       if (childByBreakpoint.size > 0) {
-        // Add display props when a child exists only at specific breakpoints.
-        if (presentBreakpoints.size < nodesByBreakpoint.size) {
-          const displayProps = this.getDisplayProps(
-            presentBreakpoints,
-            new Set(nodesByBreakpoint.keys()),
-          )
-          for (const nodeProps of childByBreakpoint.values()) {
-            Object.assign(nodeProps.props, displayProps)
+        // Add display:none props when a child exists only at specific breakpoints
+        // Find the smallest breakpoint where child exists
+        const sortedPresentBreakpoints = [...presentBreakpoints].sort(
+          (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
+        )
+        const smallestPresentBp = sortedPresentBreakpoints[0]
+        const smallestPresentIdx = BREAKPOINT_INDEX[smallestPresentBp]
+
+        // Find the smallest breakpoint in the section
+        const sortedSectionBreakpoints = [...treesByBreakpoint.keys()].sort(
+          (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
+        )
+        const smallestSectionBp = sortedSectionBreakpoints[0]
+        const smallestSectionIdx = BREAKPOINT_INDEX[smallestSectionBp]
+
+        // If child's smallest breakpoint is larger than section's smallest,
+        // we need to add display:none for the smaller breakpoints
+        if (smallestPresentIdx > smallestSectionIdx) {
+          // Add display:none for all breakpoints smaller than where child exists
+          for (const bp of treesByBreakpoint.keys()) {
+            if (!presentBreakpoints.has(bp)) {
+              const firstChildTree = [...childByBreakpoint.values()][0]
+              const hiddenTree: NodeTree = {
+                ...firstChildTree,
+                props: { ...firstChildTree.props, display: 'none' },
+              }
+              childByBreakpoint.set(bp, hiddenTree)
+            }
           }
         }
 
-        const childCode = await this.generateMergedCode(
-          childByBreakpoint,
-          depth,
-        )
+        const childCode = this.generateMergedCode(childByBreakpoint, depth)
         childrenCodes.push(childCode)
       }
     }
 
-    // Reuse renderNode.
-    return renderNode(component, mergedProps, depth, childrenCodes)
-  }
-
-  /**
-   * Build display props so a child shows only on present breakpoints.
-   */
-  private getDisplayProps(
-    presentBreakpoints: Set<BreakpointKey>,
-    allBreakpoints: Set<BreakpointKey>,
-  ): Props {
-    // Always use 5 slots: [mobile, sm, tablet, lg, pc]
-    // If the child exists on the breakpoint: null (visible); otherwise 'none' (hidden).
-    // If the Section lacks that breakpoint entirely: null.
-    const displayValues: (string | null)[] = BREAKPOINT_ORDER.map((bp) => {
-      if (!allBreakpoints.has(bp)) return null // Section lacks this breakpoint
-      return presentBreakpoints.has(bp) ? null : 'none'
-    })
-
-    // If all null, return empty object.
-    if (displayValues.every((v) => v === null)) {
-      return {}
-    }
-
-    // Remove trailing nulls only (keep leading nulls).
-    while (
-      displayValues.length > 0 &&
-      displayValues[displayValues.length - 1] === null
-    ) {
-      displayValues.pop()
-    }
-
-    // Empty array => empty object.
-    if (displayValues.length === 0) {
-      return {}
-    }
-
-    return { display: optimizeResponsiveValue(displayValues) }
-  }
-
-  /**
-   * Generate code for a single node (fallback).
-   * Reuses existing module.
-   */
-  private async generateNodeCode(
-    node: SceneNode,
-    depth: number,
-  ): Promise<string> {
-    const props = await getProps(node)
-    const childrenCodes: string[] = []
-
-    if ('children' in node) {
-      for (const child of node.children) {
-        const childCode = await this.generateNodeCode(child, depth + 1)
-        childrenCodes.push(childCode)
-      }
-    }
-
-    const component = getDevupComponentByNode(node, props)
-    return renderNode(component, props, depth, childrenCodes)
+    return renderNode(firstTree.component, mergedProps, depth, childrenCodes)
   }
 
   /**

@@ -13,12 +13,31 @@ exports[`registerCodegen should register codegen 1`] = `
   },
   {
     "code": 
-"echo 'export function Test() {
+"mkdir -p src/components
+
+echo 'import { Box } from \\'@devup-ui/react\\'
+
+export function Test() {
   return <Box boxSize="100%" />
- }' > Test.tsx"
+ }' > src/components/Test.tsx"
 ,
     "language": "BASH",
-    "title": "Test - Components CLI",
+    "title": "Test - Components CLI (Bash)",
+  },
+  {
+    "code": 
+"New-Item -ItemType Directory -Force -Path src\\components | Out-Null
+
+@'
+import { Box } from '@devup-ui/react'
+
+export function Test() {
+  return <Box boxSize="100%" />
+ }
+'@ | Out-File -FilePath src\\components\\Test.tsx -Encoding UTF8"
+,
+    "language": "BASH",
+    "title": "Test - Components CLI (PowerShell)",
   },
 ]
 `;

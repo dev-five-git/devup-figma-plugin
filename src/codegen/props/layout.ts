@@ -1,6 +1,8 @@
 import { addPx } from '../utils/add-px'
+import { checkAssetNode } from '../utils/check-asset-node'
 import { getPageNode } from '../utils/get-page-node'
 import { isChildWidthShrinker } from '../utils/is-child-width-shrinker'
+import { canBeAbsolute } from './position'
 
 export function getMinMaxProps(
   node: SceneNode,
@@ -44,18 +46,22 @@ function _getTextLayoutProps(
 function _getLayoutProps(
   node: SceneNode,
 ): Record<string, boolean | string | number | undefined | null> {
-  if (
-    'layoutPositioning' in node &&
-    node.layoutPositioning === 'ABSOLUTE' &&
-    node.parent &&
-    'width' in node.parent &&
-    'height' in node.parent &&
-    node.parent.width === node.width &&
-    node.parent.height === node.height
-  ) {
+  if (canBeAbsolute(node)) {
     return {
-      w: '100%',
-      h: '100%',
+      w:
+        node.type === 'TEXT' ||
+        (node.parent &&
+          'width' in node.parent &&
+          node.parent.width > node.width)
+          ? checkAssetNode(node)
+            ? addPx(node.width)
+            : undefined
+          : '100%',
+      // if node does not have children, it is a single node, so it should be 100%
+      h:
+        ('children' in node && node.children.length > 0) || node.type === 'TEXT'
+          ? undefined
+          : '100%',
     }
   }
   const hType =
@@ -82,7 +88,9 @@ function _getLayoutProps(
         ? 1
         : undefined,
     w:
-      rootNode === node && node.width === 1920
+      rootNode === node &&
+      node.width ===
+        (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)?.width
         ? undefined
         : wType === 'FIXED'
           ? addPx(node.width)

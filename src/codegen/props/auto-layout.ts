@@ -22,7 +22,7 @@ export function getAutoLayoutProps(
       VERTICAL: 'column',
     }[layoutMode],
     gap:
-      childrenCount > 1
+      childrenCount > 1 && node.primaryAxisAlignItems !== 'SPACE_BETWEEN'
         ? addPx(node.inferredAutoLayout.itemSpacing)
         : undefined,
     justifyContent: getJustifyContent(node),

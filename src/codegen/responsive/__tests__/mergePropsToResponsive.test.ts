@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test'
-import { type BreakpointKey, mergePropsToResponsive } from '../index'
+import {
+  type BreakpointKey,
+  mergePropsToResponsive,
+  type Props,
+} from '../index'
 
 describe('mergePropsToResponsive', () => {
   const cases: {
@@ -95,7 +99,7 @@ describe('mergePropsToResponsive', () => {
         ['pc', { w: undefined }],
       ]),
       expected: {
-        w: [null, null, '10px'],
+        w: [null, null, '10px', 'initial'],
       },
     },
     {
@@ -108,7 +112,7 @@ describe('mergePropsToResponsive', () => {
         ['pc', { w: undefined }],
       ]),
       expected: {
-        w: '10px',
+        w: ['10px', null, null, 'initial'],
       },
     },
     {
@@ -144,11 +148,88 @@ describe('mergePropsToResponsive', () => {
         pos: [null, null, 'absolute', null, 'initial'],
       },
     },
+    {
+      name: 'mobile only value with tablet and pc breakpoints needs initial at tablet position',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { textAlign: 'center' }],
+        ['tablet', { textAlign: undefined }],
+        ['pc', { textAlign: undefined }],
+      ]),
+      expected: {
+        textAlign: ['center', null, 'initial'],
+      },
+    },
+    {
+      name: 'display none at mobile, flex at tablet and pc should produce responsive array',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { display: 'none' }],
+        ['tablet', { display: 'flex' }],
+        ['pc', { display: 'flex' }],
+      ]),
+      expected: {
+        display: ['none', null, 'flex'],
+      },
+    },
+    {
+      name: 'flexDir column at mobile, row at tablet and pc should produce responsive array',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { flexDir: 'column' }],
+        ['tablet', { flexDir: 'row' }],
+        ['pc', { flexDir: 'row' }],
+      ]),
+      expected: {
+        flexDir: ['column', null, 'row'],
+      },
+    },
+    {
+      name: 'alignItems with default value at first should become null',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { alignItems: 'flex-start' }],
+        ['tablet', { alignItems: 'center' }],
+        ['pc', { alignItems: 'center' }],
+      ]),
+      expected: {
+        alignItems: [null, null, 'center'],
+      },
+    },
+    {
+      name: 'justifyContent with default value at first should become null',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { justifyContent: 'flex-start' }],
+        ['tablet', { justifyContent: 'center' }],
+        ['pc', { justifyContent: 'center' }],
+      ]),
+      expected: {
+        justifyContent: [null, null, 'center'],
+      },
+    },
+    {
+      name: 'flexDir with default value (row) at first should become null',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { flexDir: 'row' }],
+        ['tablet', { flexDir: 'column' }],
+        ['pc', { flexDir: 'column' }],
+      ]),
+      expected: {
+        flexDir: [null, null, 'column'],
+      },
+    },
+    {
+      name: 'all default values should be omitted (empty result)',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { alignItems: 'flex-start', justifyContent: 'flex-start' }],
+        ['tablet', { alignItems: 'flex-start', justifyContent: 'flex-start' }],
+        ['pc', { alignItems: 'flex-start', justifyContent: 'flex-start' }],
+      ]),
+      expected: {},
+    },
   ]
 
   cases.forEach(({ name, input, expected }) => {
     it(name, () => {
-      expect(mergePropsToResponsive(input)).toEqual(expected)
+      expect(
+        mergePropsToResponsive(input as unknown as Map<BreakpointKey, Props>),
+      ).toEqual(expected as unknown as Props)
     })
   })
 })

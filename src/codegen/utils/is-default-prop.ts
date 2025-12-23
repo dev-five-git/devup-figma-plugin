@@ -24,6 +24,8 @@ const DEFAULT_PROPS_MAP = {
   gap: /\b0(px)?\b/,
 } as const
 export function isDefaultProp(prop: string, value: unknown) {
+  // Don't filter arrays (responsive values)
+  if (Array.isArray(value)) return false
   return (
     prop in DEFAULT_PROPS_MAP &&
     DEFAULT_PROPS_MAP[prop as keyof typeof DEFAULT_PROPS_MAP].test(
