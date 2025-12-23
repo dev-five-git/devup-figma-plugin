@@ -4,6 +4,83 @@ import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
 
+function extractImports(
+  componentsCodes: ReadonlyArray<readonly [string, string]>,
+): string[] {
+  const allCode = componentsCodes.map(([_, code]) => code).join('\n')
+  const imports = new Set<string>()
+
+  const devupComponents = [
+    'Center',
+    'VStack',
+    'Flex',
+    'Grid',
+    'Box',
+    'Text',
+    'Image',
+  ]
+
+  for (const component of devupComponents) {
+    const regex = new RegExp(`<${component}[\\s/>]`, 'g')
+    if (regex.test(allCode)) {
+      imports.add(component)
+    }
+  }
+
+  // keyframes 함수 체크
+  if (/keyframes\s*\(|keyframes`/.test(allCode)) {
+    imports.add('keyframes')
+  }
+
+  return Array.from(imports).sort()
+}
+
+function generateBashCLI(
+  componentsCodes: ReadonlyArray<readonly [string, string]>,
+): string {
+  const imports = extractImports(componentsCodes)
+  const importStatement =
+    imports.length > 0
+      ? `import { ${imports.join(', ')} } from '@devup-ui/react'\n\n`
+      : ''
+
+  const commands = [
+    'mkdir -p src/components',
+    '',
+    ...componentsCodes.map(([componentName, code]) => {
+      const fullCode = importStatement + code
+      const escapedCode = fullCode.replace(/'/g, "\\'")
+      return `echo '${escapedCode}' > src/components/${componentName}.tsx`
+    }),
+  ]
+
+  return commands.join('\n')
+}
+
+function generatePowerShellCLI(
+  componentsCodes: ReadonlyArray<readonly [string, string]>,
+): string {
+  const imports = extractImports(componentsCodes)
+  const importStatement =
+    imports.length > 0
+      ? `import { ${imports.join(', ')} } from '@devup-ui/react'\n\n`
+      : ''
+
+  const commands = [
+    '# 폴더가 없으면 생성',
+    'New-Item -ItemType Directory -Force -Path src\\components | Out-Null',
+    '',
+    ...componentsCodes.map(([componentName, code]) => {
+      console.log('code', code)
+      const fullCode = importStatement + code
+      // PowerShell에서 작은따옴표 안에서는 이스케이프 불필요
+      return `@'\n${fullCode}\n'@ | Out-File -FilePath src\\components\\${componentName}.tsx -Encoding UTF8`
+    }),
+  ]
+
+  return commands.join('\n')
+}
+
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
     ctx.codegen.on('generate', async ({ node, language }) => {
@@ -60,14 +137,14 @@ export function registerCodegen(ctx: typeof figma) {
                     code: componentsCodes.map((code) => code[1]).join('\n\n'),
                   },
                   {
-                    title: `${node.name} - Components CLI`,
+                    title: `${node.name} - Components CLI (Bash)`,
                     language: 'BASH',
-                    code: componentsCodes
-                      .map(
-                        ([componentName, code]) =>
-                          `echo '${code}' > src/components/${componentName}.tsx`,
-                      )
-                      .join('\n'),
+                    code: generateBashCLI(componentsCodes),
+                  },
+                  {
+                    title: `${node.name} - Components CLI (PowerShell)`,
+                    language: 'BASH',
+                    code: generatePowerShellCLI(componentsCodes),
                   },
                 ] as const)
               : []),

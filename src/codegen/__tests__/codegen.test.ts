@@ -3031,7 +3031,7 @@ describe('Codegen', () => {
         [
           'Button',
           `export interface ButtonProps {
-  state: default | hover
+  state: 'default' | 'hover'
 }
 
 export function Button() {
