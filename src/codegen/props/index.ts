@@ -56,14 +56,20 @@ export function filterPropsWithComponent(
   for (const [key, value] of Object.entries(props)) {
     switch (component) {
       case 'Flex':
+        // Only skip display if it's exactly 'flex' (not responsive array or other value)
+        if (key === 'display' && value === 'flex') continue
+        break
       case 'Grid':
-        if (['display'].includes(key)) continue
+        // Only skip display if it's exactly 'grid' (not responsive array or other value)
+        if (key === 'display' && value === 'grid') continue
         break
       case 'Center':
-        if (['alignItems', 'justifyContent', 'display'].includes(key)) continue
+        if (['alignItems', 'justifyContent'].includes(key)) continue
+        if (key === 'display' && value === 'flex') continue
         break
       case 'VStack':
-        if (['flexDir', 'display'].includes(key)) continue
+        if (key === 'flexDir') continue
+        if (key === 'display' && value === 'flex') continue
         break
 
       case 'Image':
@@ -71,7 +77,6 @@ export function filterPropsWithComponent(
         if (component === 'Box' && !('maskImage' in props)) break
         if (
           [
-            'display',
             'alignItems',
             'justifyContent',
             'flexDir',
@@ -82,6 +87,7 @@ export function filterPropsWithComponent(
           ].includes(key)
         )
           continue
+        if (key === 'display' && value === 'flex') continue
         if (!('maskImage' in props) && ['bg'].includes(key)) continue
         break
     }

@@ -159,6 +159,17 @@ describe('mergePropsToResponsive', () => {
         textAlign: ['center', null, 'initial'],
       },
     },
+    {
+      name: 'display none at mobile, flex at tablet and pc should produce responsive array',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { display: 'none' }],
+        ['tablet', { display: 'flex' }],
+        ['pc', { display: 'flex' }],
+      ]),
+      expected: {
+        display: ['none', null, 'flex'],
+      },
+    },
   ]
 
   cases.forEach(({ name, input, expected }) => {

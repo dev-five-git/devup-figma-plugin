@@ -2,6 +2,7 @@ import { Codegen } from '../Codegen'
 import { renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
 import {
+  BREAKPOINT_INDEX,
   type BreakpointKey,
   getBreakpointByWidth,
   mergePropsToResponsive,
@@ -56,6 +57,7 @@ export class ResponsiveCodegen {
       const tree = await codegen.getTree()
       breakpointTrees.set(bp, tree)
     }
+    console.log('breakpointTrees', breakpointTrees)
 
     // Merge trees and generate code.
     return this.generateMergedCode(breakpointTrees, 0)
@@ -94,6 +96,7 @@ export class ResponsiveCodegen {
         if (tree.props.left) posProps.left = tree.props.left
         if (tree.props.right) posProps.right = tree.props.right
         if (tree.props.bottom) posProps.bottom = tree.props.bottom
+        if (tree.props.display) posProps.display = tree.props.display
         propsMap.set(bp, posProps)
       }
       const mergedProps = mergePropsToResponsive(propsMap)
@@ -196,11 +199,26 @@ export class ResponsiveCodegen {
 
       if (childByBreakpoint.size > 0) {
         // Add display:none props when a child exists only at specific breakpoints
-        if (presentBreakpoints.size < treesByBreakpoint.size) {
+        // Find the smallest breakpoint where child exists
+        const sortedPresentBreakpoints = [...presentBreakpoints].sort(
+          (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
+        )
+        const smallestPresentBp = sortedPresentBreakpoints[0]
+        const smallestPresentIdx = BREAKPOINT_INDEX[smallestPresentBp]
+
+        // Find the smallest breakpoint in the section
+        const sortedSectionBreakpoints = [...treesByBreakpoint.keys()].sort(
+          (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
+        )
+        const smallestSectionBp = sortedSectionBreakpoints[0]
+        const smallestSectionIdx = BREAKPOINT_INDEX[smallestSectionBp]
+
+        // If child's smallest breakpoint is larger than section's smallest,
+        // we need to add display:none for the smaller breakpoints
+        if (smallestPresentIdx > smallestSectionIdx) {
+          // Add display:none for all breakpoints smaller than where child exists
           for (const bp of treesByBreakpoint.keys()) {
             if (!presentBreakpoints.has(bp)) {
-              // Child doesn't exist at this breakpoint - need to add display:none
-              // Clone the first available tree and set display:none
               const firstChildTree = [...childByBreakpoint.values()][0]
               const hiddenTree: NodeTree = {
                 ...firstChildTree,
