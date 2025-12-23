@@ -1,3 +1,5 @@
+import { isDefaultProp } from '../utils/is-default-prop'
+
 // Breakpoint thresholds (by width)
 // Array indices: mobile=0, sm=1, tablet=2, lg=3, pc=4
 // Always 5 slots
@@ -93,6 +95,7 @@ function isEqual(a: PropValue, b: PropValue): boolean {
  * 1. If only index 0 has a value and the rest are null, return single value.
  * 2. Consecutive identical values keep the first, later ones become null.
  * 3. Remove trailing nulls only.
+ * 4. If the first value is default for that prop, replace with null.
  *
  * Examples:
  * ["100px", null, null] -> "100px" (only first has value)
@@ -101,9 +104,11 @@ function isEqual(a: PropValue, b: PropValue): boolean {
  * [null, null, "none"] -> [null, null, "none"] (keeps leading nulls)
  * [null, null, "none", null, null] -> [null, null, "none"] (trim trailing null)
  * ["100px", "200px", "200px"] -> ["100px", "200px"] (trailing equal treated as trailing null)
+ * ["flex-start", null, "center"] -> [null, null, "center"] (first value is default for alignItems)
  */
 export function optimizeResponsiveValue(
   arr: (PropValue | null)[],
+  key?: string,
 ): PropValue | (PropValue | null)[] {
   const nonNullValues = arr.filter((v) => v !== null)
   if (nonNullValues.length === 0) return null
@@ -123,9 +128,19 @@ export function optimizeResponsiveValue(
     }
   }
 
+  // If the first value is default for that prop, replace with null.
+  if (key && optimized[0] !== null && isDefaultProp(key, optimized[0])) {
+    optimized[0] = null
+  }
+
   // Remove trailing nulls.
   while (optimized.length > 0 && optimized[optimized.length - 1] === null) {
     optimized.pop()
+  }
+
+  // If empty array after optimization, return null.
+  if (optimized.length === 0) {
+    return null
   }
 
   // If only index 0 has value, return single value.
@@ -209,7 +224,7 @@ export function mergePropsToResponsive(
     }
 
     // Optimize: single when all same, otherwise array.
-    const optimized = optimizeResponsiveValue(valuesToOptimize)
+    const optimized = optimizeResponsiveValue(valuesToOptimize, key)
 
     if (optimized !== null) {
       result[key] = optimized

@@ -170,6 +170,59 @@ describe('mergePropsToResponsive', () => {
         display: ['none', null, 'flex'],
       },
     },
+    {
+      name: 'flexDir column at mobile, row at tablet and pc should produce responsive array',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { flexDir: 'column' }],
+        ['tablet', { flexDir: 'row' }],
+        ['pc', { flexDir: 'row' }],
+      ]),
+      expected: {
+        flexDir: ['column', null, 'row'],
+      },
+    },
+    {
+      name: 'alignItems with default value at first should become null',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { alignItems: 'flex-start' }],
+        ['tablet', { alignItems: 'center' }],
+        ['pc', { alignItems: 'center' }],
+      ]),
+      expected: {
+        alignItems: [null, null, 'center'],
+      },
+    },
+    {
+      name: 'justifyContent with default value at first should become null',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { justifyContent: 'flex-start' }],
+        ['tablet', { justifyContent: 'center' }],
+        ['pc', { justifyContent: 'center' }],
+      ]),
+      expected: {
+        justifyContent: [null, null, 'center'],
+      },
+    },
+    {
+      name: 'flexDir with default value (row) at first should become null',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { flexDir: 'row' }],
+        ['tablet', { flexDir: 'column' }],
+        ['pc', { flexDir: 'column' }],
+      ]),
+      expected: {
+        flexDir: [null, null, 'column'],
+      },
+    },
+    {
+      name: 'all default values should be omitted (empty result)',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { alignItems: 'flex-start', justifyContent: 'flex-start' }],
+        ['tablet', { alignItems: 'flex-start', justifyContent: 'flex-start' }],
+        ['pc', { alignItems: 'flex-start', justifyContent: 'flex-start' }],
+      ]),
+      expected: {},
+    },
   ]
 
   cases.forEach(({ name, input, expected }) => {

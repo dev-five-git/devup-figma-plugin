@@ -1,4 +1,5 @@
 import { addPx } from '../utils/add-px'
+import { checkAssetNode } from '../utils/check-asset-node'
 import { getPageNode } from '../utils/get-page-node'
 import { isChildWidthShrinker } from '../utils/is-child-width-shrinker'
 import { canBeAbsolute } from './position'
@@ -52,7 +53,9 @@ function _getLayoutProps(
         (node.parent &&
           'width' in node.parent &&
           node.parent.width > node.width)
-          ? undefined
+          ? checkAssetNode(node)
+            ? addPx(node.width)
+            : undefined
           : '100%',
       // if node does not have children, it is a single node, so it should be 100%
       h:

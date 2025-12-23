@@ -22,6 +22,7 @@ import { getVisibilityProps } from './visibility'
 export async function getProps(
   node: SceneNode,
 ): Promise<Record<string, unknown>> {
+  console.log('getProps', getLayoutProps(node))
   return {
     ...getAutoLayoutProps(node),
     ...getMinMaxProps(node),
@@ -56,8 +57,9 @@ export function filterPropsWithComponent(
   for (const [key, value] of Object.entries(props)) {
     switch (component) {
       case 'Flex':
-        // Only skip display if it's exactly 'flex' (not responsive array or other value)
+        // Only skip display/flexDir if it's exactly the default value (not responsive array)
         if (key === 'display' && value === 'flex') continue
+        if (key === 'flexDir' && value === 'row') continue
         break
       case 'Grid':
         // Only skip display if it's exactly 'grid' (not responsive array or other value)
@@ -66,9 +68,11 @@ export function filterPropsWithComponent(
       case 'Center':
         if (['alignItems', 'justifyContent'].includes(key)) continue
         if (key === 'display' && value === 'flex') continue
+        if (key === 'flexDir' && value === 'row') continue
         break
       case 'VStack':
-        if (key === 'flexDir') continue
+        // Only skip flexDir if it's exactly 'column' (not responsive array or other value)
+        if (key === 'flexDir' && value === 'column') continue
         if (key === 'display' && value === 'flex') continue
         break
 
