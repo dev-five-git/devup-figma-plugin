@@ -1,4 +1,5 @@
 import { addPx } from '../utils/add-px'
+import { checkAssetNode } from '../utils/check-asset-node'
 import { isPageRoot } from '../utils/is-page-root'
 
 export function isFreelayout(node: BaseNode & ChildrenMixin) {
@@ -105,6 +106,7 @@ export function getPositionProps(
   }
   if (
     'children' in node &&
+    !checkAssetNode(node) &&
     (node.children.some(
       (child) =>
         'layoutPositioning' in child && child.layoutPositioning === 'ABSOLUTE',

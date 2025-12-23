@@ -22,7 +22,6 @@ import { getVisibilityProps } from './visibility'
 export async function getProps(
   node: SceneNode,
 ): Promise<Record<string, unknown>> {
-  console.log('getProps', getLayoutProps(node))
   return {
     ...getAutoLayoutProps(node),
     ...getMinMaxProps(node),
