@@ -25,7 +25,9 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
               fill.type === 'IMAGE' &&
               fill.scaleMode !== 'TILE',
           )
-          ? 'png'
+          ? node.fills.length === 1
+            ? 'png'
+            : null
           : node.fills.every(
                 (fill: Paint) => fill.visible && fill.type === 'SOLID',
               )

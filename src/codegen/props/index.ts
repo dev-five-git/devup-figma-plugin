@@ -2,6 +2,7 @@ import { getAutoLayoutProps } from './auto-layout'
 import { getBackgroundProps } from './background'
 import { getBlendProps } from './blend'
 import { getBorderProps, getBorderRadiusProps } from './border'
+import { getCursorProps } from './cursor'
 import { getEffectProps } from './effect'
 import { getEllipsisProps } from './ellipsis'
 import { getGridChildProps } from './grid-child'
@@ -41,6 +42,7 @@ export async function getProps(
     ...(await getTextStrokeProps(node)),
     ...(await getTextShadowProps(node)),
     ...(await getReactionProps(node)),
+    ...getCursorProps(node),
   }
 }
 

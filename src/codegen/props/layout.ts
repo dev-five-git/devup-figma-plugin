@@ -47,8 +47,18 @@ function _getLayoutProps(
 ): Record<string, boolean | string | number | undefined | null> {
   if (canBeAbsolute(node)) {
     return {
-      w: node.type === 'TEXT' ? undefined : '100%',
-      // h: '100%',
+      w:
+        node.type === 'TEXT' ||
+        (node.parent &&
+          'width' in node.parent &&
+          node.parent.width > node.width)
+          ? undefined
+          : '100%',
+      // if node does not have children, it is a single node, so it should be 100%
+      h:
+        ('children' in node && node.children.length > 0) || node.type === 'TEXT'
+          ? undefined
+          : '100%',
     }
   }
   const hType =
