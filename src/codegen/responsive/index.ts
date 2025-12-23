@@ -168,26 +168,49 @@ export function mergePropsToResponsive(
       return value ?? null
     })
 
-    // For display/position family, fill last slot with 'initial' if empty after a change.
+    // For display/position family, add 'initial' at the first EXISTING breakpoint
+    // where the value changes to null (after a non-null value).
+    // This ensures proper reset for larger breakpoints.
+    let valuesToOptimize = values
     if (SPECIAL_PROPS_WITH_INITIAL.has(key)) {
-      const lastNonNull = (() => {
-        for (let i = values.length - 1; i >= 0; i--) {
-          if (values[i] !== null) return i
+      // Find the last non-null value position in original values
+      let lastNonNullIdx = -1
+      for (let i = values.length - 1; i >= 0; i--) {
+        if (values[i] !== null) {
+          lastNonNullIdx = i
+          break
         }
-        return -1
-      })()
-      const lastIndex = values.length - 1
-      if (
-        lastNonNull >= 0 &&
-        lastNonNull < lastIndex &&
-        values[lastIndex] === null
-      ) {
-        values[lastIndex] = 'initial'
+      }
+
+      // Only need 'initial' if the last non-null is not at the end (pc)
+      if (lastNonNullIdx >= 0 && lastNonNullIdx < BREAKPOINT_ORDER.length - 1) {
+        // Find the first EXISTING breakpoint after the last non-null value
+        // that has a null/undefined value (where we need to reset)
+        let initialInsertIdx = -1
+        for (let i = lastNonNullIdx + 1; i < BREAKPOINT_ORDER.length; i++) {
+          const bp = BREAKPOINT_ORDER[i]
+          // Check if this breakpoint exists in input
+          if (breakpointProps.has(bp)) {
+            initialInsertIdx = i
+            break
+          }
+        }
+
+        // Only add 'initial' if we found a position to insert
+        if (initialInsertIdx >= 0) {
+          // Work with original values array to preserve null positions
+          const newArr = [...values]
+          newArr[initialInsertIdx] = 'initial'
+          // Trim values after initialInsertIdx (they're not needed)
+          newArr.length = initialInsertIdx + 1
+          valuesToOptimize = newArr
+        }
       }
     }
 
     // Optimize: single when all same, otherwise array.
-    const optimized = optimizeResponsiveValue(values)
+    const optimized = optimizeResponsiveValue(valuesToOptimize)
+
     if (optimized !== null) {
       result[key] = optimized
     }

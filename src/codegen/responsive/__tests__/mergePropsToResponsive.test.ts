@@ -99,7 +99,7 @@ describe('mergePropsToResponsive', () => {
         ['pc', { w: undefined }],
       ]),
       expected: {
-        w: [null, null, '10px', null, 'initial'],
+        w: [null, null, '10px', 'initial'],
       },
     },
     {
@@ -112,7 +112,7 @@ describe('mergePropsToResponsive', () => {
         ['pc', { w: undefined }],
       ]),
       expected: {
-        w: ['10px', null, null, null, 'initial'],
+        w: ['10px', null, null, 'initial'],
       },
     },
     {
@@ -146,6 +146,17 @@ describe('mergePropsToResponsive', () => {
       ]),
       expected: {
         pos: [null, null, 'absolute', null, 'initial'],
+      },
+    },
+    {
+      name: 'mobile only value with tablet and pc breakpoints needs initial at tablet position',
+      input: new Map<BreakpointKey, Record<string, unknown>>([
+        ['mobile', { textAlign: 'center' }],
+        ['tablet', { textAlign: undefined }],
+        ['pc', { textAlign: undefined }],
+      ]),
+      expected: {
+        textAlign: ['center', null, 'initial'],
       },
     },
   ]
