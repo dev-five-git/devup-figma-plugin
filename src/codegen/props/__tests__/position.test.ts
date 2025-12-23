@@ -184,9 +184,11 @@ describe('position', () => {
     it('should return relative position for parent with absolute children', () => {
       const node = {
         type: 'FRAME',
+        fills: [],
         children: [
           {
             layoutPositioning: 'ABSOLUTE',
+            visible: true,
           },
         ],
       } as any
@@ -201,9 +203,11 @@ describe('position', () => {
       const node = {
         type: 'FRAME',
         layoutPositioning: 'AUTO',
+        fills: [],
         children: [
           {
             layoutPositioning: 'AUTO',
+            visible: true,
           },
         ],
       } as any
