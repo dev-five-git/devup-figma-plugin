@@ -356,6 +356,97 @@ describe('registerCodegen with viewport variant', () => {
     expect(responsiveResult).toBeDefined()
   })
 
+  it('should generate responsive component with multiple variants (viewport + size)', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    // COMPONENT_SET with both viewport and size variants
+    const componentSetNode = {
+      type: 'COMPONENT_SET',
+      name: 'ResponsiveButton',
+      visible: true,
+      componentPropertyDefinitions: {
+        viewport: {
+          type: 'VARIANT',
+          defaultValue: 'desktop',
+          variantOptions: ['mobile', 'desktop'],
+        },
+        size: {
+          type: 'VARIANT',
+          defaultValue: 'md',
+          variantOptions: ['sm', 'md', 'lg'],
+        },
+      },
+      children: [
+        {
+          type: 'COMPONENT',
+          name: 'viewport=mobile, size=md',
+          visible: true,
+          variantProperties: { viewport: 'mobile', size: 'md' },
+          children: [],
+          layoutMode: 'VERTICAL',
+          width: 320,
+          height: 100,
+        },
+        {
+          type: 'COMPONENT',
+          name: 'viewport=desktop, size=md',
+          visible: true,
+          variantProperties: { viewport: 'desktop', size: 'md' },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 1200,
+          height: 100,
+        },
+      ],
+      defaultVariant: {
+        type: 'COMPONENT',
+        name: 'viewport=desktop, size=md',
+        visible: true,
+        variantProperties: { viewport: 'desktop', size: 'md' },
+        children: [],
+      },
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: componentSetNode,
+      language: 'devup-ui',
+    })
+
+    // Should include responsive components result
+    const responsiveResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title.includes('Responsive'),
+    )
+    expect(responsiveResult).toBeDefined()
+
+    // The generated code should include the size variant in the interface
+    const resultWithCode = responsiveResult as { code: string } | undefined
+    if (resultWithCode?.code) {
+      expect(resultWithCode.code).toContain('size')
+    }
+  })
+
   it('should generate responsive code for node with parent SECTION', async () => {
     let capturedHandler: CodegenHandler | null = null
 

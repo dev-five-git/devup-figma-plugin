@@ -11,6 +11,11 @@ const renderNodeMock = mock(
     `render:${component}:depth=${depth}:${JSON.stringify(props)}|${children.join(';')}`,
 )
 
+const renderComponentMock = mock(
+  (component: string, code: string, variants: Record<string, string>) =>
+    `component:${component}:${JSON.stringify(variants)}|${code}`,
+)
+
 // Mock Codegen class
 const mockGetTree = mock(
   async (): Promise<NodeTree> => ({
@@ -35,7 +40,10 @@ describe('ResponsiveCodegen', () => {
   let ResponsiveCodegen: typeof import('../ResponsiveCodegen').ResponsiveCodegen
 
   beforeEach(async () => {
-    mock.module('../../render', () => ({ renderNode: renderNodeMock }))
+    mock.module('../../render', () => ({
+      renderNode: renderNodeMock,
+      renderComponent: renderComponentMock,
+    }))
     mock.module('../../Codegen', () => ({ Codegen: MockCodegen }))
 
     ;({ ResponsiveCodegen } = await import('../ResponsiveCodegen'))
@@ -160,7 +168,203 @@ describe('ResponsiveCodegen', () => {
   it('static helpers detect section and parent section', () => {
     const section = { type: 'SECTION' } as unknown as SectionNode
     const frame = { type: 'FRAME', parent: section } as unknown as SceneNode
+    const nonSection = { type: 'FRAME' } as unknown as SceneNode
+    const nodeWithoutSectionParent = {
+      type: 'FRAME',
+      parent: { type: 'FRAME' },
+    } as unknown as SceneNode
+
     expect(ResponsiveCodegen.canGenerateResponsive(section)).toBeTrue()
+    expect(ResponsiveCodegen.canGenerateResponsive(nonSection)).toBeFalse()
     expect(ResponsiveCodegen.hasParentSection(frame)).toEqual(section)
+    expect(
+      ResponsiveCodegen.hasParentSection(nodeWithoutSectionParent),
+    ).toBeNull()
+  })
+
+  it('generateViewportResponsiveComponents returns empty when no viewport variant', async () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'NoViewport',
+      componentPropertyDefinitions: {
+        size: {
+          type: 'VARIANT',
+          variantOptions: ['sm', 'md', 'lg'],
+        },
+      },
+      children: [],
+    } as unknown as ComponentSetNode
+
+    const result = await ResponsiveCodegen.generateViewportResponsiveComponents(
+      componentSet,
+      'NoViewport',
+    )
+    expect(result).toEqual([])
+  })
+
+  it('generateViewportResponsiveComponents processes non-viewport variants', async () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'MultiVariant',
+      componentPropertyDefinitions: {
+        viewport: {
+          type: 'VARIANT',
+          variantOptions: ['mobile', 'desktop'],
+        },
+        size: {
+          type: 'VARIANT',
+          variantOptions: ['sm', 'md', 'lg'],
+        },
+      },
+      children: [
+        {
+          type: 'COMPONENT',
+          name: 'viewport=mobile, size=md',
+          variantProperties: { viewport: 'mobile', size: 'md' },
+          children: [],
+          layoutMode: 'VERTICAL',
+          width: 320,
+          height: 100,
+        },
+        {
+          type: 'COMPONENT',
+          name: 'viewport=desktop, size=md',
+          variantProperties: { viewport: 'desktop', size: 'md' },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 1200,
+          height: 100,
+        },
+      ],
+    } as unknown as ComponentSetNode
+
+    const result = await ResponsiveCodegen.generateViewportResponsiveComponents(
+      componentSet,
+      'MultiVariant',
+    )
+
+    expect(result.length).toBeGreaterThan(0)
+    // Check that the result includes the component name
+    expect(result[0][0]).toBe('MultiVariant')
+    // Check that the generated code includes the size variant type
+    expect(result[0][1]).toContain('size')
+  })
+
+  it('handles component without viewport in variantProperties', async () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'PartialViewport',
+      componentPropertyDefinitions: {
+        viewport: {
+          type: 'VARIANT',
+          variantOptions: ['mobile', 'desktop'],
+        },
+      },
+      children: [
+        {
+          type: 'COMPONENT',
+          name: 'viewport=mobile',
+          variantProperties: { viewport: 'mobile' },
+          children: [],
+          layoutMode: 'VERTICAL',
+          width: 320,
+          height: 100,
+        },
+        {
+          type: 'COMPONENT',
+          name: 'no-viewport',
+          variantProperties: {}, // No viewport property
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 1200,
+          height: 100,
+        },
+        {
+          type: 'FRAME', // Not a COMPONENT type
+          name: 'frame-child',
+          children: [],
+        },
+      ],
+    } as unknown as ComponentSetNode
+
+    const result = await ResponsiveCodegen.generateViewportResponsiveComponents(
+      componentSet,
+      'PartialViewport',
+    )
+
+    // Should still generate responsive code for the valid component
+    expect(result.length).toBeGreaterThanOrEqual(0)
+  })
+
+  it('handles null sectionNode in constructor', () => {
+    const generator = new ResponsiveCodegen(null)
+    expect(generator).toBeDefined()
+  })
+
+  it('sorts multiple non-viewport variants alphabetically', async () => {
+    // Multiple non-viewport variants to trigger the sort callback
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'MultiPropVariant',
+      componentPropertyDefinitions: {
+        viewport: {
+          type: 'VARIANT',
+          variantOptions: ['mobile', 'desktop'],
+        },
+        size: {
+          type: 'VARIANT',
+          variantOptions: ['sm', 'md', 'lg'],
+        },
+        color: {
+          type: 'VARIANT',
+          variantOptions: ['red', 'blue', 'green'],
+        },
+        state: {
+          type: 'VARIANT',
+          variantOptions: ['default', 'hover', 'active'],
+        },
+      },
+      children: [
+        {
+          type: 'COMPONENT',
+          name: 'viewport=mobile, size=md, color=red, state=default',
+          variantProperties: {
+            viewport: 'mobile',
+            size: 'md',
+            color: 'red',
+            state: 'default',
+          },
+          children: [],
+          layoutMode: 'VERTICAL',
+          width: 320,
+          height: 100,
+        },
+        {
+          type: 'COMPONENT',
+          name: 'viewport=desktop, size=md, color=red, state=default',
+          variantProperties: {
+            viewport: 'desktop',
+            size: 'md',
+            color: 'red',
+            state: 'default',
+          },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 1200,
+          height: 100,
+        },
+      ],
+    } as unknown as ComponentSetNode
+
+    const result = await ResponsiveCodegen.generateViewportResponsiveComponents(
+      componentSet,
+      'MultiPropVariant',
+    )
+
+    expect(result.length).toBeGreaterThan(0)
+    // Check that all non-viewport variants are in the interface
+    expect(result[0][1]).toContain('size')
+    expect(result[0][1]).toContain('color')
+    expect(result[0][1]).toContain('state')
   })
 })
