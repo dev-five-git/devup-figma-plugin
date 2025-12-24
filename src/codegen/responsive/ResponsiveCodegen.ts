@@ -2,7 +2,6 @@ import { Codegen } from '../Codegen'
 import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
 import {
-  BREAKPOINT_INDEX,
   type BreakpointKey,
   getBreakpointByWidth,
   mergePropsToResponsive,
@@ -212,34 +211,18 @@ export class ResponsiveCodegen {
         }
 
         if (childByBreakpoint.size > 0) {
-          // Add display:none props when a child exists only at specific breakpoints
-          // Find the smallest breakpoint where child exists
-          const sortedPresentBreakpoints = [...presentBreakpoints].sort(
-            (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
-          )
-          const smallestPresentBp = sortedPresentBreakpoints[0]
-          const smallestPresentIdx = BREAKPOINT_INDEX[smallestPresentBp]
-
-          // Find the smallest breakpoint in the section
-          const sortedSectionBreakpoints = [...treesByBreakpoint.keys()].sort(
-            (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
-          )
-          const smallestSectionBp = sortedSectionBreakpoints[0]
-          const smallestSectionIdx = BREAKPOINT_INDEX[smallestSectionBp]
-
-          // If child's smallest breakpoint is larger than section's smallest,
-          // we need to add display:none for the smaller breakpoints
-          if (smallestPresentIdx > smallestSectionIdx) {
-            // Add display:none for all breakpoints smaller than where child exists
-            for (const bp of treesByBreakpoint.keys()) {
-              if (!presentBreakpoints.has(bp)) {
-                const firstChildTree = [...childByBreakpoint.values()][0]
-                const hiddenTree: NodeTree = {
-                  ...firstChildTree,
-                  props: { ...firstChildTree.props, display: 'none' },
-                }
-                childByBreakpoint.set(bp, hiddenTree)
+          // Add display:none props for breakpoints where child doesn't exist
+          // This handles both:
+          // 1. Child exists only in mobile (needs display:none in pc)
+          // 2. Child exists only in pc (needs display:none in mobile)
+          for (const bp of treesByBreakpoint.keys()) {
+            if (!presentBreakpoints.has(bp)) {
+              const firstChildTree = [...childByBreakpoint.values()][0]
+              const hiddenTree: NodeTree = {
+                ...firstChildTree,
+                props: { ...firstChildTree.props, display: 'none' },
               }
+              childByBreakpoint.set(bp, hiddenTree)
             }
           }
 

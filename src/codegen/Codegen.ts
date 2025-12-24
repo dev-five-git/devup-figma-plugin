@@ -188,6 +188,7 @@ export class Codegen {
           props.bg = maskColor
           delete props.src
         }
+        props.display = 'initial'
       }
       return {
         component: 'src' in props ? 'Image' : 'Box',

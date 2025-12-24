@@ -28,8 +28,7 @@ export function extractImports(
     }
   }
 
-  // keyframes 함수 체크
-  if (/keyframes\s*\(|keyframes`/.test(allCode)) {
+  if (/\bkeyframes\s*(\(|`)/.test(allCode)) {
     imports.add('keyframes')
   }
 

@@ -1,4 +1,5 @@
 import { addPx } from '../utils/add-px'
+import { checkAssetNode } from '../utils/check-asset-node'
 
 export function getAutoLayoutProps(
   node: SceneNode,
@@ -6,7 +7,8 @@ export function getAutoLayoutProps(
   if (
     !('inferredAutoLayout' in node) ||
     !node.inferredAutoLayout ||
-    node.inferredAutoLayout.layoutMode === 'NONE'
+    node.inferredAutoLayout.layoutMode === 'NONE' ||
+    checkAssetNode(node)
   )
     return
   const { layoutMode } = node.inferredAutoLayout
