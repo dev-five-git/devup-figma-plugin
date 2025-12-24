@@ -50,7 +50,8 @@ ${Object.entries(variants)
   .join('\n')}
 }\n\n`
     : ''
-  return `${interfaceCode}export function ${component}() {
+  const propsParam = hasVariants ? `props: ${component}Props` : ''
+  return `${interfaceCode}export function ${component}(${propsParam}) {
   return ${
     code.includes('\n')
       ? `(\n${code
@@ -59,7 +60,7 @@ ${Object.entries(variants)
           .join('\n')}\n${space(1)})`
       : code.trim().replace(/\s+/g, ' ')
   }
- }`
+}`
 }
 
 function filterProps(props: Record<string, unknown>) {

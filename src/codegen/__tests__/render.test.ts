@@ -46,7 +46,7 @@ describe('renderComponent', () => {
       variants: {} as Record<string, string>,
       expected: `export function Button() {
   return <Button />
- }`,
+}`,
     },
     {
       title: 'renders component with variants and multiline code',
@@ -59,13 +59,13 @@ describe('renderComponent', () => {
   size: "sm" | "lg"
 }
 
-export function Banner() {
+export function Banner(props: BannerProps) {
   return (
 <Box>
   <Text />
 </Box>
   )
- }`,
+}`,
     },
   ])('$title', ({ component, code, variants, expected }) => {
     const result = renderComponent(component, code, variants)

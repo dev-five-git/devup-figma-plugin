@@ -3047,9 +3047,9 @@ describe('Codegen', () => {
   state: 'default' | 'hover'
 }
 
-export function Button() {
+export function Button(props: ButtonProps) {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3092,7 +3092,7 @@ export function Button() {
           'Button',
           `export function Button() {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3158,7 +3158,7 @@ export function Button() {
           'Button',
           `export function Button() {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3234,7 +3234,7 @@ export function Button() {
       transitionProperty="opacity"
     />
   )
- }`,
+}`,
         ],
       ],
     },
@@ -3335,7 +3335,7 @@ export function Button() {
           'Button',
           `export function Button() {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3352,7 +3352,7 @@ export function Button() {
           'Icon',
           `export function Icon() {
   return <Box boxSize="100%" />
- }`,
+}`,
         ],
       ],
     },
