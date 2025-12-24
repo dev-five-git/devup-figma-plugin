@@ -210,7 +210,6 @@ export class Codegen {
    */
   async getTree(): Promise<NodeTree> {
     if (!this.tree) {
-      console.log('buildTree', this.node)
       this.tree = await this.buildTree(this.node)
     }
     return this.tree
