@@ -499,6 +499,64 @@ describe('ResponsiveCodegen', () => {
       expect(result).toContain('scroll')
       expect(result).toContain('default')
     })
+
+    it('renders OR conditional for child existing in multiple but not all variants', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const partialChild: NodeTree = {
+        component: 'Box',
+        props: { id: 'PartialChild' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'PartialChild',
+      }
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'scroll',
+          {
+            component: 'Flex',
+            props: {},
+            children: [partialChild],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'hover',
+          {
+            component: 'Flex',
+            props: {},
+            children: [{ ...partialChild, props: { id: 'PartialChildHover' } }],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'default',
+          {
+            component: 'Flex',
+            props: {},
+            children: [], // No child in default variant
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'status',
+        treesByVariant,
+        0,
+      )
+
+      // Should contain OR conditional for multiple variants
+      expect(result).toContain('status === "scroll"')
+      expect(result).toContain('status === "hover"')
+      expect(result).toContain('||')
+      expect(result).toContain('&&')
+      expect(result).toMatchSnapshot()
+    })
   })
 
   describe('generateVariantResponsiveComponents', () => {

@@ -116,4 +116,44 @@ describe('propsToString', () => {
     // Should use space separator, not newline
     expect(res).not.toContain('\n')
   })
+
+  test('handles VariantPropValue with object values', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: { x: 1, y: 2 },
+      default: { x: 3, y: 4 },
+    })
+    const res = propsToString({ transform: variantProp })
+    expect(res).toContain('scroll: {"x":1,"y":2}')
+    expect(res).toContain('default: {"x":3,"y":4}')
+  })
+
+  test('handles VariantPropValue with boolean values', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: true,
+      default: false,
+    })
+    const res = propsToString({ visible: variantProp })
+    expect(res).toBe('visible={{ scroll: true, default: false }[status]}')
+  })
+
+  test('handles VariantPropValue with undefined values in array', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: [undefined, '10px'],
+      default: ['20px', undefined],
+    })
+    const res = propsToString({ w: variantProp })
+    expect(res).toContain('scroll: [undefined, "10px"]')
+    expect(res).toContain('default: ["20px", undefined]')
+  })
+
+  test('handles VariantPropValue with symbol values (fallback case)', () => {
+    const sym = Symbol('test')
+    const variantProp = createVariantPropValue('status', {
+      scroll: sym as unknown as string,
+      default: '20px',
+    })
+    const res = propsToString({ w: variantProp })
+    expect(res).toContain('scroll: Symbol(test)')
+    expect(res).toContain('default: "20px"')
+  })
 })
