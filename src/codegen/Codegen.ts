@@ -52,120 +52,31 @@ export class Codegen {
     )
   }
 
-  async addComponent(node: ComponentNode) {
-    const childrenCodes =
-      'children' in node
-        ? node.children.map(async (child) => {
-            if (child.type === 'INSTANCE') {
-              const mainComponent = await child.getMainComponentAsync()
-              if (mainComponent) await this.addComponent(mainComponent)
-            }
+  /**
+   * Run the codegen process: build tree and render to JSX string.
+   */
+  async run(node: SceneNode = this.node, depth: number = 0): Promise<string> {
+    // Build the tree first
+    const tree = await this.buildTree(node)
 
-            return await this.run(child, 0)
-          })
-        : []
-    const props = await getProps(node)
-    const selectorProps = await getSelectorProps(node)
-    const variants = {}
+    // Render the tree to JSX string
+    const ret = Codegen.renderTree(tree, depth)
 
-    if (selectorProps) {
-      Object.assign(props, selectorProps.props)
-      Object.assign(variants, selectorProps.variants)
+    if (node === this.node) {
+      this.code = ret
+      this.tree = tree
     }
 
-    this.components.set(node, {
-      code: renderNode(
-        getDevupComponentByProps(props),
-        props,
-        2,
-        await Promise.all(childrenCodes),
-      ),
-      variants,
-    })
-  }
-
-  async run(node: SceneNode = this.node, dep: number = 0): Promise<string> {
-    const assetNode = checkAssetNode(node)
-    if (assetNode) {
-      const props = await getProps(node)
-      props.src = `/${assetNode === 'svg' ? 'icons' : 'images'}/${node.name}.${assetNode}`
-      if (assetNode === 'svg') {
-        const maskColor = await checkSameColor(node)
-        if (maskColor) {
-          // support mask image icon
-          props.maskImage = buildCssUrl(props.src as string)
-          props.maskRepeat = 'no-repeat'
-          props.maskSize = 'contain'
-          props.bg = maskColor
-          delete props.src
-        }
+    // Sync componentTrees to components
+    for (const [compNode, compTree] of this.componentTrees) {
+      if (!this.components.has(compNode)) {
+        this.components.set(compNode, {
+          code: Codegen.renderTree(compTree.tree, 2),
+          variants: compTree.variants,
+        })
       }
-      const ret = renderNode('src' in props ? 'Image' : 'Box', props, dep, [])
-      if (node === this.node) this.code = ret
-      return ret
     }
 
-    const props = await getProps(node)
-    if (
-      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
-      ((this.node.type === 'COMPONENT_SET' &&
-        node === this.node.defaultVariant) ||
-        this.node.type === 'COMPONENT')
-    ) {
-      await this.addComponent(
-        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-      )
-    }
-    if (node.type === 'INSTANCE') {
-      const mainComponent = await node.getMainComponentAsync()
-      if (mainComponent) await this.addComponent(mainComponent)
-      let ret = renderNode(getComponentName(mainComponent || node), {}, dep, [])
-      if (props.pos) {
-        ret = renderNode(
-          'Box',
-          {
-            pos: props.pos,
-            top: props.top,
-            left: props.left,
-            right: props.right,
-            bottom: props.bottom,
-            w:
-              // if the node is a page root, set the width to 100%
-              (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)
-                ?.width === node.width
-                ? '100%'
-                : undefined,
-          },
-          dep,
-          [ret],
-        )
-      }
-      if (node === this.node) this.code = ret
-      return ret
-    }
-    const childrenCodes = await Promise.all(
-      'children' in node
-        ? node.children.map(async (child) => {
-            if (child.type === 'INSTANCE') {
-              const mainComponent = await child.getMainComponentAsync()
-              if (mainComponent) await this.addComponent(mainComponent)
-            }
-            return await this.run(child)
-          })
-        : [],
-    )
-    if (node.type === 'TEXT') {
-      const { children, props: _props } = await renderText(node)
-      childrenCodes.push(...children)
-      Object.assign(props, _props)
-    }
-    const ret = renderNode(
-      getDevupComponentByNode(node, props),
-      props,
-      dep,
-      childrenCodes,
-    )
-    if (node === this.node) this.code = ret
     return ret
   }
 
@@ -188,7 +99,6 @@ export class Codegen {
           props.bg = maskColor
           delete props.src
         }
-        props.display = 'initial'
       }
       return {
         component: 'src' in props ? 'Image' : 'Box',
@@ -372,8 +282,9 @@ export class Codegen {
       return renderNode(tree.component, tree.props, depth, tree.textChildren)
     }
 
+    // Children are rendered with depth 0 because renderNode handles indentation internally
     const childrenCodes = tree.children.map((child) =>
-      Codegen.renderTree(child, depth + 1),
+      Codegen.renderTree(child, 0),
     )
     return renderNode(tree.component, tree.props, depth, childrenCodes)
   }
