@@ -104,6 +104,20 @@ const SPECIAL_PROPS_WITH_INITIAL = new Set([
   'overflow',
   'overflowX',
   'overflowY',
+  'p',
+  'pt',
+  'pr',
+  'pb',
+  'pl',
+  'px',
+  'py',
+  'm',
+  'mt',
+  'mr',
+  'mb',
+  'ml',
+  'mx',
+  'my',
 ])
 
 /**
