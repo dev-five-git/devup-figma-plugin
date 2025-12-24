@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { createVariantPropValue } from '../../responsive'
 import { propsToString } from '../props-to-str'
 
 describe('propsToString', () => {
@@ -71,5 +72,48 @@ describe('propsToString', () => {
     })
     expect(res).toContain('style={')
     expect(res).toContain('"color": "red"')
+  })
+
+  test('handles VariantPropValue with simple values', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: '10px',
+      default: '20px',
+    })
+    const res = propsToString({ w: variantProp })
+    expect(res).toBe('w={{ scroll: "10px", default: "20px" }[status]}')
+  })
+
+  test('handles VariantPropValue with array values (responsive)', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: ['10px', null, '20px'],
+      default: ['30px', null, '40px'],
+    })
+    const res = propsToString({ w: variantProp })
+    expect(res).toBe(
+      'w={{ scroll: ["10px", null, "20px"], default: ["30px", null, "40px"] }[status]}',
+    )
+  })
+
+  test('handles VariantPropValue with numeric values', () => {
+    const variantProp = createVariantPropValue('size', {
+      sm: 10,
+      lg: 20,
+    })
+    const res = propsToString({ gap: variantProp })
+    expect(res).toBe('gap={{ sm: 10, lg: 20 }[size]}')
+  })
+
+  test('VariantPropValue does not trigger newline separator', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: '10px',
+      default: '20px',
+    })
+    const res = propsToString({
+      w: variantProp,
+      h: '100px',
+      bg: 'red',
+    })
+    // Should use space separator, not newline
+    expect(res).not.toContain('\n')
   })
 })

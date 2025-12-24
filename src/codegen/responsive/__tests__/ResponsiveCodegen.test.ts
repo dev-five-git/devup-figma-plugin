@@ -367,4 +367,290 @@ describe('ResponsiveCodegen', () => {
     expect(result[0][1]).toContain('color')
     expect(result[0][1]).toContain('state')
   })
+
+  describe('generateVariantOnlyMergedCode', () => {
+    it('merges props across variants with conditional syntax', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'scroll',
+          {
+            component: 'Flex',
+            props: { w: '100px', h: '200px' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'default',
+          {
+            component: 'Flex',
+            props: { w: '300px', h: '200px' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'status',
+        treesByVariant,
+        0,
+      )
+
+      // h should be same value (200px)
+      expect(result).toContain('"h":"200px"')
+      // w should be variant conditional
+      expect(result).toContain('scroll')
+      expect(result).toContain('default')
+    })
+
+    it('renders conditional nodes for variant-only children', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const scrollOnlyChild: NodeTree = {
+        component: 'Box',
+        props: { id: 'ScrollOnly' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'ScrollOnlyChild',
+      }
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'scroll',
+          {
+            component: 'Flex',
+            props: {},
+            children: [scrollOnlyChild],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'default',
+          {
+            component: 'Flex',
+            props: {},
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'status',
+        treesByVariant,
+        0,
+      )
+
+      // Should contain conditional rendering syntax
+      expect(result).toContain('status === "scroll"')
+      expect(result).toContain('&&')
+    })
+
+    it('merges children that exist in all variants', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const sharedChild: NodeTree = {
+        component: 'Text',
+        props: { fontSize: '16px' },
+        children: [],
+        nodeType: 'TEXT',
+        nodeName: 'SharedText',
+      }
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'scroll',
+          {
+            component: 'Flex',
+            props: {},
+            children: [{ ...sharedChild, props: { fontSize: '14px' } }],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'default',
+          {
+            component: 'Flex',
+            props: {},
+            children: [{ ...sharedChild, props: { fontSize: '16px' } }],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'status',
+        treesByVariant,
+        0,
+      )
+
+      // Should contain merged child without conditional
+      expect(result).not.toContain('status === "scroll" &&')
+      // Should contain variant conditional for fontSize
+      expect(result).toContain('scroll')
+      expect(result).toContain('default')
+    })
+  })
+
+  describe('generateVariantResponsiveComponents', () => {
+    it('handles component set with only non-viewport variants', async () => {
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'StatusVariant',
+        componentPropertyDefinitions: {
+          status: {
+            type: 'VARIANT',
+            variantOptions: ['scroll', 'default'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'status=scroll',
+            variantProperties: { status: 'scroll' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 100,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'status=default',
+            variantProperties: { status: 'default' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 200,
+            height: 100,
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'StatusVariant',
+        )
+
+      expect(result.length).toBe(1)
+      expect(result[0][0]).toBe('StatusVariant')
+      expect(result[0][1]).toContain('status')
+    })
+
+    it('delegates to generateViewportResponsiveComponents when only viewport exists', async () => {
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'ViewportOnly',
+        componentPropertyDefinitions: {
+          viewport: {
+            type: 'VARIANT',
+            variantOptions: ['mobile', 'desktop'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'viewport=mobile',
+            variantProperties: { viewport: 'mobile' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 320,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'viewport=desktop',
+            variantProperties: { viewport: 'desktop' },
+            children: [],
+            layoutMode: 'HORIZONTAL',
+            width: 1200,
+            height: 100,
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'ViewportOnly',
+        )
+
+      expect(result.length).toBe(1)
+      expect(result[0][0]).toBe('ViewportOnly')
+    })
+
+    it('handles both viewport and other variants', async () => {
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'Combined',
+        componentPropertyDefinitions: {
+          viewport: {
+            type: 'VARIANT',
+            variantOptions: ['mobile', 'desktop'],
+          },
+          status: {
+            type: 'VARIANT',
+            variantOptions: ['scroll', 'default'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'viewport=mobile, status=scroll',
+            variantProperties: { viewport: 'mobile', status: 'scroll' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 320,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'viewport=desktop, status=scroll',
+            variantProperties: { viewport: 'desktop', status: 'scroll' },
+            children: [],
+            layoutMode: 'HORIZONTAL',
+            width: 1200,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'viewport=mobile, status=default',
+            variantProperties: { viewport: 'mobile', status: 'default' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 320,
+            height: 200,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'viewport=desktop, status=default',
+            variantProperties: { viewport: 'desktop', status: 'default' },
+            children: [],
+            layoutMode: 'HORIZONTAL',
+            width: 1200,
+            height: 200,
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'Combined',
+        )
+
+      expect(result.length).toBe(1)
+      expect(result[0][0]).toBe('Combined')
+      // Should have status in interface
+      expect(result[0][1]).toContain('status')
+    })
+  })
 })

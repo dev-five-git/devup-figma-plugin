@@ -38,7 +38,6 @@ export function extractImports(
 export function extractCustomComponentImports(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
 ): string[] {
-  console.log(componentsCodes)
   const allCode = componentsCodes.map(([_, code]) => code).join('\n')
   const customImports = new Set<string>()
 
@@ -124,14 +123,14 @@ export function registerCodegen(ctx: typeof figma) {
           await codegen.run()
           const componentsCodes = codegen.getComponentsCodes()
 
-          // Generate responsive component codes if viewport variant exists
+          // Generate responsive component codes with variant support
           let responsiveComponentsCodes: ReadonlyArray<
             readonly [string, string]
           > = []
-          if (codegen.hasViewportVariant() && node.type === 'COMPONENT_SET') {
+          if (node.type === 'COMPONENT_SET') {
             const componentName = getComponentName(node)
             responsiveComponentsCodes =
-              await ResponsiveCodegen.generateViewportResponsiveComponents(
+              await ResponsiveCodegen.generateVariantResponsiveComponents(
                 node,
                 componentName,
               )
