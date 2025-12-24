@@ -73,6 +73,51 @@ const SPECIAL_PROPS_WITH_INITIAL = new Set([
   'w',
   'h',
   'textAlign',
+  // layout related
+  'flexDir',
+  'flexWrap',
+  'justify',
+  'alignItems',
+  'alignContent',
+  'alignSelf',
+  'gap',
+  'rowGap',
+  'columnGap',
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
+  'order',
+  // grid layout
+  'gridTemplateColumns',
+  'gridTemplateRows',
+  'gridColumn',
+  'gridRow',
+  'gridArea',
+  // position related
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'zIndex',
+  // overflow
+  'overflow',
+  'overflowX',
+  'overflowY',
+  'p',
+  'pt',
+  'pr',
+  'pb',
+  'pl',
+  'px',
+  'py',
+  'm',
+  'mt',
+  'mr',
+  'mb',
+  'ml',
+  'mx',
+  'my',
 ])
 
 /**
@@ -253,6 +298,129 @@ export function groupNodesByName(
       const group = result.get(name) || []
       group.push({ breakpoint, node, props: {} })
       result.set(name, group)
+    }
+  }
+
+  return result
+}
+
+/**
+ * Convert viewport variant value to BreakpointKey.
+ * Viewport values: "desktop" | "tablet" | "mobile" (case-insensitive comparison)
+ */
+export function viewportToBreakpoint(viewport: string): BreakpointKey {
+  const lower = viewport.toLowerCase()
+  if (lower === 'mobile') return 'mobile'
+  if (lower === 'tablet') return 'tablet'
+  return 'pc' // desktop → pc
+}
+
+/**
+ * Represents a prop value that varies by variant.
+ * The value is an object mapping variant values to prop values,
+ * followed by bracket access with the variant prop name.
+ *
+ * Example: { scroll: [1, 2], default: [3, 4] }[status]
+ */
+export interface VariantPropValue {
+  __variantProp: true
+  variantKey: string // e.g., 'status'
+  values: Record<string, PropValue> // e.g., { scroll: [1, 2], default: [3, 4] }
+}
+
+/**
+ * Check if a value is a VariantPropValue.
+ */
+export function isVariantPropValue(value: unknown): value is VariantPropValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    '__variantProp' in value &&
+    (value as VariantPropValue).__variantProp === true
+  )
+}
+
+/**
+ * Create a VariantPropValue.
+ */
+export function createVariantPropValue(
+  variantKey: string,
+  values: Record<string, PropValue>,
+): VariantPropValue {
+  return {
+    __variantProp: true,
+    variantKey,
+    values,
+  }
+}
+
+/**
+ * Merge props across variants into variant-conditional objects.
+ *
+ * If all variants have the same value for a prop, it returns the single value.
+ * If values differ, it creates a VariantPropValue.
+ *
+ * Each variant's props may already contain responsive arrays from breakpoint merging.
+ *
+ * Example:
+ * Input:
+ *   variantKey: 'status'
+ *   variantProps: Map { 'scroll' => { w: [1, 2] }, 'default' => { w: [3, 4] } }
+ * Output:
+ *   { w: { __variantProp: true, variantKey: 'status', values: { scroll: [1, 2], default: [3, 4] } } }
+ */
+export function mergePropsToVariant(
+  variantKey: string,
+  variantProps: Map<string, Record<string, unknown>>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+
+  // If only one variant, return props as-is.
+  if (variantProps.size === 1) {
+    const onlyProps = [...variantProps.values()][0]
+    return onlyProps ? { ...onlyProps } : {}
+  }
+
+  // Collect all prop keys.
+  const allKeys = new Set<string>()
+  for (const props of variantProps.values()) {
+    for (const key of Object.keys(props)) {
+      allKeys.add(key)
+    }
+  }
+
+  for (const key of allKeys) {
+    // Collect values for each variant.
+    const valuesByVariant: Record<string, PropValue> = {}
+    let hasValue = false
+
+    for (const [variant, props] of variantProps) {
+      const value = key in props ? (props[key] as PropValue) : null
+      if (value !== null && value !== undefined) {
+        hasValue = true
+      }
+      valuesByVariant[variant] = value ?? null
+    }
+
+    if (!hasValue) continue
+
+    // Check if all variants have the same value.
+    const values = Object.values(valuesByVariant)
+    const allSame = values.every((v) => isEqual(v, values[0]))
+
+    if (allSame && values[0] !== null) {
+      result[key] = values[0]
+    } else {
+      // Filter out null values from the variant object
+      const filteredValues: Record<string, PropValue> = {}
+      for (const [variant, value] of Object.entries(valuesByVariant)) {
+        if (value !== null) {
+          filteredValues[variant] = value
+        }
+      }
+      if (Object.keys(filteredValues).length > 0) {
+        result[key] = createVariantPropValue(variantKey, filteredValues)
+      }
     }
   }
 

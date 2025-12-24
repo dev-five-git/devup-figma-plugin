@@ -21,7 +21,10 @@ function isAnimationTarget(node: SceneNode): boolean {
   return false
 }
 
-export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
+export function checkAssetNode(
+  node: SceneNode,
+  nested = false,
+): 'svg' | 'png' | null {
   if (node.type === 'TEXT' || node.type === 'COMPONENT_SET') return null
   // if node is an animation target (has keyframes), it should not be treated as an asset
   if (isAnimationTarget(node)) return null
@@ -56,10 +59,17 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
           : node.fills.every(
                 (fill: Paint) => fill.visible && fill.type === 'SOLID',
               )
-            ? null
+            ? nested
+              ? 'svg'
+              : null
             : 'svg'
         : null
-      : null
+      : nested &&
+          'fills' in node &&
+          Array.isArray(node.fills) &&
+          node.fills.every((fill) => fill.visible && fill.type === 'SOLID')
+        ? 'svg'
+        : null
   }
   const { children } = node
   if (children.length === 1) {
@@ -75,7 +85,7 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
           : true))
     )
       return null
-    return checkAssetNode(children[0])
+    return checkAssetNode(children[0], true)
   }
   const fillterdChildren = children.filter((child) => child.visible)
 
@@ -83,7 +93,7 @@ export function checkAssetNode(node: SceneNode): 'svg' | 'png' | null {
   //   ? 'svg'
   //   : null
   return fillterdChildren.every((child) => {
-    const result = checkAssetNode(child)
+    const result = checkAssetNode(child, true)
     if (result === null) return false
     return result === 'svg'
   })

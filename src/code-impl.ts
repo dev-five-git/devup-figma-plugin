@@ -3,6 +3,17 @@ import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
+import { getComponentName } from './utils'
+
+const DEVUP_COMPONENTS = [
+  'Center',
+  'VStack',
+  'Flex',
+  'Grid',
+  'Box',
+  'Text',
+  'Image',
+]
 
 export function extractImports(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
@@ -10,39 +21,67 @@ export function extractImports(
   const allCode = componentsCodes.map(([_, code]) => code).join('\n')
   const imports = new Set<string>()
 
-  const devupComponents = [
-    'Center',
-    'VStack',
-    'Flex',
-    'Grid',
-    'Box',
-    'Text',
-    'Image',
-  ]
-
-  for (const component of devupComponents) {
+  for (const component of DEVUP_COMPONENTS) {
     const regex = new RegExp(`<${component}[\\s/>]`, 'g')
     if (regex.test(allCode)) {
       imports.add(component)
     }
   }
 
-  // keyframes 함수 체크
-  if (/keyframes\s*\(|keyframes`/.test(allCode)) {
+  if (/\bkeyframes\s*(\(|`)/.test(allCode)) {
     imports.add('keyframes')
   }
 
   return Array.from(imports).sort()
 }
 
+export function extractCustomComponentImports(
+  componentsCodes: ReadonlyArray<readonly [string, string]>,
+): string[] {
+  const allCode = componentsCodes.map(([_, code]) => code).join('\n')
+  const customImports = new Set<string>()
+
+  // Find all component usages in JSX: <ComponentName or <ComponentName>
+  const componentUsageRegex = /<([A-Z][a-zA-Z0-9]*)/g
+  const matches = allCode.matchAll(componentUsageRegex)
+  for (const match of matches) {
+    const componentName = match[1]
+    // Skip devup-ui components and components defined in this code
+    if (!DEVUP_COMPONENTS.includes(componentName)) {
+      customImports.add(componentName)
+    }
+  }
+
+  return Array.from(customImports).sort()
+}
+
+function generateImportStatements(
+  componentsCodes: ReadonlyArray<readonly [string, string]>,
+): string {
+  const devupImports = extractImports(componentsCodes)
+  const customImports = extractCustomComponentImports(componentsCodes)
+
+  const statements: string[] = []
+
+  if (devupImports.length > 0) {
+    statements.push(
+      `import { ${devupImports.join(', ')} } from '@devup-ui/react'`,
+    )
+  }
+
+  for (const componentName of customImports) {
+    statements.push(
+      `import { ${componentName} } from '@/components/${componentName}'`,
+    )
+  }
+
+  return statements.length > 0 ? `${statements.join('\n')}\n\n` : ''
+}
+
 function generateBashCLI(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
 ): string {
-  const imports = extractImports(componentsCodes)
-  const importStatement =
-    imports.length > 0
-      ? `import { ${imports.join(', ')} } from '@devup-ui/react'\n\n`
-      : ''
+  const importStatement = generateImportStatements(componentsCodes)
 
   const commands = [
     'mkdir -p src/components',
@@ -60,11 +99,7 @@ function generateBashCLI(
 function generatePowerShellCLI(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
 ): string {
-  const imports = extractImports(componentsCodes)
-  const importStatement =
-    imports.length > 0
-      ? `import { ${imports.join(', ')} } from '@devup-ui/react'\n\n`
-      : ''
+  const importStatement = generateImportStatements(componentsCodes)
 
   const commands = [
     'New-Item -ItemType Directory -Force -Path src\\components | Out-Null',
@@ -87,6 +122,20 @@ export function registerCodegen(ctx: typeof figma) {
           const codegen = new Codegen(node)
           await codegen.run()
           const componentsCodes = codegen.getComponentsCodes()
+
+          // Generate responsive component codes with variant support
+          let responsiveComponentsCodes: ReadonlyArray<
+            readonly [string, string]
+          > = []
+          if (node.type === 'COMPONENT_SET') {
+            const componentName = getComponentName(node)
+            responsiveComponentsCodes =
+              await ResponsiveCodegen.generateVariantResponsiveComponents(
+                node,
+                componentName,
+              )
+          }
+
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
 
           const parentSection = ResponsiveCodegen.hasParentSection(node)
@@ -143,6 +192,17 @@ export function registerCodegen(ctx: typeof figma) {
                     code: generatePowerShellCLI(componentsCodes),
                   },
                 ] as const)
+              : []),
+            ...(responsiveComponentsCodes.length > 0
+              ? [
+                  {
+                    title: `${node.name} - Components Responsive`,
+                    language: 'TYPESCRIPT' as const,
+                    code: responsiveComponentsCodes
+                      .map((code) => code[1])
+                      .join('\n\n'),
+                  },
+                ]
               : []),
             ...responsiveResult,
           ]

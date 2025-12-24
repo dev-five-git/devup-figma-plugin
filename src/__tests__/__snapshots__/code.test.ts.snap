@@ -6,7 +6,7 @@ exports[`registerCodegen should register codegen 1`] = `
     "code": 
 "export function Test() {
   return <Box boxSize="100%" />
- }"
+}"
 ,
     "language": "TYPESCRIPT",
     "title": "Test - Components",
@@ -19,7 +19,7 @@ echo 'import { Box } from \\'@devup-ui/react\\'
 
 export function Test() {
   return <Box boxSize="100%" />
- }' > src/components/Test.tsx"
+}' > src/components/Test.tsx"
 ,
     "language": "BASH",
     "title": "Test - Components CLI (Bash)",
@@ -33,7 +33,7 @@ import { Box } from '@devup-ui/react'
 
 export function Test() {
   return <Box boxSize="100%" />
- }
+}
 '@ | Out-File -FilePath src\\components\\Test.tsx -Encoding UTF8"
 ,
     "language": "BASH",

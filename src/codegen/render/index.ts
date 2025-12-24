@@ -45,12 +45,15 @@ export function renderComponent(
   const hasVariants = Object.keys(variants).length > 0
   const interfaceCode = hasVariants
     ? `export interface ${component}Props {
-  ${Object.entries(variants)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('\n')}
+${Object.entries(variants)
+  .map(([key, value]) => `  ${key}: ${value}`)
+  .join('\n')}
 }\n\n`
     : ''
-  return `${interfaceCode}export function ${component}() {
+  const propsParam = hasVariants
+    ? `{ ${Object.keys(variants).join(', ')} }: ${component}Props`
+    : ''
+  return `${interfaceCode}export function ${component}(${propsParam}) {
   return ${
     code.includes('\n')
       ? `(\n${code
@@ -59,7 +62,7 @@ export function renderComponent(
           .join('\n')}\n${space(1)})`
       : code.trim().replace(/\s+/g, ' ')
   }
- }`
+}`
 }
 
 function filterProps(props: Record<string, unknown>) {

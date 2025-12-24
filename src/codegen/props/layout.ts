@@ -53,7 +53,8 @@ function _getLayoutProps(
         (node.parent &&
           'width' in node.parent &&
           node.parent.width > node.width)
-          ? checkAssetNode(node)
+          ? checkAssetNode(node) ||
+            ('children' in node && node.children.length === 0)
             ? addPx(node.width)
             : undefined
           : '100%',
@@ -61,7 +62,9 @@ function _getLayoutProps(
       h:
         ('children' in node && node.children.length > 0) || node.type === 'TEXT'
           ? undefined
-          : '100%',
+          : 'children' in node && node.children.length === 0
+            ? addPx(node.height)
+            : '100%',
     }
   }
   const hType =
@@ -88,9 +91,7 @@ function _getLayoutProps(
         ? 1
         : undefined,
     w:
-      rootNode === node &&
-      node.width ===
-        (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)?.width
+      rootNode === node
         ? undefined
         : wType === 'FIXED'
           ? addPx(node.width)

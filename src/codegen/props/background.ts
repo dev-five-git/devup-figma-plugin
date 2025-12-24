@@ -1,3 +1,4 @@
+import { BLEND_MODE_MAP } from '../utils/blend-mode-map'
 import { paintToCSS } from '../utils/paint-to-css'
 
 export async function getBackgroundProps(
@@ -37,27 +38,7 @@ export async function getBackgroundProps(
       const combinedBg = cssFills.join(', ')
       return {
         bg: node.type !== 'TEXT' || gradientText ? combinedBg : null,
-        bgBlendMode: {
-          NORMAL: null,
-          MULTIPLY: 'multiply',
-          SCREEN: 'screen',
-          OVERLAY: 'overlay',
-          DARKEN: 'darken',
-          LINEAR_BURN: 'linear-burn',
-          COLOR_BURN: 'colorBurn',
-          LIGHTEN: 'lighten',
-          LINEAR_DODGE: 'linear-dodge',
-          COLOR_DODGE: 'color-dodge',
-          SOFT_LIGHT: 'soft-light',
-          HARD_LIGHT: 'hard-light',
-          DIFFERENCE: 'difference',
-          EXCLUSION: 'exclusion',
-          HUE: 'hue',
-          SATURATION: 'saturation',
-          COLOR: 'color',
-          LUMINOSITY: 'luminosity',
-          PASS_THROUGH: null,
-        }[backgroundBlend],
+        bgBlendMode: BLEND_MODE_MAP[backgroundBlend],
         color: gradientText ? 'transparent' : undefined,
         bgClip: gradientText ? 'text' : undefined,
       }

@@ -570,6 +570,132 @@ describe('Codegen', () => {
       expected: `<Image boxSize="24px" src="/icons/InvisibleIcon.svg" />`,
     },
     {
+      title: 'renders nested svg asset with 3 solid fill boxes in frame',
+      node: {
+        type: 'FRAME',
+        name: 'NestedIcon',
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'Box1',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box2',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box3',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+        ],
+        isAsset: false,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as FrameNode,
+      expected: `<Box
+  bg="#F00"
+  boxSize="24px"
+  maskImage="url(/icons/NestedIcon.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>`,
+    },
+    {
+      title: 'renders nested svg asset with different colors as image',
+      node: {
+        type: 'FRAME',
+        name: 'NestedMultiColorIcon',
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'Box1',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box2',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 0, g: 1, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box3',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 0, g: 0, b: 1 },
+                opacity: 1,
+              },
+            ],
+          },
+        ],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as FrameNode,
+      expected: `<Image boxSize="24px" src="/icons/NestedMultiColorIcon.svg" />`,
+    },
+    {
       title: 'renders layout for absolute child same size as parent',
       node: {
         type: 'FRAME',
@@ -1053,6 +1179,25 @@ describe('Codegen', () => {
   pt="1px"
   w="110px"
 />`,
+    },
+    {
+      title: 'renders padding from inferredAutoLayout',
+      node: {
+        type: 'FRAME',
+        name: 'InferredPaddingFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        inferredAutoLayout: {
+          paddingTop: 10,
+          paddingRight: 20,
+          paddingBottom: 10,
+          paddingLeft: 20,
+        },
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" px="20px" py="10px" w="100px" />`,
     },
     {
       title: 'renders frame with border radius',
@@ -3047,9 +3192,9 @@ describe('Codegen', () => {
   state: 'default' | 'hover'
 }
 
-export function Button() {
+export function Button({ state }: ButtonProps) {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3092,7 +3237,7 @@ export function Button() {
           'Button',
           `export function Button() {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3158,7 +3303,7 @@ export function Button() {
           'Button',
           `export function Button() {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3234,7 +3379,7 @@ export function Button() {
       transitionProperty="opacity"
     />
   )
- }`,
+}`,
         ],
       ],
     },
@@ -3290,11 +3435,19 @@ export function Button() {
           },
         ],
       } as unknown as ComponentNode,
-      expected: `<Box boxSize="100%">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
-</Box>`,
-      expectedComponents: [],
+      expected: `<Box h="100%" />`,
+      expectedComponents: [
+        [
+          'Button',
+          `export interface ButtonProps {
+  state: 'default' | 'hover'
+}
+
+export function Button({ state }: ButtonProps) {
+  return <Box h="100%" />
+}`,
+        ],
+      ],
     },
     {
       title: 'renders component set with press trigger',
@@ -3335,7 +3488,7 @@ export function Button() {
           'Button',
           `export function Button() {
   return <Box h="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3352,7 +3505,7 @@ export function Button() {
           'Icon',
           `export function Icon() {
   return <Box boxSize="100%" />
- }`,
+}`,
         ],
       ],
     },
@@ -3365,11 +3518,24 @@ export function Button() {
           type: 'COMPONENT_SET',
           name: 'Button',
           children: [],
+          componentPropertyDefinitions: {},
+          defaultVariant: {
+            type: 'COMPONENT',
+            name: 'Default',
+            children: [],
+          },
         },
         children: [],
       } as unknown as ComponentNode,
-      expected: `<Box boxSize="100%" />`,
-      expectedComponents: [],
+      expected: `<Box h="100%" />`,
+      expectedComponents: [
+        [
+          'Button',
+          `export function Button() {
+  return <Box h="100%" />
+}`,
+        ],
+      ],
     },
   ])('$title', async ({ node, expected, expectedComponents }) => {
     addParent(node)
