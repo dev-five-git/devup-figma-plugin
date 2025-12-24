@@ -45,9 +45,9 @@ export function renderComponent(
   const hasVariants = Object.keys(variants).length > 0
   const interfaceCode = hasVariants
     ? `export interface ${component}Props {
-  ${Object.entries(variants)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('\n')}
+${Object.entries(variants)
+  .map(([key, value]) => `  ${key}: ${value}`)
+  .join('\n')}
 }\n\n`
     : ''
   return `${interfaceCode}export function ${component}() {
