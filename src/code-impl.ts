@@ -129,19 +129,12 @@ export function registerCodegen(ctx: typeof figma) {
             readonly [string, string]
           > = []
           if (codegen.hasViewportVariant() && node.type === 'COMPONENT_SET') {
-            try {
-              const componentName = getComponentName(node)
-              responsiveComponentsCodes =
-                await ResponsiveCodegen.generateViewportResponsiveComponents(
-                  node,
-                  componentName,
-                )
-            } catch (e) {
-              console.error(
-                '[responsive] Error generating responsive component code:',
-                e,
+            const componentName = getComponentName(node)
+            responsiveComponentsCodes =
+              await ResponsiveCodegen.generateViewportResponsiveComponents(
+                node,
+                componentName,
               )
-            }
           }
 
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
