@@ -73,6 +73,37 @@ const SPECIAL_PROPS_WITH_INITIAL = new Set([
   'w',
   'h',
   'textAlign',
+  // layout related
+  'flexDir',
+  'flexWrap',
+  'justify',
+  'alignItems',
+  'alignContent',
+  'alignSelf',
+  'gap',
+  'rowGap',
+  'columnGap',
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
+  'order',
+  // grid layout
+  'gridTemplateColumns',
+  'gridTemplateRows',
+  'gridColumn',
+  'gridRow',
+  'gridArea',
+  // position related
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'zIndex',
+  // overflow
+  'overflow',
+  'overflowX',
+  'overflowY',
 ])
 
 /**

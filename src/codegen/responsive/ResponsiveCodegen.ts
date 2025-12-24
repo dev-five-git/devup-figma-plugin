@@ -57,6 +57,7 @@ export class ResponsiveCodegen {
       const tree = await codegen.getTree()
       breakpointTrees.set(bp, tree)
     }
+    console.log('breakpointTrees', breakpointTrees)
 
     // Merge trees and generate code.
     return this.generateMergedCode(breakpointTrees, 0)
