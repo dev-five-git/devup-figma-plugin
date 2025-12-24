@@ -59,7 +59,7 @@ describe('renderComponent', () => {
   size: "sm" | "lg"
 }
 
-export function Banner(props: BannerProps) {
+export function Banner({ size }: BannerProps) {
   return (
 <Box>
   <Text />

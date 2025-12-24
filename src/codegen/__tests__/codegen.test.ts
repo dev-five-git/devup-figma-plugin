@@ -3173,7 +3173,7 @@ describe('Codegen', () => {
   state: 'default' | 'hover'
 }
 
-export function Button(props: ButtonProps) {
+export function Button({ state }: ButtonProps) {
   return <Box h="100%" />
 }`,
         ],
@@ -3424,7 +3424,7 @@ export function Button(props: ButtonProps) {
   state: 'default' | 'hover'
 }
 
-export function Button(props: ButtonProps) {
+export function Button({ state }: ButtonProps) {
   return <Box h="100%" />
 }`,
         ],

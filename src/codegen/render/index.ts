@@ -50,7 +50,9 @@ ${Object.entries(variants)
   .join('\n')}
 }\n\n`
     : ''
-  const propsParam = hasVariants ? `props: ${component}Props` : ''
+  const propsParam = hasVariants
+    ? `{ ${Object.keys(variants).join(', ')} }: ${component}Props`
+    : ''
   return `${interfaceCode}export function ${component}(${propsParam}) {
   return ${
     code.includes('\n')
