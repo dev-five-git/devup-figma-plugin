@@ -570,6 +570,132 @@ describe('Codegen', () => {
       expected: `<Image boxSize="24px" src="/icons/InvisibleIcon.svg" />`,
     },
     {
+      title: 'renders nested svg asset with 3 solid fill boxes in frame',
+      node: {
+        type: 'FRAME',
+        name: 'NestedIcon',
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'Box1',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box2',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box3',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+        ],
+        isAsset: false,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as FrameNode,
+      expected: `<Box
+  bg="#F00"
+  boxSize="24px"
+  maskImage="url(/icons/NestedIcon.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>`,
+    },
+    {
+      title: 'renders nested svg asset with different colors as image',
+      node: {
+        type: 'FRAME',
+        name: 'NestedMultiColorIcon',
+        children: [
+          {
+            type: 'RECTANGLE',
+            name: 'Box1',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 0, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box2',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 0, g: 1, b: 0 },
+                opacity: 1,
+              },
+            ],
+          },
+          {
+            type: 'RECTANGLE',
+            name: 'Box3',
+            children: [],
+            visible: true,
+            isAsset: false,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 0, g: 0, b: 1 },
+                opacity: 1,
+              },
+            ],
+          },
+        ],
+        isAsset: true,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 24,
+        height: 24,
+      } as unknown as FrameNode,
+      expected: `<Image boxSize="24px" src="/icons/NestedMultiColorIcon.svg" />`,
+    },
+    {
       title: 'renders layout for absolute child same size as parent',
       node: {
         type: 'FRAME',
