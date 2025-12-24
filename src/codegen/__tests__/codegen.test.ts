@@ -1181,6 +1181,25 @@ describe('Codegen', () => {
 />`,
     },
     {
+      title: 'renders padding from inferredAutoLayout',
+      node: {
+        type: 'FRAME',
+        name: 'InferredPaddingFrame',
+        children: [],
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        width: 100,
+        height: 50,
+        inferredAutoLayout: {
+          paddingTop: 10,
+          paddingRight: 20,
+          paddingBottom: 10,
+          paddingLeft: 20,
+        },
+      } as unknown as FrameNode,
+      expected: `<Box h="50px" px="20px" py="10px" w="100px" />`,
+    },
+    {
       title: 'renders frame with border radius',
       node: {
         type: 'FRAME',

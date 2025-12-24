@@ -91,9 +91,7 @@ function _getLayoutProps(
         ? 1
         : undefined,
     w:
-      rootNode === node &&
-      node.width ===
-        (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)?.width
+      rootNode === node
         ? undefined
         : wType === 'FIXED'
           ? addPx(node.width)

@@ -12,6 +12,53 @@ interface Point {
 }
 
 /**
+ * Process a single gradient stop to get its color string with opacity applied
+ */
+async function processGradientStopColor(
+  stop: ColorStop,
+  opacity: number,
+): Promise<string> {
+  if (stop.boundVariables?.color) {
+    const variable = await figma.variables.getVariableByIdAsync(
+      stop.boundVariables.color.id as string,
+    )
+    if (variable?.name) {
+      const tokenName = `$${toCamel(variable.name)}`
+      const finalAlpha = stop.color.a * opacity
+
+      if (finalAlpha < 1) {
+        const transparentPercent = fmtPct((1 - finalAlpha) * 100)
+        return `color-mix(in srgb, ${tokenName}, transparent ${transparentPercent}%)`
+      }
+      return tokenName
+    }
+  }
+
+  const colorWithOpacity = figma.util.rgba({
+    ...stop.color,
+    a: stop.color.a * opacity,
+  })
+  return optimizeHex(rgbaToHex(colorWithOpacity))
+}
+
+/**
+ * Map gradient stops to CSS color strings with positions
+ */
+async function mapSimpleGradientStops(
+  stops: readonly ColorStop[],
+  opacity: number,
+  positionMultiplier: number = 100,
+): Promise<string> {
+  const stopsArray = await Promise.all(
+    stops.map(async (stop) => {
+      const colorString = await processGradientStopColor(stop, opacity)
+      return `${colorString} ${fmtPct(stop.position * positionMultiplier)}%`
+    }),
+  )
+  return stopsArray.join(', ')
+}
+
+/**
  * This function converts Figma paint to CSS.
  */
 export async function paintToCSS(
@@ -65,49 +112,15 @@ async function convertDiamond(
   _width: number,
   _height: number,
 ): Promise<string> {
-  // Handle opacity & visibility:
   if (!fill.visible) return 'transparent'
   if (fill.opacity === 0) return 'transparent'
 
-  // 1. Map gradient stops with opacity
-  const stopsArray = await Promise.all(
-    fill.gradientStops.map(async (stop) => {
-      let colorString: string
-      if (stop.boundVariables?.color) {
-        const variable = await figma.variables.getVariableByIdAsync(
-          stop.boundVariables.color.id as string,
-        )
-        if (variable?.name) {
-          const tokenName = `$${toCamel(variable.name)}`
-          const finalAlpha = stop.color.a * (fill.opacity ?? 1)
-
-          if (finalAlpha < 1) {
-            const transparentPercent = fmtPct((1 - finalAlpha) * 100)
-            colorString = `color-mix(in srgb, ${tokenName}, transparent ${transparentPercent}%)`
-          } else {
-            colorString = tokenName
-          }
-        } else {
-          const colorWithOpacity = figma.util.rgba({
-            ...stop.color,
-            a: stop.color.a * (fill.opacity ?? 1),
-          })
-          colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-        }
-      } else {
-        const colorWithOpacity = figma.util.rgba({
-          ...stop.color,
-          a: stop.color.a * (fill.opacity ?? 1),
-        })
-        colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-      }
-      return `${colorString} ${fmtPct(stop.position * 50)}%`
-    }),
+  const stops = await mapSimpleGradientStops(
+    fill.gradientStops,
+    fill.opacity ?? 1,
+    50,
   )
-  const stops = stopsArray.join(', ')
 
-  // 2. Create 4 linear gradients for diamond effect
-  // Each gradient goes from corner to center
   const gradients = [
     `linear-gradient(to bottom right, ${stops}) bottom right / 50.1% 50.1% no-repeat`,
     `linear-gradient(to bottom left, ${stops}) bottom left / 50.1% 50.1% no-repeat`,
@@ -115,7 +128,6 @@ async function convertDiamond(
     `linear-gradient(to top right, ${stops}) top right / 50.1% 50.1% no-repeat`,
   ]
 
-  // 3. Combine all gradients
   return gradients.join(', ')
 }
 
@@ -124,59 +136,23 @@ async function convertAngular(
   width: number,
   height: number,
 ): Promise<string> {
-  // Handle opacity & visibility:
   if (!fill.visible) return 'transparent'
   if (fill.opacity === 0) return 'transparent'
 
-  // 1. Calculate actual center and start angle from gradient transform
   const { center, startAngle } = _calculateAngularPositions(
     fill.gradientTransform,
     width,
     height,
   )
 
-  // 2. Convert center to percentage values
   const centerX = fmtPct((center.x / width) * 100)
   const centerY = fmtPct((center.y / height) * 100)
 
-  // 3. Map gradient stops with opacity
-  const stopsArray = await Promise.all(
-    fill.gradientStops.map(async (stop) => {
-      let colorString: string
-      if (stop.boundVariables?.color) {
-        const variable = await figma.variables.getVariableByIdAsync(
-          stop.boundVariables.color.id as string,
-        )
-        if (variable?.name) {
-          const tokenName = `$${toCamel(variable.name)}`
-          const finalAlpha = stop.color.a * (fill.opacity ?? 1)
-
-          if (finalAlpha < 1) {
-            const transparentPercent = fmtPct((1 - finalAlpha) * 100)
-            colorString = `color-mix(in srgb, ${tokenName}, transparent ${transparentPercent}%)`
-          } else {
-            colorString = tokenName
-          }
-        } else {
-          const colorWithOpacity = figma.util.rgba({
-            ...stop.color,
-            a: stop.color.a * (fill.opacity ?? 1),
-          })
-          colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-        }
-      } else {
-        const colorWithOpacity = figma.util.rgba({
-          ...stop.color,
-          a: stop.color.a * (fill.opacity ?? 1),
-        })
-        colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-      }
-      return `${colorString} ${fmtPct(stop.position * 100)}%`
-    }),
+  const stops = await mapSimpleGradientStops(
+    fill.gradientStops,
+    fill.opacity ?? 1,
   )
-  const stops = stopsArray.join(', ')
 
-  // 4. Generate CSS conic gradient string with calculated start angle
   return `conic-gradient(from ${fmtPct(startAngle)}deg at ${centerX}% ${centerY}%, ${stops})`
 }
 
@@ -185,62 +161,25 @@ async function convertRadial(
   width: number,
   height: number,
 ): Promise<string> {
-  // Handle opacity & visibility:
   if (!fill.visible) return 'transparent'
   if (fill.opacity === 0) return 'transparent'
 
-  // 1. Calculate actual center and radius from gradient transform
   const { center, radiusW, radiusH } = _calculateRadialPositions(
     fill.gradientTransform,
     width,
     height,
   )
 
-  // 2. Convert center to percentage values
   const centerX = fmtPct((center.x / width) * 100)
   const centerY = fmtPct((center.y / height) * 100)
-
-  // 3. Calculate radius percentages for width and height separately
   const radiusPercentW = fmtPct((radiusW / width) * 100)
   const radiusPercentH = fmtPct((radiusH / height) * 100)
 
-  // 4. Map gradient stops with opacity
-  const stopsArray = await Promise.all(
-    fill.gradientStops.map(async (stop) => {
-      let colorString: string
-      if (stop.boundVariables?.color) {
-        const variable = await figma.variables.getVariableByIdAsync(
-          stop.boundVariables.color.id as string,
-        )
-        if (variable?.name) {
-          const tokenName = `$${toCamel(variable.name)}`
-          const finalAlpha = stop.color.a * (fill.opacity ?? 1)
-
-          if (finalAlpha < 1) {
-            const transparentPercent = fmtPct((1 - finalAlpha) * 100)
-            colorString = `color-mix(in srgb, ${tokenName}, transparent ${transparentPercent}%)`
-          } else {
-            colorString = tokenName
-          }
-        } else {
-          const colorWithOpacity = figma.util.rgba({
-            ...stop.color,
-            a: stop.color.a * (fill.opacity ?? 1),
-          })
-          colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-        }
-      } else {
-        const colorWithOpacity = figma.util.rgba({
-          ...stop.color,
-          a: stop.color.a * (fill.opacity ?? 1),
-        })
-        colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-      }
-      return `${colorString} ${fmtPct(stop.position * 100)}%`
-    }),
+  const stops = await mapSimpleGradientStops(
+    fill.gradientStops,
+    fill.opacity ?? 1,
   )
-  const stops = stopsArray.join(', ')
-  // 5. Generate CSS radial gradient string
+
   return `radial-gradient(${radiusPercentW}% ${radiusPercentH}% at ${centerX}% ${centerY}%, ${stops})`
 }
 
@@ -443,12 +382,9 @@ async function _mapGradientStops(
 
   return await Promise.all(
     stops.map(async (stop) => {
-      // Calculate actual pixel position of stop in Figma space (offset)
       const offsetX = figmaStartPoint.x + figmaVector.x * stop.position
       const offsetY = figmaStartPoint.y + figmaVector.y * stop.position
 
-      // Compute signed relative position along CSS gradient line (can be <0 or >1)
-      // t = dot(P - start, (end - start)) / |end - start|^2
       const pointFromStart = {
         x: offsetX - cssStartPoint.x,
         y: offsetY - cssStartPoint.y,
@@ -458,40 +394,7 @@ async function _mapGradientStops(
       const relativePosition =
         cssLengthSquared === 0 ? 0 : dot / cssLengthSquared
 
-      // Check if this color stop uses a color token
-      let colorString: string
-      if (stop.boundVariables?.color) {
-        const variable = await figma.variables.getVariableByIdAsync(
-          stop.boundVariables.color.id as string,
-        )
-        if (variable?.name) {
-          const tokenName = `$${toCamel(variable.name)}`
-          // Calculate final alpha combining stop alpha and gradient opacity
-          const finalAlpha = stop.color.a * opacity
-
-          // Use color-mix to apply opacity to color token
-          if (finalAlpha < 1) {
-            const transparentPercent = fmtPct((1 - finalAlpha) * 100)
-            colorString = `color-mix(in srgb, ${tokenName}, transparent ${transparentPercent}%)`
-          } else {
-            colorString = tokenName
-          }
-        } else {
-          // Fallback to computed color with opacity
-          const colorWithOpacity = figma.util.rgba({
-            ...stop.color,
-            a: stop.color.a * opacity,
-          })
-          colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-        }
-      } else {
-        // Apply gradient opacity to the color stop
-        const colorWithOpacity = figma.util.rgba({
-          ...stop.color,
-          a: stop.color.a * opacity,
-        })
-        colorString = optimizeHex(rgbaToHex(colorWithOpacity))
-      }
+      const colorString = await processGradientStopColor(stop, opacity)
 
       return {
         position: relativePosition,
