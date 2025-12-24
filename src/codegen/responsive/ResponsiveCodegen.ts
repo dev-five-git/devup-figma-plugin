@@ -1,11 +1,12 @@
 import { Codegen } from '../Codegen'
-import { renderNode } from '../render'
+import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
 import {
   BREAKPOINT_INDEX,
   type BreakpointKey,
   getBreakpointByWidth,
   mergePropsToResponsive,
+  viewportToBreakpoint,
 } from './index'
 
 /**
@@ -15,14 +16,17 @@ import {
 export class ResponsiveCodegen {
   private breakpointNodes: Map<BreakpointKey, SceneNode> = new Map()
 
-  constructor(private sectionNode: SectionNode) {
-    this.categorizeChildren()
+  constructor(private sectionNode: SectionNode | null) {
+    if (this.sectionNode) {
+      this.categorizeChildren()
+    }
   }
 
   /**
    * Group Section children by width to decide breakpoints.
    */
   private categorizeChildren() {
+    if (!this.sectionNode) return
     for (const child of this.sectionNode.children) {
       if ('width' in child) {
         const breakpoint = getBreakpointByWidth(child.width)
@@ -78,7 +82,7 @@ export class ResponsiveCodegen {
   /**
    * Generate merged responsive code from NodeTree objects.
    */
-  private generateMergedCode(
+  generateMergedCode(
     treesByBreakpoint: Map<BreakpointKey, NodeTree>,
     depth: number,
   ): string {
@@ -185,51 +189,63 @@ export class ResponsiveCodegen {
     }
 
     for (const childName of allChildNames) {
-      const childByBreakpoint = new Map<BreakpointKey, NodeTree>()
-      const presentBreakpoints = new Set<BreakpointKey>()
-
-      for (const [bp, childMap] of childrenMaps) {
+      // Find the maximum number of children with this name across all breakpoints
+      let maxChildCount = 0
+      for (const childMap of childrenMaps.values()) {
         const children = childMap.get(childName)
-        if (children && children.length > 0) {
-          childByBreakpoint.set(bp, children[0])
-          presentBreakpoints.add(bp)
+        if (children) {
+          maxChildCount = Math.max(maxChildCount, children.length)
         }
       }
 
-      if (childByBreakpoint.size > 0) {
-        // Add display:none props when a child exists only at specific breakpoints
-        // Find the smallest breakpoint where child exists
-        const sortedPresentBreakpoints = [...presentBreakpoints].sort(
-          (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
-        )
-        const smallestPresentBp = sortedPresentBreakpoints[0]
-        const smallestPresentIdx = BREAKPOINT_INDEX[smallestPresentBp]
+      // Process each child index separately
+      for (let childIndex = 0; childIndex < maxChildCount; childIndex++) {
+        const childByBreakpoint = new Map<BreakpointKey, NodeTree>()
+        const presentBreakpoints = new Set<BreakpointKey>()
 
-        // Find the smallest breakpoint in the section
-        const sortedSectionBreakpoints = [...treesByBreakpoint.keys()].sort(
-          (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
-        )
-        const smallestSectionBp = sortedSectionBreakpoints[0]
-        const smallestSectionIdx = BREAKPOINT_INDEX[smallestSectionBp]
-
-        // If child's smallest breakpoint is larger than section's smallest,
-        // we need to add display:none for the smaller breakpoints
-        if (smallestPresentIdx > smallestSectionIdx) {
-          // Add display:none for all breakpoints smaller than where child exists
-          for (const bp of treesByBreakpoint.keys()) {
-            if (!presentBreakpoints.has(bp)) {
-              const firstChildTree = [...childByBreakpoint.values()][0]
-              const hiddenTree: NodeTree = {
-                ...firstChildTree,
-                props: { ...firstChildTree.props, display: 'none' },
-              }
-              childByBreakpoint.set(bp, hiddenTree)
-            }
+        for (const [bp, childMap] of childrenMaps) {
+          const children = childMap.get(childName)
+          if (children && children.length > childIndex) {
+            childByBreakpoint.set(bp, children[childIndex])
+            presentBreakpoints.add(bp)
           }
         }
 
-        const childCode = this.generateMergedCode(childByBreakpoint, depth)
-        childrenCodes.push(childCode)
+        if (childByBreakpoint.size > 0) {
+          // Add display:none props when a child exists only at specific breakpoints
+          // Find the smallest breakpoint where child exists
+          const sortedPresentBreakpoints = [...presentBreakpoints].sort(
+            (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
+          )
+          const smallestPresentBp = sortedPresentBreakpoints[0]
+          const smallestPresentIdx = BREAKPOINT_INDEX[smallestPresentBp]
+
+          // Find the smallest breakpoint in the section
+          const sortedSectionBreakpoints = [...treesByBreakpoint.keys()].sort(
+            (a, b) => BREAKPOINT_INDEX[a] - BREAKPOINT_INDEX[b],
+          )
+          const smallestSectionBp = sortedSectionBreakpoints[0]
+          const smallestSectionIdx = BREAKPOINT_INDEX[smallestSectionBp]
+
+          // If child's smallest breakpoint is larger than section's smallest,
+          // we need to add display:none for the smaller breakpoints
+          if (smallestPresentIdx > smallestSectionIdx) {
+            // Add display:none for all breakpoints smaller than where child exists
+            for (const bp of treesByBreakpoint.keys()) {
+              if (!presentBreakpoints.has(bp)) {
+                const firstChildTree = [...childByBreakpoint.values()][0]
+                const hiddenTree: NodeTree = {
+                  ...firstChildTree,
+                  props: { ...firstChildTree.props, display: 'none' },
+                }
+                childByBreakpoint.set(bp, hiddenTree)
+              }
+            }
+          }
+
+          const childCode = this.generateMergedCode(childByBreakpoint, 0)
+          childrenCodes.push(childCode)
+        }
       }
     }
 
@@ -251,5 +267,92 @@ export class ResponsiveCodegen {
       return node.parent as SectionNode
     }
     return null
+  }
+
+  /**
+   * Generate responsive component codes for COMPONENT_SET with viewport variant.
+   * Groups components by non-viewport variants and merges viewport variants.
+   */
+  static async generateViewportResponsiveComponents(
+    componentSet: ComponentSetNode,
+    componentName: string,
+  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    // Find viewport variant key
+    const viewportKey = Object.keys(
+      componentSet.componentPropertyDefinitions,
+    ).find((key) => key.toLowerCase() === 'viewport')
+
+    if (!viewportKey) {
+      return []
+    }
+
+    // Get variants excluding viewport
+    const variants: Record<string, string> = {}
+    for (const [name, definition] of Object.entries(
+      componentSet.componentPropertyDefinitions,
+    )) {
+      if (name.toLowerCase() !== 'viewport' && definition.type === 'VARIANT') {
+        variants[name] =
+          definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') || ''
+      }
+    }
+
+    // Group components by non-viewport variants
+    const groups = new Map<string, Map<BreakpointKey, ComponentNode>>()
+
+    for (const child of componentSet.children) {
+      if (child.type !== 'COMPONENT') continue
+
+      const component = child as ComponentNode
+      const variantProps = component.variantProperties || {}
+
+      const viewportValue = variantProps[viewportKey]
+      if (!viewportValue) continue
+
+      const breakpoint = viewportToBreakpoint(viewportValue)
+      // Create group key from non-viewport variants
+      const otherVariants = Object.entries(variantProps)
+        .filter(([key]) => key.toLowerCase() !== 'viewport')
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${key}=${value}`)
+        .join('|')
+
+      const groupKey = otherVariants || '__default__'
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, new Map())
+      }
+      const group = groups.get(groupKey)
+      if (group) {
+        group.set(breakpoint, component)
+      }
+    }
+
+    // Generate responsive code for each group
+    const results: Array<readonly [string, string]> = []
+    const responsiveCodegen = new ResponsiveCodegen(null)
+
+    for (const [, viewportComponents] of groups) {
+      // Build trees for each viewport
+      const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
+      for (const [bp, component] of viewportComponents) {
+        const codegen = new Codegen(component)
+        const tree = await codegen.getTree()
+        treesByBreakpoint.set(bp, tree)
+      }
+
+      // Generate merged responsive code
+      const mergedCode = responsiveCodegen.generateMergedCode(
+        treesByBreakpoint,
+        2,
+      )
+
+      results.push([
+        componentName,
+        renderComponent(componentName, mergedCode, variants),
+      ] as const)
+    }
+
+    return results
   }
 }

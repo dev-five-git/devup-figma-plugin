@@ -4,6 +4,7 @@ import {
   groupChildrenByBreakpoint,
   groupNodesByName,
   optimizeResponsiveValue,
+  viewportToBreakpoint,
 } from '../index'
 
 describe('responsive index helpers', () => {
@@ -65,5 +66,26 @@ describe('responsive index helpers', () => {
       null,
     ])
     expect(optimized).toEqual(obj)
+  })
+
+  it('converts viewport variant values to breakpoints (case-insensitive)', () => {
+    // lowercase
+    expect(viewportToBreakpoint('mobile')).toBe('mobile')
+    expect(viewportToBreakpoint('tablet')).toBe('tablet')
+    expect(viewportToBreakpoint('desktop')).toBe('pc')
+
+    // uppercase
+    expect(viewportToBreakpoint('MOBILE')).toBe('mobile')
+    expect(viewportToBreakpoint('TABLET')).toBe('tablet')
+    expect(viewportToBreakpoint('DESKTOP')).toBe('pc')
+
+    // mixed case
+    expect(viewportToBreakpoint('Mobile')).toBe('mobile')
+    expect(viewportToBreakpoint('Tablet')).toBe('tablet')
+    expect(viewportToBreakpoint('Desktop')).toBe('pc')
+
+    // unknown values default to pc
+    expect(viewportToBreakpoint('unknown')).toBe('pc')
+    expect(viewportToBreakpoint('')).toBe('pc')
   })
 })

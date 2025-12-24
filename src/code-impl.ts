@@ -3,6 +3,7 @@ import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
+import { getComponentName } from './utils'
 
 export function extractImports(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
@@ -87,6 +88,27 @@ export function registerCodegen(ctx: typeof figma) {
           const codegen = new Codegen(node)
           await codegen.run()
           const componentsCodes = codegen.getComponentsCodes()
+
+          // Generate responsive component codes if viewport variant exists
+          let responsiveComponentsCodes: ReadonlyArray<
+            readonly [string, string]
+          > = []
+          if (codegen.hasViewportVariant() && node.type === 'COMPONENT_SET') {
+            try {
+              const componentName = getComponentName(node)
+              responsiveComponentsCodes =
+                await ResponsiveCodegen.generateViewportResponsiveComponents(
+                  node,
+                  componentName,
+                )
+            } catch (e) {
+              console.error(
+                '[responsive] Error generating responsive component code:',
+                e,
+              )
+            }
+          }
+
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
 
           const parentSection = ResponsiveCodegen.hasParentSection(node)
@@ -143,6 +165,17 @@ export function registerCodegen(ctx: typeof figma) {
                     code: generatePowerShellCLI(componentsCodes),
                   },
                 ] as const)
+              : []),
+            ...(responsiveComponentsCodes.length > 0
+              ? [
+                  {
+                    title: `${node.name} - Components Responsive`,
+                    language: 'TYPESCRIPT' as const,
+                    code: responsiveComponentsCodes
+                      .map((code) => code[1])
+                      .join('\n\n'),
+                  },
+                ]
               : []),
             ...responsiveResult,
           ]

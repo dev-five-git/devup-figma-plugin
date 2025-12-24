@@ -303,3 +303,14 @@ export function groupNodesByName(
 
   return result
 }
+
+/**
+ * Convert viewport variant value to BreakpointKey.
+ * Viewport values: "desktop" | "tablet" | "mobile" (case-insensitive comparison)
+ */
+export function viewportToBreakpoint(viewport: string): BreakpointKey {
+  const lower = viewport.toLowerCase()
+  if (lower === 'mobile') return 'mobile'
+  if (lower === 'tablet') return 'tablet'
+  return 'pc' // desktop → pc
+}

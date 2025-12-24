@@ -3290,11 +3290,19 @@ export function Button(props: ButtonProps) {
           },
         ],
       } as unknown as ComponentNode,
-      expected: `<Box boxSize="100%">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
-</Box>`,
-      expectedComponents: [],
+      expected: `<Box h="100%" />`,
+      expectedComponents: [
+        [
+          'Button',
+          `export interface ButtonProps {
+  state: 'default' | 'hover'
+}
+
+export function Button(props: ButtonProps) {
+  return <Box h="100%" />
+}`,
+        ],
+      ],
     },
     {
       title: 'renders component set with press trigger',
@@ -3365,11 +3373,24 @@ export function Button(props: ButtonProps) {
           type: 'COMPONENT_SET',
           name: 'Button',
           children: [],
+          componentPropertyDefinitions: {},
+          defaultVariant: {
+            type: 'COMPONENT',
+            name: 'Default',
+            children: [],
+          },
         },
         children: [],
       } as unknown as ComponentNode,
-      expected: `<Box boxSize="100%" />`,
-      expectedComponents: [],
+      expected: `<Box h="100%" />`,
+      expectedComponents: [
+        [
+          'Button',
+          `export function Button() {
+  return <Box h="100%" />
+}`,
+        ],
+      ],
     },
   ])('$title', async ({ node, expected, expectedComponents }) => {
     addParent(node)

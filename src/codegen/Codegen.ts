@@ -25,11 +25,17 @@ export class Codegen {
   private componentTrees: Map<SceneNode, ComponentTree> = new Map()
 
   constructor(private node: SceneNode) {
-    if (node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET') {
-      this.node = node.parent
-    } else {
-      this.node = node
-    }
+    this.node = node
+    // if (node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET') {
+    //   this.node = node.parent
+    // } else {
+    //   this.node = node
+    // }
+    // if (node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET') {
+    //   this.node = node.parent
+    // } else {
+    //   this.node = node
+    // }
   }
 
   getCode() {
@@ -293,6 +299,7 @@ export class Codegen {
    */
   async getTree(): Promise<NodeTree> {
     if (!this.tree) {
+      console.log('buildTree', this.node)
       this.tree = await this.buildTree(this.node)
     }
     return this.tree
@@ -342,6 +349,16 @@ export class Codegen {
       },
       variants,
     })
+  }
+
+  /**
+   * Check if the node is a COMPONENT_SET with viewport variant.
+   */
+  hasViewportVariant(): boolean {
+    if (this.node.type !== 'COMPONENT_SET') return false
+    return Object.keys(
+      (this.node as ComponentSetNode).componentPropertyDefinitions,
+    ).some((key) => key.toLowerCase() === 'viewport')
   }
 
   /**
