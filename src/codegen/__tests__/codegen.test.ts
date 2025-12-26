@@ -5941,6 +5941,157 @@ describe('render real world component', () => {
         },
       ],
     },
+    {
+      expected: `<Text
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+  textAlign="right"
+  w="100px"
+>
+  Hello World
+</Text>`,
+      object: [
+        {
+          id: '41:7',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '35:2',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 100,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'RIGHT',
+          textAlignVertical: 'CENTER',
+          textTruncation: 'DISABLED',
+        },
+        {
+          id: '35:2',
+          name: 'Text',
+          type: 'SECTION',
+          children: ['41:7'],
+        },
+      ],
+    },
+    {
+      expected: `<Text
+  alignContent="center"
+  boxSize="200px"
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+  textAlign="center"
+>
+  Hello World
+</Text>`,
+      object: [
+        {
+          id: '41:12',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '35:2',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 200,
+          height: 200,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'NONE',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'CENTER',
+          textTruncation: 'DISABLED',
+        },
+        {
+          id: '35:2',
+          name: 'Text',
+          type: 'SECTION',
+          children: ['41:12'],
+        },
+      ],
+    },
   ] as const)('$expected', async ({ expected, object }) => {
     const root = assembleNodeTree(object as unknown as NodeData[])
     const codegen = new Codegen(root as unknown as SceneNode)
