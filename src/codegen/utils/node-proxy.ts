@@ -165,6 +165,18 @@ class NodeProxyTracker {
       'maxHeight',
       'targetAspectRatio',
       'inferredAutoLayout',
+      // TEXT 노드 속성
+      'characters',
+      'fontName',
+      'fontSize',
+      'fontWeight',
+      'lineHeight',
+      'letterSpacing',
+      'textAutoResize',
+      'textAlignHorizontal',
+      'textAlignVertical',
+      'textTruncation',
+      'maxLines',
     ]
 
     for (const prop of propsToTrack) {
@@ -374,7 +386,7 @@ export function assembleNodeTree(nodes: NodeData[]): NodeData {
     nodeMap.set(node.id, { ...node })
   }
 
-  // 2. parent/children 관계 연결
+  // 2. parent/children 관계 연결 및 TEXT 노드 mock 메서드 추가
   for (const node of nodeMap.values()) {
     // parent 연결
     if (typeof node.parent === 'string') {
@@ -394,6 +406,45 @@ export function assembleNodeTree(nodes: NodeData[]): NodeData {
         .filter((child): child is NodeData => child !== undefined)
     }
     // children이 undefined인 경우 그대로 유지 (RECTANGLE 등 원래 children이 없는 노드)
+
+    // TEXT 노드에 getStyledTextSegments mock 메서드 추가
+    if (node.type === 'TEXT') {
+      const textNode = node as NodeData & { styledTextSegments?: unknown[] }
+      ;(node as unknown as Record<string, unknown>).getStyledTextSegments =
+        () => {
+          // 테스트 데이터에 styledTextSegments가 있으면 사용
+          if (textNode.styledTextSegments) {
+            return textNode.styledTextSegments
+          }
+          // 없으면 기본 세그먼트 생성
+          return [
+            {
+              characters: (node.characters as string) || '',
+              start: 0,
+              end: ((node.characters as string) || '').length,
+              fontName: (node.fontName as { family: string }) || {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: (node.fontWeight as number) || 400,
+              fontSize: (node.fontSize as number) || 12,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: (node.lineHeight as unknown) || { unit: 'AUTO' },
+              letterSpacing: (node.letterSpacing as unknown) || {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: (node.fills as unknown[]) || [],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: { type: 'NONE' },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ]
+        }
+    }
   }
 
   // 3. 첫 번째 노드(루트) 반환

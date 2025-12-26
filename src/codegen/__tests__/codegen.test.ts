@@ -5719,71 +5719,228 @@ describe('render real world component', () => {
         },
       ],
     },
-    //     // text
-    //     {
-    //       expected: `<Text
-    //   color="#FFF"
-    //   fontFamily="Inter"
-    //   fontSize="12px"
-    //   fontWeight="400"
-    //   letterSpacing="0em"
-    //   lineHeight="normal"
-    // >
-    //   Hello World
-    // </Text>`,
-    //       object: [
-    //         {
-    //           id: '35:7',
-    //           name: 'Hello World',
-    //           type: 'TEXT',
-    //           maxWidth: null,
-    //           maxHeight: null,
-    //           minWidth: null,
-    //           minHeight: null,
-    //           parent: '35:2',
-    //           layoutPositioning: 'AUTO',
-    //           layoutSizingVertical: 'FIXED',
-    //           layoutSizingHorizontal: 'FIXED',
-    //           textAutoResize: 'WIDTH_AND_HEIGHT',
-    //           strokes: [],
-    //           fills: [
-    //             {
-    //               type: 'SOLID',
-    //               visible: true,
-    //               opacity: 1,
-    //               blendMode: 'NORMAL',
-    //               color: {
-    //                 r: 1,
-    //                 g: 1,
-    //                 b: 1,
-    //               },
-    //               boundVariables: {},
-    //             },
-    //           ],
-    //           opacity: 1,
-    //           blendMode: 'PASS_THROUGH',
-    //           characters: 'Hello World',
-    //           isAsset: false,
-    //           maxLines: null,
-    //           textTruncation: 'DISABLED',
-    //           effects: [],
-    //           rotation: 0,
-    //           reactions: [],
-    //           visible: true,
-    //           width: 65,
-    //           height: 15,
-    //           layoutAlign: 'INHERIT',
-    //           layoutGrow: 0,
-    //           targetAspectRatio: null,
-    //         },
-    //         {
-    //           id: '35:2',
-    //           name: 'Text',
-    //           type: 'SECTION',
-    //           children: ['35:7'],
-    //         },
-    //       ],
-    //     },
+    // text
+    {
+      expected: `<Text
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+>
+  Hello World
+</Text>`,
+      object: [
+        {
+          id: '35:7',
+          name: 'Hello World',
+          type: 'TEXT',
+          parent: '35:2',
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'FIXED',
+          layoutSizingHorizontal: 'FIXED',
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          strokes: [],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          characters: 'Hello World',
+          isAsset: false,
+          textTruncation: 'DISABLED',
+          effects: [],
+          rotation: 0,
+          reactions: [],
+          visible: true,
+          width: 65,
+          height: 15,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+        },
+        {
+          id: '35:2',
+          name: 'Text',
+          type: 'SECTION',
+          children: ['35:7'],
+        },
+      ],
+    },
+    {
+      expected: `<Text
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+  w="100px"
+>
+  Hello World
+</Text>`,
+      object: [
+        {
+          id: '35:12',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '35:2',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 100,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+        },
+        {
+          id: '35:2',
+          name: 'Text',
+          type: 'SECTION',
+          children: ['35:12'],
+        },
+      ],
+    },
+    {
+      expected: `<Text
+  boxSize="200px"
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+>
+  Hello World
+</Text>`,
+      object: [
+        {
+          id: '35:18',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '35:2',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 200,
+          height: 200,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'NONE',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+        },
+        {
+          id: '35:2',
+          name: 'Text',
+          type: 'SECTION',
+          children: ['35:18'],
+        },
+      ],
+    },
   ] as const)('$expected', async ({ expected, object }) => {
     const root = assembleNodeTree(object as unknown as NodeData[])
     const codegen = new Codegen(root as unknown as SceneNode)
