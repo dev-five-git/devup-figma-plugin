@@ -6927,427 +6927,591 @@ describe('render real world component', () => {
         },
       ],
     },
-    //     {
-    //       expected: `<VStack bg="$background" borderRadius="30px" gap="20px" p="40px">
-    //   <Image boxSize="64px" src="/icons/puzzle-piece.svg" />
-    //   <Text
-    //     color="$text"
-    //     fontFamily="Pretendard"
-    //     fontSize="20px"
-    //     fontWeight="800"
-    //     letterSpacing="-0.04em"
-    //     lineHeight="1.4"
-    //   >
-    //     <Text color="$primary">
-    //       자사 솔루션과의 연계
-    //     </Text>
-    //     를 통해<Box as="br" display={['none', null, 'initial']} />서비스 확장성과 성장 가능성을 높입니다.
-    //   </Text>
-    //   <Text
-    //     color="$text"
-    //     fontFamily="Pretendard"
-    //     fontSize="16px"
-    //     fontWeight="500"
-    //     letterSpacing="-0.06em"
-    //     lineHeight="1.6"
-    //   >
-    //     웹앱팩토리와 Presskit 등 자체 운영 중인 <Box as="br" display={['none', null, 'initial']} />솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, <Box as="br" display={['none', null, 'initial']} />운영 효율화, 성장 기회까지 제안드립니다.
-    //   </Text>
-    // </VStack>`,
-    //       nodes: [
-    //         {
-    //           id: '1:13',
-    //           name: 'Card',
-    //           type: 'FRAME',
-    //           visible: true,
-    //           parent: '71:123',
-    //           children: ['1:14', '1:17', '1:18'],
-    //           fills: [
-    //             {
-    //               type: 'SOLID',
-    //               visible: true,
-    //               opacity: 1,
-    //               blendMode: 'NORMAL',
-    //               color: {
-    //                 r: 0.9697822332382202,
-    //                 g: 0.9732044339179993,
-    //                 b: 0.9855769276618958,
-    //               },
-    //               boundVariables: {
-    //                 color:
-    //                   '[NodeId: VariableID:15f2b5c6b66588df2b6463e5084ce0334621dcd6/3584:11]',
-    //               },
-    //             },
-    //           ],
-    //           strokes: [],
-    //           effects: [],
-    //           opacity: 1,
-    //           blendMode: 'PASS_THROUGH',
-    //           width: 420,
-    //           height: 318,
-    //           rotation: 0,
-    //           cornerRadius: 30,
-    //           topLeftRadius: 30,
-    //           topRightRadius: 30,
-    //           bottomLeftRadius: 30,
-    //           bottomRightRadius: 30,
-    //           layoutMode: 'VERTICAL',
-    //           layoutAlign: 'STRETCH',
-    //           layoutGrow: 1,
-    //           layoutSizingHorizontal: 'FIXED',
-    //           layoutSizingVertical: 'HUG',
-    //           layoutPositioning: 'AUTO',
-    //           primaryAxisAlignItems: 'MIN',
-    //           counterAxisAlignItems: 'MIN',
-    //           paddingLeft: 40,
-    //           paddingRight: 40,
-    //           paddingTop: 40,
-    //           paddingBottom: 40,
-    //           itemSpacing: 20,
-    //           counterAxisSpacing: 0,
-    //           clipsContent: false,
-    //           isAsset: false,
-    //           reactions: [],
-    //           inferredAutoLayout: {
-    //             layoutMode: 'VERTICAL',
-    //             paddingLeft: 40,
-    //             paddingRight: 40,
-    //             paddingTop: 40,
-    //             paddingBottom: 40,
-    //             counterAxisSizingMode: 'FIXED',
-    //             primaryAxisSizingMode: 'AUTO',
-    //             primaryAxisAlignItems: 'MIN',
-    //             counterAxisAlignItems: 'MIN',
-    //             layoutAlign: 'STRETCH',
-    //             layoutGrow: 1,
-    //             itemSpacing: 20,
-    //             layoutPositioning: 'AUTO',
-    //           },
-    //         },
-    //         {
-    //           id: '1:14',
-    //           name: 'puzzle-piece',
-    //           type: 'FRAME',
-    //           visible: true,
-    //           parent: '1:13',
-    //           children: ['1:15', '1:16'],
-    //           fills: [
-    //             {
-    //               type: 'SOLID',
-    //               visible: false,
-    //               opacity: 1,
-    //               blendMode: 'NORMAL',
-    //               color: {
-    //                 r: 1,
-    //                 g: 1,
-    //                 b: 1,
-    //               },
-    //               boundVariables: {},
-    //             },
-    //           ],
-    //           strokes: [],
-    //           effects: [],
-    //           opacity: 1,
-    //           blendMode: 'PASS_THROUGH',
-    //           width: 64,
-    //           height: 64,
-    //           rotation: 0,
-    //           cornerRadius: 0,
-    //           topLeftRadius: 0,
-    //           topRightRadius: 0,
-    //           bottomLeftRadius: 0,
-    //           bottomRightRadius: 0,
-    //           layoutMode: 'NONE',
-    //           layoutAlign: 'INHERIT',
-    //           layoutGrow: 0,
-    //           layoutSizingHorizontal: 'FIXED',
-    //           layoutSizingVertical: 'FIXED',
-    //           layoutPositioning: 'AUTO',
-    //           primaryAxisAlignItems: 'MIN',
-    //           counterAxisAlignItems: 'MIN',
-    //           paddingLeft: 0,
-    //           paddingRight: 0,
-    //           paddingTop: 0,
-    //           paddingBottom: 0,
-    //           itemSpacing: 0,
-    //           counterAxisSpacing: 0,
-    //           clipsContent: true,
-    //           isAsset: true,
-    //           reactions: [],
-    //         },
-    //         {
-    //           id: '1:15',
-    //           name: 'Vector',
-    //           type: 'VECTOR',
-    //           visible: true,
-    //           parent: '1:14',
-    //           fills: [
-    //             {
-    //               type: 'SOLID',
-    //               visible: true,
-    //               opacity: 1,
-    //               blendMode: 'NORMAL',
-    //               color: {
-    //                 r: 0.6901960968971252,
-    //                 g: 0.6901960968971252,
-    //                 b: 0.686274528503418,
-    //               },
-    //               boundVariables: {},
-    //             },
-    //           ],
-    //           strokes: [],
-    //           effects: [],
-    //           opacity: 1,
-    //           blendMode: 'PASS_THROUGH',
-    //           width: 57.96072006225586,
-    //           height: 53.89710235595703,
-    //           rotation: 0,
-    //           cornerRadius: 0,
-    //           layoutAlign: 'INHERIT',
-    //           layoutGrow: 0,
-    //           layoutSizingHorizontal: 'FIXED',
-    //           layoutSizingVertical: 'FIXED',
-    //           layoutPositioning: 'AUTO',
-    //           isAsset: false,
-    //           reactions: [],
-    //         },
-    //         {
-    //           id: '1:16',
-    //           name: 'Vector',
-    //           type: 'VECTOR',
-    //           visible: true,
-    //           parent: '1:14',
-    //           fills: [
-    //             {
-    //               type: 'GRADIENT_RADIAL',
-    //               visible: true,
-    //               opacity: 1,
-    //               blendMode: 'NORMAL',
-    //               gradientStops: [
-    //                 {
-    //                   color: {
-    //                     r: 0.7176470756530762,
-    //                     g: 0.8196078538894653,
-    //                     b: 0.0941176488995552,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.5080000162124634,
-    //                   boundVariables: {},
-    //                 },
-    //                 {
-    //                   color: {
-    //                     r: 0.6980392336845398,
-    //                     g: 0.8156862854957581,
-    //                     b: 0.09803921729326248,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.5720000267028809,
-    //                   boundVariables: {},
-    //                 },
-    //                 {
-    //                   color: {
-    //                     r: 0.6470588445663452,
-    //                     g: 0.8039215803146362,
-    //                     b: 0.11372549086809158,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.6430000066757202,
-    //                   boundVariables: {},
-    //                 },
-    //                 {
-    //                   color: {
-    //                     r: 0.5607843399047852,
-    //                     g: 0.7882353067398071,
-    //                     b: 0.13333334028720856,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.7170000076293945,
-    //                   boundVariables: {},
-    //                 },
-    //                 {
-    //                   color: {
-    //                     r: 0.43921568989753723,
-    //                     g: 0.7607843279838562,
-    //                     b: 0.16470588743686676,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.7929999828338623,
-    //                   boundVariables: {},
-    //                 },
-    //                 {
-    //                   color: {
-    //                     r: 0.2823529541492462,
-    //                     g: 0.729411780834198,
-    //                     b: 0.20392157137393951,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.8709999918937683,
-    //                   boundVariables: {},
-    //                 },
-    //                 {
-    //                   color: {
-    //                     r: 0.0941176488995552,
-    //                     g: 0.6901960968971252,
-    //                     b: 0.250980406999588,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.9490000009536743,
-    //                   boundVariables: {},
-    //                 },
-    //                 {
-    //                   color: {
-    //                     r: 0.007843137718737125,
-    //                     g: 0.6705882549285889,
-    //                     b: 0.27450981736183167,
-    //                     a: 1,
-    //                   },
-    //                   position: 0.9810000061988831,
-    //                   boundVariables: {},
-    //                 },
-    //               ],
-    //               gradientTransform: [
-    //                 [0.4799879491329193, 0, 0.26639416813850403],
-    //                 [0, 0.48956596851348877, 0.6352904438972473],
-    //               ],
-    //             },
-    //           ],
-    //           strokes: [],
-    //           effects: [],
-    //           opacity: 1,
-    //           blendMode: 'PASS_THROUGH',
-    //           width: 57.2265625,
-    //           height: 58.36850357055664,
-    //           rotation: 0,
-    //           cornerRadius: 0,
-    //           layoutAlign: 'INHERIT',
-    //           layoutGrow: 0,
-    //           layoutSizingHorizontal: 'FIXED',
-    //           layoutSizingVertical: 'FIXED',
-    //           layoutPositioning: 'AUTO',
-    //           isAsset: false,
-    //           reactions: [],
-    //         },
-    //         {
-    //           id: '1:17',
-    //           name: '자사 솔루션과의 연계를 통해 서비스 확장성과 성장 가능성을 높입니다.',
-    //           type: 'TEXT',
-    //           visible: true,
-    //           parent: '1:13',
-    //           strokes: [],
-    //           effects: [],
-    //           opacity: 1,
-    //           blendMode: 'PASS_THROUGH',
-    //           width: 340,
-    //           height: 56,
-    //           rotation: 0,
-    //           layoutAlign: 'STRETCH',
-    //           layoutGrow: 0,
-    //           layoutSizingHorizontal: 'FILL',
-    //           layoutSizingVertical: 'HUG',
-    //           layoutPositioning: 'AUTO',
-    //           isAsset: false,
-    //           reactions: [],
-    //           characters:
-    //             '자사 솔루션과의 연계를 통해\n서비스 확장성과 성장 가능성을 높입니다.',
-    //           fontName: {
-    //             family: 'Pretendard',
-    //             style: 'ExtraBold',
-    //           },
-    //           fontSize: 20,
-    //           fontWeight: 800,
-    //           lineHeight: {
-    //             unit: 'PERCENT',
-    //             value: 139.9999976158142,
-    //           },
-    //           letterSpacing: {
-    //             unit: 'PERCENT',
-    //             value: -4,
-    //           },
-    //           textAutoResize: 'HEIGHT',
-    //           textAlignHorizontal: 'LEFT',
-    //           textAlignVertical: 'TOP',
-    //           textTruncation: 'DISABLED',
-    //         },
-    //         {
-    //           id: '1:18',
-    //           name: '웹앱팩토리와 Presskit 등 자체 운영 중인 솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, 운영 효율화, 성장 기회까지 제안드립니다.',
-    //           type: 'TEXT',
-    //           visible: true,
-    //           parent: '1:13',
-    //           fills: [
-    //             {
-    //               type: 'SOLID',
-    //               visible: true,
-    //               opacity: 1,
-    //               blendMode: 'NORMAL',
-    //               color: {
-    //                 r: 0.10196078568696976,
-    //                 g: 0.10196078568696976,
-    //                 b: 0.10196078568696976,
-    //               },
-    //               boundVariables: {
-    //                 color:
-    //                   '[NodeId: VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41]',
-    //               },
-    //             },
-    //           ],
-    //           strokes: [],
-    //           effects: [],
-    //           opacity: 1,
-    //           blendMode: 'PASS_THROUGH',
-    //           width: 340,
-    //           height: 78,
-    //           rotation: 0,
-    //           layoutAlign: 'STRETCH',
-    //           layoutGrow: 0,
-    //           layoutSizingHorizontal: 'FILL',
-    //           layoutSizingVertical: 'HUG',
-    //           layoutPositioning: 'AUTO',
-    //           isAsset: false,
-    //           reactions: [],
-    //           characters:
-    //             '웹앱팩토리와 Presskit 등 자체 운영 중인 \n솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, \n운영 효율화, 성장 기회까지 제안드립니다.',
-    //           fontName: {
-    //             family: 'Pretendard',
-    //             style: 'Medium',
-    //           },
-    //           fontSize: 16,
-    //           fontWeight: 500,
-    //           lineHeight: {
-    //             unit: 'PERCENT',
-    //             value: 160.0000023841858,
-    //           },
-    //           letterSpacing: {
-    //             unit: 'PERCENT',
-    //             value: -6,
-    //           },
-    //           textAutoResize: 'HEIGHT',
-    //           textAlignHorizontal: 'LEFT',
-    //           textAlignVertical: 'TOP',
-    //           textTruncation: 'DISABLED',
-    //         },
-    //         {
-    //           id: '71:123',
-    //           name: 'Component 1',
-    //           type: 'SECTION',
-    //           children: ['1:13'],
-    //         },
-    //       ],
-    //       variables: [
-    //         {
-    //           id: 'VariableID:0b96ad7095bac52695a42f130ba1e6823e711569/3589:313',
-    //           name: 'primary',
-    //         },
-    //         {
-    //           id: 'VariableID:15f2b5c6b66588df2b6463e5084ce0334621dcd6/3584:11',
-    //           name: 'background',
-    //         },
-    //         {
-    //           id: 'VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41',
-    //           name: 'text',
-    //         },
-    //       ],
-    //     },
+    {
+      expected: `<VStack bg="$background" borderRadius="30px" gap="20px" p="40px">
+  <Image boxSize="64px" src="/icons/puzzle-piece.svg" />
+  <Text
+    color="$text"
+    fontFamily="Pretendard"
+    fontSize="20px"
+    fontWeight="800"
+    letterSpacing="-0.04em"
+    lineHeight="1.4"
+  >
+    <Text color="$primary">
+      자사 솔루션과의 연계
+    </Text>
+    를 통해<Box as="br" display={['none', null, 'initial']} />서비스 확장성과 성장 가능성을 높입니다.
+  </Text>
+  <Text
+    color="$text"
+    fontFamily="Pretendard"
+    fontSize="16px"
+    fontWeight="500"
+    letterSpacing="-0.06em"
+    lineHeight="1.6"
+  >
+    웹앱팩토리와 Presskit 등 자체 운영 중인 <Box as="br" display={['none', null, 'initial']} />솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, <Box as="br" display={['none', null, 'initial']} />운영 효율화, 성장 기회까지 제안드립니다.
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '1:13',
+          name: 'Card',
+          type: 'FRAME',
+          reactions: [],
+          parent: '71:123',
+          children: ['1:14', '1:17', '1:18'],
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 40,
+            paddingRight: 40,
+            paddingTop: 40,
+            paddingBottom: 40,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 1,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'HUG',
+          layoutSizingHorizontal: 'FIXED',
+          cornerRadius: 30,
+          strokes: [],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.9697822332382202,
+                g: 0.9732044339179993,
+                b: 0.9855769276618958,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:15f2b5c6b66588df2b6463e5084ce0334621dcd6/3584:11]',
+              },
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          isAsset: false,
+          effects: [],
+          rotation: 0,
+          clipsContent: false,
+          visible: true,
+          layoutMode: 'VERTICAL',
+          width: 420,
+          height: 318,
+          topLeftRadius: 30,
+          topRightRadius: 30,
+          bottomLeftRadius: 30,
+          bottomRightRadius: 30,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 1,
+          paddingLeft: 40,
+          paddingRight: 40,
+          paddingTop: 40,
+          paddingBottom: 40,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+        },
+        {
+          id: '1:14',
+          name: 'puzzle-piece',
+          type: 'FRAME',
+          visible: true,
+          parent: '1:13',
+          children: ['1:15', '1:16'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: false,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 64,
+          height: 64,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+        },
+        {
+          id: '1:15',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '1:14',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.6901960968971252,
+                g: 0.6901960968971252,
+                b: 0.686274528503418,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 57.96072006225586,
+          height: 53.89710235595703,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+        },
+        {
+          id: '1:16',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '1:14',
+          fills: [
+            {
+              type: 'GRADIENT_RADIAL',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              gradientStops: [
+                {
+                  color: {
+                    r: 0.7176470756530762,
+                    g: 0.8196078538894653,
+                    b: 0.0941176488995552,
+                    a: 1,
+                  },
+                  position: 0.5080000162124634,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.6980392336845398,
+                    g: 0.8156862854957581,
+                    b: 0.09803921729326248,
+                    a: 1,
+                  },
+                  position: 0.5720000267028809,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.6470588445663452,
+                    g: 0.8039215803146362,
+                    b: 0.11372549086809158,
+                    a: 1,
+                  },
+                  position: 0.6430000066757202,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.5607843399047852,
+                    g: 0.7882353067398071,
+                    b: 0.13333334028720856,
+                    a: 1,
+                  },
+                  position: 0.7170000076293945,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.43921568989753723,
+                    g: 0.7607843279838562,
+                    b: 0.16470588743686676,
+                    a: 1,
+                  },
+                  position: 0.7929999828338623,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.2823529541492462,
+                    g: 0.729411780834198,
+                    b: 0.20392157137393951,
+                    a: 1,
+                  },
+                  position: 0.8709999918937683,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.0941176488995552,
+                    g: 0.6901960968971252,
+                    b: 0.250980406999588,
+                    a: 1,
+                  },
+                  position: 0.9490000009536743,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.007843137718737125,
+                    g: 0.6705882549285889,
+                    b: 0.27450981736183167,
+                    a: 1,
+                  },
+                  position: 0.9810000061988831,
+                  boundVariables: {},
+                },
+              ],
+              gradientTransform: [
+                [0.4799879491329193, 0, 0.26639416813850403],
+                [0, 0.48956596851348877, 0.6352904438972473],
+              ],
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 57.2265625,
+          height: 58.36850357055664,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+        },
+        {
+          id: '1:17',
+          name: '자사 솔루션과의 연계를 통해 서비스 확장성과 성장 가능성을 높입니다.',
+          type: 'TEXT',
+          visible: true,
+          parent: '1:13',
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 340,
+          height: 56,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          characters:
+            '자사 솔루션과의 연계를 통해\n서비스 확장성과 성장 가능성을 높입니다.',
+          fontName: {
+            family: 'Pretendard',
+            style: 'ExtraBold',
+          },
+          fontSize: 20,
+          fontWeight: 800,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 139.9999976158142,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -4,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '자사 솔루션과의 연계',
+              start: 0,
+              end: 11,
+              fontSize: 20,
+              fontName: {
+                family: 'Pretendard',
+                style: 'ExtraBold',
+              },
+              fontWeight: 800,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 139.9999976158142,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.35686275362968445,
+                    g: 0.20392157137393951,
+                    b: 0.9686274528503418,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:0b96ad7095bac52695a42f130ba1e6823e711569/3589:313]',
+                  },
+                },
+              ],
+              textStyleId: 'S:42aa610b2125d507c89cd19b737e1c07835c76cd,4987:43',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+            {
+              characters: '를 통해\n서비스 확장성과 성장 가능성을 높입니다.',
+              start: 11,
+              end: 38,
+              fontSize: 20,
+              fontName: {
+                family: 'Pretendard',
+                style: 'ExtraBold',
+              },
+              fontWeight: 800,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 139.9999976158142,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.10196078568696976,
+                    g: 0.10196078568696976,
+                    b: 0.10196078568696976,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41]',
+                  },
+                },
+              ],
+              textStyleId: 'S:42aa610b2125d507c89cd19b737e1c07835c76cd,4987:43',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '1:18',
+          name: '웹앱팩토리와 Presskit 등 자체 운영 중인 솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, 운영 효율화, 성장 기회까지 제안드립니다.',
+          type: 'TEXT',
+          visible: true,
+          parent: '1:13',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.10196078568696976,
+                g: 0.10196078568696976,
+                b: 0.10196078568696976,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 340,
+          height: 78,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          characters:
+            '웹앱팩토리와 Presskit 등 자체 운영 중인 \n솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, \n운영 효율화, 성장 기회까지 제안드립니다.',
+          fontName: {
+            family: 'Pretendard',
+            style: 'Medium',
+          },
+          fontSize: 16,
+          fontWeight: 500,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 160.0000023841858,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -6,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                '웹앱팩토리와 Presskit 등 자체 운영 중인 \n솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, \n운영 효율화, 성장 기회까지 제안드립니다.',
+              start: 0,
+              end: 82,
+              fontSize: 16,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Medium',
+              },
+              fontWeight: 500,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 160.0000023841858,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -6,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.10196078568696976,
+                    g: 0.10196078568696976,
+                    b: 0.10196078568696976,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41]',
+                  },
+                },
+              ],
+              textStyleId: 'S:f416ab13d47ad55393b3cf3c7e2a45e33c6eec40,4987:46',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '71:123',
+          name: 'Component 1',
+          type: 'SECTION',
+          children: ['1:13'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:15f2b5c6b66588df2b6463e5084ce0334621dcd6/3584:11',
+          name: 'background',
+        },
+        {
+          id: 'VariableID:0b96ad7095bac52695a42f130ba1e6823e711569/3589:313',
+          name: 'primary',
+        },
+        {
+          id: 'VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41',
+          name: 'text',
+        },
+      ],
+    },
   ] as const)('$expected', async ({ expected, nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],

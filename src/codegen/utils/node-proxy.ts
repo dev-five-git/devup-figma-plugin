@@ -186,6 +186,49 @@ class NodeProxyTracker {
         // ignore
       }
     }
+
+    // TEXT 노드인 경우 getStyledTextSegments 호출해서 결과 저장
+    if (node.type === 'TEXT') {
+      try {
+        const textNode = node as TextNode
+        const SEGMENT_TYPE = [
+          'fontName',
+          'fontWeight',
+          'fontSize',
+          'textDecoration',
+          'textCase',
+          'lineHeight',
+          'letterSpacing',
+          'fills',
+          'textStyleId',
+          'fillStyleId',
+          'listOptions',
+          'indentation',
+          'hyperlink',
+        ] as const
+        const segments = textNode.getStyledTextSegments(
+          SEGMENT_TYPE as unknown as (keyof Omit<
+            StyledTextSegment,
+            'characters' | 'start' | 'end'
+          >)[],
+        )
+        // 세그먼트 직렬화
+        const serializedSegments = segments.map((seg) => ({
+          ...seg,
+          fills: this.serializeArray(seg.fills as unknown[]),
+        }))
+
+        const log = this.accessLogs.get(node.id)
+        if (log) {
+          log.properties.push({
+            key: 'styledTextSegments',
+            value: serializedSegments,
+          })
+        }
+      } catch {
+        // ignore - getStyledTextSegments가 없는 환경
+      }
+    }
   }
 
   private serializeArray(arr: unknown[]): unknown[] {
@@ -328,11 +371,20 @@ class NodeProxyTracker {
   }
 
   private buildAllNodes(): NodeData[] {
+    // null이어도 포함되어야 하는 프로퍼티들
+    const nullableProps = new Set([
+      'maxWidth',
+      'maxHeight',
+      'minWidth',
+      'minHeight',
+    ])
+
     const allNodes: NodeData[] = []
     for (const log of this.accessLogs.values()) {
       const props: Record<string, unknown> = {}
       for (const { key, value } of log.properties) {
-        if (value === null) continue
+        // null 값은 nullableProps에 포함된 경우만 유지
+        if (value === null && !nullableProps.has(key)) continue
         props[key] = this.resolveNodeRefs(value)
       }
       allNodes.push({
@@ -550,6 +602,19 @@ export function assembleNodeTree(
     // TEXT 노드에 getStyledTextSegments mock 메서드 추가
     if (node.type === 'TEXT') {
       const textNode = node as NodeData & { styledTextSegments?: unknown[] }
+
+      // styledTextSegments 내의 fills도 boundVariables 처리
+      if (textNode.styledTextSegments) {
+        for (const seg of textNode.styledTextSegments) {
+          if (seg && typeof seg === 'object') {
+            const s = seg as Record<string, unknown>
+            if (Array.isArray(s.fills)) {
+              processBoundVariables(s.fills)
+            }
+          }
+        }
+      }
+
       ;(node as unknown as Record<string, unknown>).getStyledTextSegments =
         () => {
           // 테스트 데이터에 styledTextSegments가 있으면 사용
