@@ -1,5 +1,6 @@
 import { Codegen } from './codegen/Codegen'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
+import { nodeProxyTracker } from './codegen/utils/node-proxy'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
@@ -115,7 +116,9 @@ function generatePowerShellCLI(
 
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
-    ctx.codegen.on('generate', async ({ node, language }) => {
+    ctx.codegen.on('generate', async ({ node: n, language }) => {
+      // const node = nodeProxyTracker.wrap(n)
+      const node = n
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()
@@ -161,6 +164,7 @@ export function registerCodegen(ctx: typeof figma) {
               console.error('[responsive] Error generating responsive code:', e)
             }
           }
+          console.log(nodeProxyTracker.toTestCaseFormat())
 
           return [
             ...(node.type === 'COMPONENT' ||
