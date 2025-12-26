@@ -227,22 +227,22 @@ export function assembleNodeTree(nodes: NodeData[]): NodeData {
 
   // 2. parent/children 관계 연결
   for (const node of nodeMap.values()) {
-    // parent 연결
+    // parent 연결 (없으면 undefined로 설정)
     if (typeof node.parent === 'string') {
       const parentNode = nodeMap.get(node.parent)
-      if (parentNode) {
-        node.parent = parentNode
-      }
+      node.parent = parentNode
     }
 
-    // children 연결
+    // children 연결 (없는 노드는 필터링)
     if (Array.isArray(node.children)) {
-      node.children = node.children.map((childId) => {
-        if (typeof childId === 'string') {
-          return nodeMap.get(childId) || childId
-        }
-        return childId
-      })
+      node.children = node.children
+        .map((childId) => {
+          if (typeof childId === 'string') {
+            return nodeMap.get(childId)
+          }
+          return childId
+        })
+        .filter((child): child is NodeData => child !== undefined)
     }
   }
 
