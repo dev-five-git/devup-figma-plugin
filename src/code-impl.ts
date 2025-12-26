@@ -164,7 +164,7 @@ export function registerCodegen(ctx: typeof figma) {
               console.error('[responsive] Error generating responsive code:', e)
             }
           }
-          console.log(nodeProxyTracker.toTestCaseFormat())
+          console.log(nodeProxyTracker.toTestCaseFormat(node.id))
 
           return [
             ...(node.type === 'COMPONENT' ||

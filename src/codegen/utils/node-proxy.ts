@@ -249,34 +249,69 @@ class NodeProxyTracker {
 
   /**
    * Returns nodes as array with the root node first.
-   * @param rootId - The ID of the root node (clicked node) to put first
+   * @param rootId - The ID of the root node (clicked node) to put first.
+   *                 Only includes this node and its descendants.
    */
   toTestCaseFormat(rootId?: string): NodeData[] {
-    const result: NodeData[] = []
-    let rootNode: NodeData | null = null
-
+    // 모든 노드를 먼저 변환
+    const allNodes: NodeData[] = []
     for (const log of this.accessLogs.values()) {
       const props: Record<string, unknown> = {}
       for (const { key, value } of log.properties) {
         props[key] = this.resolveNodeRefs(value)
       }
-      const node: NodeData = {
+      allNodes.push({
         id: log.nodeId,
         name: log.nodeName,
         type: log.nodeType,
         ...props,
-      }
+      })
+    }
 
-      if (rootId && log.nodeId === rootId) {
-        rootNode = node
-      } else {
+    if (!rootId) {
+      return allNodes
+    }
+
+    // rootId가 주어진 경우: 루트 노드와 그 하위 노드들만 필터링
+    const rootNode = allNodes.find((n) => n.id === rootId)
+    if (!rootNode) {
+      return allNodes
+    }
+
+    // 하위 노드 ID들을 수집 (children을 재귀적으로 탐색)
+    const descendantIds = new Set<string>()
+    const collectDescendants = (nodeId: string) => {
+      const node = allNodes.find((n) => n.id === nodeId)
+      if (!node) return
+      if (Array.isArray(node.children)) {
+        for (const childId of node.children) {
+          if (typeof childId === 'string') {
+            descendantIds.add(childId)
+            collectDescendants(childId)
+          }
+        }
+      }
+    }
+    collectDescendants(rootId)
+
+    // 루트 노드와 하위 노드들만 필터링
+    const result: NodeData[] = [rootNode]
+    for (const node of allNodes) {
+      if (node.id !== rootId && descendantIds.has(node.id)) {
         result.push(node)
       }
     }
 
-    // 루트 노드를 맨 앞에 배치
-    if (rootNode) {
-      result.unshift(rootNode)
+    // 부모 노드도 포함 (SECTION 타입만)
+    const parentId =
+      typeof rootNode.parent === 'string' ? rootNode.parent : undefined
+    if (parentId) {
+      const parentNode = allNodes.find((n) => n.id === parentId)
+      if (parentNode && parentNode.type === 'SECTION') {
+        // 부모의 children에서 루트 노드만 남기기
+        parentNode.children = [rootId]
+        result.push(parentNode)
+      }
     }
 
     return result
@@ -339,15 +374,10 @@ export function assembleNodeTree(nodes: NodeData[]): NodeData {
 
   // 2. parent/children 관계 연결
   for (const node of nodeMap.values()) {
-    // parent 연결 (없으면 undefined로 설정)
+    // parent 연결
     if (typeof node.parent === 'string') {
       const parentNode = nodeMap.get(node.parent)
-      // SECTION은 테스트용 컨테이너이므로 parent로 연결하지 않음
-      if (parentNode && parentNode.type === 'SECTION') {
-        node.parent = undefined
-      } else {
-        node.parent = parentNode
-      }
+      node.parent = parentNode
     }
 
     // children 연결 (없는 노드는 필터링)
