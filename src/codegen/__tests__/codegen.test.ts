@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it, test } from 'bun:test'
 import { Codegen } from '../Codegen'
+import { assembleNodeTree, type NodeData } from '../utils/node-proxy'
 
 ;(globalThis as { figma?: unknown }).figma = {
   mixed: Symbol('mixed'),
@@ -4355,47 +4356,57 @@ describe('render real world component', () => {
   it.each([
     {
       expected: `<Box bg="#D9D9D9" borderRadius="20px" boxSize="150px" />`,
-      object: {
-        id: '7:3',
-        name: 'Rectangle 2',
-        type: 'RECTANGLE',
-        reactions: [],
-        fills: [
-          {
-            type: 'SOLID',
-            visible: true,
-            opacity: 1,
-            blendMode: 'NORMAL',
-            color: {
-              r: 0.8509804010391235,
-              g: 0.8509804010391235,
-              b: 0.8509804010391235,
+      object: [
+        {
+          id: '7:3',
+          name: 'Rectangle 2',
+          type: 'RECTANGLE',
+          reactions: [],
+          parent: '7:7',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.8509804010391235,
+                g: 0.8509804010391235,
+                b: 0.8509804010391235,
+              },
+              boundVariables: {},
             },
-            boundVariables: {},
-          },
-        ],
-        isAsset: false,
-        maxWidth: null,
-        maxHeight: null,
-        minWidth: null,
-        minHeight: null,
-        layoutPositioning: 'AUTO',
-        layoutSizingVertical: 'FIXED',
-        layoutSizingHorizontal: 'FIXED',
-        targetAspectRatio: null,
-        width: 150,
-        height: 150,
-        cornerRadius: 20,
-        strokes: [],
-        opacity: 1,
-        blendMode: 'PASS_THROUGH',
-        effects: [],
-        rotation: 0,
-        visible: true,
-      },
+          ],
+          isAsset: false,
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'FIXED',
+          layoutSizingHorizontal: 'FIXED',
+          targetAspectRatio: null,
+          width: 150,
+          height: 150,
+          cornerRadius: 20,
+          strokes: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          effects: [],
+          rotation: 0,
+          visible: true,
+        },
+        {
+          id: '7:7',
+          name: 'BorderRadius',
+          type: 'SECTION',
+          children: ['6:2', '7:5', '7:3', '7:8', '7:12', '7:16'],
+        },
+      ],
     },
-  ] as const)('$title', async ({ expected, object }) => {
-    const codegen = new Codegen(object as unknown as SceneNode)
+  ] as const)('$expected', async ({ expected, object }) => {
+    const root = assembleNodeTree(object as unknown as NodeData[])
+    const codegen = new Codegen(root as unknown as SceneNode)
     await codegen.run()
     console.log(codegen.getCode())
     expect(codegen.getCode()).toBe(expected)

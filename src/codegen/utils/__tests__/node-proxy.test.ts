@@ -110,12 +110,12 @@ describe('nodeProxyTracker', () => {
     const _height = wrapped.height
 
     const testCase = nodeProxyTracker.toTestCaseFormat()
-    expect(testCase['test-node-1']).toBeDefined()
-    expect(testCase['test-node-1'].id).toBe('test-node-1')
-    expect(testCase['test-node-1'].name).toBe('TestNode')
-    expect(testCase['test-node-1'].type).toBe('FRAME')
-    expect(testCase['test-node-1'].width).toBe(100)
-    expect(testCase['test-node-1'].height).toBe(200)
+    expect(testCase.length).toBe(1)
+    expect(testCase[0].id).toBe('test-node-1')
+    expect(testCase[0].name).toBe('TestNode')
+    expect(testCase[0].type).toBe('FRAME')
+    expect(testCase[0].width).toBe(100)
+    expect(testCase[0].height).toBe(200)
   })
 
   test('should clear logs', () => {

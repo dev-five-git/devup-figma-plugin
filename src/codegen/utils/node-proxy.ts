@@ -65,8 +65,8 @@ class NodeProxyTracker {
               if (Array.isArray(value)) {
                 serializedValue = this.serializeArray(value)
               } else if ('id' in valueObj && 'type' in valueObj) {
-                // 다른 노드 참조인 경우
-                serializedValue = `[Node: ${valueObj.type}]`
+                // 다른 노드 참조인 경우 - id로 저장
+                serializedValue = `[NodeId: ${valueObj.id}]`
               } else {
                 serializedValue = this.serializeObject(valueObj)
               }
@@ -105,7 +105,7 @@ class NodeProxyTracker {
       if (typeof item === 'object') {
         const obj = item as Record<string, unknown>
         if ('id' in obj && 'type' in obj) {
-          return `[Node: ${obj.type}]`
+          return `[NodeId: ${obj.id}]`
         }
         return this.serializeObject(obj)
       }
@@ -124,7 +124,7 @@ class NodeProxyTracker {
       } else if (typeof value === 'object') {
         const innerObj = value as Record<string, unknown>
         if ('id' in innerObj && 'type' in innerObj) {
-          result[key] = `[Node: ${innerObj.type}]`
+          result[key] = `[NodeId: ${innerObj.id}]`
         } else if (Array.isArray(value)) {
           result[key] = this.serializeArray(value)
         } else {
@@ -153,22 +153,101 @@ class NodeProxyTracker {
     return result
   }
 
-  toTestCaseFormat(): Record<string, Record<string, unknown>> {
-    const result: Record<string, Record<string, unknown>> = {}
-    for (const [id, log] of this.accessLogs) {
+  toTestCaseFormat(): NodeData[] {
+    const result: NodeData[] = []
+    for (const log of this.accessLogs.values()) {
       const props: Record<string, unknown> = {}
       for (const { key, value } of log.properties) {
-        props[key] = value
+        props[key] = this.resolveNodeRefs(value)
       }
-      result[id] = {
+      result.push({
         id: log.nodeId,
         name: log.nodeName,
         type: log.nodeType,
         ...props,
-      }
+      })
     }
     return result
   }
+
+  private resolveNodeRefs(value: unknown): unknown {
+    if (typeof value === 'string' && value.startsWith('[NodeId: ')) {
+      const match = value.match(/\[NodeId: ([^\]]+)\]/)
+      if (match) {
+        return match[1]
+      }
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => this.resolveNodeRefs(item))
+    }
+    return value
+  }
+
+  /**
+   * Returns a flat list of node objects for test cases.
+   * Use assembleNodeTree() to link parent/children relationships.
+   */
+  toNodeList(): Record<string, unknown>[] {
+    const result: Record<string, unknown>[] = []
+    for (const log of this.accessLogs.values()) {
+      const props: Record<string, unknown> = {}
+      for (const { key, value } of log.properties) {
+        props[key] = this.resolveNodeRefs(value)
+      }
+      result.push({
+        id: log.nodeId,
+        name: log.nodeName,
+        type: log.nodeType,
+        ...props,
+      })
+    }
+    return result
+  }
+}
+
+export type NodeData = Record<string, unknown> & {
+  id: string
+  name: string
+  type: string
+  parent?: string | NodeData
+  children?: (string | NodeData)[]
+}
+
+/**
+ * Assembles a node tree from a flat list of nodes.
+ * Links parent/children by id references.
+ */
+export function assembleNodeTree(nodes: NodeData[]): NodeData {
+  const nodeMap = new Map<string, NodeData>()
+
+  // 1. 모든 노드를 복사해서 맵에 저장
+  for (const node of nodes) {
+    nodeMap.set(node.id, { ...node })
+  }
+
+  // 2. parent/children 관계 연결
+  for (const node of nodeMap.values()) {
+    // parent 연결
+    if (typeof node.parent === 'string') {
+      const parentNode = nodeMap.get(node.parent)
+      if (parentNode) {
+        node.parent = parentNode
+      }
+    }
+
+    // children 연결
+    if (Array.isArray(node.children)) {
+      node.children = node.children.map((childId) => {
+        if (typeof childId === 'string') {
+          return nodeMap.get(childId) || childId
+        }
+        return childId
+      })
+    }
+  }
+
+  // 3. 첫 번째 노드(루트) 반환
+  return nodeMap.get(nodes[0].id) || nodes[0]
 }
 
 // 싱글톤 인스턴스
