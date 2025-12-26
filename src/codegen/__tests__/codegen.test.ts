@@ -7652,6 +7652,1080 @@ describe('render real world component', () => {
         },
       ],
     },
+    {
+      expected: `<Flex alignItems="center" gap="20px" h="280px">
+  <Center
+    bg="#FFF"
+    borderRadius="30px"
+    flex="1"
+    flexDir="column"
+    h="100%"
+    p="40px"
+  >
+    <Text
+      color="#1A1A1A"
+      fontFamily="Pretendard"
+      fontSize="36px"
+      fontWeight="500"
+      letterSpacing="-0.06em"
+      lineHeight="1.6"
+    >
+      CARD 1
+    </Text>
+  </Center>
+  <Center
+    bg="#FFF"
+    borderRadius="30px"
+    flex="1"
+    flexDir="column"
+    h="100%"
+    p="40px"
+  >
+    <Text
+      color="#1A1A1A"
+      fontFamily="Pretendard"
+      fontSize="36px"
+      fontWeight="500"
+      letterSpacing="-0.06em"
+      lineHeight="1.6"
+    >
+      CARD 2
+    </Text>
+  </Center>
+  <Center
+    bg="#FFF"
+    borderRadius="30px"
+    flex="1"
+    flexDir="column"
+    h="100%"
+    p="40px"
+  >
+    <Text
+      color="#1A1A1A"
+      fontFamily="Pretendard"
+      fontSize="36px"
+      fontWeight="500"
+      letterSpacing="-0.06em"
+      lineHeight="1.6"
+    >
+      CARD 3
+    </Text>
+  </Center>
+</Flex>`,
+
+      nodes: [
+        {
+          id: '43:20',
+          name: 'CardContainer',
+          type: 'FRAME',
+          visible: true,
+          parent: '71:123',
+          children: ['43:2', '43:21', '43:23'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 1200,
+          height: 280,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+        },
+        {
+          id: '43:2',
+          name: 'Card',
+          type: 'FRAME',
+          visible: true,
+          parent: '43:20',
+          children: ['43:7'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 386.6666564941406,
+          height: 280,
+          rotation: 0,
+          cornerRadius: 30,
+          topLeftRadius: 30,
+          topRightRadius: 30,
+          bottomLeftRadius: 30,
+          bottomRightRadius: 30,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'STRETCH',
+          layoutGrow: 1,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'FILL',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 40,
+          paddingRight: 40,
+          paddingTop: 40,
+          paddingBottom: 40,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 40,
+            paddingRight: 40,
+            paddingTop: 40,
+            paddingBottom: 40,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 1,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+        },
+        {
+          id: '43:7',
+          name: 'CARD 1',
+          type: 'TEXT',
+          visible: true,
+          parent: '43:2',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.10196078568696976,
+                g: 0.10196078568696976,
+                b: 0.10196078568696976,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 111,
+          height: 58,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          characters: 'CARD 1',
+          fontName: {
+            family: 'Pretendard',
+            style: 'Medium',
+          },
+          fontSize: 36,
+          fontWeight: 500,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 160.0000023841858,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -6,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'CARD 1',
+              start: 0,
+              end: 6,
+              fontSize: 36,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Medium',
+              },
+              fontWeight: 500,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 160.0000023841858,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -6,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.10196078568696976,
+                    g: 0.10196078568696976,
+                    b: 0.10196078568696976,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '43:21',
+          name: 'Card',
+          type: 'FRAME',
+          visible: true,
+          parent: '43:20',
+          children: ['43:22'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 386.66668701171875,
+          height: 280,
+          rotation: 0,
+          cornerRadius: 30,
+          topLeftRadius: 30,
+          topRightRadius: 30,
+          bottomLeftRadius: 30,
+          bottomRightRadius: 30,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'STRETCH',
+          layoutGrow: 1,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'FILL',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 40,
+          paddingRight: 40,
+          paddingTop: 40,
+          paddingBottom: 40,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 40,
+            paddingRight: 40,
+            paddingTop: 40,
+            paddingBottom: 40,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 1,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+        },
+        {
+          id: '43:22',
+          name: 'CARD 2',
+          type: 'TEXT',
+          visible: true,
+          parent: '43:21',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.10196078568696976,
+                g: 0.10196078568696976,
+                b: 0.10196078568696976,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 116,
+          height: 58,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          characters: 'CARD 2',
+          fontName: {
+            family: 'Pretendard',
+            style: 'Medium',
+          },
+          fontSize: 36,
+          fontWeight: 500,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 160.0000023841858,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -6,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'CARD 2',
+              start: 0,
+              end: 6,
+              fontSize: 36,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Medium',
+              },
+              fontWeight: 500,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 160.0000023841858,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -6,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.10196078568696976,
+                    g: 0.10196078568696976,
+                    b: 0.10196078568696976,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '43:23',
+          name: 'Card',
+          type: 'FRAME',
+          visible: true,
+          parent: '43:20',
+          children: ['43:24'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 386.66668701171875,
+          height: 280,
+          rotation: 0,
+          cornerRadius: 30,
+          topLeftRadius: 30,
+          topRightRadius: 30,
+          bottomLeftRadius: 30,
+          bottomRightRadius: 30,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'STRETCH',
+          layoutGrow: 1,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'FILL',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 40,
+          paddingRight: 40,
+          paddingTop: 40,
+          paddingBottom: 40,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 40,
+            paddingRight: 40,
+            paddingTop: 40,
+            paddingBottom: 40,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 1,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+        },
+        {
+          id: '43:24',
+          name: 'CARD 3',
+          type: 'TEXT',
+          visible: true,
+          parent: '43:23',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.10196078568696976,
+                g: 0.10196078568696976,
+                b: 0.10196078568696976,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 117,
+          height: 58,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          characters: 'CARD 3',
+          fontName: {
+            family: 'Pretendard',
+            style: 'Medium',
+          },
+          fontSize: 36,
+          fontWeight: 500,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 160.0000023841858,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -6,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'CARD 3',
+              start: 0,
+              end: 6,
+              fontSize: 36,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Medium',
+              },
+              fontWeight: 500,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 160.0000023841858,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -6,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.10196078568696976,
+                    g: 0.10196078568696976,
+                    b: 0.10196078568696976,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '71:123',
+          name: 'Component 1',
+          type: 'SECTION',
+          children: ['43:20'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:15f2b5c6b66588df2b6463e5084ce0334621dcd6/3584:11',
+          name: 'background',
+        },
+        {
+          id: 'VariableID:0b96ad7095bac52695a42f130ba1e6823e711569/3589:313',
+          name: 'primary',
+        },
+        {
+          id: 'VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41',
+          name: 'text',
+        },
+      ],
+    },
+    {
+      expected: `<VStack
+  alignItems="flex-end"
+  backdropFilter="blur(4px)"
+  bg="#FFFFFF0F"
+  gap="10px"
+  justifyContent="center"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="24px"
+    fontStyle="italic"
+    fontWeight="600"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet,{" "}
+    <Text fontWeight="900">
+      consectetur
+    </Text>
+    {" "}adipiscing elit.
+  </Text>
+</VStack>`,
+
+      nodes: [
+        {
+          id: '40:51',
+          name: 'font variable',
+          type: 'FRAME',
+          visible: true,
+          parent: '71:123',
+          children: ['40:52', '40:53'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 0.05999999865889549,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [
+            {
+              type: 'BACKGROUND_BLUR',
+              visible: true,
+              radius: 4,
+              boundVariables: {},
+              blurType: 'NORMAL',
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 400,
+          height: 74,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MAX',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MAX',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+        },
+        {
+          id: '40:52',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:51',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 134,
+          height: 29,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Semi Bold Italic',
+          },
+          fontSize: 24,
+          fontWeight: 600,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'RIGHT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 24,
+              fontName: {
+                family: 'Inter',
+                style: 'Semi Bold Italic',
+              },
+              fontWeight: 600,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:53',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:51',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 320,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontSize: 12,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'RIGHT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Lorem ipsum dolor sit amet, ',
+              start: 0,
+              end: 28,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+            {
+              characters: 'consectetur',
+              start: 28,
+              end: 39,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Black',
+              },
+              fontWeight: 900,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+            {
+              characters: ' adipiscing elit.',
+              start: 39,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '71:123',
+          name: 'Component 1',
+          type: 'SECTION',
+          children: ['40:51'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:15f2b5c6b66588df2b6463e5084ce0334621dcd6/3584:11',
+          name: 'background',
+        },
+        {
+          id: 'VariableID:0b96ad7095bac52695a42f130ba1e6823e711569/3589:313',
+          name: 'primary',
+        },
+        {
+          id: 'VariableID:a8911963a3ddc27e66ce960494a4683d9c4b1cab/1851:41',
+          name: 'text',
+        },
+      ],
+    },
+    // outline, border
   ] as const)('$expected', async ({ expected, nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],
