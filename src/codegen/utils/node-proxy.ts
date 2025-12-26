@@ -265,12 +265,73 @@ class NodeProxyTracker {
    *                 Only includes this node and its descendants.
    */
   toTestCaseFormat(rootId?: string): NodeData[] {
-    // 모든 노드를 먼저 변환
+    const allNodes = this.buildAllNodes()
+    return this.filterNodes(allNodes, rootId)
+  }
+
+  /**
+   * Returns nodes and variables info for test cases.
+   * Variables are extracted from boundVariables in fills/strokes.
+   */
+  async toTestCaseFormatWithVariables(rootId?: string): Promise<TestCaseData> {
+    const variableMap = new Map<string, VariableInfo>()
+
+    // Variable ID를 수집하는 헬퍼 함수
+    const collectVariableIds = (value: unknown): string[] => {
+      const ids: string[] = []
+      if (
+        typeof value === 'string' &&
+        value.startsWith('[NodeId: VariableID:')
+      ) {
+        const match = value.match(/\[NodeId: (VariableID:[^\]]+)\]/)
+        if (match) {
+          ids.push(match[1])
+        }
+      } else if (Array.isArray(value)) {
+        for (const item of value) {
+          ids.push(...collectVariableIds(item))
+        }
+      } else if (value && typeof value === 'object') {
+        for (const v of Object.values(value)) {
+          ids.push(...collectVariableIds(v))
+        }
+      }
+      return ids
+    }
+
+    // 모든 프로퍼티에서 Variable ID 수집
+    for (const log of this.accessLogs.values()) {
+      for (const { value } of log.properties) {
+        const varIds = collectVariableIds(value)
+        for (const varId of varIds) {
+          if (!variableMap.has(varId)) {
+            try {
+              const variable = await figma.variables.getVariableByIdAsync(varId)
+              if (variable?.name) {
+                variableMap.set(varId, { id: varId, name: variable.name })
+              }
+            } catch {
+              // ignore - Figma API 없는 환경
+            }
+          }
+        }
+      }
+    }
+
+    const allNodes = this.buildAllNodes()
+    const resultNodes = this.filterNodes(allNodes, rootId)
+
+    return {
+      nodes: resultNodes,
+      variables: Array.from(variableMap.values()),
+    }
+  }
+
+  private buildAllNodes(): NodeData[] {
     const allNodes: NodeData[] = []
     for (const log of this.accessLogs.values()) {
       const props: Record<string, unknown> = {}
       for (const { key, value } of log.properties) {
-        // null 값은 제외
         if (value === null) continue
         props[key] = this.resolveNodeRefs(value)
       }
@@ -281,12 +342,14 @@ class NodeProxyTracker {
         ...props,
       })
     }
+    return allNodes
+  }
 
+  private filterNodes(allNodes: NodeData[], rootId?: string): NodeData[] {
     if (!rootId) {
       return allNodes
     }
 
-    // rootId가 주어진 경우: 루트 노드와 그 하위 노드들만 필터링
     const rootNode = allNodes.find((n) => n.id === rootId)
     if (!rootNode) {
       return allNodes
@@ -322,7 +385,6 @@ class NodeProxyTracker {
     if (parentId) {
       const parentNode = allNodes.find((n) => n.id === parentId)
       if (parentNode && parentNode.type === 'SECTION') {
-        // 부모의 children에서 루트 노드만 남기기
         parentNode.children = [rootId]
         result.push(parentNode)
       }
@@ -374,11 +436,61 @@ export type NodeData = Record<string, unknown> & {
   children?: (string | NodeData)[]
 }
 
+export type VariableInfo = {
+  id: string
+  name: string
+}
+
+export type TestCaseData = {
+  nodes: NodeData[]
+  variables: VariableInfo[]
+}
+
+/**
+ * Sets up figma.variables.getVariableByIdAsync mock for test environment.
+ */
+function setupVariableMocks(variables: VariableInfo[]): void {
+  if (typeof globalThis === 'undefined') return
+
+  const g = globalThis as { figma?: { variables?: Record<string, unknown> } }
+  if (!g.figma) return
+
+  const variableMap = new Map(variables.map((v) => [v.id, v]))
+
+  // 기존 mock을 보존하면서 새로운 변수들 추가
+  const originalGetVariable = g.figma.variables?.getVariableByIdAsync as
+    | ((id: string) => Promise<unknown>)
+    | undefined
+
+  g.figma.variables = {
+    ...g.figma.variables,
+    getVariableByIdAsync: async (id: string) => {
+      const varInfo = variableMap.get(id)
+      if (varInfo) {
+        return { id: varInfo.id, name: varInfo.name }
+      }
+      // 기존 mock이 있으면 폴백
+      if (originalGetVariable) {
+        return originalGetVariable(id)
+      }
+      return null
+    },
+  }
+}
+
 /**
  * Assembles a node tree from a flat list of nodes.
  * Links parent/children by id references.
+ * Optionally sets up variable mocks from the variables array.
  */
-export function assembleNodeTree(nodes: NodeData[]): NodeData {
+export function assembleNodeTree(
+  nodes: NodeData[],
+  variables?: VariableInfo[],
+): NodeData {
+  // Variable mock 설정
+  if (variables && variables.length > 0) {
+    setupVariableMocks(variables)
+  }
   const nodeMap = new Map<string, NodeData>()
 
   // 1. 모든 노드를 복사해서 맵에 저장
@@ -406,6 +518,34 @@ export function assembleNodeTree(nodes: NodeData[]): NodeData {
         .filter((child): child is NodeData => child !== undefined)
     }
     // children이 undefined인 경우 그대로 유지 (RECTANGLE 등 원래 children이 없는 노드)
+
+    // fills/strokes의 boundVariables 처리
+    // boundVariables.color가 문자열 ID인 경우 { id: '...' } 객체로 변환
+    const processBoundVariables = (paints: unknown[]) => {
+      for (const paint of paints) {
+        if (paint && typeof paint === 'object') {
+          const p = paint as Record<string, unknown>
+          if (p.boundVariables && typeof p.boundVariables === 'object') {
+            const bv = p.boundVariables as Record<string, unknown>
+            if (typeof bv.color === 'string') {
+              // '[NodeId: VariableID:...]' 형식에서 실제 ID 추출
+              let colorId = bv.color
+              const match = colorId.match(/\[NodeId: ([^\]]+)\]/)
+              if (match) {
+                colorId = match[1]
+              }
+              bv.color = { id: colorId }
+            }
+          }
+        }
+      }
+    }
+    if (Array.isArray(node.fills)) {
+      processBoundVariables(node.fills)
+    }
+    if (Array.isArray(node.strokes)) {
+      processBoundVariables(node.strokes)
+    }
 
     // TEXT 노드에 getStyledTextSegments mock 메서드 추가
     if (node.type === 'TEXT') {
