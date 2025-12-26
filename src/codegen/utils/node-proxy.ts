@@ -83,12 +83,31 @@ class NodeProxyTracker {
           })
         }
 
-        // 중첩 객체도 Proxy로 감싸기 (fills, strokes 등)
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          const obj = value as Record<string, unknown>
-          if ('id' in obj && 'type' in obj) {
-            // SceneNode인 경우 재귀적으로 wrap
-            return this.wrap(value as unknown as SceneNode)
+        // 중첩 객체도 Proxy로 감싸기
+        if (value && typeof value === 'object') {
+          // children 배열인 경우 각 child를 재귀적으로 추적
+          if (key === 'children' && Array.isArray(value)) {
+            return value.map((child) => {
+              if (
+                child &&
+                typeof child === 'object' &&
+                'id' in child &&
+                'type' in child
+              ) {
+                const wrappedChild = this.wrap(child as unknown as SceneNode)
+                // child의 모든 프로퍼티를 강제로 접근해서 추적
+                this.trackNodeRecursively(child as unknown as SceneNode)
+                return wrappedChild
+              }
+              return child
+            })
+          }
+          // SceneNode인 경우 재귀적으로 wrap
+          if (!Array.isArray(value)) {
+            const obj = value as Record<string, unknown>
+            if ('id' in obj && 'type' in obj) {
+              return this.wrap(value as unknown as SceneNode)
+            }
           }
         }
 
@@ -99,6 +118,64 @@ class NodeProxyTracker {
     return new Proxy(node, handler)
   }
 
+  private trackNodeRecursively(node: SceneNode): void {
+    const wrappedNode = this.wrap(node)
+
+    // 주요 프로퍼티들에 접근해서 추적
+    const propsToTrack = [
+      'id',
+      'name',
+      'type',
+      'visible',
+      'parent',
+      'children',
+      'fills',
+      'strokes',
+      'effects',
+      'opacity',
+      'blendMode',
+      'width',
+      'height',
+      'rotation',
+      'cornerRadius',
+      'topLeftRadius',
+      'topRightRadius',
+      'bottomLeftRadius',
+      'bottomRightRadius',
+      'layoutMode',
+      'layoutAlign',
+      'layoutGrow',
+      'layoutSizingHorizontal',
+      'layoutSizingVertical',
+      'layoutPositioning',
+      'primaryAxisAlignItems',
+      'counterAxisAlignItems',
+      'paddingLeft',
+      'paddingRight',
+      'paddingTop',
+      'paddingBottom',
+      'itemSpacing',
+      'counterAxisSpacing',
+      'clipsContent',
+      'isAsset',
+      'reactions',
+      'minWidth',
+      'maxWidth',
+      'minHeight',
+      'maxHeight',
+      'targetAspectRatio',
+      'inferredAutoLayout',
+    ]
+
+    for (const prop of propsToTrack) {
+      try {
+        void (wrappedNode as unknown as Record<string, unknown>)[prop]
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   private serializeArray(arr: unknown[]): unknown[] {
     return arr.map((item) => {
       if (item === null || item === undefined) return item
@@ -107,10 +184,27 @@ class NodeProxyTracker {
         if ('id' in obj && 'type' in obj) {
           return `[NodeId: ${obj.id}]`
         }
+        // 숫자 키만 있는 객체는 배열로 변환 (gradientTransform 등)
+        if (this.isArrayLikeObject(obj)) {
+          return this.arrayLikeToArray(obj)
+        }
         return this.serializeObject(obj)
       }
       return item
     })
+  }
+
+  private isArrayLikeObject(obj: Record<string, unknown>): boolean {
+    const keys = Object.keys(obj)
+    if (keys.length === 0) return false
+    return keys.every((key) => /^\d+$/.test(key))
+  }
+
+  private arrayLikeToArray(obj: Record<string, unknown>): unknown[] {
+    const keys = Object.keys(obj)
+      .map(Number)
+      .sort((a, b) => a - b)
+    return keys.map((key) => obj[key])
   }
 
   private serializeObject(
@@ -153,20 +247,38 @@ class NodeProxyTracker {
     return result
   }
 
-  toTestCaseFormat(): NodeData[] {
+  /**
+   * Returns nodes as array with the root node first.
+   * @param rootId - The ID of the root node (clicked node) to put first
+   */
+  toTestCaseFormat(rootId?: string): NodeData[] {
     const result: NodeData[] = []
+    let rootNode: NodeData | null = null
+
     for (const log of this.accessLogs.values()) {
       const props: Record<string, unknown> = {}
       for (const { key, value } of log.properties) {
         props[key] = this.resolveNodeRefs(value)
       }
-      result.push({
+      const node: NodeData = {
         id: log.nodeId,
         name: log.nodeName,
         type: log.nodeType,
         ...props,
-      })
+      }
+
+      if (rootId && log.nodeId === rootId) {
+        rootNode = node
+      } else {
+        result.push(node)
+      }
     }
+
+    // 루트 노드를 맨 앞에 배치
+    if (rootNode) {
+      result.unshift(rootNode)
+    }
+
     return result
   }
 
@@ -230,7 +342,12 @@ export function assembleNodeTree(nodes: NodeData[]): NodeData {
     // parent 연결 (없으면 undefined로 설정)
     if (typeof node.parent === 'string') {
       const parentNode = nodeMap.get(node.parent)
-      node.parent = parentNode
+      // SECTION은 테스트용 컨테이너이므로 parent로 연결하지 않음
+      if (parentNode && parentNode.type === 'SECTION') {
+        node.parent = undefined
+      } else {
+        node.parent = parentNode
+      }
     }
 
     // children 연결 (없는 노드는 필터링)
@@ -244,6 +361,7 @@ export function assembleNodeTree(nodes: NodeData[]): NodeData {
         })
         .filter((child): child is NodeData => child !== undefined)
     }
+    // children이 undefined인 경우 그대로 유지 (RECTANGLE 등 원래 children이 없는 노드)
   }
 
   // 3. 첫 번째 노드(루트) 반환

@@ -4512,8 +4512,144 @@ describe('render real world component', () => {
         },
       ],
     },
+    {
+      expected: `<Flex
+  bg="#FFF"
+  h="223px"
+  overflow="hidden"
+  pb="22px"
+  pl="57px"
+  pr="118px"
+  pt="51px"
+>
+  <Box bg="linear-gradient(-180deg, #8ADAFF 0%, #C6C9CE 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>`,
+      object: [
+        {
+          id: '496:2019',
+          name: 'Frame 1597884473',
+          type: 'FRAME',
+          reactions: [],
+          children: ['8:2'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: { r: 1, g: 1, b: 1 },
+              boundVariables: {},
+            },
+          ],
+          width: 175,
+          height: 223,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'FIXED',
+          clipsContent: true,
+          visible: true,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 57,
+            paddingRight: 118,
+            paddingTop: 51,
+            paddingBottom: 22,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          parent: '10:14',
+        },
+        {
+          id: '8:2',
+          name: 'Linear',
+          type: 'FRAME',
+          reactions: [],
+          parent: '496:2019',
+          children: [],
+          fills: [
+            {
+              type: 'GRADIENT_LINEAR',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              gradientStops: [
+                {
+                  color: {
+                    r: 0.5416664481163025,
+                    g: 0.8548610210418701,
+                    b: 1,
+                    a: 1,
+                  },
+                  position: 0,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.776627242565155,
+                    g: 0.789053201675415,
+                    b: 0.807692289352417,
+                    a: 1,
+                  },
+                  position: 1,
+                  boundVariables: {},
+                },
+              ],
+              gradientTransform: [
+                [6.123234262925839e-17, 1, 0],
+                [-1, 6.123234262925839e-17, 1],
+              ],
+            },
+          ],
+          isAsset: false,
+          inferredAutoLayout: {
+            layoutMode: 'NONE',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'FIXED',
+          layoutSizingHorizontal: 'FIXED',
+          targetAspectRatio: null,
+          width: 150,
+          height: 150,
+          cornerRadius: 1000,
+          strokes: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          effects: [],
+          rotation: 0,
+          clipsContent: true,
+          visible: true,
+        },
+        {
+          id: '10:14',
+          name: 'Gradient',
+          type: 'SECTION',
+        },
+      ],
+    },
   ] as const)('$expected', async ({ expected, object }) => {
     const root = assembleNodeTree(object as unknown as NodeData[])
+    console.log(root)
     const codegen = new Codegen(root as unknown as SceneNode)
     await codegen.run()
     console.log(codegen.getCode())
