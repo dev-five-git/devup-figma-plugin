@@ -258,6 +258,8 @@ class NodeProxyTracker {
     for (const log of this.accessLogs.values()) {
       const props: Record<string, unknown> = {}
       for (const { key, value } of log.properties) {
+        // null 값은 제외
+        if (value === null) continue
         props[key] = this.resolveNodeRefs(value)
       }
       allNodes.push({
