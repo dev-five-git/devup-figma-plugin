@@ -1,13 +1,14 @@
 import { Codegen } from '../Codegen'
 import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
+import { paddingLeftMultiline } from '../utils/padding-left-multiline'
 import {
   type BreakpointKey,
   getBreakpointByWidth,
   mergePropsToResponsive,
   mergePropsToVariant,
   viewportToBreakpoint,
-} from './index'
+} from '.'
 
 /**
  * Generate responsive code by merging children inside a Section.
@@ -766,8 +767,11 @@ export class ResponsiveCodegen {
               const childTree = childByVariant.get(onlyVariant)
               if (!childTree) continue
               const childCode = Codegen.renderTree(childTree, 0)
+              const formattedChildCode = childCode.includes('\n')
+                ? `(\n${paddingLeftMultiline(childCode, depth + 1)}\n${' '.repeat((depth + 1) * 2)})`
+                : childCode
               childrenCodes.push(
-                `{${variantKey} === "${onlyVariant}" && ${childCode.includes('\n') ? `(\n${childCode}\n)` : childCode}}`,
+                `{${variantKey} === "${onlyVariant}" && ${formattedChildCode}}`,
               )
             } else {
               // Multiple (but not all) variants have this child
@@ -780,9 +784,10 @@ export class ResponsiveCodegen {
                 childByVariant,
                 0,
               )
-              childrenCodes.push(
-                `{(${conditions}) && ${childCode.includes('\n') ? `(\n${childCode}\n)` : childCode}}`,
-              )
+              const formattedChildCode = childCode.includes('\n')
+                ? `(\n${paddingLeftMultiline(childCode, depth + 1)}\n${' '.repeat((depth + 1) * 2)})`
+                : childCode
+              childrenCodes.push(`{(${conditions}) && ${formattedChildCode}}`)
             }
           }
         }
