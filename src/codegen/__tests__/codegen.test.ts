@@ -11270,6 +11270,1197 @@ describe('render real world component', () => {
       ],
       variables: [],
     },
+    // Dimmend, absolute
+    {
+      expected: `<VStack
+  bg="linear-gradient(90deg, $primaryBgLight 0%, $secondaryBg 100%)"
+  gap="20px"
+  justifyContent="center"
+  overflow="hidden"
+  px="20px"
+  py="50px"
+>
+  <Image
+    filter="blur(12px)"
+    h="100%"
+    pos="absolute"
+    right="-108.01px"
+    src="/images/puzzle.png"
+    top="-76px"
+    transform="rotate(8.83deg)"
+    transformOrigin="top left"
+    w="300px"
+  />
+  <Box
+    bg="linear-gradient(0deg, #EDEEFF 0%, #EDEEFF00 100%)"
+    boxSize="100%"
+    left="0px"
+    pos="absolute"
+    top="0px"
+  />
+  <VStack gap="8px" justifyContent="center">
+    <Text
+      color="$primary"
+      fontFamily="Pretendard"
+      fontSize="12px"
+      fontWeight="600"
+      letterSpacing="-0.04em"
+      lineHeight="1.6"
+    >
+      지금 시작할 수 있어요
+    </Text>
+    <Text
+      color="$title"
+      fontFamily="Pretendard"
+      fontSize="20px"
+      fontWeight="700"
+      letterSpacing="-0.04em"
+      lineHeight="1.2"
+    >
+      내 삶을 더 잘 이해하는 첫 걸음
+    </Text>
+  </VStack>
+  <Text
+    color="$text"
+    fontFamily="Pretendard"
+    fontSize="14px"
+    fontWeight="400"
+    letterSpacing="-0.04em"
+    lineHeight="1.6"
+  >
+    자꾸 미뤄졌던 나에 대한 고민, <Box as="br" display={['none', null, 'initial']} />퍼즐핏에서 구체적인 답을 찾아보세요.
+  </Text>
+  <VStack gap="12px" justifyContent="center">
+    <GradientButton />
+    <Text
+      color="$textLight"
+      fontFamily="Pretendard"
+      fontSize="12px"
+      fontWeight="400"
+      letterSpacing="-0.04em"
+      lineHeight="1.6"
+      opacity="0.5"
+    >
+      회원가입 후, 유료로 진행됩니다
+    </Text>
+  </VStack>
+</VStack>`,
+
+      nodes: [
+        {
+          id: '107:26',
+          name: 'Container',
+          type: 'FRAME',
+          reactions: [],
+          parent: '109:84',
+          children: ['107:27', '107:28', '107:29', '107:32', '107:33'],
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 50,
+            paddingBottom: 50,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 1,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MIN',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'HUG',
+          layoutSizingHorizontal: 'FIXED',
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomRightRadius: 0,
+          bottomLeftRadius: 0,
+          strokes: [],
+          fills: [
+            {
+              type: 'GRADIENT_LINEAR',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              gradientStops: [
+                {
+                  color: {
+                    r: 0.9803921580314636,
+                    g: 0.9607843160629272,
+                    b: 1,
+                    a: 1,
+                  },
+                  position: 0,
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:5ed5fe4e2c110aae522cfe81f189c59552683358/18:227]',
+                  },
+                },
+                {
+                  color: {
+                    r: 0.8784313797950745,
+                    g: 0.9058823585510254,
+                    b: 1,
+                    a: 1,
+                  },
+                  position: 1,
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:417859516cc38076cb4af248fcd12020cd9ae4b2/27:25]',
+                  },
+                },
+              ],
+              gradientTransform: [
+                [1, 0, 0],
+                [0, 1, 0],
+              ],
+            },
+          ],
+          width: 360,
+          height: 311,
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          isAsset: false,
+          effects: [],
+          rotation: 0,
+          clipsContent: true,
+          visible: true,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 1,
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 50,
+          paddingBottom: 50,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '107:27',
+          name: 'puzzle',
+          type: 'RECTANGLE',
+          visible: true,
+          parent: '107:26',
+          fills: [
+            {
+              type: 'IMAGE',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              scaleMode: 'FILL',
+              imageTransform: [
+                [1, 0, 0],
+                [0, 1, 0],
+              ],
+              scalingFactor: 0.5,
+              rotation: 0,
+              filters: {
+                exposure: 0,
+                contrast: 0,
+                saturation: 0,
+                temperature: 0,
+                tint: 0,
+                highlights: 0,
+                shadows: 0,
+              },
+              imageHash: 'e7958a16573afffb69800c3c66b7a5abdbd7bce3',
+            },
+          ],
+          strokes: [],
+          effects: [
+            {
+              type: 'LAYER_BLUR',
+              visible: true,
+              radius: 12,
+              boundVariables: {},
+              blurType: 'PROGRESSIVE',
+              startRadius: 0,
+              startOffset: {
+                x: 0.5,
+                y: 0.3321799337863922,
+              },
+              endOffset: {
+                x: 0.14488635957241058,
+                y: 0.8797577619552612,
+              },
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 300,
+          height: 332,
+          rotation: -8.82894874863189,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'ABSOLUTE',
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          constraints: {
+            horizontal: 'MAX',
+            vertical: 'MIN',
+          },
+          x: 168.009765625,
+          y: -76,
+        },
+        {
+          id: '107:28',
+          name: 'dimmed',
+          type: 'RECTANGLE',
+          visible: true,
+          parent: '107:26',
+          fills: [
+            {
+              type: 'GRADIENT_LINEAR',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              gradientStops: [
+                {
+                  color: {
+                    r: 0.929411768913269,
+                    g: 0.9333333373069763,
+                    b: 1,
+                    a: 1,
+                  },
+                  position: 0,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.929411768913269,
+                    g: 0.9333333373069763,
+                    b: 1,
+                    a: 0,
+                  },
+                  position: 1,
+                  boundVariables: {},
+                },
+              ],
+              gradientTransform: [
+                [-1.8426270287363877e-8, -1, 1],
+                [1, -3.776177948111581e-8, -1.5905754935374716e-8],
+              ],
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 360,
+          height: 311,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'ABSOLUTE',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          constraints: {
+            horizontal: 'MIN',
+            vertical: 'MIN',
+          },
+          x: 0,
+          y: 0,
+        },
+        {
+          id: '107:29',
+          name: 'Frame 105',
+          type: 'FRAME',
+          visible: true,
+          parent: '107:26',
+          children: ['107:30', '107:31'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 222,
+          height: 51,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 8,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 8,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '107:30',
+          name: '지금 시작할 수 있어요',
+          type: 'TEXT',
+          visible: true,
+          parent: '107:29',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.529411792755127,
+                g: 0.12156862765550613,
+                b: 0.9019607901573181,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:51a40441a4e76d70d58452cb534b842a89c22c63/14:47]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 97,
+          height: 19,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '지금 시작할 수 있어요',
+          fontName: {
+            family: 'Pretendard',
+            style: 'SemiBold',
+          },
+          fontSize: 12,
+          fontWeight: 600,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 160.0000023841858,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -4,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'CENTER',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '지금 시작할 수 있어요',
+              start: 0,
+              end: 12,
+              fontSize: 12,
+              fontName: {
+                family: 'Pretendard',
+                style: 'SemiBold',
+              },
+              fontWeight: 600,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 160.0000023841858,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.529411792755127,
+                    g: 0.12156862765550613,
+                    b: 0.9019607901573181,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:51a40441a4e76d70d58452cb534b842a89c22c63/14:47]',
+                  },
+                },
+              ],
+              textStyleId: 'S:5ab6109ba578c1e241c1ec0231069c37ffab9ebe,27:18',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '107:31',
+          name: '내 삶을 더 잘 이해하는 첫 걸음',
+          type: 'TEXT',
+          visible: true,
+          parent: '107:29',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.06666667014360428,
+                g: 0.0941176488995552,
+                b: 0.15294118225574493,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:099a1a094b0ad8776e9d00872465534eee0f1c2a/14:64]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 222,
+          height: 24,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '내 삶을 더 잘 이해하는 첫 걸음',
+          fontName: {
+            family: 'Pretendard',
+            style: 'Bold',
+          },
+          fontSize: 20,
+          fontWeight: 700,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 120.00000476837158,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -4,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'CENTER',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '내 삶을 더 잘 이해하는 첫 걸음',
+              start: 0,
+              end: 18,
+              fontSize: 20,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Bold',
+              },
+              fontWeight: 700,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 120.00000476837158,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.06666667014360428,
+                    g: 0.0941176488995552,
+                    b: 0.15294118225574493,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:099a1a094b0ad8776e9d00872465534eee0f1c2a/14:64]',
+                  },
+                },
+              ],
+              textStyleId: 'S:22826d8fa5409d17932c82e7bda0b9c7306d99ca,34:65',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '107:32',
+          name: '자꾸 미뤄졌던 나에 대한 고민, 퍼즐핏에서 구체적인 답을 찾아보세요.',
+          type: 'TEXT',
+          visible: true,
+          parent: '107:26',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.21568627655506134,
+                g: 0.2549019753932953,
+                b: 0.3176470696926117,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:1500634352fc7d420979f2b85b3736d4b0a410de/14:65]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 320,
+          height: 44,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            '자꾸 미뤄졌던 나에 대한 고민, \n퍼즐핏에서 구체적인 답을 찾아보세요.',
+          fontName: {
+            family: 'Pretendard',
+            style: 'Regular',
+          },
+          fontSize: 14,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 160.0000023841858,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -4,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'CENTER',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                '자꾸 미뤄졌던 나에 대한 고민, \n퍼즐핏에서 구체적인 답을 찾아보세요.',
+              start: 0,
+              end: 39,
+              fontSize: 14,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 160.0000023841858,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.21568627655506134,
+                    g: 0.2549019753932953,
+                    b: 0.3176470696926117,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:1500634352fc7d420979f2b85b3736d4b0a410de/14:65]',
+                  },
+                },
+              ],
+              textStyleId: 'S:7d3ad4ba2c8903ffba997502193ac0827747a798,18:212',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '107:33',
+          name: 'Frame 106',
+          type: 'FRAME',
+          visible: true,
+          parent: '107:26',
+          children: ['107:34', '107:35'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 140,
+          height: 76,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 12,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 12,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '107:34',
+          name: 'GradientButton',
+          type: 'INSTANCE',
+          visible: true,
+          parent: '107:33',
+          children: ['I107:34;18:2206'],
+          fills: [
+            {
+              type: 'GRADIENT_LINEAR',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              gradientStops: [
+                {
+                  color: {
+                    r: 0.5764706134796143,
+                    g: 0.20000000298023224,
+                    b: 0.9176470637321472,
+                    a: 1,
+                  },
+                  position: 0,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.30980393290519714,
+                    g: 0.27450981736183167,
+                    b: 0.8980392217636108,
+                    a: 1,
+                  },
+                  position: 1,
+                  boundVariables: {},
+                },
+              ],
+              gradientTransform: [
+                [1, 0, 0],
+                [0, 1, 0],
+              ],
+            },
+          ],
+          strokes: [],
+          effects: [
+            {
+              type: 'DROP_SHADOW',
+              visible: true,
+              radius: 4,
+              boundVariables: {},
+              color: {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0.10000000149011612,
+              },
+              offset: {
+                x: 0,
+                y: 2,
+              },
+              spread: -2,
+              blendMode: 'NORMAL',
+              showShadowBehindNode: false,
+            },
+            {
+              type: 'DROP_SHADOW',
+              visible: true,
+              radius: 6,
+              boundVariables: {},
+              color: {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0.10000000149011612,
+              },
+              offset: {
+                x: 0,
+                y: 4,
+              },
+              spread: -1,
+              blendMode: 'NORMAL',
+              showShadowBehindNode: false,
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 138,
+          height: 45,
+          rotation: 0,
+          cornerRadius: 8,
+          topLeftRadius: 8,
+          topRightRadius: 8,
+          bottomLeftRadius: 8,
+          bottomRightRadius: 8,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 30,
+          paddingRight: 30,
+          paddingTop: 12,
+          paddingBottom: 12,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 30,
+            paddingRight: 30,
+            paddingTop: 12,
+            paddingBottom: 12,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: 'I107:34;18:2206',
+          name: 'Text',
+          type: 'TEXT',
+          visible: true,
+          parent: '107:34',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 78,
+          height: 21,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '검사 시작하기',
+          fontName: {
+            family: 'Pretendard',
+            style: 'SemiBold',
+          },
+          fontSize: 15,
+          fontWeight: 600,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 139.9999976158142,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -4,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'CENTER',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '검사 시작하기',
+              start: 0,
+              end: 7,
+              fontSize: 15,
+              fontName: {
+                family: 'Pretendard',
+                style: 'SemiBold',
+              },
+              fontWeight: 600,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 139.9999976158142,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: 'S:dc4ad9d035b632bb81cb467ad64f4bb9448ded87,18:206',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '107:35',
+          name: '회원가입 후, 유료로 진행됩니다',
+          type: 'TEXT',
+          visible: true,
+          parent: '107:33',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.29411765933036804,
+                g: 0.3333333432674408,
+                b: 0.38823530077934265,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:93d8aadc9ec1c35e7c24bdf723b9b05a01b75a2d/14:70]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 0.5,
+          blendMode: 'PASS_THROUGH',
+          width: 140,
+          height: 19,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '회원가입 후, 유료로 진행됩니다',
+          fontName: {
+            family: 'Pretendard',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 160.0000023841858,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -4,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'CENTER',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '회원가입 후, 유료로 진행됩니다',
+              start: 0,
+              end: 17,
+              fontSize: 12,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 160.0000023841858,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.29411765933036804,
+                    g: 0.3333333432674408,
+                    b: 0.38823530077934265,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:93d8aadc9ec1c35e7c24bdf723b9b05a01b75a2d/14:70]',
+                  },
+                },
+              ],
+              textStyleId: 'S:6104b34398c9cfd4de9323f16187c4cc20509420,27:15',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '109:84',
+          name: 'Dimmed와 absolute',
+          type: 'SECTION',
+          children: ['107:26'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:5ed5fe4e2c110aae522cfe81f189c59552683358/18:227',
+          name: 'primaryBgLight',
+        },
+        {
+          id: 'VariableID:417859516cc38076cb4af248fcd12020cd9ae4b2/27:25',
+          name: 'secondaryBg',
+        },
+        {
+          id: 'VariableID:51a40441a4e76d70d58452cb534b842a89c22c63/14:47',
+          name: 'primary',
+        },
+        {
+          id: 'VariableID:099a1a094b0ad8776e9d00872465534eee0f1c2a/14:64',
+          name: 'title',
+        },
+        {
+          id: 'VariableID:1500634352fc7d420979f2b85b3736d4b0a410de/14:65',
+          name: 'text',
+        },
+        {
+          id: 'VariableID:93d8aadc9ec1c35e7c24bdf723b9b05a01b75a2d/14:70',
+          name: 'textLight',
+        },
+      ],
+    },
   ] as const)('$expected', async ({ expected, nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],

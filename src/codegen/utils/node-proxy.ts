@@ -597,6 +597,26 @@ export function assembleNodeTree(
               bv.color = { id: colorId }
             }
           }
+
+          // Gradient stops의 boundVariables 처리
+          if (Array.isArray(p.gradientStops)) {
+            for (const stop of p.gradientStops) {
+              if (stop && typeof stop === 'object') {
+                const s = stop as Record<string, unknown>
+                if (s.boundVariables && typeof s.boundVariables === 'object') {
+                  const bv = s.boundVariables as Record<string, unknown>
+                  if (typeof bv.color === 'string') {
+                    let colorId = bv.color
+                    const match = colorId.match(/\[NodeId: ([^\]]+)\]/)
+                    if (match) {
+                      colorId = match[1]
+                    }
+                    bv.color = { id: colorId }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -622,6 +642,21 @@ export function assembleNodeTree(
         ;(node as unknown as Record<string, unknown>).strokeWeight =
           figmaGlobal.figma.mixed
       }
+    }
+
+    // INSTANCE 노드에 getMainComponentAsync mock 메서드 추가
+    if (node.type === 'INSTANCE') {
+      ;(node as unknown as Record<string, unknown>).getMainComponentAsync =
+        async () => {
+          // INSTANCE 노드는 mainComponent 속성을 참조하거나 null 반환
+          return null
+        }
+    }
+
+    // 모든 노드에 getMainComponentAsync 메서드 추가 (아직 없는 경우에만)
+    if (!(node as unknown as Record<string, unknown>).getMainComponentAsync) {
+      ;(node as unknown as Record<string, unknown>).getMainComponentAsync =
+        async () => null
     }
 
     // TEXT 노드에 getStyledTextSegments mock 메서드 추가
