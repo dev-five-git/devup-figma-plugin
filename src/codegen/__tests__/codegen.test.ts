@@ -18295,6 +18295,1000 @@ describe('render real world component', () => {
       ],
       variables: [],
     },
+    {
+      expected: `<VStack
+  bg="$innerBg"
+  gap="16px"
+  outline="solid 1px $border"
+  outlineOffset="-0.5px"
+  p="20px"
+>
+  <Flex alignItems="center" gap="8px">
+    <Text
+      color="$caption"
+      fontFamily="SUIT"
+      fontSize="16px"
+      fontWeight="600"
+      letterSpacing="-1px"
+      lineHeight="1.5"
+    >
+      플레이 제목
+    </Text>
+    <Box
+      aspectRatio="1"
+      bg="$caption"
+      borderRadius="50%"
+      boxSize="6px"
+      opacity="0.2"
+    />
+    <Text
+      color="$caption"
+      fontFamily="SUIT"
+      fontSize="15px"
+      fontWeight="400"
+      letterSpacing="-0.5px"
+      lineHeight="1.5"
+    >
+      2025.03.03 18:00
+    </Text>
+    <Box
+      aspectRatio="1"
+      bg="$caption"
+      borderRadius="50%"
+      boxSize="6px"
+      opacity="0.2"
+    />
+    <Flex alignItems="center" gap="4px">
+      <Box
+        aspectRatio="1"
+        bg="$caption"
+        boxSize="20px"
+        maskImage="url(/icons/recommend.svg)"
+        maskRepeat="no-repeat"
+        maskSize="contain"
+      />
+      <Text
+        color="$caption"
+        fontFamily="SUIT"
+        fontSize="15px"
+        fontWeight="600"
+        letterSpacing="-0.5px"
+        lineHeight="1.5"
+      >
+        2
+      </Text>
+    </Flex>
+  </Flex>
+  <Text
+    color="$text"
+    fontFamily="SUIT"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="-1px"
+    lineHeight="1.5"
+  >
+    댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '109:51',
+          name: 'Card',
+          type: 'FRAME',
+          reactions: [],
+          parent: '187:1545',
+          children: ['109:52', '109:64'],
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 20,
+            paddingBottom: 20,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 1,
+            itemSpacing: 16,
+            layoutPositioning: 'AUTO',
+          },
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'HUG',
+          layoutSizingHorizontal: 'FIXED',
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomRightRadius: 0,
+          bottomLeftRadius: 0,
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.8941176533699036,
+                g: 0.9137254953384399,
+                b: 0.9490196108818054,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:f5613063210cb55c4f22591497c139340720b4f9/2:116]',
+              },
+            },
+          ],
+          dashPattern: [],
+          strokeWeight: 1,
+          strokeAlign: 'CENTER',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:48af241d35e3be1aa75c9b68e40b32ee5f7c2d40/2:200]',
+              },
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          isAsset: false,
+          effects: [],
+          rotation: 0,
+          clipsContent: false,
+          visible: true,
+          layoutMode: 'VERTICAL',
+          width: 1060,
+          height: 104,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 1,
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 20,
+          paddingBottom: 20,
+          itemSpacing: 16,
+          counterAxisSpacing: 0,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+        },
+        {
+          id: '109:52',
+          name: 'Frame 1597884450',
+          type: 'FRAME',
+          visible: true,
+          parent: '109:51',
+          children: ['109:53', '109:54', '109:55', '109:56', '109:57'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 1020,
+          height: 24,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 8,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 0,
+            itemSpacing: 8,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '109:53',
+          name: '플레이 제목',
+          type: 'TEXT',
+          visible: true,
+          parent: '109:52',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.4941176474094391,
+                g: 0.4941176474094391,
+                b: 0.4941176474094391,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 69,
+          height: 24,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '플레이 제목',
+          fontName: {
+            family: 'SUIT',
+            style: 'SemiBold',
+          },
+          fontSize: 16,
+          fontWeight: 600,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 150,
+          },
+          letterSpacing: {
+            unit: 'PIXELS',
+            value: -1,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '플레이 제목',
+              start: 0,
+              end: 6,
+              fontSize: 16,
+              fontName: {
+                family: 'SUIT',
+                style: 'SemiBold',
+              },
+              fontWeight: 600,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 150,
+              },
+              letterSpacing: {
+                unit: 'PIXELS',
+                value: -1,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.4941176474094391,
+                    g: 0.4941176474094391,
+                    b: 0.4941176474094391,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+                  },
+                },
+              ],
+              textStyleId: 'S:ff39719a4f4432493ec910934cf96b8acdefc1ab,7:190',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '109:54',
+          name: 'Ellipse 3618',
+          type: 'ELLIPSE',
+          visible: true,
+          parent: '109:52',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.4941176474094391,
+                g: 0.4941176474094391,
+                b: 0.4941176474094391,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 0.20000000298023224,
+          blendMode: 'PASS_THROUGH',
+          width: 6,
+          height: 6,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 6,
+            y: 6,
+          },
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          arcData: {
+            startingAngle: 0,
+            endingAngle: 6.2831854820251465,
+            innerRadius: 0,
+          },
+        },
+        {
+          id: '109:55',
+          name: '2025.03.03 18:00',
+          type: 'TEXT',
+          visible: true,
+          parent: '109:52',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.4941176474094391,
+                g: 0.4941176474094391,
+                b: 0.4941176474094391,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 112,
+          height: 23,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '2025.03.03 18:00',
+          fontName: {
+            family: 'SUIT',
+            style: 'Regular',
+          },
+          fontSize: 15,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 150,
+          },
+          letterSpacing: {
+            unit: 'PIXELS',
+            value: -0.5,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '2025.03.03 18:00',
+              start: 0,
+              end: 16,
+              fontSize: 15,
+              fontName: {
+                family: 'SUIT',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 150,
+              },
+              letterSpacing: {
+                unit: 'PIXELS',
+                value: -0.5,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.4941176474094391,
+                    g: 0.4941176474094391,
+                    b: 0.4941176474094391,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+                  },
+                },
+              ],
+              textStyleId: 'S:8de3e75e8aa9e74fc05518a1daedc751ba038ca3,2:423',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '109:56',
+          name: 'Ellipse 3619',
+          type: 'ELLIPSE',
+          visible: true,
+          parent: '109:52',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.4941176474094391,
+                g: 0.4941176474094391,
+                b: 0.4941176474094391,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 0.20000000298023224,
+          blendMode: 'PASS_THROUGH',
+          width: 6,
+          height: 6,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 6,
+            y: 6,
+          },
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          arcData: {
+            startingAngle: 0,
+            endingAngle: 6.2831854820251465,
+            innerRadius: 0,
+          },
+        },
+        {
+          id: '109:57',
+          name: 'Frame 1597884461',
+          type: 'FRAME',
+          visible: true,
+          parent: '109:52',
+          children: ['109:58', '109:63'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 33,
+          height: 23,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 4,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 4,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '109:58',
+          name: 'recommend',
+          type: 'FRAME',
+          visible: true,
+          parent: '109:57',
+          children: ['109:62'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: false,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 20,
+          height: 20,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 280,
+            y: 280,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '109:62',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '109:58',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.4941176474094391,
+                g: 0.4941176474094391,
+                b: 0.4941176474094391,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 13.611032485961914,
+          height: 15.0164794921875,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '109:63',
+          name: 'Hotels',
+          type: 'TEXT',
+          visible: true,
+          parent: '109:57',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.4941176474094391,
+                g: 0.4941176474094391,
+                b: 0.4941176474094391,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 9,
+          height: 23,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 0,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          characters: '2',
+          fontName: {
+            family: 'SUIT',
+            style: 'SemiBold',
+          },
+          fontSize: 15,
+          fontWeight: 600,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 150,
+          },
+          letterSpacing: {
+            unit: 'PIXELS',
+            value: -0.5,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: '2',
+              start: 0,
+              end: 1,
+              fontSize: 15,
+              fontName: {
+                family: 'SUIT',
+                style: 'SemiBold',
+              },
+              fontWeight: 600,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 150,
+              },
+              letterSpacing: {
+                unit: 'PIXELS',
+                value: -0.5,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.4941176474094391,
+                    g: 0.4941176474094391,
+                    b: 0.4941176474094391,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146]',
+                  },
+                },
+              ],
+              textStyleId: 'S:f7a84b2aff07543a05b32108ab91010ac120d7c6,26:61',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '109:64',
+          name: '댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력',
+          type: 'TEXT',
+          visible: true,
+          parent: '109:51',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.22745098173618317,
+                g: 0.20000000298023224,
+                b: 0.2078431397676468,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:57475e52516076fee3a8936d875fd8baaa61a342/2:137]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 1020,
+          height: 24,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            '댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력',
+          fontName: {
+            family: 'SUIT',
+            style: 'Regular',
+          },
+          fontSize: 16,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 150,
+          },
+          letterSpacing: {
+            unit: 'PIXELS',
+            value: -1,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                '댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력',
+              start: 0,
+              end: 44,
+              fontSize: 16,
+              fontName: {
+                family: 'SUIT',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 150,
+              },
+              letterSpacing: {
+                unit: 'PIXELS',
+                value: -1,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.22745098173618317,
+                    g: 0.20000000298023224,
+                    b: 0.2078431397676468,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:57475e52516076fee3a8936d875fd8baaa61a342/2:137]',
+                  },
+                },
+              ],
+              textStyleId: 'S:0daf4d1717522daf9c82204ed1d91b4ead4935b4,35:31',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '187:1545',
+          name: 'Case 1 - MaskImage',
+          type: 'SECTION',
+          children: ['109:51'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:f5613063210cb55c4f22591497c139340720b4f9/2:116',
+          name: 'border',
+        },
+        {
+          id: 'VariableID:48af241d35e3be1aa75c9b68e40b32ee5f7c2d40/2:200',
+          name: 'innerBg',
+        },
+        {
+          id: 'VariableID:041286802cda2ac64dfa81669076d76d0b63e802/2:146',
+          name: 'caption',
+        },
+        {
+          id: 'VariableID:57475e52516076fee3a8936d875fd8baaa61a342/2:137',
+          name: 'text',
+        },
+      ],
+    },
   ] as const)('$expected', async ({ expected, nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],
