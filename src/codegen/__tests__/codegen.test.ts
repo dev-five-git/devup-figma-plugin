@@ -15241,6 +15241,2780 @@ describe('render real world component', () => {
       ],
     },
     // Text with auto layout
+    {
+      expected: `<VStack gap="10px" justifyContent="center" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '40:3',
+          name: 'Frame 2',
+          type: 'FRAME',
+          reactions: [],
+          parent: '36:24',
+          children: ['40:2', '40:4'],
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MIN',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'HUG',
+          layoutSizingHorizontal: 'FIXED',
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomRightRadius: 0,
+          bottomLeftRadius: 0,
+          strokes: [],
+          fills: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          isAsset: false,
+          effects: [],
+          rotation: 0,
+          clipsContent: false,
+          visible: true,
+          width: 400,
+          height: 60,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:2',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:3',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:4',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:3',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 314,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:3'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<Flex alignItems="center" gap="10px" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</Flex>`,
+      nodes: [
+        {
+          id: '40:57',
+          name: 'Frame 10',
+          type: 'FRAME',
+          visible: true,
+          parent: '36:24',
+          children: ['40:58', '40:59'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 429,
+          height: 35,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:58',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:57',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:59',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:57',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 314,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:57'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<VStack
+  gap="10px"
+  h="200px"
+  justifyContent="center"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '40:9',
+          name: 'Frame 3',
+          type: 'FRAME',
+          visible: true,
+          parent: '36:24',
+          children: ['40:10', '40:11'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 400,
+          height: 200,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:10',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:9',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:11',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:9',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 314,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:9'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<Flex alignItems="center" gap="10px" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    flex="1"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</Flex>`,
+      nodes: [
+        {
+          id: '40:78',
+          name: 'Frame 11',
+          type: 'FRAME',
+          visible: true,
+          parent: '36:24',
+          children: ['40:79', '40:80'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 600,
+          height: 35,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:79',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:78',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:80',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:78',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 485,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 1,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:78'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<Center flexDir="column" gap="10px" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</Center>`,
+      nodes: [
+        {
+          id: '40:18',
+          name: 'Frame 4',
+          type: 'FRAME',
+          reactions: [],
+          parent: '36:24',
+          children: ['40:19', '40:20'],
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'CENTER',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'HUG',
+          layoutSizingHorizontal: 'FIXED',
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomRightRadius: 0,
+          bottomLeftRadius: 0,
+          strokes: [],
+          fills: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          isAsset: false,
+          effects: [],
+          rotation: 0,
+          clipsContent: false,
+          visible: true,
+          width: 400,
+          height: 60,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:19',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:18',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:20',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:18',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 314,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:18'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<VStack
+  alignItems="center"
+  gap="10px"
+  h="200px"
+  justifyContent="flex-end"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '40:30',
+          name: 'Frame 6',
+          type: 'FRAME',
+          visible: true,
+          parent: '36:24',
+          children: ['40:31', '40:32'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 400,
+          height: 200,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MAX',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'MAX',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:31',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:30',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:32',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:30',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 314,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:30'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<VStack gap="10px" justifyContent="center" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+    textAlign="center"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+    textAlign="center"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '40:42',
+          name: 'Frame 8',
+          type: 'FRAME',
+          visible: true,
+          parent: '36:24',
+          children: ['40:43', '40:44'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 400,
+          height: 60,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:43',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:42',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 360,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:44',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:42',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 360,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:42'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<VStack
+  alignItems="flex-end"
+  gap="10px"
+  justifyContent="flex-end"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '40:24',
+          name: 'Frame 5',
+          type: 'FRAME',
+          visible: true,
+          parent: '36:24',
+          children: ['40:25', '40:26'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 400,
+          height: 60,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MAX',
+          counterAxisAlignItems: 'MAX',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MAX',
+            counterAxisAlignItems: 'MAX',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:25',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:24',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:26',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:24',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 314,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:24'],
+        },
+      ],
+      variables: [],
+    },
+    {
+      expected: `<VStack
+  alignItems="flex-end"
+  gap="10px"
+  h="200px"
+  justifyContent="center"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>`,
+      nodes: [
+        {
+          id: '40:36',
+          name: 'Frame 7',
+          type: 'FRAME',
+          visible: true,
+          parent: '36:24',
+          children: ['40:37', '40:38'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 400,
+          height: 200,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'MAX',
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 10,
+          paddingBottom: 10,
+          itemSpacing: 10,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 10,
+            paddingBottom: 10,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'MAX',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 10,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+        },
+        {
+          id: '40:37',
+          name: 'Hello World',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:36',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 65,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Hello World',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters: 'Hello World',
+              start: 0,
+              end: 11,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '40:38',
+          name: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          type: 'TEXT',
+          visible: true,
+          parent: '40:36',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 314,
+          height: 15,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          fontName: {
+            family: 'Inter',
+            style: 'Regular',
+          },
+          fontSize: 12,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 0,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          styledTextSegments: [
+            {
+              characters:
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+              start: 0,
+              end: 56,
+              fontSize: 12,
+              fontName: {
+                family: 'Inter',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 0,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                  },
+                  boundVariables: {},
+                },
+              ],
+              textStyleId: '',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '36:24',
+          name: 'Text with auto layout',
+          type: 'SECTION',
+          children: ['40:36'],
+        },
+      ],
+      variables: [],
+    },
   ] as const)('$expected', async ({ expected, nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],
