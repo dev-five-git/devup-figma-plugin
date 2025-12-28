@@ -42,7 +42,6 @@ export function renderComponent(
   code: string,
   variants: Record<string, string>,
 ) {
-  console.log('너니')
   // Filter out effect variant (treated as reserved property like viewport)
   const filteredVariants = Object.fromEntries(
     Object.entries(variants).filter(([key]) => key.toLowerCase() !== 'effect'),
@@ -58,7 +57,6 @@ ${Object.entries(filteredVariants)
   const propsParam = hasVariants
     ? `{ ${Object.keys(filteredVariants).join(', ')} }: ${component}Props`
     : ''
-  console.log('나니')
   return `${interfaceCode}export function ${component}(${propsParam}) {
   return ${
     code.includes('\n')
