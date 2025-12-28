@@ -768,10 +768,10 @@ export class ResponsiveCodegen {
               if (!childTree) continue
               const childCode = Codegen.renderTree(childTree, 0)
               const formattedChildCode = childCode.includes('\n')
-                ? `(\n${paddingLeftMultiline(childCode, depth)}\n  )`
+                ? `(\n${paddingLeftMultiline(childCode, 1)}\n)`
                 : childCode
               childrenCodes.push(
-                `  {${variantKey} === "${onlyVariant}" && ${formattedChildCode}}`,
+                `{${variantKey} === "${onlyVariant}" && ${formattedChildCode}}`,
               )
             } else {
               // Multiple (but not all) variants have this child
@@ -785,7 +785,7 @@ export class ResponsiveCodegen {
                 0,
               )
               const formattedChildCode = childCode.includes('\n')
-                ? `(\n${paddingLeftMultiline(childCode, depth)}\n  )`
+                ? `2(\n${paddingLeftMultiline(childCode, 1)}\n)`
                 : childCode
               childrenCodes.push(`{(${conditions}) && ${formattedChildCode}}`)
             }
