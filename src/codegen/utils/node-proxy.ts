@@ -165,6 +165,14 @@ class NodeProxyTracker {
       'maxHeight',
       'targetAspectRatio',
       'inferredAutoLayout',
+      // Stroke 속성
+      'strokeWeight',
+      'strokeTopWeight',
+      'strokeBottomWeight',
+      'strokeLeftWeight',
+      'strokeRightWeight',
+      'strokeAlign',
+      'dashPattern',
       // TEXT 노드 속성
       'characters',
       'fontName',
@@ -597,6 +605,23 @@ export function assembleNodeTree(
     }
     if (Array.isArray(node.strokes)) {
       processBoundVariables(node.strokes)
+    }
+
+    // strokeWeight가 없고 개별 stroke weights가 있으면 strokeWeight를 figma.mixed로 설정
+    if (
+      node.strokeWeight === undefined &&
+      (node.strokeTopWeight !== undefined ||
+        node.strokeBottomWeight !== undefined ||
+        node.strokeLeftWeight !== undefined ||
+        node.strokeRightWeight !== undefined)
+    ) {
+      const figmaGlobal = globalThis as unknown as {
+        figma?: { mixed?: unknown }
+      }
+      if (figmaGlobal.figma?.mixed) {
+        ;(node as unknown as Record<string, unknown>).strokeWeight =
+          figmaGlobal.figma.mixed
+      }
     }
 
     // TEXT 노드에 getStyledTextSegments mock 메서드 추가
