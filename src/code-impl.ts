@@ -114,11 +114,12 @@ function generatePowerShellCLI(
   return commands.join('\n')
 }
 
+const debug = false
+
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
     ctx.codegen.on('generate', async ({ node: n, language }) => {
-      const node = nodeProxyTracker.wrap(n)
-      // const node = n
+      const node = debug ? nodeProxyTracker.wrap(n) : n
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()
@@ -164,9 +165,11 @@ export function registerCodegen(ctx: typeof figma) {
               console.error('[responsive] Error generating responsive code:', e)
             }
           }
-          console.log(
-            await nodeProxyTracker.toTestCaseFormatWithVariables(node.id),
-          )
+          if (debug) {
+            console.log(
+              await nodeProxyTracker.toTestCaseFormatWithVariables(node.id),
+            )
+          }
 
           return [
             ...(node.type === 'COMPONENT' ||
