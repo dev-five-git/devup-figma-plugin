@@ -28025,6 +28025,161 @@ describe('render real world component', () => {
         },
       ],
     },
+    {
+      expected: `<Text
+  as="ul"
+  color="$text"
+  fontFamily="Pretendard"
+  fontSize="15px"
+  fontWeight="400"
+  letterSpacing="-0.04em"
+  lineHeight="2"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    어떤 증상이 가장 힘들고 일상생활에 영향을 주나요?
+  </li>
+  <li>
+    증상이 언제부터 시작되었나요?
+  </li>
+  <li>
+    증상이 시간이 지나면서 어떻게 변했나요?
+  </li>
+  <li>
+    스트레스나 상황에 따라 증상이 달라지나요?
+  </li>
+</Text>`,
+      nodes: [
+        {
+          id: '387:1575',
+          name: '어떤 증상이 가장 힘들고 일상생활에 영향을 주나요? 증상이 언제부터 시작되었나요? 증상이 시간이 지나면서 어떻게 변했나요? 스트레스나 상황에 따라 증상이 달라지나요?',
+          type: 'TEXT',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          parent: '520:2035',
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'FIXED',
+          layoutSizingHorizontal: 'FIXED',
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          strokes: [],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.21568627655506134,
+                g: 0.2549019753932953,
+                b: 0.3176470696926117,
+              },
+              boundVariables: {
+                color:
+                  '[NodeId: VariableID:1500634352fc7d420979f2b85b3736d4b0a410de/14:65]',
+              },
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          characters:
+            '어떤 증상이 가장 힘들고 일상생활에 영향을 주나요?\n증상이 언제부터 시작되었나요?\n증상이 시간이 지나면서 어떻게 변했나요?\n스트레스나 상황에 따라 증상이 달라지나요?',
+          textAlignHorizontal: 'LEFT',
+          isAsset: false,
+          textTruncation: 'DISABLED',
+          effects: [],
+          rotation: 0,
+          reactions: [],
+          visible: true,
+          width: 312,
+          height: 120,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          fontName: {
+            family: 'Pretendard',
+            style: 'Regular',
+          },
+          fontSize: 15,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 200,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -4,
+          },
+          textAlignVertical: 'CENTER',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters:
+                '어떤 증상이 가장 힘들고 일상생활에 영향을 주나요?\n증상이 언제부터 시작되었나요?\n증상이 시간이 지나면서 어떻게 변했나요?\n스트레스나 상황에 따라 증상이 달라지나요?',
+              start: 0,
+              end: 95,
+              fontSize: 15,
+              fontName: {
+                family: 'Pretendard',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 200,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.21568627655506134,
+                    g: 0.2549019753932953,
+                    b: 0.3176470696926117,
+                  },
+                  boundVariables: {
+                    color:
+                      '[NodeId: VariableID:1500634352fc7d420979f2b85b3736d4b0a410de/14:65]',
+                  },
+                },
+              ],
+              textStyleId: 'S:52e722002759e248c2864a7e8ac3a317bda530d6,723:121',
+              fillStyleId: '',
+              listOptions: {
+                type: 'UNORDERED',
+              },
+              indentation: 1,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '520:2035',
+          name: 'List',
+          type: 'SECTION',
+          children: ['387:1575'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:1500634352fc7d420979f2b85b3736d4b0a410de/14:65',
+          name: 'text',
+        },
+      ],
+    },
   ] as const)('$expected', async ({ expected, nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],
