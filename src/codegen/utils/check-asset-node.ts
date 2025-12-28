@@ -25,7 +25,13 @@ export function checkAssetNode(
   node: SceneNode,
   nested = false,
 ): 'svg' | 'png' | null {
-  if (node.type === 'TEXT' || node.type === 'COMPONENT_SET') return null
+  if (
+    node.type === 'TEXT' ||
+    node.type === 'COMPONENT_SET' ||
+    ('inferredAutoLayout' in node &&
+      node.inferredAutoLayout?.layoutMode === 'GRID')
+  )
+    return null
   // if node is an animation target (has keyframes), it should not be treated as an asset
   if (isAnimationTarget(node)) return null
   // vector must be svg

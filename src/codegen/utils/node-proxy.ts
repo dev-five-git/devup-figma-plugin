@@ -185,6 +185,10 @@ class NodeProxyTracker {
       'textAlignVertical',
       'textTruncation',
       'maxLines',
+      // grid
+      'gridColumnAnchorIndex',
+      'gridRowAnchorIndex',
+      'gridColumnCount',
     ]
 
     for (const prop of propsToTrack) {
