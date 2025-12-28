@@ -19289,6 +19289,7 @@ describe('render real world component', () => {
         },
       ],
     },
+    // grid
   ] as const)('$expected', async ({ expected, nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],
