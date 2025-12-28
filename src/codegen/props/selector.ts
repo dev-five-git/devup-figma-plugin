@@ -58,7 +58,7 @@ export async function getSelectorProps(
 
   const result = Object.entries(node.componentPropertyDefinitions).reduce(
     (acc, [name, definition]) => {
-      if (name !== 'effect') {
+      if (name !== 'effect' && name !== 'viewport') {
         const sanitizedName = sanitizePropertyName(name)
         // variant 옵션값들을 문자열 리터럴로 감싸기
         acc.variants[sanitizedName] =

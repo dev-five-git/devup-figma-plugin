@@ -357,20 +357,31 @@ export class ResponsiveCodegen {
       componentSet.componentPropertyDefinitions,
     ).find((key) => key.toLowerCase() === 'viewport')
 
-    // Get all variant keys excluding viewport
+    // Find effect variant key
+    const effectKey = Object.keys(
+      componentSet.componentPropertyDefinitions,
+    ).find((key) => key.toLowerCase() === 'effect')
+
+    // Get all variant keys excluding viewport and effect
     const otherVariantKeys: string[] = []
     const variants: Record<string, string> = {}
     for (const [name, definition] of Object.entries(
       componentSet.componentPropertyDefinitions,
     )) {
       if (definition.type === 'VARIANT') {
-        if (name.toLowerCase() !== 'viewport') {
+        const lowerName = name.toLowerCase()
+        if (lowerName !== 'viewport') {
           otherVariantKeys.push(name)
           variants[name] =
             definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
             ''
         }
       }
+    }
+
+    // If effect variant only, skip component rendering (effect is pseudo-selector)
+    if (effectKey && !viewportKey && otherVariantKeys.length === 0) {
+      return []
     }
 
     // If no viewport variant, just handle other variants
