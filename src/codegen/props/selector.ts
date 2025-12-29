@@ -1,6 +1,35 @@
 import { fmtPct } from '../utils/fmtPct'
 import { getProps } from '.'
 
+// Shorthand prop names to CSS standard property names
+const shortToCssProperty: Record<string, string> = {
+  bg: 'background',
+  w: 'width',
+  h: 'height',
+  p: 'padding',
+  pt: 'padding-top',
+  pr: 'padding-right',
+  pb: 'padding-bottom',
+  pl: 'padding-left',
+  px: 'padding-inline',
+  py: 'padding-block',
+  m: 'margin',
+  mt: 'margin-top',
+  mr: 'margin-right',
+  mb: 'margin-bottom',
+  ml: 'margin-left',
+  mx: 'margin-inline',
+  my: 'margin-block',
+  pos: 'position',
+}
+
+/**
+ * Convert shorthand prop names to CSS standard property names for transitionProperty.
+ */
+function toTransitionPropertyName(key: string): string {
+  return shortToCssProperty[key] || key
+}
+
 // 속성 이름을 유효한 TypeScript 식별자로 변환
 const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
 
@@ -93,7 +122,7 @@ export async function getSelectorProps(
       }
     }
     if (transition?.type === 'SMART_ANIMATE' && diffKeys.size > 0) {
-      const keys = Array.from(diffKeys)
+      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
       keys.sort()
       result.props.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.props.transitionProperty = keys.join(',')
@@ -178,7 +207,7 @@ export async function getSelectorPropsForGroup(
       ?.flatMap(getTransition)
       .flat()[0]
     if (transition?.type === 'SMART_ANIMATE') {
-      const keys = Array.from(diffKeys)
+      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
       keys.sort()
       result.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.transitionProperty = keys.join(',')
