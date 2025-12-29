@@ -27,9 +27,15 @@ function valueToJsxString(value: unknown): string {
 
 /**
  * Check if a VariantPropValue needs multiline formatting.
- * Returns true if any value is complex (array, object, or nested VariantPropValue).
+ * Returns true if:
+ * - There are 2 or more variant entries, OR
+ * - Any value is complex (array, object, or nested VariantPropValue)
  */
 function needsMultilineFormat(values: Record<string, unknown>): boolean {
+  const entries = Object.entries(values)
+  // Always use multiline if there are 2+ entries
+  if (entries.length >= 2) return true
+  // Also use multiline for complex values
   return Object.values(values).some(
     (value) =>
       Array.isArray(value) ||
