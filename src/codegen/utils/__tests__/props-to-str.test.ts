@@ -89,9 +89,10 @@ describe('propsToString', () => {
       default: ['30px', null, '40px'],
     })
     const res = propsToString({ w: variantProp })
-    expect(res).toBe(
-      'w={{ scroll: ["10px", null, "20px"], default: ["30px", null, "40px"] }[status]}',
-    )
+    // Array values trigger multiline format
+    expect(res).toContain('scroll: ["10px", null, "20px"]')
+    expect(res).toContain('default: ["30px", null, "40px"]')
+    expect(res).toContain('[status]')
   })
 
   test('handles VariantPropValue with numeric values', () => {
@@ -123,8 +124,14 @@ describe('propsToString', () => {
       default: { x: 3, y: 4 },
     })
     const res = propsToString({ transform: variantProp })
-    expect(res).toContain('scroll: {"x":1,"y":2}')
-    expect(res).toContain('default: {"x":3,"y":4}')
+    // Object values trigger multiline format with proper indentation
+    expect(res).toContain('scroll:')
+    expect(res).toContain('"x": 1')
+    expect(res).toContain('"y": 2')
+    expect(res).toContain('default:')
+    expect(res).toContain('"x": 3')
+    expect(res).toContain('"y": 4')
+    expect(res).toContain('[status]')
   })
 
   test('handles VariantPropValue with boolean values', () => {
@@ -142,8 +149,10 @@ describe('propsToString', () => {
       default: ['20px', undefined],
     })
     const res = propsToString({ w: variantProp })
+    // Array values trigger multiline format
     expect(res).toContain('scroll: [undefined, "10px"]')
     expect(res).toContain('default: ["20px", undefined]')
+    expect(res).toContain('[status]')
   })
 
   test('handles VariantPropValue with symbol values (fallback case)', () => {
