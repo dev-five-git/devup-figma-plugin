@@ -583,6 +583,14 @@ export function assembleNodeTree(
     }
     // children이 undefined인 경우 그대로 유지 (RECTANGLE 등 원래 children이 없는 노드)
 
+    // defaultVariant 연결 (COMPONENT_SET용)
+    if (typeof node.defaultVariant === 'string') {
+      const defaultVariantNode = nodeMap.get(node.defaultVariant)
+      if (defaultVariantNode) {
+        node.defaultVariant = defaultVariantNode
+      }
+    }
+
     // fills/strokes의 boundVariables 처리
     // boundVariables.color가 문자열 ID인 경우 { id: '...' } 객체로 변환
     const processBoundVariables = (paints: unknown[]) => {
