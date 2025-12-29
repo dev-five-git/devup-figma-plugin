@@ -430,7 +430,10 @@ export function mergePropsToVariant(
     // Their inner props should be merged with variant conditionals
     if (isPseudoSelectorProp(key)) {
       // Collect pseudo-selector objects from each variant
+      // For variants that don't have this pseudo-selector, use empty object
+      // so that inner props get null values for those variants
       const pseudoPropsMap = new Map<string, Record<string, unknown>>()
+      let hasPseudoSelector = false
       for (const [variant, props] of variantProps) {
         if (
           key in props &&
@@ -438,9 +441,14 @@ export function mergePropsToVariant(
           props[key] !== null
         ) {
           pseudoPropsMap.set(variant, props[key] as Record<string, unknown>)
+          hasPseudoSelector = true
+        } else {
+          // Variant doesn't have this pseudo-selector, use empty object
+          // This ensures inner props get null for this variant
+          pseudoPropsMap.set(variant, {})
         }
       }
-      if (pseudoPropsMap.size > 0) {
+      if (hasPseudoSelector) {
         // Recursively merge the inner props of pseudo-selector
         result[key] = mergePropsToVariant(variantKey, pseudoPropsMap)
       }

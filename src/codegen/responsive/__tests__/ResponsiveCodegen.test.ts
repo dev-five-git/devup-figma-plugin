@@ -1158,5 +1158,132 @@ describe('ResponsiveCodegen', () => {
       expect(code).toContain('null')
       expect(code).toMatch(/#999(?:999)?/) // Desktop hover color
     })
+
+    it('handles hover prop existing only in some variants (outline only in white)', async () => {
+      // Component where _hover.outline exists only in white variant, not in primary
+      const createComponent = (
+        effect: string,
+        variant: string,
+        bgColor: { r: number; g: number; b: number },
+        strokes?: Array<{
+          type: string
+          visible: boolean
+          color: { r: number; g: number; b: number }
+        }>,
+      ) =>
+        ({
+          type: 'COMPONENT',
+          name: `effect=${effect}, variant=${variant}`,
+          variantProperties: { effect, variant },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 200,
+          height: 50,
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              color: bgColor,
+              opacity: 1,
+            },
+          ],
+          strokes: strokes || [],
+          strokeWeight: strokes && strokes.length > 0 ? 1 : 0,
+          reactions: [],
+        }) as unknown as ComponentNode
+
+      // primary variant - no border/stroke
+      const primaryDefault = { r: 0.5, g: 0.2, b: 0.1 }
+      const primaryHover = { r: 0.6, g: 0.3, b: 0.2 }
+
+      // white variant - has border/stroke on hover
+      const whiteDefault = { r: 1, g: 1, b: 1 }
+      const whiteHover = { r: 0.95, g: 0.95, b: 0.95 }
+      const whiteBorderHover = [
+        { type: 'SOLID', visible: true, color: { r: 0, g: 0, b: 0 } },
+      ]
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'BorderVariantButton',
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            defaultValue: 'default',
+            variantOptions: ['default', 'hover'],
+          },
+          variant: {
+            type: 'VARIANT',
+            defaultValue: 'primary',
+            variantOptions: ['primary', 'white'],
+          },
+        },
+        children: [
+          createComponent('default', 'primary', primaryDefault),
+          createComponent('hover', 'primary', primaryHover),
+          createComponent('default', 'white', whiteDefault),
+          createComponent('hover', 'white', whiteHover, whiteBorderHover),
+        ],
+      } as unknown as ComponentSetNode
+
+      // Set default variant
+      ;(componentSet as { defaultVariant: ComponentNode }).defaultVariant =
+        componentSet.children[0] as ComponentNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'BorderVariantButton',
+        )
+
+      expect(result.length).toBe(1)
+      const code = result[0][1]
+
+      // _hover should exist with outline that only applies to white variant
+      // Since primary doesn't have outline in hover, the variant conditional should
+      // only include white: { outline: "solid 1px #000" }[variant]
+      expect(code).toContain('_hover')
+      // Should contain the outline value for white (strokes become outline)
+      expect(code).toContain('outline')
+      // The outline should be wrapped in variant conditional with only white having value
+      expect(code).toContain('variantKey')
+      expect(code).toContain('"white"')
+      // primary should NOT have outline value (it has no border/stroke)
+      expect(code).toMatch(/"outline":\{[^}]*"white":[^}]*\}/)
+      expect(code).not.toMatch(/"outline":\{[^}]*"primary":/)
+    })
+
+    it('prefers variant key with fewer entries via createNestedVariantProp', () => {
+      // When a prop exists only in white variant (for both Md and Sm sizes),
+      // using 'variant' as outer key produces 1 entry: { white: "..." }[variant]
+      // using 'size' as outer key produces 2 entries: { Md: "...", Sm: "..." }[size]
+      // Should prefer 'variant' for fewer entries
+      const generator = new ResponsiveCodegen(null)
+
+      // Scenario: border only exists for white variant (Md and Sm both have it)
+      // white Md and white Sm have the same border value
+      const valuesByComposite = new Map<string, unknown>([
+        ['size=Md|variant=white', 'solid 1px #000'],
+        ['size=Sm|variant=white', 'solid 1px #000'],
+      ])
+
+      // Access private method via type casting
+      const result = (
+        generator as unknown as {
+          createNestedVariantProp: (
+            variantKeys: string[],
+            valuesByComposite: Map<string, unknown>,
+          ) => unknown
+        }
+      ).createNestedVariantProp(['size', 'variant'], valuesByComposite)
+
+      // Result should use 'variant' as key since it produces fewer entries (1 entry: white)
+      // NOT 'size' (which would produce 2 entries: Md, Sm with same value)
+      expect(result).toEqual({
+        __variantProp: true,
+        variantKey: 'variant',
+        values: { white: 'solid 1px #000' },
+      })
+    })
   })
 })

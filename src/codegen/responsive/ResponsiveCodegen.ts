@@ -1072,7 +1072,10 @@ export class ResponsiveCodegen {
       // Check if prop is a pseudo-selector (needs special handling)
       if (propKey.startsWith('_')) {
         // Collect pseudo-selector props across all composites
+        // For composites that don't have this pseudo-selector, use empty object
+        // so that inner props get null values for those composites
         const pseudoPropsMap = new Map<string, Record<string, unknown>>()
+        let hasPseudoSelector = false
         for (const [compositeKey, props] of propsMap) {
           if (
             propKey in props &&
@@ -1083,9 +1086,14 @@ export class ResponsiveCodegen {
               compositeKey,
               props[propKey] as Record<string, unknown>,
             )
+            hasPseudoSelector = true
+          } else {
+            // Composite doesn't have this pseudo-selector, use empty object
+            // This ensures inner props get null for this composite
+            pseudoPropsMap.set(compositeKey, {})
           }
         }
-        if (pseudoPropsMap.size > 0) {
+        if (hasPseudoSelector) {
           result[propKey] = this.mergePropsAcrossComposites(
             variantKeys,
             pseudoPropsMap,
@@ -1095,29 +1103,48 @@ export class ResponsiveCodegen {
       }
 
       // Collect values for this prop across all composites
+      // For composites that don't have this prop, use null
       const valuesByComposite = new Map<string, unknown>()
+      let hasValue = false
       for (const [compositeKey, props] of propsMap) {
         if (propKey in props) {
           valuesByComposite.set(compositeKey, props[propKey])
+          hasValue = true
+        } else {
+          // Composite doesn't have this prop, use null
+          valuesByComposite.set(compositeKey, null)
         }
       }
 
-      // Check if all values are the same
+      if (!hasValue) continue
+
+      // Check if all values are the same (including null checks)
       const uniqueValues = new Set<string>()
       for (const value of valuesByComposite.values()) {
         uniqueValues.add(JSON.stringify(value))
       }
 
-      if (uniqueValues.size === 1) {
-        // All values are the same - use as-is
-        result[propKey] = [...valuesByComposite.values()][0]
+      const firstValue = [...valuesByComposite.values()][0]
+      if (uniqueValues.size === 1 && firstValue !== null) {
+        // All values are the same and not null - use as-is
+        result[propKey] = firstValue
       } else {
-        // Values differ - need to create variant conditional
-        // Try to find which variant key causes the difference
-        result[propKey] = this.createNestedVariantProp(
-          variantKeys,
-          valuesByComposite,
-        )
+        // Values differ or some are null - need to create variant conditional
+        // Filter out null values for the conditional (only include composites that have the prop)
+        const nonNullValues = new Map<string, unknown>()
+        for (const [compositeKey, value] of valuesByComposite) {
+          if (value !== null) {
+            nonNullValues.set(compositeKey, value)
+          }
+        }
+
+        if (nonNullValues.size > 0) {
+          // Try to find which variant key causes the difference
+          result[propKey] = this.createNestedVariantProp(
+            variantKeys,
+            nonNullValues,
+          )
+        }
       }
     }
 
@@ -1228,9 +1255,14 @@ export class ResponsiveCodegen {
         }
       }
 
+      // Add the number of entries as a secondary cost factor
+      // This ensures we prefer fewer entries when nesting costs are equal
+      // Multiply by 0.1 to make it a tiebreaker (less important than nesting depth)
+      const entryCost = Object.keys(nestedValues).length * 0.1
+
       candidates.push({
         variantKey,
-        cost: totalCost,
+        cost: totalCost + entryCost,
         nestedValues,
       })
     }
