@@ -1,6 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import type { NodeTree } from '../../types'
 
+// Mock figma global
+;(globalThis as { figma?: unknown }).figma = {
+  mixed: Symbol('mixed'),
+  util: {
+    rgba: (color: { r: number; g: number; b: number; a?: number }) => ({
+      r: color.r,
+      g: color.g,
+      b: color.b,
+      a: color.a ?? 1,
+    }),
+  },
+} as unknown as typeof figma
+
 const renderNodeMock = mock(
   (
     component: string,
@@ -709,6 +722,145 @@ describe('ResponsiveCodegen', () => {
       expect(result[0][0]).toBe('Combined')
       // Should have status in interface
       expect(result[0][1]).toContain('status')
+    })
+
+    it('handles effect + viewport + size + variant (4 dimensions)', async () => {
+      // Button component with:
+      // - effect: default, hover, active
+      // - viewport: Desktop, Mobile
+      // - size: Md, Sm
+      // - variant: primary, white
+
+      const createComponent = (
+        effect: string,
+        viewport: string,
+        size: string,
+        variant: string,
+        bgColor: { r: number; g: number; b: number },
+      ) =>
+        ({
+          type: 'COMPONENT',
+          name: `effect=${effect}, viewport=${viewport}, size=${size}, variant=${variant}`,
+          variantProperties: { effect, viewport, size, variant },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: viewport === 'Desktop' ? (size === 'Md' ? 191 : 123) : 149,
+          height: viewport === 'Desktop' ? (size === 'Md' ? 64 : 46) : 51,
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              color: bgColor,
+              opacity: 1,
+            },
+          ],
+          reactions: [],
+        }) as unknown as ComponentNode
+
+      // Primary variant colors
+      const primaryDefault = { r: 0.35, g: 0.25, b: 0.17 }
+      const primaryHover = { r: 0.24, g: 0.17, b: 0.12 }
+      const primaryActive = { r: 0.19, g: 0.14, b: 0.1 }
+
+      // White variant colors
+      const whiteDefault = { r: 1, g: 1, b: 1 }
+      const whiteHover = { r: 0.95, g: 0.95, b: 0.95 }
+      const whiteActive = { r: 0.9, g: 0.9, b: 0.9 }
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'Button',
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            defaultValue: 'default',
+            variantOptions: ['active', 'default', 'hover'],
+          },
+          viewport: {
+            type: 'VARIANT',
+            defaultValue: 'Desktop',
+            variantOptions: ['Desktop', 'Mobile'],
+          },
+          size: {
+            type: 'VARIANT',
+            defaultValue: 'Md',
+            variantOptions: ['Md', 'Sm'],
+          },
+          variant: {
+            type: 'VARIANT',
+            defaultValue: 'primary',
+            variantOptions: ['primary', 'white'],
+          },
+        },
+        children: [
+          // Primary Md
+          createComponent(
+            'default',
+            'Desktop',
+            'Md',
+            'primary',
+            primaryDefault,
+          ),
+          createComponent('hover', 'Desktop', 'Md', 'primary', primaryHover),
+          createComponent('active', 'Desktop', 'Md', 'primary', primaryActive),
+          createComponent('default', 'Mobile', 'Md', 'primary', primaryDefault),
+          createComponent('hover', 'Mobile', 'Md', 'primary', primaryHover),
+          createComponent('active', 'Mobile', 'Md', 'primary', primaryActive),
+          // Primary Sm
+          createComponent(
+            'default',
+            'Desktop',
+            'Sm',
+            'primary',
+            primaryDefault,
+          ),
+          createComponent('hover', 'Desktop', 'Sm', 'primary', primaryHover),
+          createComponent('active', 'Desktop', 'Sm', 'primary', primaryActive),
+          createComponent('default', 'Mobile', 'Sm', 'primary', primaryDefault),
+          createComponent('hover', 'Mobile', 'Sm', 'primary', primaryHover),
+          createComponent('active', 'Mobile', 'Sm', 'primary', primaryActive),
+          // White Md
+          createComponent('default', 'Desktop', 'Md', 'white', whiteDefault),
+          createComponent('hover', 'Desktop', 'Md', 'white', whiteHover),
+          createComponent('active', 'Desktop', 'Md', 'white', whiteActive),
+          createComponent('default', 'Mobile', 'Md', 'white', whiteDefault),
+          createComponent('hover', 'Mobile', 'Md', 'white', whiteHover),
+          createComponent('active', 'Mobile', 'Md', 'white', whiteActive),
+          // White Sm
+          createComponent('default', 'Desktop', 'Sm', 'white', whiteDefault),
+          createComponent('hover', 'Desktop', 'Sm', 'white', whiteHover),
+          createComponent('active', 'Desktop', 'Sm', 'white', whiteActive),
+          createComponent('default', 'Mobile', 'Sm', 'white', whiteDefault),
+          createComponent('hover', 'Mobile', 'Sm', 'white', whiteHover),
+          createComponent('active', 'Mobile', 'Sm', 'white', whiteActive),
+        ],
+      } as unknown as ComponentSetNode
+
+      // Set default variant
+      ;(componentSet as { defaultVariant: ComponentNode }).defaultVariant =
+        componentSet.children[0] as ComponentNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'Button',
+        )
+
+      expect(result.length).toBe(1)
+      expect(result[0][0]).toBe('Button')
+
+      const code = result[0][1]
+
+      // Should have size and variant in interface (not effect, not viewport)
+      expect(code).toContain('size')
+      expect(code).toContain('variant')
+      // effect should NOT be in the interface (handled as pseudo-selectors)
+      expect(code).not.toMatch(/effect:\s*['"]/)
+      // viewport should NOT be in the interface (handled as responsive arrays)
+      expect(code).not.toMatch(/viewport:\s*['"]/)
+
+      // Verify snapshot for the generated code
+      expect(code).toMatchSnapshot()
     })
   })
 })

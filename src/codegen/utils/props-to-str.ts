@@ -2,7 +2,7 @@ import { isVariantPropValue } from '../responsive'
 
 /**
  * Convert a value to its JSX string representation.
- * Handles primitives, arrays, and objects.
+ * Handles primitives, arrays, objects, and VariantPropValue.
  */
 function valueToJsxString(value: unknown): string {
   if (value === null) return 'null'
@@ -14,6 +14,10 @@ function valueToJsxString(value: unknown): string {
   if (Array.isArray(value)) {
     const items = value.map((item) => valueToJsxString(item))
     return `[${items.join(', ')}]`
+  }
+  // Handle VariantPropValue inside objects
+  if (isVariantPropValue(value)) {
+    return formatVariantPropValue(value)
   }
   if (typeof value === 'object') {
     return JSON.stringify(value)
@@ -35,6 +39,49 @@ function formatVariantPropValue(variantProp: {
   return `{ ${parts.join(', ')} }[${variantProp.variantKey}]`
 }
 
+/**
+ * Convert an object to JSX string, handling nested VariantPropValue.
+ * Uses JSON.stringify-like formatting but replaces VariantPropValue with proper syntax.
+ */
+function objectToJsxString(
+  obj: Record<string, unknown>,
+  indent: number = 0,
+): string {
+  const entries = Object.entries(obj)
+  const spaces = '  '.repeat(indent + 1)
+  const closingSpaces = '  '.repeat(indent)
+
+  const parts = entries.map(([key, value]) => {
+    const formattedValue = formatObjectValue(value, indent + 1)
+    return `${spaces}"${key}": ${formattedValue}`
+  })
+
+  return `{\n${parts.join(',\n')}\n${closingSpaces}}`
+}
+
+/**
+ * Format a value inside an object, handling nested objects and VariantPropValue.
+ */
+function formatObjectValue(value: unknown, indent: number): string {
+  if (value === null) return 'null'
+  if (value === undefined) return 'undefined'
+  if (typeof value === 'string') return `"${value}"`
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (Array.isArray(value)) {
+    const items = value.map((item) => valueToJsxString(item))
+    return `[${items.join(', ')}]`
+  }
+  if (isVariantPropValue(value)) {
+    return formatVariantPropValue(value)
+  }
+  if (typeof value === 'object') {
+    return objectToJsxString(value as Record<string, unknown>, indent)
+  }
+  return String(value)
+}
+
 export function propsToString(props: Record<string, unknown>) {
   const sorted = Object.entries(props).sort((a, b) => {
     const isAUpper = /^[A-Z]/.test(a[0])
@@ -49,6 +96,10 @@ export function propsToString(props: Record<string, unknown>) {
     // Handle VariantPropValue
     if (isVariantPropValue(value)) {
       return `${key}={${formatVariantPropValue(value)}}`
+    }
+    // Handle pseudo-selector props (e.g., _hover, _active) which may contain VariantPropValue
+    if (typeof value === 'object' && value !== null && key.startsWith('_')) {
+      return `${key}={${objectToJsxString(value as Record<string, unknown>)}}`
     }
     if (typeof value === 'object')
       return `${key}={${JSON.stringify(value, null, 2)}}`

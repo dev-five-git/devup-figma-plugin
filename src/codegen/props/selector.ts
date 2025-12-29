@@ -48,7 +48,7 @@ export async function getSelectorProps(
           [
             hasEffect
               ? component.variantProperties?.effect
-              : triggerTypeToEffect(component.reactions[0]?.trigger?.type),
+              : triggerTypeToEffect(component.reactions?.[0]?.trigger?.type),
             await getProps(component),
           ] as const,
       ),
@@ -83,7 +83,8 @@ export async function getSelectorProps(
       .flat()[0]
     const diffKeys = new Set<string>()
     for (const [effect, props] of components) {
-      if (!effect) continue
+      // Skip if no effect or if effect is "default" (default state doesn't need pseudo-selector)
+      if (!effect || effect === 'default') continue
       const def = difference(props, defaultProps)
       if (Object.keys(def).length === 0) continue
       result.props[`_${effect}`] = def
@@ -96,6 +97,78 @@ export async function getSelectorProps(
       keys.sort()
       result.props.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.props.transitionProperty = keys.join(',')
+    }
+  }
+
+  return result
+}
+
+/**
+ * Get selector props for a specific variant group (e.g., size=Md, variant=primary).
+ * This filters components by the given variant properties before calculating pseudo-selector diffs.
+ *
+ * @param componentSet The component set to extract selector props from
+ * @param variantFilter Object containing variant key-value pairs to filter by (excluding effect and viewport)
+ */
+export async function getSelectorPropsForGroup(
+  componentSet: ComponentSetNode,
+  variantFilter: Record<string, string>,
+): Promise<Record<string, object | string>> {
+  const hasEffect = !!componentSet.componentPropertyDefinitions.effect
+  if (!hasEffect) return {}
+
+  // Filter components matching the variant filter
+  const matchingComponents = componentSet.children.filter((child) => {
+    if (child.type !== 'COMPONENT') return false
+    const variantProps = child.variantProperties || {}
+
+    // Check all filter conditions match
+    for (const [key, value] of Object.entries(variantFilter)) {
+      if (variantProps[key] !== value) return false
+    }
+    return true
+  }) as ComponentNode[]
+
+  if (matchingComponents.length === 0) return {}
+
+  // Find the default component in this group (effect=default)
+  const defaultComponent = matchingComponents.find(
+    (c) => c.variantProperties?.effect === 'default',
+  )
+  if (!defaultComponent) return {}
+
+  const defaultProps = await getProps(defaultComponent)
+  const result: Record<string, object | string> = {}
+  const diffKeys = new Set<string>()
+
+  // Calculate diffs for each effect state
+  for (const component of matchingComponents) {
+    const effect = component.variantProperties?.effect
+    if (!effect || effect === 'default') continue
+
+    const props = await getProps(component)
+    const def = difference(props, defaultProps)
+    if (Object.keys(def).length === 0) continue
+
+    result[`_${effect}`] = def
+    for (const key of Object.keys(def)) {
+      diffKeys.add(key)
+    }
+  }
+
+  // Add transition if available
+  if (diffKeys.size > 0) {
+    const findNodeAction = (action: Action) => action.type === 'NODE'
+    const getTransition = (reaction: Reaction) =>
+      reaction.actions?.find(findNodeAction)?.transition
+    const transition = defaultComponent.reactions
+      ?.flatMap(getTransition)
+      .flat()[0]
+    if (transition?.type === 'SMART_ANIMATE') {
+      const keys = Array.from(diffKeys)
+      keys.sort()
+      result.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
+      result.transitionProperty = keys.join(',')
     }
   }
 

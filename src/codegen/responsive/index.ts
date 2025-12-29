@@ -63,7 +63,7 @@ export function groupChildrenByBreakpoint(
   return groups
 }
 
-type PropValue = boolean | string | number | undefined | null | object
+export type PropValue = boolean | string | number | undefined | null | object
 export type Props = Record<string, PropValue>
 const SPECIAL_PROPS_WITH_INITIAL = new Set([
   'display',
@@ -200,6 +200,13 @@ export function optimizeResponsiveValue(
  * Merge props across breakpoints into responsive arrays.
  * Always 5 slots: [mobile, sm, tablet, lg, pc]; trailing nulls trimmed.
  */
+/**
+ * Check if a prop key is a pseudo-selector prop (e.g., _hover, _active, _disabled, _focus).
+ */
+function isPseudoSelectorProp(key: string): boolean {
+  return key.startsWith('_')
+}
+
 export function mergePropsToResponsive(
   breakpointProps: Map<BreakpointKey, Record<string, unknown>>,
 ): Record<string, unknown> {
@@ -220,6 +227,27 @@ export function mergePropsToResponsive(
   }
 
   for (const key of allKeys) {
+    // Pseudo-selector props (e.g., _hover, _active, _disabled) need special handling:
+    // Their inner props should be merged into responsive arrays
+    if (isPseudoSelectorProp(key)) {
+      // Collect pseudo-selector objects from each breakpoint
+      const pseudoPropsMap = new Map<BreakpointKey, Record<string, unknown>>()
+      for (const [bp, props] of breakpointProps) {
+        if (
+          key in props &&
+          typeof props[key] === 'object' &&
+          props[key] !== null
+        ) {
+          pseudoPropsMap.set(bp, props[key] as Record<string, unknown>)
+        }
+      }
+      if (pseudoPropsMap.size > 0) {
+        // Recursively merge the inner props of pseudo-selector
+        result[key] = mergePropsToResponsive(pseudoPropsMap)
+      }
+      continue
+    }
+
     // Collect values for 5 fixed slots.
     const values: (PropValue | null)[] = BREAKPOINT_ORDER.map((bp) => {
       const props = breakpointProps.get(bp)
@@ -390,6 +418,26 @@ export function mergePropsToVariant(
   }
 
   for (const key of allKeys) {
+    // Pseudo-selector props (e.g., _hover, _active, _disabled) need special handling:
+    // Their inner props should be merged with variant conditionals
+    if (isPseudoSelectorProp(key)) {
+      // Collect pseudo-selector objects from each variant
+      const pseudoPropsMap = new Map<string, Record<string, unknown>>()
+      for (const [variant, props] of variantProps) {
+        if (
+          key in props &&
+          typeof props[key] === 'object' &&
+          props[key] !== null
+        ) {
+          pseudoPropsMap.set(variant, props[key] as Record<string, unknown>)
+        }
+      }
+      if (pseudoPropsMap.size > 0) {
+        // Recursively merge the inner props of pseudo-selector
+        result[key] = mergePropsToVariant(variantKey, pseudoPropsMap)
+      }
+      continue
+    }
     // Collect values for each variant.
     const valuesByVariant: Record<string, PropValue> = {}
     let hasValue = false

@@ -114,7 +114,7 @@ function generatePowerShellCLI(
   return commands.join('\n')
 }
 
-const debug = false
+const debug = true
 
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
