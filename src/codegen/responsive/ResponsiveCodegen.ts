@@ -424,9 +424,12 @@ export class ResponsiveCodegen {
       }
     }
 
-    // If effect variant only, skip component rendering (effect is pseudo-selector)
+    // If effect variant only, generate code from defaultVariant with pseudo-selectors
     if (effectKey && !viewportKey && otherVariantKeys.length === 0) {
-      return []
+      return ResponsiveCodegen.generateEffectOnlyComponents(
+        componentSet,
+        componentName,
+      )
     }
 
     // If no viewport variant, just handle other variants
@@ -549,6 +552,40 @@ export class ResponsiveCodegen {
 
     const result: Array<readonly [string, string]> = [
       [componentName, renderComponent(componentName, mergedCode, variants)],
+    ]
+    return result
+  }
+
+  /**
+   * Generate component code for COMPONENT_SET with effect variant only (no other variants).
+   * Uses defaultVariant as the base and adds pseudo-selector props from getSelectorProps.
+   */
+  private static async generateEffectOnlyComponents(
+    componentSet: ComponentSetNode,
+    componentName: string,
+  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    // Use defaultVariant as the base component
+    const defaultComponent = componentSet.defaultVariant
+    if (!defaultComponent) {
+      return []
+    }
+
+    // Get base props from defaultVariant
+    const codegen = new Codegen(defaultComponent)
+    const tree = await codegen.getTree()
+
+    // Get pseudo-selector props (hover, active, disabled, etc.)
+    const selectorProps = await getSelectorPropsForGroup(componentSet, {})
+    if (Object.keys(selectorProps).length > 0) {
+      Object.assign(tree.props, selectorProps)
+    }
+
+    // Render the tree to JSX
+    const code = Codegen.renderTree(tree, 2)
+
+    // No variant props needed since effect is handled via pseudo-selectors
+    const result: Array<readonly [string, string]> = [
+      [componentName, renderComponent(componentName, code, {})],
     ]
     return result
   }
