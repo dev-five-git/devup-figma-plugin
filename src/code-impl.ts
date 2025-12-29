@@ -211,6 +211,16 @@ export function registerCodegen(ctx: typeof figma) {
                       .map((code) => code[1])
                       .join('\n\n'),
                   },
+                  {
+                    title: `${node.name} - Components Responsive CLI (Bash)`,
+                    language: 'BASH' as const,
+                    code: generateBashCLI(responsiveComponentsCodes),
+                  },
+                  {
+                    title: `${node.name} - Components Responsive CLI (PowerShell)`,
+                    language: 'BASH' as const,
+                    code: generatePowerShellCLI(responsiveComponentsCodes),
+                  },
                 ]
               : []),
             ...responsiveResult,
