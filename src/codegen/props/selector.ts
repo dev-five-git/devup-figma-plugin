@@ -24,10 +24,19 @@ const shortToCssProperty: Record<string, string> = {
 }
 
 /**
+ * Convert camelCase to kebab-case for CSS property names.
+ */
+function toKebabCase(str: string): string {
+  return str.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
+}
+
+/**
  * Convert shorthand prop names to CSS standard property names for transitionProperty.
+ * Also converts camelCase to kebab-case (e.g., boxShadow -> box-shadow).
  */
 function toTransitionPropertyName(key: string): string {
-  return shortToCssProperty[key] || key
+  const mapped = shortToCssProperty[key] || key
+  return toKebabCase(mapped)
 }
 
 // 속성 이름을 유효한 TypeScript 식별자로 변환
