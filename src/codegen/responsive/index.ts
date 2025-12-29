@@ -231,7 +231,10 @@ export function mergePropsToResponsive(
     // Their inner props should be merged into responsive arrays
     if (isPseudoSelectorProp(key)) {
       // Collect pseudo-selector objects from each breakpoint
+      // For breakpoints that don't have this pseudo-selector, use empty object
+      // so that inner props get null values for those breakpoints
       const pseudoPropsMap = new Map<BreakpointKey, Record<string, unknown>>()
+      let hasPseudoSelector = false
       for (const [bp, props] of breakpointProps) {
         if (
           key in props &&
@@ -239,9 +242,14 @@ export function mergePropsToResponsive(
           props[key] !== null
         ) {
           pseudoPropsMap.set(bp, props[key] as Record<string, unknown>)
+          hasPseudoSelector = true
+        } else {
+          // Breakpoint doesn't have this pseudo-selector, use empty object
+          // This ensures inner props get null for this breakpoint
+          pseudoPropsMap.set(bp, {})
         }
       }
-      if (pseudoPropsMap.size > 0) {
+      if (hasPseudoSelector) {
         // Recursively merge the inner props of pseudo-selector
         result[key] = mergePropsToResponsive(pseudoPropsMap)
       }

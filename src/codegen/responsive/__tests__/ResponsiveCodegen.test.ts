@@ -1081,5 +1081,82 @@ describe('ResponsiveCodegen', () => {
       expect(code).toContain('#B3B3B3') // Mobile hover color
       expect(code).toMatch(/#999(?:999)?/) // Desktop hover color (may be shortened)
     })
+
+    it('handles hover only on desktop (no hover on mobile)', async () => {
+      // Component where hover only exists on Desktop, not on Mobile
+      const createComponent = (
+        effect: string,
+        viewport: string,
+        bgColor: { r: number; g: number; b: number },
+      ) =>
+        ({
+          type: 'COMPONENT',
+          name: `effect=${effect}, viewport=${viewport}`,
+          variantProperties: { effect, viewport },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: viewport === 'Desktop' ? 200 : 150,
+          height: 50,
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              color: bgColor,
+              opacity: 1,
+            },
+          ],
+          reactions: [],
+        }) as unknown as ComponentNode
+
+      // Desktop colors
+      const desktopDefault = { r: 0.5, g: 0.5, b: 0.5 } // #808080
+      const desktopHover = { r: 0.6, g: 0.6, b: 0.6 } // #999999
+
+      // Mobile - only default, NO hover variant
+      const mobileDefault = { r: 0.5, g: 0.5, b: 0.5 } // #808080
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'DesktopOnlyHoverButton',
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            defaultValue: 'default',
+            variantOptions: ['default', 'hover'],
+          },
+          viewport: {
+            type: 'VARIANT',
+            defaultValue: 'Desktop',
+            variantOptions: ['Desktop', 'Mobile'],
+          },
+        },
+        children: [
+          createComponent('default', 'Desktop', desktopDefault),
+          createComponent('hover', 'Desktop', desktopHover),
+          createComponent('default', 'Mobile', mobileDefault),
+          // Note: NO hover variant for Mobile
+        ],
+      } as unknown as ComponentSetNode
+
+      // Set default variant
+      ;(componentSet as { defaultVariant: ComponentNode }).defaultVariant =
+        componentSet.children[0] as ComponentNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'DesktopOnlyHoverButton',
+        )
+
+      expect(result.length).toBe(1)
+      const code = result[0][1]
+
+      // _hover should exist with responsive array where mobile slot is null
+      // Expected: _hover: { bg: [null, null, null, null, "#999"] }
+      expect(code).toContain('_hover')
+      // Should contain null for mobile slot and value for pc slot
+      expect(code).toContain('null')
+      expect(code).toMatch(/#999(?:999)?/) // Desktop hover color
+    })
   })
 })
