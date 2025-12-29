@@ -109,15 +109,22 @@ export async function getSelectorProps(
  *
  * @param componentSet The component set to extract selector props from
  * @param variantFilter Object containing variant key-value pairs to filter by (excluding effect and viewport)
+ * @param viewportValue Optional viewport value to filter by (e.g., 'Desktop', 'Mobile')
  */
 export async function getSelectorPropsForGroup(
   componentSet: ComponentSetNode,
   variantFilter: Record<string, string>,
+  viewportValue?: string,
 ): Promise<Record<string, object | string>> {
   const hasEffect = !!componentSet.componentPropertyDefinitions.effect
   if (!hasEffect) return {}
 
-  // Filter components matching the variant filter
+  // Find viewport key if needed
+  const viewportKey = Object.keys(
+    componentSet.componentPropertyDefinitions,
+  ).find((key) => key.toLowerCase() === 'viewport')
+
+  // Filter components matching the variant filter (and viewport if specified)
   const matchingComponents = componentSet.children.filter((child) => {
     if (child.type !== 'COMPONENT') return false
     const variantProps = child.variantProperties || {}
@@ -126,6 +133,12 @@ export async function getSelectorPropsForGroup(
     for (const [key, value] of Object.entries(variantFilter)) {
       if (variantProps[key] !== value) return false
     }
+
+    // Check viewport if specified
+    if (viewportValue && viewportKey) {
+      if (variantProps[viewportKey] !== viewportValue) return false
+    }
+
     return true
   }) as ComponentNode[]
 

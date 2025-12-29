@@ -285,7 +285,12 @@ export class ResponsiveCodegen {
       }
     }
 
-    // Group components by non-viewport variants
+    // Find effect variant key (to exclude from grouping)
+    const effectKey = Object.keys(
+      componentSet.componentPropertyDefinitions,
+    ).find((key) => key.toLowerCase() === 'effect')
+
+    // Group components by non-viewport, non-effect variants
     const groups = new Map<string, Map<BreakpointKey, ComponentNode>>()
 
     for (const child of componentSet.children) {
@@ -294,13 +299,19 @@ export class ResponsiveCodegen {
       const component = child as ComponentNode
       const variantProps = component.variantProperties || {}
 
+      // Skip non-default effect variants (they become pseudo-selectors)
+      if (effectKey && variantProps[effectKey] !== 'default') continue
+
       const viewportValue = variantProps[viewportKey]
       if (!viewportValue) continue
 
       const breakpoint = viewportToBreakpoint(viewportValue)
-      // Create group key from non-viewport variants
+      // Create group key from non-viewport, non-effect variants
       const otherVariants = Object.entries(variantProps)
-        .filter(([key]) => key.toLowerCase() !== 'viewport')
+        .filter(([key]) => {
+          const lowerKey = key.toLowerCase()
+          return lowerKey !== 'viewport' && lowerKey !== 'effect'
+        })
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, value]) => `${key}=${value}`)
         .join('|')
@@ -315,11 +326,6 @@ export class ResponsiveCodegen {
         group.set(breakpoint, component)
       }
     }
-
-    // Check if componentSet has effect variant (pseudo-selector)
-    const hasEffect = Object.keys(
-      componentSet.componentPropertyDefinitions,
-    ).some((key) => key.toLowerCase() === 'effect')
 
     // Generate responsive code for each group
     const results: Array<readonly [string, string]> = []
@@ -338,20 +344,26 @@ export class ResponsiveCodegen {
         }
       }
 
-      // Get pseudo-selector props for this specific variant group
-      const selectorProps = hasEffect
-        ? await getSelectorPropsForGroup(componentSet, variantFilter)
-        : null
-
       // Build trees for each viewport
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
-        // Add pseudo-selector props to tree
-        if (selectorProps && Object.keys(selectorProps).length > 0) {
-          Object.assign(tree.props, selectorProps)
+
+        // Get pseudo-selector props for this specific variant group AND viewport
+        // This ensures hover/active colors are correctly responsive per viewport
+        if (effectKey) {
+          const viewportValue = component.variantProperties?.[viewportKey]
+          const selectorProps = await getSelectorPropsForGroup(
+            componentSet,
+            variantFilter,
+            viewportValue,
+          )
+          if (Object.keys(selectorProps).length > 0) {
+            Object.assign(tree.props, selectorProps)
+          }
         }
+
         treesByBreakpoint.set(bp, tree)
       }
 
@@ -502,20 +514,27 @@ export class ResponsiveCodegen {
     >()
 
     for (const [compositeKey, viewportComponents] of byCompositeVariant) {
-      // Get pseudo-selector props for this specific variant group
       const variantFilter = parseCompositeKey(compositeKey)
-      const selectorProps = effectKey
-        ? await getSelectorPropsForGroup(componentSet, variantFilter)
-        : null
 
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
-        // Add pseudo-selector props to tree
-        if (selectorProps && Object.keys(selectorProps).length > 0) {
-          Object.assign(tree.props, selectorProps)
+
+        // Get pseudo-selector props for this specific variant group AND viewport
+        // This ensures hover/active colors are correctly responsive per viewport
+        if (effectKey) {
+          const viewportValue = component.variantProperties?.[viewportKey]
+          const selectorProps = await getSelectorPropsForGroup(
+            componentSet,
+            variantFilter,
+            viewportValue,
+          )
+          if (Object.keys(selectorProps).length > 0) {
+            Object.assign(tree.props, selectorProps)
+          }
         }
+
         treesByBreakpoint.set(bp, tree)
       }
       responsivePropsByComposite.set(compositeKey, treesByBreakpoint)
@@ -1107,6 +1126,7 @@ export class ResponsiveCodegen {
 
   /**
    * Create a nested variant prop value for props that differ across multiple variant dimensions.
+   * Optimized to minimize nesting depth by choosing the best outer variant key.
    */
   private createNestedVariantProp(
     variantKeys: string[],
@@ -1149,10 +1169,16 @@ export class ResponsiveCodegen {
       )
     }
 
-    // For multiple variant keys, we need to determine which key(s) cause the difference
-    // and create nested conditionals
+    // For multiple variant keys, calculate nesting cost for each possible outer key
+    // and choose the one with minimum cost
+    interface CandidateResult {
+      variantKey: string
+      cost: number
+      nestedValues: Record<string, unknown>
+    }
 
-    // Try each variant key to see if it alone explains the difference
+    const candidates: CandidateResult[] = []
+
     for (const variantKey of variantKeys) {
       const valuesByVariant = new Map<string, Map<string, unknown>>()
 
@@ -1174,68 +1200,76 @@ export class ResponsiveCodegen {
         }
       }
 
-      // Check if this variant key alone explains the difference
-      // (all values within each variant value are the same)
-      let variantExplainsAll = true
-      const simplifiedValues: Record<string, unknown> = {}
+      // Calculate nested values and cost for this outer key
+      const remainingKeys = variantKeys.filter((k) => k !== variantKey)
+      const nestedValues: Record<string, unknown> = {}
+      let totalCost = 0
 
       for (const [variantValue, subValues] of valuesByVariant) {
+        // Check if all sub-values are the same (can collapse to scalar)
         const uniqueSubValues = new Set(
           [...subValues.values()].map((v) => JSON.stringify(v)),
         )
+
         if (uniqueSubValues.size === 1) {
-          simplifiedValues[variantValue] = [...subValues.values()][0]
+          // All same - collapse to scalar value (cost 0)
+          nestedValues[variantValue] = [...subValues.values()][0]
+          // Cost is 0 for scalar
         } else {
-          variantExplainsAll = false
-          break
+          // Need to recurse
+          const nestedResult = this.createNestedVariantProp(
+            remainingKeys,
+            subValues,
+          )
+          nestedValues[variantValue] = nestedResult
+
+          // Calculate cost based on nesting depth
+          totalCost += this.calculateNestingCost(nestedResult)
         }
       }
 
-      if (variantExplainsAll) {
-        // This variant key alone explains the difference
-        return createVariantPropValue(
-          variantKey,
-          simplifiedValues as Record<string, PropValue>,
-        )
-      }
+      candidates.push({
+        variantKey,
+        cost: totalCost,
+        nestedValues,
+      })
     }
 
-    // Multiple variant keys contribute to the difference
-    // Use the first variant key and recurse for nested conditionals
-    const primaryKey = variantKeys[0]
-    const remainingKeys = variantKeys.slice(1)
-
-    const valuesByPrimaryVariant = new Map<string, Map<string, unknown>>()
-
-    for (const [compositeKey, value] of valuesByComposite) {
-      const parsed = parseCompositeKey(compositeKey)
-      const primaryValue = parsed[primaryKey]
-
-      if (!valuesByPrimaryVariant.has(primaryValue)) {
-        valuesByPrimaryVariant.set(primaryValue, new Map())
+    // Find the candidate with minimum cost
+    let bestCandidate = candidates[0]
+    for (const candidate of candidates) {
+      if (candidate.cost < bestCandidate.cost) {
+        bestCandidate = candidate
       }
-
-      const subCompositeKey = remainingKeys
-        .map((k) => `${k}=${parsed[k]}`)
-        .join('|')
-      const primaryMap = valuesByPrimaryVariant.get(primaryValue)
-      if (primaryMap) {
-        primaryMap.set(subCompositeKey, value)
-      }
-    }
-
-    // Create nested structure
-    const nestedValues: Record<string, unknown> = {}
-    for (const [primaryValue, subValues] of valuesByPrimaryVariant) {
-      nestedValues[primaryValue] = this.createNestedVariantProp(
-        remainingKeys,
-        subValues,
-      )
     }
 
     return createVariantPropValue(
-      primaryKey,
-      nestedValues as Record<string, PropValue>,
+      bestCandidate.variantKey,
+      bestCandidate.nestedValues as Record<string, PropValue>,
     )
+  }
+
+  /**
+   * Calculate the nesting cost of a value.
+   * Scalar values have cost 0, VariantPropValue adds 1 + cost of nested values.
+   */
+  private calculateNestingCost(value: unknown): number {
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      '__variantProp' in value
+    ) {
+      const variantProp = value as {
+        __variantProp: true
+        values: Record<string, unknown>
+      }
+      let maxNestedCost = 0
+      for (const nestedValue of Object.values(variantProp.values)) {
+        const nestedCost = this.calculateNestingCost(nestedValue)
+        maxNestedCost = Math.max(maxNestedCost, nestedCost)
+      }
+      return 1 + maxNestedCost
+    }
+    return 0
   }
 }

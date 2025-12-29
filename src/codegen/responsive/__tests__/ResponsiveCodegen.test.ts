@@ -572,6 +572,146 @@ describe('ResponsiveCodegen', () => {
     })
   })
 
+  describe('createNestedVariantProp optimization', () => {
+    it('minimizes nesting by choosing the best outer variant key', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Scenario: bg prop where white is same for both sizes, but primary differs
+      // If we use size as outer key:
+      //   { Md: { primary: "$primaryBold", white: "$background" }[variant],
+      //     Sm: { primary: "$primaryExBold", white: "$background" }[variant] }[size]
+      // If we use variant as outer key:
+      //   { primary: { Md: "$primaryBold", Sm: "$primaryExBold" }[size],
+      //     white: "$background" }[variant]
+      // The second option is better because white collapses to a scalar
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'size=Md|variant=primary',
+          {
+            component: 'Box',
+            props: { bg: '$primaryBold' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'size=Md|variant=white',
+          {
+            component: 'Box',
+            props: { bg: '$background' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'size=Sm|variant=primary',
+          {
+            component: 'Box',
+            props: { bg: '$primaryExBold' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'size=Sm|variant=white',
+          {
+            component: 'Box',
+            props: { bg: '$background' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      // Use generateNestedVariantMergedCode which internally calls createNestedVariantProp
+      const result = (
+        generator as unknown as {
+          generateNestedVariantMergedCode: (
+            variantKeys: string[],
+            trees: Map<string, NodeTree>,
+            depth: number,
+          ) => string
+        }
+      ).generateNestedVariantMergedCode(['size', 'variant'], treesByVariant, 0)
+
+      // Should use variant as outer key because white collapses to scalar
+      // The result should have variant as the outer conditional, not size
+      expect(result).toContain('variantKey":"variant"')
+      // white should be a scalar value, not nested
+      expect(result).toContain('"white":"$background"')
+      // primary should be nested with size
+      expect(result).toContain('"primary":{')
+      expect(result).toContain('variantKey":"size"')
+    })
+
+    it('uses any key when all have equal nesting cost', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Scenario: all combinations have different values
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'size=Md|variant=primary',
+          {
+            component: 'Box',
+            props: { bg: 'A' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'size=Md|variant=white',
+          {
+            component: 'Box',
+            props: { bg: 'B' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'size=Sm|variant=primary',
+          {
+            component: 'Box',
+            props: { bg: 'C' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'size=Sm|variant=white',
+          {
+            component: 'Box',
+            props: { bg: 'D' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = (
+        generator as unknown as {
+          generateNestedVariantMergedCode: (
+            variantKeys: string[],
+            trees: Map<string, NodeTree>,
+            depth: number,
+          ) => string
+        }
+      ).generateNestedVariantMergedCode(['size', 'variant'], treesByVariant, 0)
+
+      // Should still produce valid output with either key as outer
+      expect(result).toContain('variantKey')
+      expect(result).toContain('"bg"')
+    })
+  })
+
   describe('generateVariantResponsiveComponents', () => {
     it('handles component set with only non-viewport variants', async () => {
       const componentSet = {
@@ -861,6 +1001,85 @@ describe('ResponsiveCodegen', () => {
 
       // Verify snapshot for the generated code
       expect(code).toMatchSnapshot()
+    })
+
+    it('handles responsive pseudo-selector props (different hover colors per viewport)', async () => {
+      // Component with different hover colors for Desktop vs Mobile
+      const createComponent = (
+        effect: string,
+        viewport: string,
+        bgColor: { r: number; g: number; b: number },
+      ) =>
+        ({
+          type: 'COMPONENT',
+          name: `effect=${effect}, viewport=${viewport}`,
+          variantProperties: { effect, viewport },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: viewport === 'Desktop' ? 200 : 150,
+          height: 50,
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              color: bgColor,
+              opacity: 1,
+            },
+          ],
+          reactions: [],
+        }) as unknown as ComponentNode
+
+      // Desktop colors
+      const desktopDefault = { r: 0.5, g: 0.5, b: 0.5 } // #808080
+      const desktopHover = { r: 0.6, g: 0.6, b: 0.6 } // #999999
+
+      // Mobile colors (different hover color)
+      const mobileDefault = { r: 0.5, g: 0.5, b: 0.5 } // #808080 (same as desktop)
+      const mobileHover = { r: 0.7, g: 0.7, b: 0.7 } // #B3B3B3 (different from desktop)
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'ResponsiveHoverButton',
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            defaultValue: 'default',
+            variantOptions: ['default', 'hover'],
+          },
+          viewport: {
+            type: 'VARIANT',
+            defaultValue: 'Desktop',
+            variantOptions: ['Desktop', 'Mobile'],
+          },
+        },
+        children: [
+          createComponent('default', 'Desktop', desktopDefault),
+          createComponent('hover', 'Desktop', desktopHover),
+          createComponent('default', 'Mobile', mobileDefault),
+          createComponent('hover', 'Mobile', mobileHover),
+        ],
+      } as unknown as ComponentSetNode
+
+      // Set default variant
+      ;(componentSet as { defaultVariant: ComponentNode }).defaultVariant =
+        componentSet.children[0] as ComponentNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'ResponsiveHoverButton',
+        )
+
+      expect(result.length).toBe(1)
+      const code = result[0][1]
+
+      // The _hover.bg should be a responsive array since colors differ by viewport
+      // Desktop hover: #999 (or #999999), Mobile hover: #B3B3B3
+      // Expected: _hover: { bg: ["#B3B3B3", null, null, null, "#999"] }
+      expect(code).toContain('_hover')
+      // Should contain responsive array format (mobile first, then pc)
+      expect(code).toContain('#B3B3B3') // Mobile hover color
+      expect(code).toMatch(/#999(?:999)?/) // Desktop hover color (may be shortened)
     })
   })
 })
