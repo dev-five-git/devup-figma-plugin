@@ -712,6 +712,169 @@ describe('ResponsiveCodegen', () => {
     })
   })
 
+  describe('generateVariantMergedCode', () => {
+    it('merges trees across both viewport and variant dimensions', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Trees by variant and breakpoint:
+      // status=scroll => { mobile: tree1, pc: tree2 }
+      // status=default => { mobile: tree3, pc: tree4 }
+      const treesByVariantAndBreakpoint = new Map<
+        string,
+        Map<'mobile' | 'tablet' | 'pc', NodeTree>
+      >([
+        [
+          'scroll',
+          new Map<'mobile' | 'tablet' | 'pc', NodeTree>([
+            [
+              'mobile',
+              {
+                component: 'Box',
+                props: { w: '100px', h: '50px' },
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+            [
+              'pc',
+              {
+                component: 'Box',
+                props: { w: '200px', h: '50px' },
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'default',
+          new Map<'mobile' | 'tablet' | 'pc', NodeTree>([
+            [
+              'mobile',
+              {
+                component: 'Box',
+                props: { w: '150px', h: '50px' },
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+            [
+              'pc',
+              {
+                component: 'Box',
+                props: { w: '250px', h: '50px' },
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+      ])
+
+      const result = generator.generateVariantMergedCode(
+        'status',
+        treesByVariantAndBreakpoint,
+        0,
+      )
+
+      // h should be same value (50px) - no responsive, no variant conditional
+      expect(result).toContain('"h":"50px"')
+      // w should have both responsive (mobile vs pc) AND variant conditional
+      // scroll: mobile=100px, pc=200px => ["100px", null, null, null, "200px"]
+      // default: mobile=150px, pc=250px => ["150px", null, null, null, "250px"]
+      expect(result).toContain('scroll')
+      expect(result).toContain('default')
+      expect(result).toContain('status') // variantKey
+    })
+
+    it('merges children across viewport and variant dimensions', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Child that exists only on mobile for scroll, and on both for default
+      const mobileOnlyChild: NodeTree = {
+        component: 'Text',
+        props: { id: 'MobileChild' },
+        children: [],
+        nodeType: 'TEXT',
+        nodeName: 'MobileChild',
+      }
+
+      const treesByVariantAndBreakpoint = new Map<
+        string,
+        Map<'mobile' | 'tablet' | 'pc', NodeTree>
+      >([
+        [
+          'scroll',
+          new Map<'mobile' | 'tablet' | 'pc', NodeTree>([
+            [
+              'mobile',
+              {
+                component: 'Box',
+                props: {},
+                children: [mobileOnlyChild],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+            [
+              'pc',
+              {
+                component: 'Box',
+                props: {},
+                children: [], // No child on pc
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'default',
+          new Map<'mobile' | 'tablet' | 'pc', NodeTree>([
+            [
+              'mobile',
+              {
+                component: 'Box',
+                props: {},
+                children: [
+                  { ...mobileOnlyChild, props: { id: 'DefaultChild' } },
+                ],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+            [
+              'pc',
+              {
+                component: 'Box',
+                props: {},
+                children: [
+                  { ...mobileOnlyChild, props: { id: 'DefaultChild' } },
+                ],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+      ])
+
+      const result = generator.generateVariantMergedCode(
+        'status',
+        treesByVariantAndBreakpoint,
+        0,
+      )
+
+      // Should contain the children's id values
+      expect(result).toContain('MobileChild')
+      expect(result).toContain('DefaultChild')
+    })
+  })
+
   describe('generateVariantResponsiveComponents', () => {
     it('handles component set with only non-viewport variants', async () => {
       const componentSet = {

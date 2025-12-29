@@ -177,4 +177,222 @@ describe('propsToString', () => {
     expect(res).toContain('scroll: Symbol(test)')
     expect(res).toContain('default: "20px"')
   })
+
+  test('handles pseudo-selector prop with nested VariantPropValue', () => {
+    // This tests _hover prop with VariantPropValue inside object
+    // Covers lines 137-140 (formatObjectValue handling VariantPropValue)
+    const nestedVariantProp = createVariantPropValue('variant', {
+      primary: '#FF0000',
+      white: '#0000FF',
+    })
+    const res = propsToString({
+      _hover: { bg: nestedVariantProp },
+    })
+    expect(res).toContain('_hover={')
+    expect(res).toContain('"bg":')
+    expect(res).toContain('primary: "#FF0000"')
+    expect(res).toContain('white: "#0000FF"')
+    expect(res).toContain('[variant]')
+  })
+
+  test('handles pseudo-selector prop with nested object containing VariantPropValue', () => {
+    // Tests deep nesting where VariantPropValue is inside a nested object
+    // Covers line 93 (formatValueWithIndent handling VariantPropValue)
+    const nestedVariantProp = createVariantPropValue('size', {
+      sm: { x: 1, y: 2 },
+      lg: { x: 3, y: 4 },
+    })
+    const res = propsToString({
+      _active: { transform: nestedVariantProp },
+    })
+    expect(res).toContain('_active={')
+    expect(res).toContain('"transform":')
+    expect(res).toContain('sm:')
+    expect(res).toContain('lg:')
+    expect(res).toContain('[size]')
+  })
+
+  test('handles VariantPropValue with single entry (inline format)', () => {
+    // Single entry should use inline format
+    const variantProp = createVariantPropValue('status', {
+      scroll: '10px',
+    })
+    const res = propsToString({ w: variantProp })
+    // Single entry with primitive value uses inline format
+    expect(res).toContain('{ scroll: "10px" }[status]')
+  })
+
+  test('handles VariantPropValue with null values', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: null,
+      default: '20px',
+    })
+    const res = propsToString({ w: variantProp })
+    expect(res).toContain('scroll: null')
+    expect(res).toContain('default: "20px"')
+  })
+
+  test('handles pseudo-selector prop with deeply nested objects', () => {
+    // Tests formatObjectValue recursively handling nested objects
+    // Covers lines 138-140 (typeof value === 'object' branch)
+    const res = propsToString({
+      _hover: {
+        transform: { scale: { x: 1.1, y: 1.1 } },
+      },
+    })
+    expect(res).toContain('_hover={')
+    expect(res).toContain('"transform":')
+    expect(res).toContain('"scale":')
+    expect(res).toContain('"x": 1.1')
+    expect(res).toContain('"y": 1.1')
+  })
+
+  test('handles pseudo-selector prop with array value inside object', () => {
+    // Tests formatObjectValue handling array values
+    // Covers lines 131-133 (Array.isArray branch in formatObjectValue)
+    const res = propsToString({
+      _hover: {
+        padding: [10, 20, 10, 20],
+      },
+    })
+    expect(res).toContain('_hover={')
+    expect(res).toContain('"padding": [10, 20, 10, 20]')
+  })
+
+  test('handles VariantPropValue with nested VariantPropValue in multiline format', () => {
+    // Tests formatValueWithIndent handling VariantPropValue
+    // Covers line 93 (isVariantPropValue branch in formatValueWithIndent)
+    const innerVariant = createVariantPropValue('size', {
+      sm: '10px',
+      lg: '20px',
+    })
+    const outerVariant = createVariantPropValue('status', {
+      scroll: innerVariant,
+      default: '30px',
+    })
+    const res = propsToString({ w: outerVariant })
+    // Outer variant should contain inner variant with [size] access
+    expect(res).toContain('[status]')
+    expect(res).toContain('[size]')
+    expect(res).toContain('scroll:')
+    expect(res).toContain('default: "30px"')
+  })
+
+  test('valueToJsxString handles number and boolean in inline format', () => {
+    // Tests lines 11-12 (number/boolean handling in valueToJsxString)
+    // Single entry avoids multiline format, so valueToJsxString is used
+    const variantPropNumber = createVariantPropValue('status', {
+      active: 42,
+    })
+    const res1 = propsToString({ count: variantPropNumber })
+    expect(res1).toContain('{ active: 42 }[status]')
+
+    const variantPropBool = createVariantPropValue('status', {
+      active: true,
+    })
+    const res2 = propsToString({ visible: variantPropBool })
+    expect(res2).toContain('{ active: true }[status]')
+  })
+
+  test('valueToJsxString handles array in inline format', () => {
+    // Tests lines 14-16 (array handling in valueToJsxString)
+    // Single entry avoids multiline format, so valueToJsxString is used
+    const variantProp = createVariantPropValue('status', {
+      active: [1, 2, 3],
+    })
+    const res = propsToString({ items: variantProp })
+    // Single entry with array value still uses multiline format due to needsMultilineFormat check
+    expect(res).toContain('[status]')
+    expect(res).toContain('active:')
+  })
+
+  test('valueToJsxString handles nested VariantPropValue in inline format', () => {
+    // Tests lines 19-20 (VariantPropValue handling in valueToJsxString)
+    // This creates a VariantPropValue inside another, but only 1 entry
+    const inner = createVariantPropValue('size', {
+      sm: '10px',
+    })
+    const outer = createVariantPropValue('status', {
+      active: inner,
+    })
+    const res = propsToString({ w: outer })
+    expect(res).toContain('[status]')
+    expect(res).toContain('[size]')
+  })
+
+  test('valueToJsxString handles plain object in inline format', () => {
+    // Tests lines 22-23 (plain object handling in valueToJsxString)
+    // Single entry with object triggers multiline due to needsMultilineFormat
+    const variantProp = createVariantPropValue('status', {
+      active: { x: 1 },
+    })
+    const res = propsToString({ pos: variantProp })
+    expect(res).toContain('[status]')
+    expect(res).toContain('active:')
+    expect(res).toContain('"x": 1')
+  })
+
+  test('valueToJsxString handles nested arrays with complex items', () => {
+    // Tests valueToJsxString branches when called from formatValueWithIndent's array handling
+    // formatValueWithIndent calls valueToJsxString for each array item (line 89)
+    // This tests lines 14-16 (array branch) and 22-23 (object branch) in valueToJsxString
+    const variantProp = createVariantPropValue('status', {
+      scroll: [
+        [1, 2],
+        [3, 4],
+      ], // nested array - hits line 14-16
+      default: [{ a: 1 }, { b: 2 }], // array of objects - hits line 22-23
+    })
+    const res = propsToString({ items: variantProp })
+    expect(res).toContain('[status]')
+    expect(res).toContain('scroll:')
+    expect(res).toContain('default:')
+    // Nested arrays should be formatted
+    expect(res).toContain('[[1, 2], [3, 4]]')
+    // Objects inside array should be JSON stringified
+    expect(res).toContain('[{"a":1}, {"b":2}]')
+  })
+
+  test('valueToJsxString handles array with VariantPropValue items', () => {
+    // Tests line 19-20 (VariantPropValue branch) in valueToJsxString
+    // when called from formatValueWithIndent's array handling
+    const innerVariant = createVariantPropValue('size', {
+      sm: 'small',
+      lg: 'large',
+    })
+    const variantProp = createVariantPropValue('status', {
+      active: [innerVariant, 'text'], // array containing VariantPropValue
+      inactive: ['just', 'strings'],
+    })
+    const res = propsToString({ data: variantProp })
+    expect(res).toContain('[status]')
+    expect(res).toContain('[size]')
+    expect(res).toContain('active:')
+    expect(res).toContain('inactive:')
+  })
+
+  test('valueToJsxString handles fallback to String() for unknown types', () => {
+    // Tests line 25 (fallback case) in valueToJsxString
+    // Functions and other exotic types fall through to String()
+    const fn = function testFn() {}
+    const variantProp = createVariantPropValue('status', {
+      active: [fn as unknown as string], // function in array
+      inactive: ['normal'],
+    })
+    const res = propsToString({ cb: variantProp })
+    expect(res).toContain('[status]')
+    expect(res).toContain('function')
+  })
+
+  test('formatObjectValue handles function value in pseudo-selector', () => {
+    // Tests line 140-141 (fallback case) in formatObjectValue
+    // This covers the String(value) fallback for non-standard types
+    const fn = function testHandler() {}
+    const res = propsToString({
+      _hover: { onClick: fn as unknown as string },
+    })
+    expect(res).toContain('_hover={')
+    expect(res).toContain('"onClick":')
+    expect(res).toContain('function')
+  })
 })

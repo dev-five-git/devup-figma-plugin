@@ -123,6 +123,24 @@ describe('mergePropsToVariant', () => {
       expanded: '300px',
     })
   })
+
+  it('handles pseudo-selector present in only some variants', () => {
+    // This test covers the else branch at line 445-448
+    // where a variant doesn't have the pseudo-selector prop
+    const input = new Map([
+      ['scroll', { _hover: { bg: 'red' } }],
+      ['default', { w: '100px' }], // no _hover pseudo-selector
+    ])
+    const result = mergePropsToVariant('status', input)
+
+    // _hover should be merged with variant conditionals
+    // scroll variant has bg: 'red', default variant gets empty object (null for inner props)
+    expect(result._hover).toBeDefined()
+    const hoverProp = result._hover as Record<string, unknown>
+    expect(isVariantPropValue(hoverProp.bg)).toBe(true)
+    const bgProp = hoverProp.bg as ReturnType<typeof createVariantPropValue>
+    expect(bgProp.values).toEqual({ scroll: 'red' })
+  })
 })
 
 describe('isVariantPropValue', () => {
