@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { nodeProxyTracker } from '../node-proxy'
+import {
+  assembleNodeTree,
+  nodeProxyTracker,
+  setupVariableMocks,
+} from '../node-proxy'
 
 // Mock SceneNode
 function createMockNode(overrides: Partial<SceneNode> = {}): SceneNode {
@@ -621,5 +625,147 @@ describe('nodeProxyTracker', () => {
     expect(result.variables.length).toBe(1)
     expect(result.variables[0].id).toBe('VariableID:123')
     expect(result.variables[0].name).toBe('primary-color')
+  })
+
+  test('toTestCaseFormatWithVariables should collect variables from nested objects', async () => {
+    // Setup figma global mock
+    const mockFigma = {
+      variables: {
+        getVariableByIdAsync: async (id: string) => {
+          if (id === 'VariableID:nested') {
+            return { id: 'VariableID:nested', name: 'nested-color' }
+          }
+          return null
+        },
+      },
+    }
+    ;(globalThis as unknown as { figma: typeof mockFigma }).figma = mockFigma
+
+    // Create a node with nested object containing variable reference
+    const nodeWithNestedVariable = {
+      ...createMockNode({ id: 'node-nested', name: 'NodeWithNestedVariable' }),
+      customProp: {
+        nested: {
+          deep: {
+            variableRef: '[NodeId: VariableID:nested]',
+          },
+        },
+      },
+    } as unknown as SceneNode
+
+    const wrapped = nodeProxyTracker.wrap(nodeWithNestedVariable)
+
+    // Access customProp to trigger tracking
+    const _customProp = (wrapped as unknown as Record<string, unknown>)
+      .customProp
+
+    // Call toTestCaseFormatWithVariables
+    const result = await nodeProxyTracker.toTestCaseFormatWithVariables()
+
+    expect(result.variables.length).toBe(1)
+    expect(result.variables[0].id).toBe('VariableID:nested')
+    expect(result.variables[0].name).toBe('nested-color')
+  })
+
+  test('toTestCaseFormatWithVariables should collect variables from arrays', async () => {
+    // Setup figma global mock
+    const mockFigma = {
+      variables: {
+        getVariableByIdAsync: async (id: string) => {
+          if (id === 'VariableID:arr1') {
+            return { id: 'VariableID:arr1', name: 'arr-color-1' }
+          }
+          if (id === 'VariableID:arr2') {
+            return { id: 'VariableID:arr2', name: 'arr-color-2' }
+          }
+          return null
+        },
+      },
+    }
+    ;(globalThis as unknown as { figma: typeof mockFigma }).figma = mockFigma
+
+    // Create a node with array containing variable references
+    const nodeWithArrayVariable = {
+      ...createMockNode({ id: 'node-arr', name: 'NodeWithArrayVariable' }),
+      fills: [
+        {
+          type: 'SOLID',
+          boundVariables: {
+            color: '[NodeId: VariableID:arr1]',
+          },
+        },
+        {
+          type: 'SOLID',
+          boundVariables: {
+            color: '[NodeId: VariableID:arr2]',
+          },
+        },
+      ],
+    } as unknown as SceneNode
+
+    const wrapped = nodeProxyTracker.wrap(nodeWithArrayVariable)
+
+    // Access fills to trigger tracking
+    const _fills = (wrapped as unknown as FrameNode).fills
+
+    // Call toTestCaseFormatWithVariables
+    const result = await nodeProxyTracker.toTestCaseFormatWithVariables()
+
+    expect(result.variables.length).toBe(2)
+    const varIds = result.variables.map((v) => v.id)
+    expect(varIds).toContain('VariableID:arr1')
+    expect(varIds).toContain('VariableID:arr2')
+  })
+
+  test('toTestCaseFormatWithVariables should collect variables from direct array of variable refs', async () => {
+    // Setup figma global mock
+    const mockFigma = {
+      variables: {
+        getVariableByIdAsync: async (id: string) => {
+          if (id === 'VariableID:direct') {
+            return { id: 'VariableID:direct', name: 'direct-color' }
+          }
+          return null
+        },
+      },
+    }
+    ;(globalThis as unknown as { figma: typeof mockFigma }).figma = mockFigma
+
+    // Create a node with direct array of variable reference strings
+    const nodeWithDirectArray = {
+      ...createMockNode({ id: 'node-direct', name: 'NodeWithDirectArray' }),
+      colorRefs: ['[NodeId: VariableID:direct]'],
+    } as unknown as SceneNode
+
+    const wrapped = nodeProxyTracker.wrap(nodeWithDirectArray)
+
+    // Access colorRefs to trigger tracking
+    const _colorRefs = (wrapped as unknown as Record<string, unknown>).colorRefs
+
+    // Call toTestCaseFormatWithVariables
+    const result = await nodeProxyTracker.toTestCaseFormatWithVariables()
+
+    expect(result.variables.length).toBe(1)
+    expect(result.variables[0].id).toBe('VariableID:direct')
+  })
+
+  test('re-exported assembleNodeTree works from node-proxy', () => {
+    const nodes = [{ id: 'test-1', name: 'Test', type: 'FRAME' }]
+    const result = assembleNodeTree(nodes)
+    expect(result.id).toBe('test-1')
+  })
+
+  test('re-exported setupVariableMocks works from node-proxy', async () => {
+    ;(globalThis as unknown as { figma: Record<string, unknown> }).figma = {}
+    setupVariableMocks([{ id: 'VariableID:test', name: 'test-var' }])
+
+    const g = globalThis as {
+      figma?: {
+        variables?: { getVariableByIdAsync?: (id: string) => Promise<unknown> }
+      }
+    }
+    const result =
+      await g.figma?.variables?.getVariableByIdAsync?.('VariableID:test')
+    expect(result).toEqual({ id: 'VariableID:test', name: 'test-var' })
   })
 })
