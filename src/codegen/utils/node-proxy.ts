@@ -225,10 +225,12 @@ class NodeProxyTracker {
           >)[],
         )
         // 세그먼트 직렬화
-        const serializedSegments = segments.map((seg) => ({
-          ...seg,
-          fills: this.serializeArray(seg.fills as unknown[]),
-        }))
+        const serializedSegments = segments.map((seg) => {
+          return {
+            ...seg,
+            fills: this.serializeArray(seg.fills as unknown[]),
+          }
+        })
 
         const log = this.accessLogs.get(node.id)
         if (log) {
@@ -264,14 +266,20 @@ class NodeProxyTracker {
   private isArrayLikeObject(obj: Record<string, unknown>): boolean {
     const keys = Object.keys(obj)
     if (keys.length === 0) return false
-    return keys.every((key) => /^\d+$/.test(key))
+    return keys.every((key) => {
+      return /^\d+$/.test(key)
+    })
   }
 
   private arrayLikeToArray(obj: Record<string, unknown>): unknown[] {
     const keys = Object.keys(obj)
       .map(Number)
-      .sort((a, b) => a - b)
-    return keys.map((key) => obj[key])
+      .sort((a, b) => {
+        return a - b
+      })
+    return keys.map((key) => {
+      return obj[key]
+    })
   }
 
   private serializeObject(
@@ -414,7 +422,9 @@ class NodeProxyTracker {
       return allNodes
     }
 
-    const rootNode = allNodes.find((n) => n.id === rootId)
+    const rootNode = allNodes.find((n) => {
+      return n.id === rootId
+    })
     if (!rootNode) {
       return allNodes
     }
@@ -422,7 +432,9 @@ class NodeProxyTracker {
     // 하위 노드 ID들을 수집 (children을 재귀적으로 탐색)
     const descendantIds = new Set<string>()
     const collectDescendants = (nodeId: string) => {
-      const node = allNodes.find((n) => n.id === nodeId)
+      const node = allNodes.find((n) => {
+        return n.id === nodeId
+      })
       if (!node) return
       if (Array.isArray(node.children)) {
         for (const childId of node.children) {
@@ -447,7 +459,9 @@ class NodeProxyTracker {
     const parentId =
       typeof rootNode.parent === 'string' ? rootNode.parent : undefined
     if (parentId) {
-      const parentNode = allNodes.find((n) => n.id === parentId)
+      const parentNode = allNodes.find((n) => {
+        return n.id === parentId
+      })
       if (parentNode && parentNode.type === 'SECTION') {
         parentNode.children = [rootId]
         result.push(parentNode)
@@ -465,7 +479,9 @@ class NodeProxyTracker {
       }
     }
     if (Array.isArray(value)) {
-      return value.map((item) => this.resolveNodeRefs(item))
+      return value.map((item) => {
+        return this.resolveNodeRefs(item)
+      })
     }
     return value
   }
@@ -519,7 +535,11 @@ function setupVariableMocks(variables: VariableInfo[]): void {
   const g = globalThis as { figma?: { variables?: Record<string, unknown> } }
   if (!g.figma) return
 
-  const variableMap = new Map(variables.map((v) => [v.id, v]))
+  const variableMap = new Map(
+    variables.map((v) => {
+      return [v.id, v]
+    }),
+  )
 
   // 기존 mock을 보존하면서 새로운 변수들 추가
   const originalGetVariable = g.figma.variables?.getVariableByIdAsync as
@@ -579,7 +599,9 @@ export function assembleNodeTree(
           }
           return childId
         })
-        .filter((child): child is NodeData => child !== undefined)
+        .filter((child): child is NodeData => {
+          return child !== undefined
+        })
     }
     // children이 undefined인 경우 그대로 유지 (RECTANGLE 등 원래 children이 없는 노드)
 
@@ -668,7 +690,9 @@ export function assembleNodeTree(
     // 모든 노드에 getMainComponentAsync 메서드 추가 (아직 없는 경우에만)
     if (!(node as unknown as Record<string, unknown>).getMainComponentAsync) {
       ;(node as unknown as Record<string, unknown>).getMainComponentAsync =
-        async () => null
+        async () => {
+          return null
+        }
     }
 
     // TEXT 노드에 getStyledTextSegments mock 메서드 추가

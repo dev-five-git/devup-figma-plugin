@@ -716,4 +716,150 @@ describe('nodeProxyTracker', () => {
     const result = await getMainComponentAsync()
     expect(result).toBeNull()
   })
+
+  test('assembleNodeTree should link children by id references', () => {
+    // Create nodes with children as string IDs (how test data comes from toTestCaseFormat)
+    const nodes = [
+      {
+        id: 'parent-1',
+        name: 'Parent',
+        type: 'FRAME',
+        children: ['child-1', 'child-2'],
+      },
+      {
+        id: 'child-1',
+        name: 'Child1',
+        type: 'FRAME',
+      },
+      {
+        id: 'child-2',
+        name: 'Child2',
+        type: 'RECTANGLE',
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes)
+
+    expect(rootNode.id).toBe('parent-1')
+    expect(Array.isArray(rootNode.children)).toBe(true)
+    expect(rootNode.children?.length).toBe(2)
+
+    // Children should be linked as objects, not strings
+    const child1 = rootNode.children?.[0]
+    expect(typeof child1).toBe('object')
+    expect((child1 as { id: string })?.id).toBe('child-1')
+
+    const child2 = rootNode.children?.[1]
+    expect(typeof child2).toBe('object')
+    expect((child2 as { id: string })?.id).toBe('child-2')
+  })
+
+  test('assembleNodeTree should filter out undefined children', () => {
+    // Create nodes with children referencing non-existent nodes
+    const nodes = [
+      {
+        id: 'parent-1',
+        name: 'Parent',
+        type: 'FRAME',
+        children: ['child-1', 'non-existent-child'],
+      },
+      {
+        id: 'child-1',
+        name: 'Child1',
+        type: 'FRAME',
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes)
+
+    expect(rootNode.id).toBe('parent-1')
+    expect(Array.isArray(rootNode.children)).toBe(true)
+    // Only child-1 should be in children, non-existent-child should be filtered out
+    expect(rootNode.children?.length).toBe(1)
+    expect((rootNode.children?.[0] as { id: string })?.id).toBe('child-1')
+  })
+
+  test('assembleNodeTree TEXT node getStyledTextSegments should return stored segments', () => {
+    // Create TEXT node with styledTextSegments data
+    const nodes = [
+      {
+        id: 'text-1',
+        name: 'TextNode',
+        type: 'TEXT',
+        characters: 'Hello World',
+        styledTextSegments: [
+          {
+            start: 0,
+            end: 5,
+            characters: 'Hello',
+            fontName: { family: 'Arial', style: 'Bold' },
+            fontWeight: 700,
+            fontSize: 20,
+          },
+          {
+            start: 6,
+            end: 11,
+            characters: 'World',
+            fontName: { family: 'Arial', style: 'Regular' },
+            fontWeight: 400,
+            fontSize: 16,
+          },
+        ],
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes)
+
+    expect(rootNode.type).toBe('TEXT')
+
+    // Call getStyledTextSegments
+    const getStyledTextSegments = (
+      rootNode as unknown as Record<string, unknown>
+    ).getStyledTextSegments as () => unknown[]
+    expect(typeof getStyledTextSegments).toBe('function')
+
+    const segments = getStyledTextSegments()
+    expect(Array.isArray(segments)).toBe(true)
+    expect(segments.length).toBe(2)
+    expect((segments[0] as { characters: string }).characters).toBe('Hello')
+    expect((segments[1] as { characters: string }).characters).toBe('World')
+  })
+
+  test('assembleNodeTree TEXT node getStyledTextSegments should generate default segment when no styledTextSegments', () => {
+    // Create TEXT node without styledTextSegments
+    const nodes = [
+      {
+        id: 'text-1',
+        name: 'TextNode',
+        type: 'TEXT',
+        characters: 'Test Text',
+        fontName: { family: 'Inter', style: 'Regular' },
+        fontWeight: 400,
+        fontSize: 14,
+        lineHeight: { unit: 'AUTO' },
+        letterSpacing: { unit: 'PERCENT', value: 0 },
+        fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }],
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes)
+
+    expect(rootNode.type).toBe('TEXT')
+
+    // Call getStyledTextSegments - should generate default segment
+    const getStyledTextSegments = (
+      rootNode as unknown as Record<string, unknown>
+    ).getStyledTextSegments as () => unknown[]
+    const segments = getStyledTextSegments()
+
+    expect(Array.isArray(segments)).toBe(true)
+    expect(segments.length).toBe(1)
+
+    const segment = segments[0] as Record<string, unknown>
+    expect(segment.characters).toBe('Test Text')
+    expect(segment.start).toBe(0)
+    expect(segment.end).toBe(9)
+    expect(segment.textDecoration).toBe('NONE')
+    expect(segment.textCase).toBe('ORIGINAL')
+  })
 })
