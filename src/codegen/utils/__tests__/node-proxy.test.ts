@@ -606,4 +606,114 @@ describe('nodeProxyTracker', () => {
     const mainComponent = await getMainComponentAsync()
     expect(mainComponent).toBeNull()
   })
+
+  test('toTestCaseFormatWithVariables should collect variable info from fills', async () => {
+    // Setup figma global mock
+    const mockFigma = {
+      variables: {
+        getVariableByIdAsync: async (id: string) => {
+          if (id === 'VariableID:123') {
+            return { id: 'VariableID:123', name: 'primary-color' }
+          }
+          return null
+        },
+      },
+    }
+    ;(globalThis as unknown as { figma: typeof mockFigma }).figma = mockFigma
+
+    // Create a node with boundVariables referencing a variable
+    const nodeWithVariable = {
+      ...createMockNode({ id: 'node-1', name: 'NodeWithVariable' }),
+      fills: [
+        {
+          type: 'SOLID',
+          color: { r: 1, g: 0, b: 0 },
+          boundVariables: {
+            color: '[NodeId: VariableID:123]',
+          },
+        },
+      ],
+    } as unknown as SceneNode
+
+    const wrapped = nodeProxyTracker.wrap(nodeWithVariable)
+
+    // Access fills to trigger tracking
+    const _fills = (wrapped as unknown as FrameNode).fills
+
+    // Call toTestCaseFormatWithVariables
+    const result = await nodeProxyTracker.toTestCaseFormatWithVariables()
+
+    expect(result.nodes.length).toBe(1)
+    expect(result.variables.length).toBe(1)
+    expect(result.variables[0].id).toBe('VariableID:123')
+    expect(result.variables[0].name).toBe('primary-color')
+  })
+
+  test('assembleNodeTree should setup variable mocks when variables provided', async () => {
+    // Create nodes with variable reference in fills
+    const nodes = [
+      {
+        id: 'node-1',
+        name: 'NodeWithVariable',
+        type: 'FRAME',
+        fills: [
+          {
+            type: 'SOLID',
+            boundVariables: {
+              color: 'VariableID:456',
+            },
+          },
+        ],
+      },
+    ]
+
+    const variables = [{ id: 'VariableID:456', name: 'secondary-color' }]
+
+    // Call assembleNodeTree with variables
+    const rootNode = assembleNodeTree(nodes, variables)
+
+    expect(rootNode.id).toBe('node-1')
+
+    // Verify variable mock was set up
+    const g = globalThis as {
+      figma?: {
+        variables?: { getVariableByIdAsync?: (id: string) => Promise<unknown> }
+      }
+    }
+    expect(g.figma?.variables?.getVariableByIdAsync).toBeDefined()
+
+    // Call the mock to verify it returns the variable info
+    const getVariableByIdAsync = g.figma?.variables?.getVariableByIdAsync
+    if (getVariableByIdAsync) {
+      const variable = await getVariableByIdAsync('VariableID:456')
+      expect(variable).toEqual({
+        id: 'VariableID:456',
+        name: 'secondary-color',
+      })
+    }
+  })
+
+  test('assembleNodeTree should add getMainComponentAsync to non-INSTANCE nodes', async () => {
+    // Create a FRAME node (not INSTANCE)
+    const nodes = [
+      {
+        id: 'frame-1',
+        name: 'FrameNode',
+        type: 'FRAME',
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes)
+
+    expect(rootNode.type).toBe('FRAME')
+
+    // The FRAME node should have getMainComponentAsync method (default fallback)
+    expect(typeof rootNode.getMainComponentAsync).toBe('function')
+
+    // Call the method and verify it returns null
+    const getMainComponentAsync =
+      rootNode.getMainComponentAsync as () => Promise<unknown>
+    const result = await getMainComponentAsync()
+    expect(result).toBeNull()
+  })
 })
