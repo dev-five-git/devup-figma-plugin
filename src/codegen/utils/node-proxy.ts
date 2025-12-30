@@ -13,6 +13,9 @@ type AccessLog = {
 class NodeProxyTracker {
   private accessLogs: Map<string, AccessLog> = new Map()
 
+  // biome-ignore lint/complexity/noUselessConstructor: Required for bun test coverage tracking
+  constructor() {}
+
   clear() {
     this.accessLogs.clear()
   }
