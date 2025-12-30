@@ -2,7 +2,7 @@ import { isVariantPropValue } from '../responsive'
 
 /**
  * Convert a value to its JSX string representation.
- * Handles primitives, arrays, and objects.
+ * Handles primitives, arrays, objects, and VariantPropValue.
  */
 function valueToJsxString(value: unknown): string {
   if (value === null) return 'null'
@@ -15,6 +15,10 @@ function valueToJsxString(value: unknown): string {
     const items = value.map((item) => valueToJsxString(item))
     return `[${items.join(', ')}]`
   }
+  // Handle VariantPropValue inside objects
+  if (isVariantPropValue(value)) {
+    return formatVariantPropValue(value)
+  }
   if (typeof value === 'object') {
     return JSON.stringify(value)
   }
@@ -22,17 +26,119 @@ function valueToJsxString(value: unknown): string {
 }
 
 /**
- * Format a VariantPropValue as JSX: { scroll: [...], default: [...] }[status]
+ * Check if a VariantPropValue needs multiline formatting.
+ * Returns true if:
+ * - There are 2 or more variant entries, OR
+ * - Any value is complex (array, object, or nested VariantPropValue)
  */
-function formatVariantPropValue(variantProp: {
-  variantKey: string
-  values: Record<string, unknown>
-}): string {
+function needsMultilineFormat(values: Record<string, unknown>): boolean {
+  const entries = Object.entries(values)
+  // Always use multiline if there are 2+ entries
+  if (entries.length >= 2) return true
+  // Also use multiline for complex values
+  return Object.values(values).some(
+    (value) =>
+      Array.isArray(value) ||
+      (typeof value === 'object' && value !== null) ||
+      isVariantPropValue(value),
+  )
+}
+
+/**
+ * Format a VariantPropValue as JSX: { scroll: [...], default: [...] }[status]
+ * Uses multiline format when values are complex (arrays, objects, nested variants).
+ */
+function formatVariantPropValue(
+  variantProp: {
+    variantKey: string
+    values: Record<string, unknown>
+  },
+  indent: number = 0,
+): string {
   const entries = Object.entries(variantProp.values)
+
+  // Use multiline format for complex values
+  if (needsMultilineFormat(variantProp.values)) {
+    const spaces = '  '.repeat(indent + 1)
+    const closingSpaces = '  '.repeat(indent)
+    const parts = entries.map(([variant, value]) => {
+      const formattedValue = formatValueWithIndent(value, indent + 1)
+      return `${spaces}${variant}: ${formattedValue}`
+    })
+    return `{\n${parts.join(',\n')}\n${closingSpaces}}[${variantProp.variantKey}]`
+  }
+
+  // Simple inline format for primitive values
   const parts = entries.map(([variant, value]) => {
     return `${variant}: ${valueToJsxString(value)}`
   })
   return `{ ${parts.join(', ')} }[${variantProp.variantKey}]`
+}
+
+/**
+ * Format a value with proper indentation for multiline output.
+ */
+function formatValueWithIndent(value: unknown, indent: number): string {
+  if (value === null) return 'null'
+  if (value === undefined) return 'undefined'
+  if (typeof value === 'string') return `"${value}"`
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (Array.isArray(value)) {
+    const items = value.map((item) => valueToJsxString(item))
+    return `[${items.join(', ')}]`
+  }
+  if (isVariantPropValue(value)) {
+    return formatVariantPropValue(value, indent)
+  }
+  if (typeof value === 'object') {
+    return objectToJsxString(value as Record<string, unknown>, indent)
+  }
+  return String(value)
+}
+
+/**
+ * Convert an object to JSX string, handling nested VariantPropValue.
+ * Uses JSON.stringify-like formatting but replaces VariantPropValue with proper syntax.
+ */
+function objectToJsxString(
+  obj: Record<string, unknown>,
+  indent: number = 0,
+): string {
+  const entries = Object.entries(obj)
+  const spaces = '  '.repeat(indent + 1)
+  const closingSpaces = '  '.repeat(indent)
+
+  const parts = entries.map(([key, value]) => {
+    const formattedValue = formatObjectValue(value, indent + 1)
+    return `${spaces}"${key}": ${formattedValue}`
+  })
+
+  return `{\n${parts.join(',\n')}\n${closingSpaces}}`
+}
+
+/**
+ * Format a value inside an object, handling nested objects and VariantPropValue.
+ */
+function formatObjectValue(value: unknown, indent: number): string {
+  if (value === null) return 'null'
+  if (value === undefined) return 'undefined'
+  if (typeof value === 'string') return `"${value}"`
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (Array.isArray(value)) {
+    const items = value.map((item) => valueToJsxString(item))
+    return `[${items.join(', ')}]`
+  }
+  if (isVariantPropValue(value)) {
+    return formatVariantPropValue(value, indent)
+  }
+  if (typeof value === 'object') {
+    return objectToJsxString(value as Record<string, unknown>, indent)
+  }
+  return String(value)
 }
 
 export function propsToString(props: Record<string, unknown>) {
@@ -49,6 +155,10 @@ export function propsToString(props: Record<string, unknown>) {
     // Handle VariantPropValue
     if (isVariantPropValue(value)) {
       return `${key}={${formatVariantPropValue(value)}}`
+    }
+    // Handle pseudo-selector props (e.g., _hover, _active) which may contain VariantPropValue
+    if (typeof value === 'object' && value !== null && key.startsWith('_')) {
+      return `${key}={${objectToJsxString(value as Record<string, unknown>)}}`
     }
     if (typeof value === 'object')
       return `${key}={${JSON.stringify(value, null, 2)}}`

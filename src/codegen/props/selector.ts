@@ -1,6 +1,44 @@
 import { fmtPct } from '../utils/fmtPct'
 import { getProps } from '.'
 
+// Shorthand prop names to CSS standard property names
+const shortToCssProperty: Record<string, string> = {
+  bg: 'background',
+  w: 'width',
+  h: 'height',
+  p: 'padding',
+  pt: 'padding-top',
+  pr: 'padding-right',
+  pb: 'padding-bottom',
+  pl: 'padding-left',
+  px: 'padding-inline',
+  py: 'padding-block',
+  m: 'margin',
+  mt: 'margin-top',
+  mr: 'margin-right',
+  mb: 'margin-bottom',
+  ml: 'margin-left',
+  mx: 'margin-inline',
+  my: 'margin-block',
+  pos: 'position',
+}
+
+/**
+ * Convert camelCase to kebab-case for CSS property names.
+ */
+function toKebabCase(str: string): string {
+  return str.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
+}
+
+/**
+ * Convert shorthand prop names to CSS standard property names for transitionProperty.
+ * Also converts camelCase to kebab-case (e.g., boxShadow -> box-shadow).
+ */
+function toTransitionPropertyName(key: string): string {
+  const mapped = shortToCssProperty[key] || key
+  return toKebabCase(mapped)
+}
+
 // 속성 이름을 유효한 TypeScript 식별자로 변환
 const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
 
@@ -48,7 +86,7 @@ export async function getSelectorProps(
           [
             hasEffect
               ? component.variantProperties?.effect
-              : triggerTypeToEffect(component.reactions[0]?.trigger?.type),
+              : triggerTypeToEffect(component.reactions?.[0]?.trigger?.type),
             await getProps(component),
           ] as const,
       ),
@@ -58,7 +96,7 @@ export async function getSelectorProps(
 
   const result = Object.entries(node.componentPropertyDefinitions).reduce(
     (acc, [name, definition]) => {
-      if (name !== 'effect') {
+      if (name !== 'effect' && name !== 'viewport') {
         const sanitizedName = sanitizePropertyName(name)
         // variant 옵션값들을 문자열 리터럴로 감싸기
         acc.variants[sanitizedName] =
@@ -83,7 +121,8 @@ export async function getSelectorProps(
       .flat()[0]
     const diffKeys = new Set<string>()
     for (const [effect, props] of components) {
-      if (!effect) continue
+      // Skip if no effect or if effect is "default" (default state doesn't need pseudo-selector)
+      if (!effect || effect === 'default') continue
       const def = difference(props, defaultProps)
       if (Object.keys(def).length === 0) continue
       result.props[`_${effect}`] = def
@@ -92,10 +131,95 @@ export async function getSelectorProps(
       }
     }
     if (transition?.type === 'SMART_ANIMATE' && diffKeys.size > 0) {
-      const keys = Array.from(diffKeys)
+      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
       keys.sort()
       result.props.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.props.transitionProperty = keys.join(',')
+    }
+  }
+
+  return result
+}
+
+/**
+ * Get selector props for a specific variant group (e.g., size=Md, variant=primary).
+ * This filters components by the given variant properties before calculating pseudo-selector diffs.
+ *
+ * @param componentSet The component set to extract selector props from
+ * @param variantFilter Object containing variant key-value pairs to filter by (excluding effect and viewport)
+ * @param viewportValue Optional viewport value to filter by (e.g., 'Desktop', 'Mobile')
+ */
+export async function getSelectorPropsForGroup(
+  componentSet: ComponentSetNode,
+  variantFilter: Record<string, string>,
+  viewportValue?: string,
+): Promise<Record<string, object | string>> {
+  const hasEffect = !!componentSet.componentPropertyDefinitions.effect
+  if (!hasEffect) return {}
+
+  // Find viewport key if needed
+  const viewportKey = Object.keys(
+    componentSet.componentPropertyDefinitions,
+  ).find((key) => key.toLowerCase() === 'viewport')
+
+  // Filter components matching the variant filter (and viewport if specified)
+  const matchingComponents = componentSet.children.filter((child) => {
+    if (child.type !== 'COMPONENT') return false
+    const variantProps = child.variantProperties || {}
+
+    // Check all filter conditions match
+    for (const [key, value] of Object.entries(variantFilter)) {
+      if (variantProps[key] !== value) return false
+    }
+
+    // Check viewport if specified
+    if (viewportValue && viewportKey) {
+      if (variantProps[viewportKey] !== viewportValue) return false
+    }
+
+    return true
+  }) as ComponentNode[]
+
+  if (matchingComponents.length === 0) return {}
+
+  // Find the default component in this group (effect=default)
+  const defaultComponent = matchingComponents.find(
+    (c) => c.variantProperties?.effect === 'default',
+  )
+  if (!defaultComponent) return {}
+
+  const defaultProps = await getProps(defaultComponent)
+  const result: Record<string, object | string> = {}
+  const diffKeys = new Set<string>()
+
+  // Calculate diffs for each effect state
+  for (const component of matchingComponents) {
+    const effect = component.variantProperties?.effect
+    if (!effect || effect === 'default') continue
+
+    const props = await getProps(component)
+    const def = difference(props, defaultProps)
+    if (Object.keys(def).length === 0) continue
+
+    result[`_${effect}`] = def
+    for (const key of Object.keys(def)) {
+      diffKeys.add(key)
+    }
+  }
+
+  // Add transition if available
+  if (diffKeys.size > 0) {
+    const findNodeAction = (action: Action) => action.type === 'NODE'
+    const getTransition = (reaction: Reaction) =>
+      reaction.actions?.find(findNodeAction)?.transition
+    const transition = defaultComponent.reactions
+      ?.flatMap(getTransition)
+      .flat()[0]
+    if (transition?.type === 'SMART_ANIMATE') {
+      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
+      keys.sort()
+      result.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
+      result.transitionProperty = keys.join(',')
     }
   }
 

@@ -332,6 +332,164 @@ describe('getSelectorProps', () => {
       expect(result?.props._active).toBeDefined()
     })
 
+    test('handles effect-only COMPONENT_SET with solid button', async () => {
+      // This tests a button component with only effect variant
+      // effect options: active, default, disabled, hover
+      // Using SOLID fills to avoid gradient transform complexity in tests
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'effect=default',
+        children: [],
+        visible: true,
+        variantProperties: { effect: 'default' },
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.5, g: 0.3, b: 0.9 },
+            opacity: 1,
+          },
+        ],
+        effects: [
+          {
+            type: 'DROP_SHADOW',
+            visible: true,
+            radius: 4,
+            color: { r: 0, g: 0, b: 0, a: 0.1 },
+            offset: { x: 0, y: 2 },
+            spread: -2,
+          },
+        ],
+        opacity: 1,
+        reactions: [
+          {
+            trigger: { type: 'ON_HOVER' },
+            actions: [
+              {
+                type: 'NODE',
+                transition: {
+                  type: 'SMART_ANIMATE',
+                  duration: 0.3,
+                  easing: { type: 'EASE_OUT' },
+                },
+              },
+            ],
+          },
+        ],
+      } as unknown as ComponentNode
+
+      const hoverVariant = {
+        type: 'COMPONENT',
+        name: 'effect=hover',
+        children: [],
+        visible: true,
+        variantProperties: { effect: 'hover' },
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.4, g: 0.2, b: 0.8 },
+            opacity: 1,
+          },
+        ],
+        effects: [
+          {
+            type: 'DROP_SHADOW',
+            visible: true,
+            radius: 6,
+            color: { r: 0, g: 0, b: 0, a: 0.1 },
+            offset: { x: 0, y: 4 },
+            spread: -4,
+          },
+        ],
+        opacity: 1,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const activeVariant = {
+        type: 'COMPONENT',
+        name: 'effect=active',
+        children: [],
+        visible: true,
+        variantProperties: { effect: 'active' },
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.4, g: 0.2, b: 0.8 },
+            opacity: 1,
+          },
+        ],
+        effects: [],
+        opacity: 0.8,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const disabledVariant = {
+        type: 'COMPONENT',
+        name: 'effect=disabled',
+        children: [],
+        visible: true,
+        variantProperties: { effect: 'disabled' },
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.898, g: 0.906, b: 0.922 },
+            opacity: 1,
+          },
+        ],
+        effects: [
+          {
+            type: 'DROP_SHADOW',
+            visible: true,
+            radius: 4,
+            color: { r: 0, g: 0, b: 0, a: 0.1 },
+            offset: { x: 0, y: 2 },
+            spread: -2,
+          },
+        ],
+        opacity: 1,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'SolidButton',
+        children: [
+          hoverVariant,
+          activeVariant,
+          defaultVariant,
+          disabledVariant,
+        ],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            defaultValue: 'default',
+            variantOptions: ['active', 'default', 'disabled', 'hover'],
+          },
+        },
+      } as unknown as ComponentSetNode
+
+      const result = await getSelectorProps(node)
+
+      // Should return result even with effect-only component set
+      expect(result).toBeDefined()
+      // variants should be empty (effect is not included in variants)
+      expect(Object.keys(result?.variants || {})).toHaveLength(0)
+      // Should have _hover props
+      expect(result?.props._hover).toBeDefined()
+      // Should have _active props
+      expect(result?.props._active).toBeDefined()
+      // Should have _disabled props
+      expect(result?.props._disabled).toBeDefined()
+      // Should have transition props (from SMART_ANIMATE)
+      expect(result?.props.transition).toBeDefined()
+      expect(result?.props.transitionProperty).toBeDefined()
+    })
+
     test('handles SMART_ANIMATE transition with reactions', async () => {
       const defaultVariant = {
         type: 'COMPONENT',

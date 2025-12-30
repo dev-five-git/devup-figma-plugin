@@ -1,5 +1,6 @@
 import { Codegen } from './codegen/Codegen'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
+import { nodeProxyTracker } from './codegen/utils/node-proxy'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
@@ -113,9 +114,12 @@ function generatePowerShellCLI(
   return commands.join('\n')
 }
 
+const debug = true
+
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
-    ctx.codegen.on('generate', async ({ node, language }) => {
+    ctx.codegen.on('generate', async ({ node: n, language }) => {
+      const node = debug ? nodeProxyTracker.wrap(n) : n
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()
@@ -161,6 +165,11 @@ export function registerCodegen(ctx: typeof figma) {
               console.error('[responsive] Error generating responsive code:', e)
             }
           }
+          if (debug) {
+            console.log(
+              await nodeProxyTracker.toTestCaseFormatWithVariables(node.id),
+            )
+          }
 
           return [
             ...(node.type === 'COMPONENT' ||
@@ -201,6 +210,16 @@ export function registerCodegen(ctx: typeof figma) {
                     code: responsiveComponentsCodes
                       .map((code) => code[1])
                       .join('\n\n'),
+                  },
+                  {
+                    title: `${node.name} - Components Responsive CLI (Bash)`,
+                    language: 'BASH' as const,
+                    code: generateBashCLI(responsiveComponentsCodes),
+                  },
+                  {
+                    title: `${node.name} - Components Responsive CLI (PowerShell)`,
+                    language: 'BASH' as const,
+                    code: generatePowerShellCLI(responsiveComponentsCodes),
                   },
                 ]
               : []),

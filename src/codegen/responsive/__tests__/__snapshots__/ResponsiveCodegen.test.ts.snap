@@ -1,3 +1,5 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`ResponsiveCodegen generateVariantOnlyMergedCode renders OR conditional for child existing in multiple but not all variants 1`] = `"render:Flex:depth=0:{}|{(status === "scroll" || status === "hover") && render:Box:depth=0:{"id":{"__variantProp":true,"variantKey":"status","values":{"scroll":"PartialChild","hover":"PartialChildHover"}}}|}"`;
+
+exports[`ResponsiveCodegen generateVariantResponsiveComponents handles effect + viewport + size + variant (4 dimensions) 1`] = `"component:Button:{"size":"'Md' | 'Sm'","variant":"'primary' | 'white'"}|render:Box:depth=2:{"id":"RootTablet","_hover":{"bg":{"__variantProp":true,"variantKey":"variant","values":{"primary":"#3D2B1F","white":"#F2F2F2"}}},"_active":{"bg":{"__variantProp":true,"variantKey":"variant","values":{"primary":"#30241A","white":"#E6E6E6"}}}}|render:Box:depth=0:{"id":"Shared"}|"`;

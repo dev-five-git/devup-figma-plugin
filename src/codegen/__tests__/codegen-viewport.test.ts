@@ -355,3 +355,346 @@ describe('Codegen viewport variant', () => {
     expect(codes.length).toBe(2)
   })
 })
+
+describe('Codegen effect-only COMPONENT_SET', () => {
+  test('generates code with pseudo-selectors for effect-only component set', async () => {
+    // Create effect variants: default, hover, active, disabled
+    const defaultVariant = createComponentNode(
+      'effect=default',
+      { effect: 'default' },
+      {
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.5, g: 0.3, b: 0.9 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+        reactions: [
+          {
+            trigger: { type: 'ON_HOVER' },
+            actions: [
+              {
+                type: 'NODE',
+                transition: {
+                  type: 'SMART_ANIMATE',
+                  duration: 0.3,
+                  easing: { type: 'EASE_OUT' },
+                },
+              },
+            ],
+          },
+        ] as unknown as Reaction[],
+      },
+    )
+
+    const hoverVariant = createComponentNode(
+      'effect=hover',
+      { effect: 'hover' },
+      {
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.4, g: 0.2, b: 0.8 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const activeVariant = createComponentNode(
+      'effect=active',
+      { effect: 'active' },
+      {
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.3, g: 0.1, b: 0.7 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const disabledVariant = createComponentNode(
+      'effect=disabled',
+      { effect: 'disabled' },
+      {
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.8, g: 0.8, b: 0.8 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const componentSet = createComponentSetNode(
+      'EffectButton',
+      {
+        effect: {
+          type: 'VARIANT',
+          defaultValue: 'default',
+          variantOptions: ['default', 'hover', 'active', 'disabled'],
+        },
+      },
+      [defaultVariant, hoverVariant, activeVariant, disabledVariant],
+    )
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'EffectButton',
+    )
+
+    expect(codes.length).toBe(1)
+    const [componentName, generatedCode] = codes[0]
+    expect(componentName).toBe('EffectButton')
+
+    // Should have pseudo-selector props
+    expect(generatedCode).toContain('_hover')
+    expect(generatedCode).toContain('_active')
+    expect(generatedCode).toContain('_disabled')
+
+    // Should have transition properties
+    expect(generatedCode).toContain('transition=')
+    expect(generatedCode).toContain('transitionProperty=')
+
+    // Should NOT have effect as a prop (handled via pseudo-selectors)
+    expect(generatedCode).not.toContain('effect:')
+  })
+
+  test('generates code with viewport + effect variants', async () => {
+    // Mobile variants
+    const mobileDefault = createComponentNode(
+      'effect=default, viewport=Mobile',
+      { effect: 'default', viewport: 'Mobile' },
+      {
+        width: 150,
+        height: 50,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.5, g: 0.5, b: 0.5 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const mobileHover = createComponentNode(
+      'effect=hover, viewport=Mobile',
+      { effect: 'hover', viewport: 'Mobile' },
+      {
+        width: 150,
+        height: 50,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.6, g: 0.6, b: 0.6 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    // Desktop variants
+    const desktopDefault = createComponentNode(
+      'effect=default, viewport=Desktop',
+      { effect: 'default', viewport: 'Desktop' },
+      {
+        width: 200,
+        height: 50,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.5, g: 0.5, b: 0.5 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const desktopHover = createComponentNode(
+      'effect=hover, viewport=Desktop',
+      { effect: 'hover', viewport: 'Desktop' },
+      {
+        width: 200,
+        height: 50,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.7, g: 0.7, b: 0.7 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const componentSet = createComponentSetNode(
+      'ResponsiveEffectButton',
+      {
+        effect: {
+          type: 'VARIANT',
+          defaultValue: 'default',
+          variantOptions: ['default', 'hover'],
+        },
+        viewport: {
+          type: 'VARIANT',
+          defaultValue: 'Desktop',
+          variantOptions: ['Mobile', 'Desktop'],
+        },
+      },
+      [mobileDefault, mobileHover, desktopDefault, desktopHover],
+    )
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'ResponsiveEffectButton',
+    )
+
+    expect(codes.length).toBe(1)
+    const [componentName, generatedCode] = codes[0]
+    expect(componentName).toBe('ResponsiveEffectButton')
+
+    // Should have responsive width (different for mobile vs desktop)
+    expect(generatedCode).toContain('w={')
+    expect(generatedCode).toContain('"150px"')
+    expect(generatedCode).toContain('"200px"')
+
+    // Should have _hover with responsive bg colors
+    expect(generatedCode).toContain('_hover')
+  })
+
+  test('generates code with effect + size variants', async () => {
+    // Size=Md variants
+    const mdDefault = createComponentNode(
+      'effect=default, size=Md',
+      { effect: 'default', size: 'Md' },
+      {
+        width: 100,
+        height: 50,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.2, g: 0.4, b: 0.8 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const mdHover = createComponentNode(
+      'effect=hover, size=Md',
+      { effect: 'hover', size: 'Md' },
+      {
+        width: 100,
+        height: 50,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.3, g: 0.5, b: 0.9 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    // Size=Sm variants
+    const smDefault = createComponentNode(
+      'effect=default, size=Sm',
+      { effect: 'default', size: 'Sm' },
+      {
+        width: 80,
+        height: 40,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.2, g: 0.4, b: 0.8 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const smHover = createComponentNode(
+      'effect=hover, size=Sm',
+      { effect: 'hover', size: 'Sm' },
+      {
+        width: 80,
+        height: 40,
+        layoutSizingHorizontal: 'FIXED',
+        layoutSizingVertical: 'FIXED',
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.3, g: 0.5, b: 0.9 },
+            opacity: 1,
+          } as unknown as Paint,
+        ],
+      },
+    )
+
+    const componentSet = createComponentSetNode(
+      'SizeEffectButton',
+      {
+        effect: {
+          type: 'VARIANT',
+          defaultValue: 'default',
+          variantOptions: ['default', 'hover'],
+        },
+        size: {
+          type: 'VARIANT',
+          defaultValue: 'Md',
+          variantOptions: ['Md', 'Sm'],
+        },
+      },
+      [mdDefault, mdHover, smDefault, smHover],
+    )
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'SizeEffectButton',
+    )
+
+    expect(codes.length).toBe(1)
+    const [componentName, generatedCode] = codes[0]
+    expect(componentName).toBe('SizeEffectButton')
+
+    // Should have size prop in interface
+    expect(generatedCode).toContain("size: 'Md' | 'Sm'")
+
+    // Should have variant-conditional width
+    expect(generatedCode).toContain('w={')
+    expect(generatedCode).toContain('[size]')
+
+    // Should have _hover props
+    expect(generatedCode).toContain('_hover')
+  })
+})

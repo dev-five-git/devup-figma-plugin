@@ -42,16 +42,20 @@ export function renderComponent(
   code: string,
   variants: Record<string, string>,
 ) {
-  const hasVariants = Object.keys(variants).length > 0
+  // Filter out effect variant (treated as reserved property like viewport)
+  const filteredVariants = Object.fromEntries(
+    Object.entries(variants).filter(([key]) => key.toLowerCase() !== 'effect'),
+  )
+  const hasVariants = Object.keys(filteredVariants).length > 0
   const interfaceCode = hasVariants
     ? `export interface ${component}Props {
-${Object.entries(variants)
+${Object.entries(filteredVariants)
   .map(([key, value]) => `  ${key}: ${value}`)
   .join('\n')}
 }\n\n`
     : ''
   const propsParam = hasVariants
-    ? `{ ${Object.keys(variants).join(', ')} }: ${component}Props`
+    ? `{ ${Object.keys(filteredVariants).join(', ')} }: ${component}Props`
     : ''
   return `${interfaceCode}export function ${component}(${propsParam}) {
   return ${
