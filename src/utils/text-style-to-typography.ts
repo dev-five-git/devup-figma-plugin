@@ -18,6 +18,7 @@ function getFontWeight(weight: string): number {
   switch (toCamel(weight)) {
     case 'thin':
       return 100
+    case 'extralight':
     case 'extraLight':
       return 200
     case 'light':
@@ -28,9 +29,11 @@ function getFontWeight(weight: string): number {
     case 'medium':
       return 500
     case 'semibold':
+    case 'semiBold':
       return 600
     case 'bold':
       return 700
+    case 'extrabold':
     case 'extraBold':
       return 800
     case 'black':
