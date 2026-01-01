@@ -1,0 +1,2735 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Codegen renders simple component without variants 1`] = `"<Box boxSize="100%" />"`;
+
+exports[`Codegen renders overflow hidden when clipsContent is true 1`] = `"<Box boxSize="100%" overflow="hidden" />"`;
+
+exports[`Codegen renders objectFit contain for image asset 1`] = `"<Image h="80px" objectFit="contain" src="/images/ObjectFitContain.png" w="100px" />"`;
+
+exports[`Codegen renders objectFit cover for image asset 1`] = `"<Image h="90px" objectFit="cover" src="/images/ObjectFitCover.png" w="120px" />"`;
+
+exports[`Codegen omits objectFit when image scale mode is FILL 1`] = `"<Image h="70px" src="/images/ObjectFitFill.png" w="110px" />"`;
+
+exports[`Codegen renders svg asset with vector node 1`] = `"<Image boxSize="24px" src="/icons/VectorIcon.svg" />"`;
+
+exports[`Codegen renders svg asset with star node 1`] = `"<Image boxSize="24px" src="/icons/StarIcon.svg" />"`;
+
+exports[`Codegen renders svg asset with polygon node 1`] = `"<Image boxSize="24px" src="/icons/PolygonIcon.svg" />"`;
+
+exports[`Codegen renders svg asset with ellipse inner radius 1`] = `"<Image boxSize="24px" src="/icons/EllipseIcon.svg" />"`;
+
+exports[`Codegen renders svg asset with non-solid fills 1`] = `"<Image boxSize="24px" src="/icons/GradientAsset.svg" />"`;
+
+exports[`Codegen renders asset with single child and fills 1`] = `
+"<Box bg="#F00" boxSize="24px">
+  <Image boxSize="24px" src="/icons/ChildVector.svg" />
+</Box>"
+`;
+
+exports[`Codegen renders null for asset with only solid fills 1`] = `"<Box bg="#F00" boxSize="24px" />"`;
+
+exports[`Codegen renders frame with bound variable color 1`] = `"<Box bg="$primaryColor" h="50px" w="100px" />"`;
+
+exports[`Codegen renders svg asset with same color mask 1`] = `
+"<Box
+  bg="#F00"
+  boxSize="24px"
+  maskImage="url(/icons/MaskIcon.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`Codegen renders svg asset with children same color 1`] = `
+"<Box
+  bg="#F00"
+  boxSize="24px"
+  maskImage="url(/icons/GroupIcon.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`Codegen renders svg asset with different color children 1`] = `"<Image boxSize="24px" src="/icons/MixedIcon.svg" />"`;
+
+exports[`Codegen renders svg asset with non-solid fill 1`] = `"<Image boxSize="24px" src="/icons/GradientIcon.svg" />"`;
+
+exports[`Codegen renders svg asset with invisible fill 1`] = `"<Image boxSize="24px" src="/icons/InvisibleIcon.svg" />"`;
+
+exports[`Codegen renders nested svg asset with 3 solid fill boxes in frame 1`] = `
+"<Box
+  bg="#F00"
+  boxSize="24px"
+  maskImage="url(/icons/NestedIcon.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`Codegen renders nested svg asset with different colors as image 1`] = `"<Image boxSize="24px" src="/icons/NestedMultiColorIcon.svg" />"`;
+
+exports[`Codegen renders layout for absolute child same size as parent 1`] = `
+"<Box boxSize="100%" pos="relative">
+  <Box boxSize="100%" left="0px" pos="absolute" top="0px" />
+</Box>"
+`;
+
+exports[`Codegen renders absolute child with horizontal MAX constraint 1`] = `
+"<Flex boxSize="100%" pos="relative">
+  <Box h="100%" pos="absolute" right="0px" top="50px" />
+</Flex>"
+`;
+
+exports[`Codegen renders absolute child with horizontal CENTER constraint 1`] = `
+"<VStack boxSize="100%" pos="relative">
+  <Box
+    h="100%"
+    left="50%"
+    pos="absolute"
+    top="50%"
+    transform="translate(-50%, -50%)"
+  />
+</VStack>"
+`;
+
+exports[`Codegen renders absolute child with vertical MAX constraint 1`] = `
+"<Flex boxSize="100%" pos="relative">
+  <Box bottom="0px" h="100%" left="50px" pos="absolute" />
+</Flex>"
+`;
+
+exports[`Codegen renders absolute child with vertical CENTER constraint 1`] = `
+"<VStack boxSize="100%" pos="relative">
+  <Box
+    h="100%"
+    left="300px"
+    pos="absolute"
+    top="50%"
+    transform="translateY(-50%)"
+  />
+</VStack>"
+`;
+
+exports[`Codegen renders flex=1 when parent is horizontal auto layout 1`] = `
+"<Box boxSize="100%">
+  <Box flex="1" h="50px" w="100%" />
+</Box>"
+`;
+
+exports[`Codegen renders aspect ratio when provided 1`] = `"<Box aspectRatio="1.33" boxSize="100%" />"`;
+
+exports[`Codegen renders text with width_and_height auto resize returning no size props 1`] = `
+"<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  AutoSize
+</Text>"
+`;
+
+exports[`Codegen renders text with special characters 1`] = `
+"<Text
+  color="#000"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="20px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  Text with {"{"}braces{"}"} {"&"} {"<"}tags{">"}
+</Text>"
+`;
+
+exports[`Codegen renders text with leading and trailing spaces 1`] = `
+"<Text
+  color="#000"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="20px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  {"  "}spaced{"  "}
+</Text>"
+`;
+
+exports[`Codegen renders single-line max line props 1`] = `
+"<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  whiteSpace="nowrap"
+>
+  OneLine
+</Text>"
+`;
+
+exports[`Codegen renders multi-line max line props 1`] = `
+"<Text
+  WebkitBoxOrient="vertical"
+  WebkitLineClamp="3"
+  boxSize="100%"
+  color="#F00"
+  display="-webkit-box"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  Three lines of text
+</Text>"
+`;
+
+exports[`Codegen renders fixed size frame 1`] = `"<Box h="80px" w="120px" />"`;
+
+exports[`Codegen renders frame with padding 1`] = `"<Box h="50px" px="16px" py="8px" w="100px" />"`;
+
+exports[`Codegen renders padding shorthand when all sides equal 1`] = `"<Box h="40px" p="12px" w="80px" />"`;
+
+exports[`Codegen renders padding with top equals bottom but left right different 1`] = `
+"<Box
+  h="60px"
+  pl="30px"
+  pr="20px"
+  py="10px"
+  w="100px"
+/>"
+`;
+
+exports[`Codegen renders padding with left equals right but top bottom different 1`] = `
+"<Box
+  h="50px"
+  pb="25px"
+  pt="5px"
+  px="15px"
+  w="90px"
+/>"
+`;
+
+exports[`Codegen renders padding with all sides different 1`] = `
+"<Box
+  h="70px"
+  pb="3px"
+  pl="4px"
+  pr="2px"
+  pt="1px"
+  w="110px"
+/>"
+`;
+
+exports[`Codegen renders padding from inferredAutoLayout 1`] = `"<Box h="50px" px="20px" py="10px" w="100px" />"`;
+
+exports[`Codegen renders frame with border radius 1`] = `"<Box borderRadius="8px" h="80px" w="120px" />"`;
+
+exports[`Codegen renders mixed border radius frame 1`] = `"<Box borderRadius="8px 4px 2px 1px" boxSize="100%" />"`;
+
+exports[`Codegen renders ellipse with 50% border radius 1`] = `"<Box borderRadius="50%" boxSize="100px" />"`;
+
+exports[`Codegen renders frame with stroke outline CENTER alignment 1`] = `"<Box h="50px" outline="solid 2px #00F" outlineOffset="-1px" w="100px" />"`;
+
+exports[`Codegen renders frame with stroke outline OUTSIDE alignment 1`] = `"<Box h="60px" outline="solid 3px #F00" w="120px" />"`;
+
+exports[`Codegen renders frame with stroke border INSIDE alignment 1`] = `"<Box border="solid 1px #0F0" h="40px" w="80px" />"`;
+
+exports[`Codegen renders line with stroke outline 1`] = `"<Box boxSize="100%" maxW="calc(100% - 4px)" outline="solid 2px #F00" transform="translate(2px, -2px)" />"`;
+
+exports[`Codegen renders frame with dashed stroke 1`] = `"<Box h="50px" outline="dashed 2px #00F" outlineOffset="-1px" w="100px" />"`;
+
+exports[`Codegen renders frame with page parent and width 1920 1`] = `"<Box h="100%" />"`;
+
+exports[`Codegen renders frame with section parent 1`] = `"<Box h="100%" />"`;
+
+exports[`Codegen renders frame with vertical center align child width shrinker 1`] = `
+"<VStack boxSize="100%">
+  <Box h="50px" w="100%" />
+</VStack>"
+`;
+
+exports[`Codegen renders frame with horizontal center align child height shrinker 1`] = `
+"<Flex boxSize="100%">
+  <Box h="100%" w="50px" />
+</Flex>"
+`;
+
+exports[`Codegen renders frame with maxWidth child width shrinker 1`] = `
+"<Box boxSize="100%">
+  <Box h="50px" maxW="200px" w="100%" />
+</Box>"
+`;
+
+exports[`Codegen renders frame with maxHeight child height shrinker 1`] = `
+"<Box boxSize="100%">
+  <Box h="100%" maxH="200px" w="50px" />
+</Box>"
+`;
+
+exports[`Codegen renders frame with individual stroke weights 1`] = `
+"<Box
+  borderBottom="solid 3px #F00"
+  borderLeft="solid 4px #F00"
+  borderRight="solid 2px #F00"
+  borderTop="solid 1px #F00"
+  h="80px"
+  w="120px"
+/>"
+`;
+
+exports[`Codegen renders group as Box with full size 1`] = `"<Box boxSize="100%" />"`;
+
+exports[`Codegen renders boxSize when width equals height 1`] = `"<Box boxSize="64px" />"`;
+
+exports[`Codegen renders min/max width/height with px 1`] = `
+"<Box
+  boxSize="100%"
+  maxH="120px"
+  maxW="200px"
+  minH="20px"
+  minW="50px"
+/>"
+`;
+
+exports[`Codegen renders flex auto layout props 1`] = `"<Flex alignItems="center" boxSize="100%" justifyContent="space-between" />"`;
+
+exports[`Codegen renders grid auto layout props 1`] = `
+"<Grid
+  boxSize="100%"
+  columnGap="8px"
+  gridTemplateColumns="repeat(3, 1fr)"
+  gridTemplateRows="repeat(2, 1fr)"
+  rowGap="12px"
+/>"
+`;
+
+exports[`Codegen renders grid child positioning props when out of order 1`] = `
+"<Grid gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(1, 1fr)" h="100px" w="200px">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</Grid>"
+`;
+
+exports[`Codegen renders vstack auto layout props 1`] = `
+"<VStack alignItems="center" h="200px" justifyContent="space-between" w="120px">
+  <Box boxSize="100%" />
+  <Box boxSize="100%" />
+</VStack>"
+`;
+
+exports[`Codegen renders center auto layout props 1`] = `"<Center boxSize="120px" />"`;
+
+exports[`Codegen renders drop shadow effect props 1`] = `"<Box boxShadow="2px 4px 6px 1px #FF000080" h="60px" w="100px" />"`;
+
+exports[`Codegen renders inner shadow effect props 1`] = `"<Box boxShadow="inset -2px 3px 5px 0 #0F0" h="70px" w="90px" />"`;
+
+exports[`Codegen renders layer blur effect props 1`] = `"<Box filter="blur(4px)" h="80px" w="120px" />"`;
+
+exports[`Codegen renders background blur effect props 1`] = `"<Box backdropFilter="blur(8px)" h="90px" w="110px" />"`;
+
+exports[`Codegen renders noise effect props 1`] = `"<Box filter="contrast(100%) brightness(100%)" h="70px" w="140px" />"`;
+
+exports[`Codegen renders texture effect props 1`] = `"<Box filter="contrast(100%) brightness(100%)" h="60px" w="150px" />"`;
+
+exports[`Codegen renders glass effect props 1`] = `"<Box backdropFilter="blur(12px)" h="80px" w="160px" />"`;
+
+exports[`Codegen renders text node with content 1`] = `
+"<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  Hello
+</Text>"
+`;
+
+exports[`Codegen renders another text node with content 1`] = `
+"<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  World
+</Text>"
+`;
+
+exports[`Codegen renders text node with ellipsis props 1`] = `
+"<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  overflow="hidden"
+  textOverflow="ellipsis"
+>
+  Ellipsis
+</Text>"
+`;
+
+exports[`Codegen renders text node with single drop shadow 1`] = `
+"<Text
+  boxShadow="2px 4px 6px 0 #00000080"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  textShadow="2px 4px 6px #00000080"
+>
+  Shadow
+</Text>"
+`;
+
+exports[`Codegen renders text node with multiple drop shadows 1`] = `
+"<Text
+  boxShadow="1px 2px 3px 0 #F00, 4px 5px 6px 0 #0F0C"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  textShadow="1px 2px 3px #F00, 4px 5px 6px #0F0C"
+>
+  MultiShadow
+</Text>"
+`;
+
+exports[`Codegen renders text node with stroke 1`] = `
+"<Text
+  WebkitTextStroke="2px #00F"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  paintOrder="stroke fill"
+>
+  Stroke
+</Text>"
+`;
+
+exports[`Codegen renders text node with multiple segments 1`] = `
+"<Text
+  boxSize="100%"
+  color="#00F"
+  fontFamily="Arial"
+  fontSize="20px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  <Text color="#F00" fontSize="16px">
+    Hello
+  </Text>
+  World
+</Text>"
+`;
+
+exports[`Codegen renders text node with unordered list 1`] = `
+"<Text
+  as="ul"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    Item 1
+  </li>
+</Text>"
+`;
+
+exports[`Codegen renders text node with ordered list 1`] = `
+"<Text
+  as="ol"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    Item 1
+  </li>
+</Text>"
+`;
+
+exports[`Codegen renders text node with list and multiple lines 1`] = `
+"<Text
+  as="ul"
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    Item 1
+  </li>
+  <li>
+    Item 2
+  </li>
+</Text>"
+`;
+
+exports[`Codegen renders text node with multiple segments without props 1`] = `
+"<Text
+  boxSize="100%"
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  Hello
+  World
+</Text>"
+`;
+
+exports[`Codegen renders frame with rotation transform 1`] = `"<Box h="50px" transform="rotate(-45deg)" w="100px" />"`;
+
+exports[`Codegen renders frame with negative rotation transform 1`] = `"<Box h="40px" transform="rotate(30deg)" w="80px" />"`;
+
+exports[`Codegen renders frame with decimal rotation transform 1`] = `"<Box h="60px" transform="rotate(-15.5deg)" w="120px" />"`;
+
+exports[`Codegen renders frame with opacity less than 1 1`] = `"<Box h="50px" opacity="0.5" w="100px" />"`;
+
+exports[`Codegen renders frame with darken blend mode 1`] = `"<Box h="50px" mixBlendMode="darken" w="100px" />"`;
+
+exports[`Codegen renders frame with multiply blend mode 1`] = `"<Box h="50px" mixBlendMode="multiply" w="100px" />"`;
+
+exports[`Codegen renders frame with screen blend mode 1`] = `"<Box h="50px" mixBlendMode="screen" w="100px" />"`;
+
+exports[`Codegen renders frame with overlay blend mode 1`] = `"<Box h="50px" mixBlendMode="overlay" w="100px" />"`;
+
+exports[`Codegen renders frame with linear burn blend mode 1`] = `"<Box h="50px" mixBlendMode="linearBurn" w="100px" />"`;
+
+exports[`Codegen renders frame with color burn blend mode 1`] = `"<Box h="50px" mixBlendMode="colorBurn" w="100px" />"`;
+
+exports[`Codegen renders frame with lighten blend mode 1`] = `"<Box h="50px" mixBlendMode="lighten" w="100px" />"`;
+
+exports[`Codegen renders frame with linear dodge blend mode 1`] = `"<Box h="50px" mixBlendMode="linear-dodge" w="100px" />"`;
+
+exports[`Codegen renders frame with color dodge blend mode 1`] = `"<Box h="50px" mixBlendMode="color-dodge" w="100px" />"`;
+
+exports[`Codegen renders frame with soft light blend mode 1`] = `"<Box h="50px" mixBlendMode="soft-light" w="100px" />"`;
+
+exports[`Codegen renders frame with hard light blend mode 1`] = `"<Box h="50px" mixBlendMode="hard-light" w="100px" />"`;
+
+exports[`Codegen renders frame with difference blend mode 1`] = `"<Box h="50px" mixBlendMode="difference" w="100px" />"`;
+
+exports[`Codegen renders frame with exclusion blend mode 1`] = `"<Box h="50px" mixBlendMode="exclusion" w="100px" />"`;
+
+exports[`Codegen renders frame with hue blend mode 1`] = `"<Box h="50px" mixBlendMode="hue" w="100px" />"`;
+
+exports[`Codegen renders frame with saturation blend mode 1`] = `"<Box h="50px" mixBlendMode="saturation" w="100px" />"`;
+
+exports[`Codegen renders frame with color blend mode 1`] = `"<Box h="50px" mixBlendMode="color" w="100px" />"`;
+
+exports[`Codegen renders frame with luminosity blend mode 1`] = `"<Box h="50px" mixBlendMode="luminosity" w="100px" />"`;
+
+exports[`Codegen renders frame with pass through blend mode 1`] = `"<Box h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with opacity and blend mode 1`] = `"<Box h="50px" mixBlendMode="multiply" opacity="0.75" w="100px" />"`;
+
+exports[`Codegen renders frame with solid fill and blend mode 1`] = `"<Box bg="#F00" bgBlendMode="multiply" h="50px" w="100px" />"`;
+
+exports[`Codegen renders text node with gradient fill 1`] = `
+"<Text
+  bg="linear-gradient(90deg, #F00 0%, #00F 100%)"
+  bgClip="text"
+  boxSize="100%"
+  color="linear-gradient(90deg, #F00 0%, #00F 100%)"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+>
+  Gradient
+</Text>"
+`;
+
+exports[`Codegen renders text node with HEIGHT auto resize and fixed sizing 1`] = `
+"<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  Height
+</Text>"
+`;
+
+exports[`Codegen renders text node with NONE auto resize and fixed sizing 1`] = `
+"<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="50px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  None
+</Text>"
+`;
+
+exports[`Codegen renders text node with TRUNCATE auto resize and fixed sizing 1`] = `
+"<Text
+  color="#F00"
+  fontFamily="Arial"
+  fontSize="16px"
+  fontWeight="400"
+  h="50px"
+  letterSpacing="0px"
+  lineHeight="1.5px"
+  w="100px"
+>
+  Truncate
+</Text>"
+`;
+
+exports[`Codegen renders text node with textStyleId and typography 1`] = `
+"<Text boxSize="100%" color="#F00" typography="heading">
+  Heading
+</Text>"
+`;
+
+exports[`Codegen renders frame with linear gradient fill 1`] = `"<Box bg="linear-gradient(90deg, #F00 0%, #00F 100%)" h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with radial gradient fill 1`] = `"<Box bg="radial-gradient(50% 50% at 50% 50%, #F00 0%, #00F 100%)" boxSize="100px" />"`;
+
+exports[`Codegen renders frame with angular gradient fill 1`] = `"<Box bg="conic-gradient(from 90deg at 50% 50%, #F00 0%, #0F0 50%, #00F 100%)" boxSize="100px" />"`;
+
+exports[`Codegen renders frame with diamond gradient fill 1`] = `"<Box bg="linear-gradient(to bottom right, #F00 0%, #00F 50%) bottom right / 50.1% 50.1% no-repeat, linear-gradient(to bottom left, #F00 0%, #00F 50%) bottom left / 50.1% 50.1% no-repeat, linear-gradient(to top left, #F00 0%, #00F 50%) top left / 50.1% 50.1% no-repeat, linear-gradient(to top right, #F00 0%, #00F 50%) top right / 50.1% 50.1% no-repeat" boxSize="100px" />"`;
+
+exports[`Codegen renders frame with image fill TILE scaleMode 1`] = `"<Box bg="url(/icons/image.png) repeat" h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with pattern fill 1`] = `"<Box bg="url(/icons/PatternIcon.svg) center 10% top 20% repeat" h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with pattern fill START alignment 1`] = `"<Box bg="url(/icons/PatternIcon.svg) repeat" h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with pattern fill vertical alignment 1`] = `"<Box bg="url(/icons/PatternIcon.svg) center 10% bottom 20% repeat" h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with multiple fills including non-last solid 1`] = `"<Box bg="linear-gradient(#F00, #F00), #0F0" h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with invisible gradient fill 1`] = `"<Box h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with zero opacity gradient fill 1`] = `"<Box h="50px" w="100px" />"`;
+
+exports[`Codegen renders frame with solid fill opacity 0 1`] = `"<Box h="50px" w="100px" />"`;
+
+exports[`Codegen renders component set with variants 1`] = `
+"<Box boxSize="100%">
+  <Box h="100%" />
+  <Box h="100%" />
+</Box>"
+`;
+
+exports[`Codegen renders component set with variants: component: [object Object] 1`] = `
+{
+  "name": "Button",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Default",
+    "nodeType": "COMPONENT",
+    "props": {
+      "aspectRatio": undefined,
+      "flex": undefined,
+      "h": "100%",
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+      "w": undefined,
+    },
+  },
+  "variants": {
+    "state": "'default' | 'hover'",
+  },
+}
+`;
+
+exports[`Codegen renders component set with effect property 1`] = `
+"<Box boxSize="100%">
+  <Box h="100%" />
+  <Box h="100%" />
+</Box>"
+`;
+
+exports[`Codegen renders component set with effect property: component: [object Object] 1`] = `
+{
+  "name": "Button",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Default",
+    "nodeType": "COMPONENT",
+    "props": {
+      "aspectRatio": undefined,
+      "flex": undefined,
+      "h": "100%",
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+      "w": undefined,
+    },
+  },
+  "variants": {},
+}
+`;
+
+exports[`Codegen renders component set with transition 1`] = `
+"<Box boxSize="100%">
+  <Box h="100%" />
+  <Box h="100%" />
+</Box>"
+`;
+
+exports[`Codegen renders component set with transition: component: [object Object] 1`] = `
+{
+  "name": "Button",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Default",
+    "nodeType": "COMPONENT",
+    "props": {
+      "aspectRatio": undefined,
+      "flex": undefined,
+      "h": "100%",
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+      "w": undefined,
+    },
+  },
+  "variants": {},
+}
+`;
+
+exports[`Codegen renders component set with different props and transition 1`] = `
+"<Box boxSize="100%">
+  <Box h="100%" />
+  <Box h="100%" opacity="0.8" />
+</Box>"
+`;
+
+exports[`Codegen renders component set with different props and transition: component: [object Object] 1`] = `
+{
+  "name": "Card",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Default",
+    "nodeType": "COMPONENT",
+    "props": {
+      "_hover": {
+        "opacity": "0.8",
+      },
+      "aspectRatio": undefined,
+      "flex": undefined,
+      "h": "100%",
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+      "transition": "0.3ms ease-in-out",
+      "transitionProperty": "opacity",
+      "w": undefined,
+    },
+  },
+  "variants": {},
+}
+`;
+
+exports[`Codegen renders component with parent component set 1`] = `"<Box h="100%" />"`;
+
+exports[`Codegen renders component with parent component set: component: [object Object] 1`] = `
+{
+  "name": "Button",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Hover",
+    "nodeType": "COMPONENT",
+    "props": {
+      "aspectRatio": undefined,
+      "flex": undefined,
+      "h": "100%",
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+      "w": undefined,
+    },
+  },
+  "variants": {
+    "state": "'default' | 'hover'",
+  },
+}
+`;
+
+exports[`Codegen renders component set with press trigger 1`] = `
+"<Box boxSize="100%">
+  <Box h="100%" />
+  <Box h="100%" />
+</Box>"
+`;
+
+exports[`Codegen renders component set with press trigger: component: [object Object] 1`] = `
+{
+  "name": "Button",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Default",
+    "nodeType": "COMPONENT",
+    "props": {
+      "aspectRatio": undefined,
+      "flex": undefined,
+      "h": "100%",
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+      "w": undefined,
+    },
+  },
+  "variants": {},
+}
+`;
+
+exports[`Codegen renders simple component without variants 2`] = `"<Box boxSize="100%" />"`;
+
+exports[`Codegen renders simple component without variants: component: [object Object] 1`] = `
+{
+  "name": "Icon",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Icon",
+    "nodeType": "COMPONENT",
+    "props": {
+      "aspectRatio": undefined,
+      "boxSize": "100%",
+      "flex": undefined,
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+    },
+  },
+  "variants": {},
+}
+`;
+
+exports[`Codegen renders component with parent component set name 1`] = `"<Box h="100%" />"`;
+
+exports[`Codegen renders component with parent component set name: component: [object Object] 1`] = `
+{
+  "name": "Button",
+  "tree": {
+    "children": [],
+    "component": "Box",
+    "nodeName": "Hover",
+    "nodeType": "COMPONENT",
+    "props": {
+      "aspectRatio": undefined,
+      "flex": undefined,
+      "h": "100%",
+      "maxH": undefined,
+      "maxW": undefined,
+      "minH": undefined,
+      "minW": undefined,
+      "w": undefined,
+    },
+  },
+  "variants": {},
+}
+`;
+
+exports[`render real world component real world $ 1`] = `"<Box bg="#D9D9D9" borderRadius="20px" boxSize="150px" />"`;
+
+exports[`render real world component real world $ 2`] = `"<Box bg="#D9D9D9" borderRadius="20px 30px 50px 40px" boxSize="150px" />"`;
+
+exports[`render real world component real world $ 3`] = `"<Box bg="#D9D9D9" borderRadius="200px 30px" boxSize="150px" />"`;
+
+exports[`render real world component real world $ 4`] = `
+"<Flex
+  bg="#FFF"
+  h="223px"
+  overflow="hidden"
+  pb="22px"
+  pl="57px"
+  pr="118px"
+  pt="51px"
+>
+  <Box bg="linear-gradient(-180deg, #8ADAFF 0%, #C6C9CE 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 5`] = `
+"<Flex
+  bg="#FFF"
+  h="215px"
+  overflow="hidden"
+  pb="16px"
+  pl="147px"
+  pr="110px"
+  pt="49px"
+>
+  <Box bg="linear-gradient(-47deg, #8ADAFF 29.62%, #C6C9CE 83.86%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 6`] = `
+"<Flex
+  bg="#FFF"
+  h="254px"
+  overflow="hidden"
+  pb="34px"
+  pl="102px"
+  pr="110px"
+  pt="70px"
+>
+  <Box bg="radial-gradient(50% 50% at 50% 50%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 7`] = `
+"<Flex
+  bg="#FFF"
+  h="259px"
+  overflow="hidden"
+  pb="26px"
+  pl="152px"
+  pr="100px"
+  pt="83px"
+>
+  <Box bg="radial-gradient(43% 21% at 32% 39%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 8`] = `
+"<Flex
+  bg="#FFF"
+  h="225px"
+  overflow="hidden"
+  pb="38px"
+  pl="71px"
+  pr="69px"
+  pt="37px"
+>
+  <Box bg="conic-gradient(from 180deg at 50% 50%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 9`] = `
+"<Flex
+  bg="#FFF"
+  h="199px"
+  overflow="hidden"
+  pb="22px"
+  pl="56px"
+  pr="105px"
+  pt="27px"
+>
+  <Box bg="conic-gradient(from 0deg at 50% 100%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 10`] = `
+"<Flex
+  bg="#FFF"
+  h="239px"
+  overflow="hidden"
+  pb="31px"
+  pl="108px"
+  pr="74px"
+  pt="58px"
+>
+  <Box bg="linear-gradient(to bottom right, #8ADAFF 0%, #DDEAFF 50%) bottom right / 50.1% 50.1% no-repeat, linear-gradient(to bottom left, #8ADAFF 0%, #DDEAFF 50%) bottom left / 50.1% 50.1% no-repeat, linear-gradient(to top left, #8ADAFF 0%, #DDEAFF 50%) top left / 50.1% 50.1% no-repeat, linear-gradient(to top right, #8ADAFF 0%, #DDEAFF 50%) top right / 50.1% 50.1% no-repeat" borderRadius="1000px" boxSize="150px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 11`] = `
+"<Text
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+>
+  Hello World
+</Text>"
+`;
+
+exports[`render real world component real world $ 12`] = `
+"<Text
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+  w="100px"
+>
+  Hello World
+</Text>"
+`;
+
+exports[`render real world component real world $ 13`] = `
+"<Text
+  boxSize="200px"
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+>
+  Hello World
+</Text>"
+`;
+
+exports[`render real world component real world $ 14`] = `
+"<Text
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+  textAlign="right"
+  w="100px"
+>
+  Hello World
+</Text>"
+`;
+
+exports[`render real world component real world $ 15`] = `
+"<Text
+  alignContent="center"
+  boxSize="200px"
+  color="#FFF"
+  fontFamily="Inter"
+  fontSize="12px"
+  fontWeight="400"
+  letterSpacing="0em"
+  lineHeight="normal"
+  textAlign="center"
+>
+  Hello World
+</Text>"
+`;
+
+exports[`render real world component real world $ 16`] = `
+"<Flex alignItems="center" bg="#50F" gap="10px" p="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="1.6"
+  >
+    Hello World
+  </Text>
+  <Box bg="#FFF" borderRadius="1000px" boxSize="12px" overflow="hidden" />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 17`] = `
+"<VStack alignItems="center" bg="#50F" gap="10px" p="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="1.6"
+  >
+    Hello World
+  </Text>
+  <Box bg="#FFF" borderRadius="1000px" boxSize="12px" overflow="hidden" />
+</VStack>"
+`;
+
+exports[`render real world component real world $ 18`] = `
+"<VStack alignItems="center" bg="#50F" gap="6px" p="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="1.6"
+  >
+    Hello World
+  </Text>
+  <Box bg="#FFF" h="1px" overflow="hidden" w="100%" />
+</VStack>"
+`;
+
+exports[`render real world component real world $ 19`] = `
+"<Flex
+  alignItems="center"
+  bg="$primary"
+  borderRadius="100px"
+  gap="20px"
+  px="60px"
+  py="12px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Pretendard"
+    fontSize="18px"
+    fontWeight="700"
+    letterSpacing="-0.04em"
+    lineHeight="1.6"
+  >
+    더 자세히 알아보기
+  </Text>
+  <Box
+    bg="#FFF"
+    boxSize="20px"
+    maskImage="url(/icons/arrow.svg)"
+    maskRepeat="no-repeat"
+    maskSize="contain"
+  />
+</Flex>"
+`;
+
+exports[`render real world component real world $ 20`] = `
+"<VStack bg="$background" borderRadius="30px" gap="20px" p="40px">
+  <Image boxSize="64px" src="/icons/puzzle-piece.svg" />
+  <Text
+    color="$text"
+    fontFamily="Pretendard"
+    fontSize="20px"
+    fontWeight="800"
+    letterSpacing="-0.04em"
+    lineHeight="1.4"
+  >
+    <Text color="$primary">
+      자사 솔루션과의 연계
+    </Text>
+    를 통해<Box as="br" display={['none', null, 'initial']} />서비스 확장성과 성장 가능성을 높입니다.
+  </Text>
+  <Text
+    color="$text"
+    fontFamily="Pretendard"
+    fontSize="16px"
+    fontWeight="500"
+    letterSpacing="-0.06em"
+    lineHeight="1.6"
+  >
+    웹앱팩토리와 Presskit 등 자체 운영 중인 <Box as="br" display={['none', null, 'initial']} />솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, <Box as="br" display={['none', null, 'initial']} />운영 효율화, 성장 기회까지 제안드립니다.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 21`] = `
+"<Flex alignItems="center" gap="20px" h="280px">
+  <Center
+    bg="#FFF"
+    borderRadius="30px"
+    flex="1"
+    flexDir="column"
+    h="100%"
+    p="40px"
+  >
+    <Text
+      color="#1A1A1A"
+      fontFamily="Pretendard"
+      fontSize="36px"
+      fontWeight="500"
+      letterSpacing="-0.06em"
+      lineHeight="1.6"
+    >
+      CARD 1
+    </Text>
+  </Center>
+  <Center
+    bg="#FFF"
+    borderRadius="30px"
+    flex="1"
+    flexDir="column"
+    h="100%"
+    p="40px"
+  >
+    <Text
+      color="#1A1A1A"
+      fontFamily="Pretendard"
+      fontSize="36px"
+      fontWeight="500"
+      letterSpacing="-0.06em"
+      lineHeight="1.6"
+    >
+      CARD 2
+    </Text>
+  </Center>
+  <Center
+    bg="#FFF"
+    borderRadius="30px"
+    flex="1"
+    flexDir="column"
+    h="100%"
+    p="40px"
+  >
+    <Text
+      color="#1A1A1A"
+      fontFamily="Pretendard"
+      fontSize="36px"
+      fontWeight="500"
+      letterSpacing="-0.06em"
+      lineHeight="1.6"
+    >
+      CARD 3
+    </Text>
+  </Center>
+</Flex>"
+`;
+
+exports[`render real world component real world $ 22`] = `
+"<VStack
+  alignItems="flex-end"
+  backdropFilter="blur(4px)"
+  bg="#FFFFFF0F"
+  gap="10px"
+  justifyContent="center"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="24px"
+    fontStyle="italic"
+    fontWeight="600"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet,{" "}
+    <Text fontWeight="900">
+      consectetur
+    </Text>
+    {" "}adipiscing elit.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 23`] = `"<Box bg="#FFF" border="solid 3px #FF1C1C" h="240px" overflow="hidden" />"`;
+
+exports[`render real world component real world $ 24`] = `
+"<Box
+  bg="#FFF"
+  h="240px"
+  outline="solid 3px #FF1C1C"
+  outlineOffset="-1.5px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 25`] = `"<Box bg="#FFF" h="240px" outline="solid 3px #FF1C1C" overflow="hidden" />"`;
+
+exports[`render real world component real world $ 26`] = `
+"<Box
+  bg="#FFF"
+  border="solid 3px #FF1C1C"
+  borderRadius="20px"
+  h="240px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 27`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  h="240px"
+  outline="solid 3px #FF1C1C"
+  outlineOffset="-1.5px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 28`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  h="240px"
+  outline="solid 3px #FF1C1C"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 29`] = `
+"<Box
+  bg="#FFF"
+  border="solid 3px #FF1C1C"
+  borderRadius="20px"
+  boxShadow="0 4px 4px 0 #00000040"
+  h="240px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 30`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  boxShadow="0 4px 4px 0 #00000040"
+  h="240px"
+  outline="solid 3px #FF1C1C"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 31`] = `"<Box bg="#D9D9D9" borderRadius="50%" boxSize="100px" />"`;
+
+exports[`render real world component real world $ 32`] = `"<Box bg="#D9D9D9" borderRadius="50%" h="100px" w="50px" />"`;
+
+exports[`render real world component real world $ 33`] = `
+"<Box
+  bg="#D9D9D9"
+  boxSize="100px"
+  maskImage="url(/icons/ellipse3621.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`render real world component real world $ 34`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  h="240px"
+  outline="solid 1px #000"
+  outlineOffset="-0.5px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 35`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  h="240px"
+  outline="dashed 1px #000"
+  outlineOffset="-0.5px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 36`] = `
+"<Box
+  bg="#FFF"
+  borderTop="solid 1px #000"
+  maskImage="url(/icons/border.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`render real world component real world $ 37`] = `
+"<Box
+  bg="#FFF"
+  border="solid 1px #000"
+  borderRadius="20px"
+  h="240px"
+  opacity="0.2"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 38`] = `
+"<Box
+  bg="#FFF3"
+  border="solid 1px #0003"
+  borderRadius="20px"
+  h="240px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 39`] = `
+"<Flex alignItems="center" bg="#FFF" p="10px">
+  <Text
+    color="#000"
+    flex="1"
+    fontFamily="Inter"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="1.6"
+    overflow="hidden"
+    textOverflow="ellipsis"
+    whiteSpace="nowrap"
+  >
+    Getting into life {"'"}Cause I found that it{"'"}s not so boring Not anymore.
+  </Text>
+</Flex>"
+`;
+
+exports[`render real world component real world $ 40`] = `
+"<Flex alignItems="center" bg="#FFF" p="10px">
+  <Text
+    color="#000"
+    fontFamily="Inter"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="1.6"
+    whiteSpace="nowrap"
+  >
+    Getting into life {"'"}Cause I found that it{"'"}s not so boring Not anymore.
+  </Text>
+</Flex>"
+`;
+
+exports[`render real world component real world $ 41`] = `
+"<Flex alignItems="center" bg="#FFF" p="10px">
+  <Text
+    WebkitBoxOrient="vertical"
+    WebkitLineClamp="2"
+    color="#000"
+    display="-webkit-box"
+    flex="1"
+    fontFamily="Inter"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="1.6"
+    overflow="hidden"
+    textOverflow="ellipsis"
+  >
+    Getting into life {"'"}Cause I found that it{"'"}s not so boring Not anymore.
+  </Text>
+</Flex>"
+`;
+
+exports[`render real world component real world $ 42`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  boxShadow="0 4px 4px 0 #00000040"
+  h="240px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 43`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  boxShadow="inset 0 4px 4px 0 #00000040"
+  h="240px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 44`] = `
+"<Box
+  bg="#FFF"
+  borderRadius="20px"
+  filter="blur(4px)"
+  h="240px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 45`] = `
+"<Box
+  backdropFilter="blur(10px)"
+  bg="#FFF3"
+  borderRadius="20px"
+  h="240px"
+  overflow="hidden"
+/>"
+`;
+
+exports[`render real world component real world $ 46`] = `
+"<VStack
+  bg="linear-gradient(90deg, $primaryBgLight 0%, $secondaryBg 100%)"
+  gap="20px"
+  justifyContent="center"
+  overflow="hidden"
+  px="20px"
+  py="50px"
+>
+  <Image
+    filter="blur(12px)"
+    h="100%"
+    pos="absolute"
+    right="-108.01px"
+    src="/images/puzzle.png"
+    top="-76px"
+    transform="rotate(8.83deg)"
+    transformOrigin="top left"
+    w="300px"
+  />
+  <Box
+    bg="linear-gradient(0deg, #EDEEFF 0%, #EDEEFF00 100%)"
+    boxSize="100%"
+    left="0px"
+    pos="absolute"
+    top="0px"
+  />
+  <VStack gap="8px" justifyContent="center">
+    <Text
+      color="$primary"
+      fontFamily="Pretendard"
+      fontSize="12px"
+      fontWeight="600"
+      letterSpacing="-0.04em"
+      lineHeight="1.6"
+    >
+      지금 시작할 수 있어요
+    </Text>
+    <Text
+      color="$title"
+      fontFamily="Pretendard"
+      fontSize="20px"
+      fontWeight="700"
+      letterSpacing="-0.04em"
+      lineHeight="1.2"
+    >
+      내 삶을 더 잘 이해하는 첫 걸음
+    </Text>
+  </VStack>
+  <Text
+    color="$text"
+    fontFamily="Pretendard"
+    fontSize="14px"
+    fontWeight="400"
+    letterSpacing="-0.04em"
+    lineHeight="1.6"
+  >
+    자꾸 미뤄졌던 나에 대한 고민, <Box as="br" display={['none', null, 'initial']} />퍼즐핏에서 구체적인 답을 찾아보세요.
+  </Text>
+  <VStack gap="12px" justifyContent="center">
+    <GradientButton />
+    <Text
+      color="$textLight"
+      fontFamily="Pretendard"
+      fontSize="12px"
+      fontWeight="400"
+      letterSpacing="-0.04em"
+      lineHeight="1.6"
+      opacity="0.5"
+    >
+      회원가입 후, 유료로 진행됩니다
+    </Text>
+  </VStack>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 47`] = `
+"<Box
+  aspectRatio="1"
+  bg="$caption"
+  h="20px"
+  maskImage="url(/icons/recommend.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+  pb="2.96px"
+  pl="3.49px"
+  pr="2.89px"
+  pt="2.02px"
+/>"
+`;
+
+exports[`render real world component real world $ 48`] = `
+"<Box
+  bg="$caption"
+  maskImage="url(/icons/recommend.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+  px="3px"
+  py="2px"
+/>"
+`;
+
+exports[`render real world component real world $ 49`] = `
+"<Box
+  bg="$caption"
+  maskImage="url(/icons/recommend.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+  px="3px"
+  py="2px"
+/>"
+`;
+
+exports[`render real world component real world $ 50`] = `"<Image px="3px" py="2px" src="/icons/recommend.svg" />"`;
+
+exports[`render real world component real world $ 51`] = `"<Image src="/icons/recommend.svg" />"`;
+
+exports[`render real world component real world $ 52`] = `
+"<VStack
+  alignItems="center"
+  bg="#FFF"
+  overflow="hidden"
+  px="30px"
+  py="80px"
+>
+  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
+    <Text
+      color="#000"
+      fontFamily="Inter"
+      fontSize="40px"
+      fontWeight="400"
+      letterSpacing="0em"
+      lineHeight="normal"
+    >
+      Hello World!
+    </Text>
+    <Image h="500px" src="/images/image.png" w="100%" />
+  </Center>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 53`] = `
+"<VStack
+  alignItems="center"
+  bg="#FFF"
+  overflow="hidden"
+  px="30px"
+  py="80px"
+>
+  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
+    <Text
+      color="#000"
+      fontFamily="Inter"
+      fontSize="40px"
+      fontWeight="400"
+      letterSpacing="0em"
+      lineHeight="normal"
+    >
+      Hello World!
+    </Text>
+    <Image aspectRatio="1.77" h="720px" src="/images/image.png" w="100%" />
+  </Center>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 54`] = `
+"<VStack
+  alignItems="center"
+  bg="#FFF"
+  overflow="hidden"
+  px="30px"
+  py="80px"
+>
+  <Center
+    flexDir="column"
+    gap="50px"
+    h="600px"
+    maxW="1280px"
+    w="100%"
+  >
+    <Text
+      color="#000"
+      fontFamily="Inter"
+      fontSize="40px"
+      fontWeight="400"
+      letterSpacing="0em"
+      lineHeight="normal"
+    >
+      Hello World!
+    </Text>
+    <Image boxSize="100%" maxH="400px" maxW="800px" src="/images/image.png" />
+  </Center>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 55`] = `
+"<VStack
+  alignItems="center"
+  bg="#FFF"
+  overflow="hidden"
+  px="30px"
+  py="80px"
+>
+  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
+    <Text
+      color="#000"
+      fontFamily="Inter"
+      fontSize="40px"
+      fontWeight="400"
+      letterSpacing="0em"
+      lineHeight="normal"
+    >
+      Hello World!
+    </Text>
+    <Image h="400px" maxW="800px" src="/images/image.png" w="100%" />
+  </Center>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 56`] = `
+"<VStack
+  alignItems="center"
+  bg="#FFF"
+  h="760px"
+  overflow="hidden"
+  px="30px"
+  py="80px"
+>
+  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
+    <Text
+      color="#000"
+      fontFamily="Inter"
+      fontSize="40px"
+      fontWeight="400"
+      letterSpacing="0em"
+      lineHeight="normal"
+    >
+      Hello World!
+    </Text>
+    <Image boxSize="100%" maxH="400px" maxW="1024px" src="/images/image.png" />
+  </Center>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 57`] = `
+"<VStack gap="10px" justifyContent="center" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 58`] = `
+"<Flex alignItems="center" gap="10px" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</Flex>"
+`;
+
+exports[`render real world component real world $ 59`] = `
+"<VStack
+  gap="10px"
+  h="200px"
+  justifyContent="center"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 60`] = `
+"<Flex alignItems="center" gap="10px" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    flex="1"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</Flex>"
+`;
+
+exports[`render real world component real world $ 61`] = `
+"<Center flexDir="column" gap="10px" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</Center>"
+`;
+
+exports[`render real world component real world $ 62`] = `
+"<VStack
+  alignItems="center"
+  gap="10px"
+  h="200px"
+  justifyContent="flex-end"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 63`] = `
+"<VStack gap="10px" justifyContent="center" px="20px" py="10px">
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+    textAlign="center"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+    textAlign="center"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 64`] = `
+"<VStack
+  alignItems="flex-end"
+  gap="10px"
+  justifyContent="flex-end"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 65`] = `
+"<VStack
+  alignItems="flex-end"
+  gap="10px"
+  h="200px"
+  justifyContent="center"
+  px="20px"
+  py="10px"
+>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Hello World
+  </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Inter"
+    fontSize="12px"
+    fontWeight="400"
+    letterSpacing="0em"
+    lineHeight="normal"
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 66`] = `
+"<VStack p="10px">
+  <Image h="500px" src="/images/image.png" />
+</VStack>"
+`;
+
+exports[`render real world component real world $ 67`] = `
+"<VStack p="10px">
+  <Image h="500px" objectFit="contain" src="/images/image.png" />
+</VStack>"
+`;
+
+exports[`render real world component real world $ 68`] = `
+"<VStack
+  bg="$innerBg"
+  gap="16px"
+  outline="solid 1px $border"
+  outlineOffset="-0.5px"
+  p="20px"
+>
+  <Flex alignItems="center" gap="8px">
+    <Text
+      color="$caption"
+      fontFamily="SUIT"
+      fontSize="16px"
+      fontWeight="600"
+      letterSpacing="-1px"
+      lineHeight="1.5"
+    >
+      플레이 제목
+    </Text>
+    <Box
+      aspectRatio="1"
+      bg="$caption"
+      borderRadius="50%"
+      boxSize="6px"
+      opacity="0.2"
+    />
+    <Text
+      color="$caption"
+      fontFamily="SUIT"
+      fontSize="15px"
+      fontWeight="400"
+      letterSpacing="-0.5px"
+      lineHeight="1.5"
+    >
+      2025.03.03 18:00
+    </Text>
+    <Box
+      aspectRatio="1"
+      bg="$caption"
+      borderRadius="50%"
+      boxSize="6px"
+      opacity="0.2"
+    />
+    <Flex alignItems="center" gap="4px">
+      <Box
+        aspectRatio="1"
+        bg="$caption"
+        boxSize="20px"
+        maskImage="url(/icons/recommend.svg)"
+        maskRepeat="no-repeat"
+        maskSize="contain"
+      />
+      <Text
+        color="$caption"
+        fontFamily="SUIT"
+        fontSize="15px"
+        fontWeight="600"
+        letterSpacing="-0.5px"
+        lineHeight="1.5"
+      >
+        2
+      </Text>
+    </Flex>
+  </Flex>
+  <Text
+    color="$text"
+    fontFamily="SUIT"
+    fontSize="16px"
+    fontWeight="400"
+    letterSpacing="-1px"
+    lineHeight="1.5"
+  >
+    댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력
+  </Text>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 69`] = `
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
+  <Box bg="#697F9F" h="100px" overflow="hidden" />
+  <Box bg="#697F9F" h="100px" overflow="hidden" />
+  <Box bg="#697F9F" h="100px" overflow="hidden" />
+  <Box bg="#697F9F" h="100px" overflow="hidden" />
+</Grid>"
+`;
+
+exports[`render real world component real world $ 70`] = `
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(4, 1fr)" h="430px">
+  <Box
+    bg="#697F9F"
+    gridColumn="1 / span 1"
+    gridRow="4 / span 1"
+    h="100px"
+    overflow="hidden"
+  />
+  <Box
+    bg="#697F9F"
+    gridColumn="2 / span 1"
+    gridRow="3 / span 1"
+    h="100px"
+    overflow="hidden"
+  />
+</Grid>"
+`;
+
+exports[`render real world component real world $ 71`] = `
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
+  <Box bg="#697F9F" h="100px" overflow="hidden" />
+</Grid>"
+`;
+
+exports[`render real world component real world $ 72`] = `
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
+  <Box
+    bg="#697F9F"
+    gridColumn="2 / span 1"
+    gridRow="2 / span 1"
+    h="100px"
+    overflow="hidden"
+  />
+</Grid>"
+`;
+
+exports[`render real world component real world $ 73`] = `
+"<Image
+  aspectRatio="1"
+  boxSize="413px"
+  mixBlendMode="overlay"
+  opacity="0.8"
+  src="/images/image.png"
+/>"
+`;
+
+exports[`render real world component real world $ 74`] = `
+"<Image
+  aspectRatio="1"
+  boxSize="413px"
+  mixBlendMode="screen"
+  opacity="0.8"
+  src="/images/image.png"
+/>"
+`;
+
+exports[`render real world component real world $ 75`] = `
+"<Image
+  aspectRatio="1"
+  boxSize="413px"
+  mixBlendMode="multiply"
+  opacity="0.8"
+  src="/images/image.png"
+/>"
+`;
+
+exports[`render real world component real world $ 76`] = `"<Box bg="#D9D9D9" boxSize="100px" mixBlendMode="soft-light" />"`;
+
+exports[`render real world component real world $ 77`] = `
+"<Text
+  color="#FF1919"
+  fontFamily="Jalnan Gothic TTF"
+  fontSize="64px"
+  fontWeight="400"
+  letterSpacing="-0.05em"
+  lineHeight="1.4"
+  mixBlendMode="darken"
+>
+  데브파이브
+</Text>"
+`;
+
+exports[`render real world component real world $ 78`] = `
+"<VStack
+  alignItems="flex-end"
+  bg="$primaryBg"
+  border="solid 1px $border"
+  gap="20px"
+  px="40px"
+  py="30px"
+>
+  <Text
+    color="$text"
+    fontFamily="SUIT"
+    fontSize="20px"
+    fontWeight="700"
+    letterSpacing="-1px"
+    lineHeight="1.5"
+  >
+    간편 로그인 연동
+  </Text>
+  <VStack>
+    <Flex
+      alignItems="center"
+      borderRadius="10px"
+      gap="12px"
+      px="20px"
+      py="12px"
+    >
+      <Text
+        color="$text"
+        flex="1"
+        fontFamily="SUIT"
+        fontSize="16px"
+        fontWeight="600"
+        letterSpacing="-1px"
+        lineHeight="1.5"
+      >
+        카카오
+      </Text>
+      <Text
+        color="$gray500"
+        fontFamily="SUIT"
+        fontSize="15px"
+        fontWeight="400"
+        letterSpacing="-0.5px"
+        lineHeight="1.5"
+      >
+        연결 전
+      </Text>
+      <Center
+        bg="$primary"
+        border="solid 1px $primary"
+        borderRadius="100px"
+        px="12px"
+        py="4px"
+      >
+        <Text
+          color="#FFF"
+          fontFamily="Pretendard"
+          fontSize="14px"
+          fontWeight="500"
+          letterSpacing="0px"
+          lineHeight="16px"
+        >
+          인증하기
+        </Text>
+      </Center>
+    </Flex>
+    <Flex
+      alignItems="center"
+      borderRadius="10px"
+      gap="12px"
+      px="20px"
+      py="12px"
+    >
+      <Text
+        color="$text"
+        flex="1"
+        fontFamily="SUIT"
+        fontSize="16px"
+        fontWeight="600"
+        letterSpacing="-1px"
+        lineHeight="1.5"
+      >
+        구글
+      </Text>
+      <Text
+        color="$gray500"
+        fontFamily="SUIT"
+        fontSize="15px"
+        fontWeight="400"
+        letterSpacing="-0.5px"
+        lineHeight="1.5"
+      >
+        cooolvita@gmail.com
+      </Text>
+      <Center
+        bg="$primary"
+        border="solid 1px $primary"
+        borderRadius="100px"
+        px="12px"
+        py="4px"
+      >
+        <Text
+          color="#FFF"
+          fontFamily="Pretendard"
+          fontSize="14px"
+          fontWeight="500"
+          letterSpacing="0px"
+          lineHeight="16px"
+        >
+          인증하기
+        </Text>
+      </Center>
+    </Flex>
+  </VStack>
+  <Box bg="$border" h="1px" />
+  <VStack>
+    <Flex
+      alignItems="center"
+      borderRadius="10px"
+      gap="12px"
+      px="20px"
+      py="12px"
+    >
+      <Text
+        color="$text"
+        flex="1"
+        fontFamily="SUIT"
+        fontSize="16px"
+        fontWeight="600"
+        letterSpacing="-1px"
+        lineHeight="1.5"
+      >
+        서비스 이용약관
+      </Text>
+      <Box
+        bg="$gray300"
+        boxSize="24px"
+        maskImage="url(/icons/ic:round-arrow-left.svg)"
+        maskRepeat="no-repeat"
+        maskSize="contain"
+        transform="rotate(180deg)"
+      />
+    </Flex>
+    <Flex
+      alignItems="center"
+      borderRadius="10px"
+      gap="12px"
+      px="20px"
+      py="12px"
+    >
+      <Text
+        color="$text"
+        flex="1"
+        fontFamily="SUIT"
+        fontSize="16px"
+        fontWeight="600"
+        letterSpacing="-1px"
+        lineHeight="1.5"
+      >
+        개인정보 처리방침
+      </Text>
+      <Box
+        bg="$gray300"
+        boxSize="24px"
+        maskImage="url(/icons/ic:round-arrow-left.svg)"
+        maskRepeat="no-repeat"
+        maskSize="contain"
+        transform="rotate(180deg)"
+      />
+    </Flex>
+    <Flex
+      alignItems="center"
+      borderRadius="10px"
+      gap="12px"
+      px="20px"
+      py="12px"
+    >
+      <Text
+        color="$text"
+        flex="1"
+        fontFamily="SUIT"
+        fontSize="16px"
+        fontWeight="600"
+        letterSpacing="-1px"
+        lineHeight="1.5"
+      >
+        회원 탈퇴
+      </Text>
+      <Box
+        bg="$gray300"
+        boxSize="24px"
+        maskImage="url(/icons/ic:round-arrow-left.svg)"
+        maskRepeat="no-repeat"
+        maskSize="contain"
+        transform="rotate(180deg)"
+      />
+    </Flex>
+  </VStack>
+</VStack>"
+`;
+
+exports[`render real world component real world $ 79`] = `
+"<Box
+  bg="#D9D9D9"
+  boxSize="100px"
+  maskImage="url(/icons/Star7.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`render real world component real world $ 80`] = `
+"<Box
+  bg="#D9D9D9"
+  boxSize="100px"
+  maskImage="url(/icons/Polygon1.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`render real world component real world $ 81`] = `
+"<Box
+  bg="#D9D9D9"
+  boxSize="100px"
+  maskImage="url(/icons/Polygon1.svg)"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+/>"
+`;
+
+exports[`render real world component real world $ 82`] = `"<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" w="140px" />"`;
+
+exports[`render real world component real world $ 83`] = `"<Box maxW="calc(140px - 6px)" outline="solid 3px #FF000080" transform="translate(3px, -3px)" w="140px" />"`;
+
+exports[`render real world component real world $ 84`] = `"<Box maxW="calc(140px - 6px)" outline="solid 3px #F00" transform="translate(3px, -3px)" w="140px" />"`;
+
+exports[`render real world component real world $ 85`] = `"<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" w="140px" />"`;
+
+exports[`render real world component real world $ 86`] = `"<Box maxW="calc(150px - 2px)" outline="solid 1px #F00" transform="rotate(-15deg)" w="150px" />"`;
+
+exports[`render real world component real world $ 87`] = `"<Box maxW="calc(131px - 2px)" outline="solid 1px #F00" transform="rotate(-90deg)" w="131px" />"`;
+
+exports[`render real world component real world $ 88`] = `"<Image h="60px" src="/icons/Vector4.svg" w="280px" />"`;
+
+exports[`render real world component real world $ 89`] = `"<Image h="28px" src="/icons/DevupUI.svg" />"`;
+
+exports[`render real world component real world $ 90`] = `"<Image src="/icons/DevupUI.svg" />"`;
+
+exports[`render real world component real world $ 91`] = `
+"<Center bg="$containerBackground" border="solid 1px $gray200" borderRadius="10px" p="8px">
+  <Box
+    aspectRatio="1"
+    bg="$textLight"
+    boxSize="24px"
+    maskImage="url(/icons/back.svg)"
+    maskRepeat="no-repeat"
+    maskSize="contain"
+    pb="5px"
+    pl="9px"
+    pr="7px"
+    pt="5px"
+    transform="rotate(180deg)"
+  />
+</Center>"
+`;
+
+exports[`render real world component real world $ 92`] = `
+"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
+  <Box
+    aspectRatio="1"
+    bg="$primary"
+    boxSize="20px"
+    maskImage="url(/icons/plus.svg)"
+    maskRepeat="no-repeat"
+    maskSize="contain"
+    pb="2.29px"
+    pl="2.29px"
+    pr="2.29px"
+    pt="2.29px"
+  />
+</Center>"
+`;
+
+exports[`render real world component real world $ 93`] = `
+"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
+  <Image aspectRatio="1" boxSize="20px" src="/icons/plus.svg" />
+</Center>"
+`;
+
+exports[`render real world component real world $ 94`] = `
+"<Center borderRadius="100px" flexDir="column" p="10px">
+  <Box
+    aspectRatio="1"
+    bg="#000"
+    boxSize="28px"
+    maskImage="url(/icons/cog.svg)"
+    maskRepeat="no-repeat"
+    maskSize="contain"
+    pb="2.33px"
+    pl="2.65px"
+    pr="2.65px"
+    pt="2.33px"
+  />
+</Center>"
+`;
+
+exports[`render real world component real world $ 95`] = `
+"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
+  <Image aspectRatio="1" boxSize="20px" src="/icons/plus.svg" />
+</Center>"
+`;
+
+exports[`render real world component real world $ 96`] = `
+"<Center borderRadius="100px" flexDir="column" p="10px">
+  <Box
+    aspectRatio="1"
+    bg="#000"
+    boxSize="28px"
+    maskImage="url(/icons/cog.svg)"
+    maskRepeat="no-repeat"
+    maskSize="contain"
+    pb="2.33px"
+    pl="2.65px"
+    pr="2.65px"
+    pt="2.33px"
+  />
+</Center>"
+`;
+
+exports[`render real world component real world $ 97`] = `
+"<Center borderRadius="100px" flexDir="column" p="10px">
+  <Image aspectRatio="1" boxSize="28px" src="/icons/cog.svg" />
+</Center>"
+`;
+
+exports[`render real world component real world $ 98`] = `
+"<Text
+  bg="linear-gradient(-90deg, #6BB1F2 0%, #8235CA 100%)"
+  bgClip="text"
+  color="linear-gradient(-90deg, #6BB1F2 0%, #8235CA 100%)"
+  fontFamily="Pretendard"
+  fontSize="36px"
+  fontWeight="700"
+  letterSpacing="-0.03em"
+  lineHeight="1.3"
+>
+  16.8s
+</Text>"
+`;
+
+exports[`render real world component real world $ 99`] = `
+"<Text
+  WebkitTextStroke="3px #FFF"
+  boxShadow="0 0 12px 0 #7C70FF"
+  color="#4C05FF"
+  fontFamily="Jalnan 2 TTF"
+  fontSize="38px"
+  fontWeight="400"
+  letterSpacing="-0.02em"
+  lineHeight="normal"
+  paintOrder="stroke fill"
+  textShadow="0 0 12px #7C70FF"
+>
+  홈페이지와 앱 제작
+</Text>"
+`;
+
+exports[`render real world component real world $ 100`] = `
+"<Text
+  color="#000"
+  fontFamily="Pretendard"
+  fontSize="40px"
+  fontWeight="500"
+  letterSpacing="-0.05em"
+  lineHeight="1.4"
+>
+  <Text color="$primary" fontSize="42px" fontWeight="800">
+    온글
+  </Text>
+  과 함께라면
+</Text>"
+`;
+
+exports[`render real world component real world $ 101`] = `
+"<Text
+  bg="url(/icons/image.png) center/cover no-repeat"
+  bgClip="text"
+  color="url(/icons/image.png) center/cover no-repeat"
+  fontFamily="Jalnan Gothic TTF"
+  fontSize="64px"
+  fontWeight="400"
+  letterSpacing="-0.05em"
+  lineHeight="1.4"
+>
+  데브파이브
+</Text>"
+`;
+
+exports[`render real world component real world $ 102`] = `
+"<Text
+  WebkitTextStroke="2px #FFF"
+  boxShadow="0 0 12px 0 #7C70FF, 0 10px 24px 0 #FFC9FE66"
+  color="transparent"
+  fontFamily="Jalnan Gothic TTF"
+  fontSize="64px"
+  fontWeight="400"
+  letterSpacing="-0.05em"
+  lineHeight="1.4"
+  paintOrder="stroke fill"
+  textShadow="0 0 12px #7C70FF, 0 10px 24px #FFC9FE66"
+>
+  데브파이브
+</Text>"
+`;
+
+exports[`render real world component real world $ 103`] = `
+"<Text
+  as="ul"
+  color="$text"
+  fontFamily="Pretendard"
+  fontSize="15px"
+  fontWeight="400"
+  letterSpacing="-0.04em"
+  lineHeight="2"
+  my="0px"
+  pl="1.5em"
+>
+  <li>
+    어떤 증상이 가장 힘들고 일상생활에 영향을 주나요?
+  </li>
+  <li>
+    증상이 언제부터 시작되었나요?
+  </li>
+  <li>
+    증상이 시간이 지나면서 어떻게 변했나요?
+  </li>
+  <li>
+    스트레스나 상황에 따라 증상이 달라지나요?
+  </li>
+</Text>"
+`;
+
+exports[`render real world component real world $ 104`] = `
+"export function GradientButton() {
+  return (
+    <Center
+      _active={{
+        "bg": "linear-gradient(90deg, #7E22CE 0%, #4338CA 100%)",
+        "opacity": "0.8"
+      }}
+      _disabled={{
+        "bg": "$gray200"
+      }}
+      _hover={{
+        "bg": "linear-gradient(90deg, #7E22CE 0%, #4338CA 100%)",
+        "boxShadow": "0 4px 6px -4px #0000001A, 0 10px 15px -3px #0000001A"
+      }}
+      bg="linear-gradient(90deg, #9333EA 0%, #4F46E5 100%)"
+      borderRadius="8px"
+      boxShadow="0 2px 4px -2px #0000001A, 0 4px 6px -1px #0000001A"
+      overflow="hidden"
+      px="30px"
+      py="12px"
+      transition="0.3ms ease-out"
+      transitionProperty="background,box-shadow,opacity"
+    >
+      <Text
+        color="#FFF"
+        fontFamily="Pretendard"
+        fontSize="16px"
+        fontWeight="700"
+        letterSpacing="-0.04em"
+        lineHeight="1.4"
+      >
+        자세히 알아보기 →
+      </Text>
+    </Center>
+  )
+}"
+`;
+
+exports[`render real world component real world $ 105`] = `
+"export interface ButtonProps {
+  size: 'Md' | 'Sm'
+  variant: 'primary' | 'white'
+}
+
+export function Button({ size, variant }: ButtonProps) {
+  return (
+    <Center
+      _active={{
+        "bg": {
+          primary: ["$primaryBold", null, null, null, "$primaryExBold"],
+          white: ["$background", null, null, null, "$backgroundBold"]
+        }[variant]
+      }}
+      _hover={{
+        "bg": {
+          primary: [null, null, null, null, "$primaryBold"],
+          white: [null, null, null, null, "$background"]
+        }[variant]
+      }}
+      bg={{
+        primary: "$primary",
+        white: "$containerBackground"
+      }[variant]}
+      border={{ white: "solid 1px $primaryAccent" }[variant]}
+      borderRadius={{
+        Md: ["10px", null, null, null, "12px"],
+        Sm: ["8px", null, null, null, "10px"]
+      }[size]}
+      px={{
+        Md: ["30px", null, null, null, "40px"],
+        Sm: ["16px", null, null, null, "20px"]
+      }[size]}
+      py={{
+        Md: ["16px", null, null, null, "20px"],
+        Sm: ["12px", null, null, null, "14px"]
+      }[size]}
+      transition="0.2ms ease-out"
+      transitionProperty="background"
+    >
+      <Text
+        color={{
+          primary: "#FFF",
+          white: "$primaryAccent"
+        }[variant]}
+        fontFamily="Noto Sans KR"
+        fontSize={{
+          Md: ["16px", null, null, null, "20px"],
+          Sm: ["14px", null, null, null, "15px"]
+        }[size]}
+        fontWeight="500"
+        letterSpacing="-0.04em"
+        lineHeight="normal"
+      >
+        참가 신청하기
+      </Text>
+    </Center>
+  )
+}"
+`;
