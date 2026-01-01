@@ -4,11 +4,13 @@ import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
 import { paddingLeftMultiline } from '../utils/padding-left-multiline'
 import {
+  BREAKPOINT_ORDER,
   type BreakpointKey,
   createVariantPropValue,
   getBreakpointByWidth,
   mergePropsToResponsive,
   mergePropsToVariant,
+  optimizeResponsiveValue,
   type PropValue,
   viewportToBreakpoint,
 } from '.'
@@ -150,13 +152,14 @@ export class ResponsiveCodegen {
 
     // Handle TEXT nodes with textChildren
     if (firstTree.textChildren && firstTree.textChildren.length > 0) {
-      // For text nodes, merge the text children
-      // Currently just using the first tree's text children
+      // Merge text children across breakpoints
+      const mergedTextChildren =
+        this.mergeTextChildrenAcrossBreakpoints(treesByBreakpoint)
       return renderNode(
         firstTree.component,
         mergedProps,
         depth,
-        firstTree.textChildren,
+        mergedTextChildren,
       )
     }
 
@@ -1340,5 +1343,168 @@ export class ResponsiveCodegen {
       return 1 + maxNestedCost
     }
     return 0
+  }
+
+  /**
+   * Merge text children across breakpoints.
+   * Compares text content and handles \n differences with responsive <br /> display.
+   *
+   * Example:
+   * - PC: "안녕하세요 반갑습니다"
+   * - Mobile: "안녕하세요\n반갑습니다"
+   * Result: "안녕하세요<Box as="br" display={[null, null, null, null, 'none']} />반갑습니다"
+   *
+   * If there's only a space vs \n difference:
+   * - PC: "안녕하세요 반갑습니다"
+   * - Mobile: "안녕하세요\n반갑습니다"
+   * Result: "안녕하세요<Text display={[null, null, null, null, 'none']}> </Text><br />반갑습니다"
+   */
+  private mergeTextChildrenAcrossBreakpoints(
+    treesByBreakpoint: Map<BreakpointKey, NodeTree>,
+  ): string[] {
+    // Collect textChildren from all breakpoints
+    const textByBreakpoint = new Map<BreakpointKey, string[]>()
+    for (const [bp, tree] of treesByBreakpoint) {
+      if (tree.textChildren && tree.textChildren.length > 0) {
+        textByBreakpoint.set(bp, tree.textChildren)
+      }
+    }
+
+    // If only one breakpoint has text, return it
+    if (textByBreakpoint.size <= 1) {
+      const firstText = [...textByBreakpoint.values()][0]
+      return firstText || []
+    }
+
+    // Join all text children into single strings for comparison
+    const joinedByBreakpoint = new Map<BreakpointKey, string>()
+    for (const [bp, textChildren] of textByBreakpoint) {
+      joinedByBreakpoint.set(bp, textChildren.join(''))
+    }
+
+    // Normalize text by removing <br /> for comparison
+    const normalizeForComparison = (text: string): string => {
+      return text.replace(/<br \/>/g, '\n')
+    }
+
+    // Get all unique normalized texts
+    const normalizedTexts = new Map<BreakpointKey, string>()
+    for (const [bp, text] of joinedByBreakpoint) {
+      normalizedTexts.set(bp, normalizeForComparison(text))
+    }
+
+    // Check if all texts are identical after normalization
+    const uniqueNormalized = new Set([...normalizedTexts.values()])
+    if (uniqueNormalized.size === 1) {
+      // All same, return first text children
+      return [...textByBreakpoint.values()][0]
+    }
+
+    // Texts differ - need to merge with responsive <br />
+    // Find the text with the most content (usually the one with more \n)
+    const breakpoints = [...normalizedTexts.keys()]
+
+    // Compare character by character, tracking where \n appears
+    // Build merged text with responsive <br /> where needed
+    return this.buildResponsiveTextChildren(normalizedTexts, breakpoints)
+  }
+
+  /**
+   * Build responsive text children by comparing texts across breakpoints.
+   * Inserts responsive <br /> where \n exists in some breakpoints but not others.
+   */
+  private buildResponsiveTextChildren(
+    normalizedTexts: Map<BreakpointKey, string>,
+    breakpoints: BreakpointKey[],
+  ): string[] {
+    // Find the longest text to use as base
+    let baseText = ''
+    for (const [, text] of normalizedTexts) {
+      if (text.length > baseText.length) {
+        baseText = text
+      }
+    }
+
+    // For each other breakpoint, find where they differ
+    // Build a map of positions where \n appears/doesn't appear per breakpoint
+    const brPositions = new Map<number, Map<BreakpointKey, boolean>>()
+
+    // Find all \n positions in all texts
+    for (const [bp, text] of normalizedTexts) {
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === '\n') {
+          if (!brPositions.has(i)) {
+            brPositions.set(i, new Map())
+          }
+          const posMap = brPositions.get(i)
+          if (posMap) {
+            posMap.set(bp, true)
+          }
+        }
+      }
+    }
+
+    // For positions that don't have \n in some breakpoints, mark as false
+    for (const [, bpMap] of brPositions) {
+      for (const bp of breakpoints) {
+        if (!bpMap.has(bp)) {
+          bpMap.set(bp, false)
+        }
+      }
+    }
+
+    // Now build the result string
+    // Replace \n with appropriate responsive <br />
+    const result: string[] = []
+    let currentSegment = ''
+
+    for (let i = 0; i < baseText.length; i++) {
+      const char = baseText[i]
+
+      if (char === '\n') {
+        // Check if all breakpoints have \n here
+        const bpMap = brPositions.get(i)
+        if (!bpMap) {
+          currentSegment += '<br />'
+          continue
+        }
+
+        const allHaveBr = [...bpMap.values()].every((v) => v)
+        const noneHaveBr = [...bpMap.values()].every((v) => !v)
+
+        if (allHaveBr) {
+          // All breakpoints have <br /> - simple case
+          currentSegment += '<br />'
+        } else if (!noneHaveBr) {
+          // Some have, some don't - need responsive display
+          // Build display array: 'none' where br doesn't exist, null where it does
+          const displayArray: (string | null)[] = BREAKPOINT_ORDER.map((bp) => {
+            if (!bpMap.has(bp)) return null // breakpoint not in comparison
+            return bpMap.get(bp) ? null : 'none'
+          })
+
+          const optimized = optimizeResponsiveValue(displayArray, 'display')
+
+          if (optimized !== null && optimized !== 'none') {
+            if (typeof optimized === 'string') {
+              // Single value (shouldn't be 'none' at this point)
+              currentSegment += '<br />'
+            } else {
+              // Responsive array
+              currentSegment += `<Box as="br" display={${JSON.stringify(optimized)}} />`
+            }
+          }
+        }
+        // noneHaveBr case: shouldn't happen since we're on base text, skip
+      } else {
+        currentSegment += char
+      }
+    }
+
+    if (currentSegment) {
+      result.push(currentSegment)
+    }
+
+    return result
   }
 }

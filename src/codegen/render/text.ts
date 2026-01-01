@@ -86,12 +86,7 @@ export async function renderText(node: TextNode): Promise<{
         let textComponent: 'ul' | 'ol' | null = null
 
         if (seg.listOptions.type === 'NONE') {
-          text = text.map((line) =>
-            line.replaceAll(
-              '\n',
-              "<Box as=\"br\" display={['none', null, 'initial']} />",
-            ),
-          )
+          text = text.map((line) => line.replaceAll('\n', '<br />'))
         } else {
           switch (seg.listOptions.type) {
             case 'UNORDERED': {
@@ -137,9 +132,7 @@ export async function renderText(node: TextNode): Promise<{
   return {
     children: resultChildren.map((child) => {
       if (Object.keys(child.props).length === 0)
-        return child.children.join(
-          "<Box as=\"br\" display={'none', null, 'initial'} />",
-        )
+        return child.children.join('<br />')
       return renderNode('Text', child.props, 0, child.children)
     }),
     props: defaultProps,
