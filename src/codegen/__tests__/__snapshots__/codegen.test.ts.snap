@@ -248,9 +248,9 @@ exports[`Codegen renders line with stroke outline 1`] = `"<Box boxSize="100%" ma
 
 exports[`Codegen renders frame with dashed stroke 1`] = `"<Box h="50px" outline="dashed 2px #00F" outlineOffset="-1px" w="100px" />"`;
 
-exports[`Codegen renders frame with page parent and width 1920 1`] = `"<Box h="100%" />"`;
+exports[`Codegen renders frame with page parent and width 1920 1`] = `"<Box />"`;
 
-exports[`Codegen renders frame with section parent 1`] = `"<Box h="100%" />"`;
+exports[`Codegen renders frame with section parent 1`] = `"<Box />"`;
 
 exports[`Codegen renders frame with vertical center align child width shrinker 1`] = `
 "<VStack boxSize="100%">
@@ -667,8 +667,8 @@ exports[`Codegen renders frame with solid fill opacity 0 1`] = `"<Box h="50px" w
 
 exports[`Codegen renders component set with variants 1`] = `
 "<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
+  <Box />
+  <Box />
 </Box>"
 `;
 
@@ -683,7 +683,7 @@ exports[`Codegen renders component set with variants: component: [object Object]
     "props": {
       "aspectRatio": undefined,
       "flex": undefined,
-      "h": "100%",
+      "h": undefined,
       "maxH": undefined,
       "maxW": undefined,
       "minH": undefined,
@@ -699,8 +699,8 @@ exports[`Codegen renders component set with variants: component: [object Object]
 
 exports[`Codegen renders component set with effect property 1`] = `
 "<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
+  <Box />
+  <Box />
 </Box>"
 `;
 
@@ -715,7 +715,7 @@ exports[`Codegen renders component set with effect property: component: [object 
     "props": {
       "aspectRatio": undefined,
       "flex": undefined,
-      "h": "100%",
+      "h": undefined,
       "maxH": undefined,
       "maxW": undefined,
       "minH": undefined,
@@ -729,8 +729,8 @@ exports[`Codegen renders component set with effect property: component: [object 
 
 exports[`Codegen renders component set with transition 1`] = `
 "<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
+  <Box />
+  <Box />
 </Box>"
 `;
 
@@ -745,7 +745,7 @@ exports[`Codegen renders component set with transition: component: [object Objec
     "props": {
       "aspectRatio": undefined,
       "flex": undefined,
-      "h": "100%",
+      "h": undefined,
       "maxH": undefined,
       "maxW": undefined,
       "minH": undefined,
@@ -759,8 +759,8 @@ exports[`Codegen renders component set with transition: component: [object Objec
 
 exports[`Codegen renders component set with different props and transition 1`] = `
 "<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" opacity="0.8" />
+  <Box />
+  <Box opacity="0.8" />
 </Box>"
 `;
 
@@ -778,7 +778,7 @@ exports[`Codegen renders component set with different props and transition: comp
       },
       "aspectRatio": undefined,
       "flex": undefined,
-      "h": "100%",
+      "h": undefined,
       "maxH": undefined,
       "maxW": undefined,
       "minH": undefined,
@@ -792,7 +792,7 @@ exports[`Codegen renders component set with different props and transition: comp
 }
 `;
 
-exports[`Codegen renders component with parent component set 1`] = `"<Box h="100%" />"`;
+exports[`Codegen renders component with parent component set 1`] = `"<Box />"`;
 
 exports[`Codegen renders component with parent component set: component: [object Object] 1`] = `
 {
@@ -805,7 +805,7 @@ exports[`Codegen renders component with parent component set: component: [object
     "props": {
       "aspectRatio": undefined,
       "flex": undefined,
-      "h": "100%",
+      "h": undefined,
       "maxH": undefined,
       "maxW": undefined,
       "minH": undefined,
@@ -821,8 +821,8 @@ exports[`Codegen renders component with parent component set: component: [object
 
 exports[`Codegen renders component set with press trigger 1`] = `
 "<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
+  <Box />
+  <Box />
 </Box>"
 `;
 
@@ -837,7 +837,7 @@ exports[`Codegen renders component set with press trigger: component: [object Ob
     "props": {
       "aspectRatio": undefined,
       "flex": undefined,
-      "h": "100%",
+      "h": undefined,
       "maxH": undefined,
       "maxW": undefined,
       "minH": undefined,
@@ -873,7 +873,7 @@ exports[`Codegen renders simple component without variants: component: [object O
 }
 `;
 
-exports[`Codegen renders component with parent component set name 1`] = `"<Box h="100%" />"`;
+exports[`Codegen renders component with parent component set name 1`] = `"<Box />"`;
 
 exports[`Codegen renders component with parent component set name: component: [object Object] 1`] = `
 {
@@ -886,7 +886,7 @@ exports[`Codegen renders component with parent component set name: component: [o
     "props": {
       "aspectRatio": undefined,
       "flex": undefined,
-      "h": "100%",
+      "h": undefined,
       "maxH": undefined,
       "maxW": undefined,
       "minH": undefined,
@@ -898,16 +898,15 @@ exports[`Codegen renders component with parent component set name: component: [o
 }
 `;
 
-exports[`render real world component real world $ 1`] = `"<Box bg="#D9D9D9" borderRadius="20px" boxSize="150px" />"`;
+exports[`render real world component real world $ 1`] = `"<Box bg="#D9D9D9" borderRadius="20px" />"`;
 
-exports[`render real world component real world $ 2`] = `"<Box bg="#D9D9D9" borderRadius="20px 30px 50px 40px" boxSize="150px" />"`;
+exports[`render real world component real world $ 2`] = `"<Box bg="#D9D9D9" borderRadius="20px 30px 50px 40px" />"`;
 
-exports[`render real world component real world $ 3`] = `"<Box bg="#D9D9D9" borderRadius="200px 30px" boxSize="150px" />"`;
+exports[`render real world component real world $ 3`] = `"<Box bg="#D9D9D9" borderRadius="200px 30px" />"`;
 
 exports[`render real world component real world $ 4`] = `
 "<Flex
   bg="#FFF"
-  h="223px"
   overflow="hidden"
   pb="22px"
   pl="57px"
@@ -921,7 +920,6 @@ exports[`render real world component real world $ 4`] = `
 exports[`render real world component real world $ 5`] = `
 "<Flex
   bg="#FFF"
-  h="215px"
   overflow="hidden"
   pb="16px"
   pl="147px"
@@ -935,7 +933,6 @@ exports[`render real world component real world $ 5`] = `
 exports[`render real world component real world $ 6`] = `
 "<Flex
   bg="#FFF"
-  h="254px"
   overflow="hidden"
   pb="34px"
   pl="102px"
@@ -949,7 +946,6 @@ exports[`render real world component real world $ 6`] = `
 exports[`render real world component real world $ 7`] = `
 "<Flex
   bg="#FFF"
-  h="259px"
   overflow="hidden"
   pb="26px"
   pl="152px"
@@ -963,7 +959,6 @@ exports[`render real world component real world $ 7`] = `
 exports[`render real world component real world $ 8`] = `
 "<Flex
   bg="#FFF"
-  h="225px"
   overflow="hidden"
   pb="38px"
   pl="71px"
@@ -977,7 +972,6 @@ exports[`render real world component real world $ 8`] = `
 exports[`render real world component real world $ 9`] = `
 "<Flex
   bg="#FFF"
-  h="199px"
   overflow="hidden"
   pb="22px"
   pl="56px"
@@ -991,7 +985,6 @@ exports[`render real world component real world $ 9`] = `
 exports[`render real world component real world $ 10`] = `
 "<Flex
   bg="#FFF"
-  h="239px"
   overflow="hidden"
   pb="31px"
   pl="108px"
@@ -1031,7 +1024,6 @@ exports[`render real world component real world $ 12`] = `
 
 exports[`render real world component real world $ 13`] = `
 "<Text
-  boxSize="200px"
   color="#FFF"
   fontFamily="Inter"
   fontSize="12px"
@@ -1061,7 +1053,6 @@ exports[`render real world component real world $ 14`] = `
 exports[`render real world component real world $ 15`] = `
 "<Text
   alignContent="center"
-  boxSize="200px"
   color="#FFF"
   fontFamily="Inter"
   fontSize="12px"
@@ -1181,7 +1172,7 @@ exports[`render real world component real world $ 20`] = `
 `;
 
 exports[`render real world component real world $ 21`] = `
-"<Flex alignItems="center" gap="20px" h="280px">
+"<Flex alignItems="center" gap="20px">
   <Center
     bg="#FFF"
     borderRadius="30px"
@@ -1280,50 +1271,25 @@ exports[`render real world component real world $ 22`] = `
 </VStack>"
 `;
 
-exports[`render real world component real world $ 23`] = `"<Box bg="#FFF" border="solid 3px #FF1C1C" h="240px" overflow="hidden" />"`;
+exports[`render real world component real world $ 23`] = `"<Box bg="#FFF" border="solid 3px #FF1C1C" overflow="hidden" />"`;
 
-exports[`render real world component real world $ 24`] = `
-"<Box
-  bg="#FFF"
-  h="240px"
-  outline="solid 3px #FF1C1C"
-  outlineOffset="-1.5px"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 24`] = `"<Box bg="#FFF" outline="solid 3px #FF1C1C" outlineOffset="-1.5px" overflow="hidden" />"`;
 
-exports[`render real world component real world $ 25`] = `"<Box bg="#FFF" h="240px" outline="solid 3px #FF1C1C" overflow="hidden" />"`;
+exports[`render real world component real world $ 25`] = `"<Box bg="#FFF" outline="solid 3px #FF1C1C" overflow="hidden" />"`;
 
-exports[`render real world component real world $ 26`] = `
-"<Box
-  bg="#FFF"
-  border="solid 3px #FF1C1C"
-  borderRadius="20px"
-  h="240px"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 26`] = `"<Box bg="#FFF" border="solid 3px #FF1C1C" borderRadius="20px" overflow="hidden" />"`;
 
 exports[`render real world component real world $ 27`] = `
 "<Box
   bg="#FFF"
   borderRadius="20px"
-  h="240px"
   outline="solid 3px #FF1C1C"
   outlineOffset="-1.5px"
   overflow="hidden"
 />"
 `;
 
-exports[`render real world component real world $ 28`] = `
-"<Box
-  bg="#FFF"
-  borderRadius="20px"
-  h="240px"
-  outline="solid 3px #FF1C1C"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 28`] = `"<Box bg="#FFF" borderRadius="20px" outline="solid 3px #FF1C1C" overflow="hidden" />"`;
 
 exports[`render real world component real world $ 29`] = `
 "<Box
@@ -1331,7 +1297,6 @@ exports[`render real world component real world $ 29`] = `
   border="solid 3px #FF1C1C"
   borderRadius="20px"
   boxShadow="0 4px 4px 0 #00000040"
-  h="240px"
   overflow="hidden"
 />"
 `;
@@ -1341,31 +1306,21 @@ exports[`render real world component real world $ 30`] = `
   bg="#FFF"
   borderRadius="20px"
   boxShadow="0 4px 4px 0 #00000040"
-  h="240px"
   outline="solid 3px #FF1C1C"
   overflow="hidden"
 />"
 `;
 
-exports[`render real world component real world $ 31`] = `"<Box bg="#D9D9D9" borderRadius="50%" boxSize="100px" />"`;
+exports[`render real world component real world $ 31`] = `"<Box bg="#D9D9D9" borderRadius="50%" />"`;
 
-exports[`render real world component real world $ 32`] = `"<Box bg="#D9D9D9" borderRadius="50%" h="100px" w="50px" />"`;
+exports[`render real world component real world $ 32`] = `"<Box bg="#D9D9D9" borderRadius="50%" />"`;
 
-exports[`render real world component real world $ 33`] = `
-"<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/ellipse3621.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>"
-`;
+exports[`render real world component real world $ 33`] = `"<Box bg="#D9D9D9" maskImage="url(/icons/ellipse3621.svg)" maskRepeat="no-repeat" maskSize="contain" />"`;
 
 exports[`render real world component real world $ 34`] = `
 "<Box
   bg="#FFF"
   borderRadius="20px"
-  h="240px"
   outline="solid 1px #000"
   outlineOffset="-0.5px"
   overflow="hidden"
@@ -1376,7 +1331,6 @@ exports[`render real world component real world $ 35`] = `
 "<Box
   bg="#FFF"
   borderRadius="20px"
-  h="240px"
   outline="dashed 1px #000"
   outlineOffset="-0.5px"
   overflow="hidden"
@@ -1398,21 +1352,12 @@ exports[`render real world component real world $ 37`] = `
   bg="#FFF"
   border="solid 1px #000"
   borderRadius="20px"
-  h="240px"
   opacity="0.2"
   overflow="hidden"
 />"
 `;
 
-exports[`render real world component real world $ 38`] = `
-"<Box
-  bg="#FFF3"
-  border="solid 1px #0003"
-  borderRadius="20px"
-  h="240px"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 38`] = `"<Box bg="#FFF3" border="solid 1px #0003" borderRadius="20px" overflow="hidden" />"`;
 
 exports[`render real world component real world $ 39`] = `
 "<Flex alignItems="center" bg="#FFF" p="10px">
@@ -1470,45 +1415,13 @@ exports[`render real world component real world $ 41`] = `
 </Flex>"
 `;
 
-exports[`render real world component real world $ 42`] = `
-"<Box
-  bg="#FFF"
-  borderRadius="20px"
-  boxShadow="0 4px 4px 0 #00000040"
-  h="240px"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 42`] = `"<Box bg="#FFF" borderRadius="20px" boxShadow="0 4px 4px 0 #00000040" overflow="hidden" />"`;
 
-exports[`render real world component real world $ 43`] = `
-"<Box
-  bg="#FFF"
-  borderRadius="20px"
-  boxShadow="inset 0 4px 4px 0 #00000040"
-  h="240px"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 43`] = `"<Box bg="#FFF" borderRadius="20px" boxShadow="inset 0 4px 4px 0 #00000040" overflow="hidden" />"`;
 
-exports[`render real world component real world $ 44`] = `
-"<Box
-  bg="#FFF"
-  borderRadius="20px"
-  filter="blur(4px)"
-  h="240px"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 44`] = `"<Box bg="#FFF" borderRadius="20px" filter="blur(4px)" overflow="hidden" />"`;
 
-exports[`render real world component real world $ 45`] = `
-"<Box
-  backdropFilter="blur(10px)"
-  bg="#FFF3"
-  borderRadius="20px"
-  h="240px"
-  overflow="hidden"
-/>"
-`;
+exports[`render real world component real world $ 45`] = `"<Box backdropFilter="blur(10px)" bg="#FFF3" borderRadius="20px" overflow="hidden" />"`;
 
 exports[`render real world component real world $ 46`] = `
 "<VStack
@@ -1590,7 +1503,6 @@ exports[`render real world component real world $ 47`] = `
 "<Box
   aspectRatio="1"
   bg="$caption"
-  h="20px"
   maskImage="url(/icons/recommend.svg)"
   maskRepeat="no-repeat"
   maskSize="contain"
@@ -1733,7 +1645,6 @@ exports[`render real world component real world $ 56`] = `
 "<VStack
   alignItems="center"
   bg="#FFF"
-  h="760px"
   overflow="hidden"
   px="30px"
   py="80px"
@@ -1805,13 +1716,7 @@ exports[`render real world component real world $ 58`] = `
 `;
 
 exports[`render real world component real world $ 59`] = `
-"<VStack
-  gap="10px"
-  h="200px"
-  justifyContent="center"
-  px="20px"
-  py="10px"
->
+"<VStack gap="10px" justifyContent="center" px="20px" py="10px">
   <Text
     color="#FFF"
     fontFamily="Inter"
@@ -1890,7 +1795,6 @@ exports[`render real world component real world $ 62`] = `
 "<VStack
   alignItems="center"
   gap="10px"
-  h="200px"
   justifyContent="flex-end"
   px="20px"
   py="10px"
@@ -1980,7 +1884,6 @@ exports[`render real world component real world $ 65`] = `
 "<VStack
   alignItems="flex-end"
   gap="10px"
-  h="200px"
   justifyContent="center"
   px="20px"
   py="10px"
@@ -2098,7 +2001,7 @@ exports[`render real world component real world $ 68`] = `
 `;
 
 exports[`render real world component real world $ 69`] = `
-"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)">
   <Box bg="#697F9F" h="100px" overflow="hidden" />
   <Box bg="#697F9F" h="100px" overflow="hidden" />
   <Box bg="#697F9F" h="100px" overflow="hidden" />
@@ -2107,7 +2010,7 @@ exports[`render real world component real world $ 69`] = `
 `;
 
 exports[`render real world component real world $ 70`] = `
-"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(4, 1fr)" h="430px">
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(4, 1fr)">
   <Box
     bg="#697F9F"
     gridColumn="1 / span 1"
@@ -2126,13 +2029,13 @@ exports[`render real world component real world $ 70`] = `
 `;
 
 exports[`render real world component real world $ 71`] = `
-"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)">
   <Box bg="#697F9F" h="100px" overflow="hidden" />
 </Grid>"
 `;
 
 exports[`render real world component real world $ 72`] = `
-"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
+"<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)">
   <Box
     bg="#697F9F"
     gridColumn="2 / span 1"
@@ -2143,37 +2046,13 @@ exports[`render real world component real world $ 72`] = `
 </Grid>"
 `;
 
-exports[`render real world component real world $ 73`] = `
-"<Image
-  aspectRatio="1"
-  boxSize="413px"
-  mixBlendMode="overlay"
-  opacity="0.8"
-  src="/images/image.png"
-/>"
-`;
+exports[`render real world component real world $ 73`] = `"<Image aspectRatio="1" mixBlendMode="overlay" opacity="0.8" src="/images/image.png" />"`;
 
-exports[`render real world component real world $ 74`] = `
-"<Image
-  aspectRatio="1"
-  boxSize="413px"
-  mixBlendMode="screen"
-  opacity="0.8"
-  src="/images/image.png"
-/>"
-`;
+exports[`render real world component real world $ 74`] = `"<Image aspectRatio="1" mixBlendMode="screen" opacity="0.8" src="/images/image.png" />"`;
 
-exports[`render real world component real world $ 75`] = `
-"<Image
-  aspectRatio="1"
-  boxSize="413px"
-  mixBlendMode="multiply"
-  opacity="0.8"
-  src="/images/image.png"
-/>"
-`;
+exports[`render real world component real world $ 75`] = `"<Image aspectRatio="1" mixBlendMode="multiply" opacity="0.8" src="/images/image.png" />"`;
 
-exports[`render real world component real world $ 76`] = `"<Box bg="#D9D9D9" boxSize="100px" mixBlendMode="soft-light" />"`;
+exports[`render real world component real world $ 76`] = `"<Box bg="#D9D9D9" mixBlendMode="soft-light" />"`;
 
 exports[`render real world component real world $ 77`] = `
 "<Text
@@ -2391,51 +2270,27 @@ exports[`render real world component real world $ 78`] = `
 </VStack>"
 `;
 
-exports[`render real world component real world $ 79`] = `
-"<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/Star7.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>"
-`;
+exports[`render real world component real world $ 79`] = `"<Box bg="#D9D9D9" maskImage="url(/icons/Star7.svg)" maskRepeat="no-repeat" maskSize="contain" />"`;
 
-exports[`render real world component real world $ 80`] = `
-"<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/Polygon1.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>"
-`;
+exports[`render real world component real world $ 80`] = `"<Box bg="#D9D9D9" maskImage="url(/icons/Polygon1.svg)" maskRepeat="no-repeat" maskSize="contain" />"`;
 
-exports[`render real world component real world $ 81`] = `
-"<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/Polygon1.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>"
-`;
+exports[`render real world component real world $ 81`] = `"<Box bg="#D9D9D9" maskImage="url(/icons/Polygon1.svg)" maskRepeat="no-repeat" maskSize="contain" />"`;
 
-exports[`render real world component real world $ 82`] = `"<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" w="140px" />"`;
+exports[`render real world component real world $ 82`] = `"<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" />"`;
 
-exports[`render real world component real world $ 83`] = `"<Box maxW="calc(140px - 6px)" outline="solid 3px #FF000080" transform="translate(3px, -3px)" w="140px" />"`;
+exports[`render real world component real world $ 83`] = `"<Box maxW="calc(140px - 6px)" outline="solid 3px #FF000080" transform="translate(3px, -3px)" />"`;
 
-exports[`render real world component real world $ 84`] = `"<Box maxW="calc(140px - 6px)" outline="solid 3px #F00" transform="translate(3px, -3px)" w="140px" />"`;
+exports[`render real world component real world $ 84`] = `"<Box maxW="calc(140px - 6px)" outline="solid 3px #F00" transform="translate(3px, -3px)" />"`;
 
-exports[`render real world component real world $ 85`] = `"<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" w="140px" />"`;
+exports[`render real world component real world $ 85`] = `"<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" />"`;
 
-exports[`render real world component real world $ 86`] = `"<Box maxW="calc(150px - 2px)" outline="solid 1px #F00" transform="rotate(-15deg)" w="150px" />"`;
+exports[`render real world component real world $ 86`] = `"<Box maxW="calc(150px - 2px)" outline="solid 1px #F00" transform="rotate(-15deg)" />"`;
 
-exports[`render real world component real world $ 87`] = `"<Box maxW="calc(131px - 2px)" outline="solid 1px #F00" transform="rotate(-90deg)" w="131px" />"`;
+exports[`render real world component real world $ 87`] = `"<Box maxW="calc(131px - 2px)" outline="solid 1px #F00" transform="rotate(-90deg)" />"`;
 
-exports[`render real world component real world $ 88`] = `"<Image h="60px" src="/icons/Vector4.svg" w="280px" />"`;
+exports[`render real world component real world $ 88`] = `"<Image src="/icons/Vector4.svg" />"`;
 
-exports[`render real world component real world $ 89`] = `"<Image h="28px" src="/icons/DevupUI.svg" />"`;
+exports[`render real world component real world $ 89`] = `"<Image src="/icons/DevupUI.svg" />"`;
 
 exports[`render real world component real world $ 90`] = `"<Image src="/icons/DevupUI.svg" />"`;
 
@@ -2458,7 +2313,7 @@ exports[`render real world component real world $ 91`] = `
 `;
 
 exports[`render real world component real world $ 92`] = `
-"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
+"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px">
   <Box
     aspectRatio="1"
     bg="$primary"
@@ -2475,7 +2330,7 @@ exports[`render real world component real world $ 92`] = `
 `;
 
 exports[`render real world component real world $ 93`] = `
-"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
+"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px">
   <Image aspectRatio="1" boxSize="20px" src="/icons/plus.svg" />
 </Center>"
 `;
@@ -2498,7 +2353,7 @@ exports[`render real world component real world $ 94`] = `
 `;
 
 exports[`render real world component real world $ 95`] = `
-"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
+"<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px">
   <Image aspectRatio="1" boxSize="20px" src="/icons/plus.svg" />
 </Center>"
 `;
@@ -2732,4 +2587,121 @@ export function Button({ size, variant }: ButtonProps) {
     </Center>
   )
 }"
+`;
+
+exports[`render real world component real world $ 106`] = `
+"<Center bg="$background" overflow="hidden" px="40px" py="120px">
+  <Image
+    left="-196.23px"
+    opacity="0.2"
+    pos="absolute"
+    src="/icons/backgroundImage.svg"
+    top="-908px"
+    transform="rotate(11.24deg)"
+    transformOrigin="top left"
+    w="100%"
+  />
+  <VStack alignItems="center" gap="120px">
+    <VStack alignItems="center" gap="60px">
+      <Box
+        aspectRatio="1.91"
+        bg="#B1874F"
+        h="104px"
+        maskImage="url(/icons/path1208.svg)"
+        maskRepeat="no-repeat"
+        maskSize="contain"
+        w="200px"
+      />
+      <VStack alignItems="center" gap="20px">
+        <Text
+          color="$primaryAccent"
+          fontFamily="MaruBuri"
+          fontSize="32px"
+          fontWeight="700"
+          letterSpacing="0.04em"
+          lineHeight="normal"
+        >
+          Under Construction
+        </Text>
+        <Text
+          color="$primaryAccent"
+          fontFamily="MaruBuri"
+          fontSize="56px"
+          fontWeight="700"
+          letterSpacing="-0.02em"
+          lineHeight="normal"
+        >
+          제주국제관악제 리뉴얼 알림
+        </Text>
+      </VStack>
+      <VStack alignItems="center" gap="20px">
+        <Text
+          color="$text"
+          fontFamily="Noto Sans KR"
+          fontSize="20px"
+          fontWeight="400"
+          letterSpacing="-0.03em"
+          lineHeight="2"
+          textAlign="center"
+        >
+          더 나은 서비스 제공을 위해 시스템 점검 및 리뉴얼을 진행 중입니다.<Box as="br" display={['none', null, 'initial']} />이용에 불편을 드려 죄송하며, 빠른 시일 내에 다시 찾아뵙겠습니다.
+        </Text>
+        <Text
+          color="$textLight"
+          fontFamily="Noto Sans KR"
+          fontSize="16px"
+          fontWeight="400"
+          letterSpacing="-0.02em"
+          lineHeight="1.8"
+          textAlign="center"
+        >
+          We are currently updating our website to serve you better. <Box as="br" display={['none', null, 'initial']} />We apologize for the inconvenience.
+        </Text>
+      </VStack>
+    </VStack>
+    <VStack alignItems="center" gap="16px">
+      <Text
+        color="$primary"
+        fontFamily="Noto Sans KR"
+        fontSize="17px"
+        fontWeight="700"
+        letterSpacing="-0.02em"
+        lineHeight="1.7"
+      >
+        제주국제관악제 최신 소식 확인하기
+      </Text>
+      <Flex gap="30px">
+        <Image
+          aspectRatio="1"
+          borderRadius="4px"
+          boxSize="32px"
+          display="none"
+          src="/icons/twitter_5968830 (1) 1.svg"
+        />
+        <Image aspectRatio="1" borderRadius="4px" boxSize="32px" src="/icons/instagram_15713420 1.svg" />
+        <Image aspectRatio="1" borderRadius="4px" boxSize="32px" src="/icons/facebook_1384053 1.svg" />
+        <Flex
+          aspectRatio="1"
+          bg="#FFF"
+          borderRadius="4px"
+          boxSize="32px"
+          overflow="hidden"
+        >
+          <Image boxSize="32px" src="/icons/Layer 2.svg" />
+        </Flex>
+        <Image aspectRatio="1" boxSize="32px" display="none" src="/icons/Group 21.svg" />
+      </Flex>
+      <Text
+        color="$text"
+        fontFamily="Noto Sans KR"
+        fontSize="17px"
+        fontWeight="500"
+        letterSpacing="-0.02em"
+        lineHeight="1.7"
+      >
+        문의 : 064-722-8704 / bandfestival@hanmail.net
+      </Text>
+    </VStack>
+  </VStack>
+</Center>"
 `;
