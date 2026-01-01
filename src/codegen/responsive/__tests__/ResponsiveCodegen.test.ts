@@ -1573,5 +1573,37 @@ describe('ResponsiveCodegen', () => {
 
       expect(result).toEqual(['Hello World'])
     })
+
+    it('generates responsive br display when only some breakpoints have line breaks', () => {
+      // Test buildResponsiveTextChildren directly
+      const codegen = new ResponsiveCodegen(null)
+
+      // Normalized texts: Mobile has \n, PC does not
+      const normalizedTexts = new Map<import('../index').BreakpointKey, string>(
+        [
+          ['pc', 'HelloWorld'],
+          ['mobile', 'Hello\nWorld'],
+        ],
+      )
+      const breakpoints: import('../index').BreakpointKey[] = ['pc', 'mobile']
+
+      const result = (
+        codegen as unknown as {
+          buildResponsiveTextChildren: (
+            texts: Map<import('../index').BreakpointKey, string>,
+            bps: import('../index').BreakpointKey[],
+          ) => string[]
+        }
+      ).buildResponsiveTextChildren(normalizedTexts, breakpoints)
+
+      // Should generate responsive br with display array
+      expect(result.length).toBe(1)
+      expect(result[0]).toContain('Hello')
+      expect(result[0]).toContain('World')
+      // Should have Box with as="br" and display prop
+      expect(result[0]).toContain('Box')
+      expect(result[0]).toContain('as="br"')
+      expect(result[0]).toContain('display')
+    })
   })
 })

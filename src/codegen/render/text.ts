@@ -4,6 +4,17 @@ import { fixTextChild } from '../utils/fix-text-child'
 import { paintToCSS } from '../utils/paint-to-css'
 import { renderNode } from '.'
 
+/**
+ * Check if text contains Korean characters (Hangul).
+ */
+function containsKorean(text: string): boolean {
+  // Hangul Unicode ranges:
+  // - Hangul Syllables: U+AC00 to U+D7AF
+  // - Hangul Jamo: U+1100 to U+11FF
+  // - Hangul Compatibility Jamo: U+3130 to U+318F
+  return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(text)
+}
+
 const SEGMENT_TYPE = [
   'fontName',
   'fontWeight',
@@ -58,6 +69,9 @@ export async function renderText(node: TextNode): Promise<{
   let defaultTypographyCount = 0
   let defaultProps: Record<string, string> = {}
 
+  // Check if any segment contains Korean text
+  const hasKorean = segs.some((seg) => containsKorean(seg.characters))
+
   propsArray.forEach((props) => {
     if (props.characters.length >= defaultTypographyCount) {
       defaultProps = { ...props }
@@ -65,6 +79,11 @@ export async function renderText(node: TextNode): Promise<{
       defaultTypographyCount = props.characters.length
     }
   })
+
+  // Add wordBreak: keep-all for Korean text
+  if (hasKorean) {
+    defaultProps.wordBreak = 'keep-all'
+  }
 
   const children = await Promise.all(
     segs.map(

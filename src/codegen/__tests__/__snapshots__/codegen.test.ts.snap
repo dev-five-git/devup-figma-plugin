@@ -1129,6 +1129,7 @@ exports[`render real world component real world $ 19`] = `
     fontWeight="700"
     letterSpacing="-0.04em"
     lineHeight="1.6"
+    wordBreak="keep-all"
   >
     더 자세히 알아보기
   </Text>
@@ -1152,6 +1153,7 @@ exports[`render real world component real world $ 20`] = `
     fontWeight="800"
     letterSpacing="-0.04em"
     lineHeight="1.4"
+    wordBreak="keep-all"
   >
     <Text color="$primary">
       자사 솔루션과의 연계
@@ -1165,6 +1167,7 @@ exports[`render real world component real world $ 20`] = `
     fontWeight="500"
     letterSpacing="-0.06em"
     lineHeight="1.6"
+    wordBreak="keep-all"
   >
     웹앱팩토리와 Presskit 등 자체 운영 중인 <br />솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, <br />운영 효율화, 성장 기회까지 제안드립니다.
   </Text>
@@ -1458,6 +1461,7 @@ exports[`render real world component real world $ 46`] = `
       fontWeight="600"
       letterSpacing="-0.04em"
       lineHeight="1.6"
+      wordBreak="keep-all"
     >
       지금 시작할 수 있어요
     </Text>
@@ -1468,6 +1472,7 @@ exports[`render real world component real world $ 46`] = `
       fontWeight="700"
       letterSpacing="-0.04em"
       lineHeight="1.2"
+      wordBreak="keep-all"
     >
       내 삶을 더 잘 이해하는 첫 걸음
     </Text>
@@ -1479,6 +1484,7 @@ exports[`render real world component real world $ 46`] = `
     fontWeight="400"
     letterSpacing="-0.04em"
     lineHeight="1.6"
+    wordBreak="keep-all"
   >
     자꾸 미뤄졌던 나에 대한 고민, <br />퍼즐핏에서 구체적인 답을 찾아보세요.
   </Text>
@@ -1492,6 +1498,7 @@ exports[`render real world component real world $ 46`] = `
       letterSpacing="-0.04em"
       lineHeight="1.6"
       opacity="0.5"
+      wordBreak="keep-all"
     >
       회원가입 후, 유료로 진행됩니다
     </Text>
@@ -1939,6 +1946,7 @@ exports[`render real world component real world $ 68`] = `
       fontWeight="600"
       letterSpacing="-1px"
       lineHeight="1.5"
+      wordBreak="keep-all"
     >
       플레이 제목
     </Text>
@@ -1994,6 +2002,7 @@ exports[`render real world component real world $ 68`] = `
     fontWeight="400"
     letterSpacing="-1px"
     lineHeight="1.5"
+    wordBreak="keep-all"
   >
     댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력
   </Text>
@@ -2063,6 +2072,7 @@ exports[`render real world component real world $ 77`] = `
   letterSpacing="-0.05em"
   lineHeight="1.4"
   mixBlendMode="darken"
+  wordBreak="keep-all"
 >
   데브파이브
 </Text>"
@@ -2084,6 +2094,7 @@ exports[`render real world component real world $ 78`] = `
     fontWeight="700"
     letterSpacing="-1px"
     lineHeight="1.5"
+    wordBreak="keep-all"
   >
     간편 로그인 연동
   </Text>
@@ -2103,6 +2114,7 @@ exports[`render real world component real world $ 78`] = `
         fontWeight="600"
         letterSpacing="-1px"
         lineHeight="1.5"
+        wordBreak="keep-all"
       >
         카카오
       </Text>
@@ -2113,6 +2125,7 @@ exports[`render real world component real world $ 78`] = `
         fontWeight="400"
         letterSpacing="-0.5px"
         lineHeight="1.5"
+        wordBreak="keep-all"
       >
         연결 전
       </Text>
@@ -2130,6 +2143,7 @@ exports[`render real world component real world $ 78`] = `
           fontWeight="500"
           letterSpacing="0px"
           lineHeight="16px"
+          wordBreak="keep-all"
         >
           인증하기
         </Text>
@@ -2150,6 +2164,7 @@ exports[`render real world component real world $ 78`] = `
         fontWeight="600"
         letterSpacing="-1px"
         lineHeight="1.5"
+        wordBreak="keep-all"
       >
         구글
       </Text>
@@ -2177,6 +2192,7 @@ exports[`render real world component real world $ 78`] = `
           fontWeight="500"
           letterSpacing="0px"
           lineHeight="16px"
+          wordBreak="keep-all"
         >
           인증하기
         </Text>
@@ -2200,6 +2216,7 @@ exports[`render real world component real world $ 78`] = `
         fontWeight="600"
         letterSpacing="-1px"
         lineHeight="1.5"
+        wordBreak="keep-all"
       >
         서비스 이용약관
       </Text>
@@ -2227,6 +2244,7 @@ exports[`render real world component real world $ 78`] = `
         fontWeight="600"
         letterSpacing="-1px"
         lineHeight="1.5"
+        wordBreak="keep-all"
       >
         개인정보 처리방침
       </Text>
@@ -2254,6 +2272,7 @@ exports[`render real world component real world $ 78`] = `
         fontWeight="600"
         letterSpacing="-1px"
         lineHeight="1.5"
+        wordBreak="keep-all"
       >
         회원 탈퇴
       </Text>
@@ -2408,6 +2427,7 @@ exports[`render real world component real world $ 99`] = `
   lineHeight="normal"
   paintOrder="stroke fill"
   textShadow="0 0 12px #7C70FF"
+  wordBreak="keep-all"
 >
   홈페이지와 앱 제작
 </Text>"
@@ -2421,6 +2441,7 @@ exports[`render real world component real world $ 100`] = `
   fontWeight="500"
   letterSpacing="-0.05em"
   lineHeight="1.4"
+  wordBreak="keep-all"
 >
   <Text color="$primary" fontSize="42px" fontWeight="800">
     온글
@@ -2439,6 +2460,7 @@ exports[`render real world component real world $ 101`] = `
   fontWeight="400"
   letterSpacing="-0.05em"
   lineHeight="1.4"
+  wordBreak="keep-all"
 >
   데브파이브
 </Text>"
@@ -2456,6 +2478,7 @@ exports[`render real world component real world $ 102`] = `
   lineHeight="1.4"
   paintOrder="stroke fill"
   textShadow="0 0 12px #7C70FF, 0 10px 24px #FFC9FE66"
+  wordBreak="keep-all"
 >
   데브파이브
 </Text>"
@@ -2472,6 +2495,7 @@ exports[`render real world component real world $ 103`] = `
   lineHeight="2"
   my="0px"
   pl="1.5em"
+  wordBreak="keep-all"
 >
   <li>
     어떤 증상이 가장 힘들고 일상생활에 영향을 주나요?
@@ -2519,6 +2543,7 @@ exports[`render real world component real world $ 104`] = `
         fontWeight="700"
         letterSpacing="-0.04em"
         lineHeight="1.4"
+        wordBreak="keep-all"
       >
         자세히 알아보기 →
       </Text>
@@ -2581,6 +2606,7 @@ export function Button({ size, variant }: ButtonProps) {
         fontWeight="500"
         letterSpacing="-0.04em"
         lineHeight="normal"
+        wordBreak="keep-all"
       >
         참가 신청하기
       </Text>
@@ -2630,6 +2656,7 @@ exports[`render real world component real world $ 106`] = `
           fontWeight="700"
           letterSpacing="-0.02em"
           lineHeight="normal"
+          wordBreak="keep-all"
         >
           제주국제관악제 리뉴얼 알림
         </Text>
@@ -2643,6 +2670,7 @@ exports[`render real world component real world $ 106`] = `
           letterSpacing="-0.03em"
           lineHeight="2"
           textAlign="center"
+          wordBreak="keep-all"
         >
           더 나은 서비스 제공을 위해 시스템 점검 및 리뉴얼을 진행 중입니다.<br />이용에 불편을 드려 죄송하며, 빠른 시일 내에 다시 찾아뵙겠습니다.
         </Text>
@@ -2667,6 +2695,7 @@ exports[`render real world component real world $ 106`] = `
         fontWeight="700"
         letterSpacing="-0.02em"
         lineHeight="1.7"
+        wordBreak="keep-all"
       >
         제주국제관악제 최신 소식 확인하기
       </Text>
@@ -2698,6 +2727,7 @@ exports[`render real world component real world $ 106`] = `
         fontWeight="500"
         letterSpacing="-0.02em"
         lineHeight="1.7"
+        wordBreak="keep-all"
       >
         문의 : 064-722-8704 / bandfestival@hanmail.net
       </Text>
@@ -2756,6 +2786,7 @@ exports[`render real world component real world $ 107`] = `
           lineHeight="1.5"
           textAlign="center"
           w="100%"
+          wordBreak="keep-all"
         >
           제주국제관악제 <br />리뉴얼 알림
         </Text>
@@ -2770,6 +2801,7 @@ exports[`render real world component real world $ 107`] = `
           lineHeight="2"
           textAlign="center"
           w="100%"
+          wordBreak="keep-all"
         >
           더 나은 서비스 제공을 위해 <br />시스템 점검 및 리뉴얼을 진행 중입니다.<br />이용에 불편을 드려 죄송하며, <br />빠른 시일 내에 다시 찾아뵙겠습니다.
         </Text>
@@ -2795,6 +2827,7 @@ exports[`render real world component real world $ 107`] = `
         fontWeight="700"
         letterSpacing="-0.02em"
         lineHeight="1.7"
+        wordBreak="keep-all"
       >
         제주국제관악제 최신 소식 확인하기
       </Text>
@@ -2828,6 +2861,7 @@ exports[`render real world component real world $ 107`] = `
         letterSpacing="-0.02em"
         lineHeight="1.7"
         textAlign="center"
+        wordBreak="keep-all"
       >
         문의 : 064-722-8704 / <br />bandfestival@hanmail.net
       </Text>
