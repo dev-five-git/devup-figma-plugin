@@ -77,7 +77,7 @@ function _getLayoutProps(
   }
   const aspectRatio =
     'targetAspectRatio' in node ? node.targetAspectRatio : undefined
-  const rootNode = 'children' in node ? getPageNode(node) : null
+  const rootNode = getPageNode(node as BaseNode & ChildrenMixin)
 
   return {
     aspectRatio: aspectRatio
@@ -101,12 +101,14 @@ function _getLayoutProps(
             ? '100%'
             : undefined,
     h:
-      hType === 'FIXED'
-        ? addPx(node.height)
-        : hType === 'FILL' &&
-            ((node.parent && isChildWidthShrinker(node.parent, 'height')) ||
-              node.maxHeight !== null)
-          ? '100%'
-          : undefined,
+      rootNode === node
+        ? undefined
+        : hType === 'FIXED'
+          ? addPx(node.height)
+          : hType === 'FILL' &&
+              ((node.parent && isChildWidthShrinker(node.parent, 'height')) ||
+                node.maxHeight !== null)
+            ? '100%'
+            : undefined,
   }
 }

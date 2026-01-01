@@ -143,7 +143,6 @@ describe('Codegen', () => {
   type TestCase = {
     title: string
     node: SceneNode
-    expected: string
   }
 
   test.each<TestCase>([
@@ -154,7 +153,6 @@ describe('Codegen', () => {
         name: 'Frame',
         children: [],
       } as unknown as FrameNode,
-      expected: `<Box boxSize="100%" />`,
     },
     {
       title: 'renders overflow hidden when clipsContent is true',
@@ -164,7 +162,6 @@ describe('Codegen', () => {
         children: [],
         clipsContent: true,
       } as unknown as FrameNode,
-      expected: `<Box boxSize="100%" overflow="hidden" />`,
     },
     {
       title: 'renders objectFit contain for image asset',
@@ -185,7 +182,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Image h="80px" objectFit="contain" src="/images/ObjectFitContain.png" w="100px" />`,
     },
     {
       title: 'renders objectFit cover for image asset',
@@ -206,7 +202,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Image h="90px" objectFit="cover" src="/images/ObjectFitCover.png" w="120px" />`,
     },
     {
       title: 'omits objectFit when image scale mode is FILL',
@@ -227,7 +222,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Image h="70px" src="/images/ObjectFitFill.png" w="110px" />`,
     },
     {
       title: 'renders svg asset with vector node',
@@ -241,7 +235,6 @@ describe('Codegen', () => {
         width: 24,
         height: 24,
       } as unknown as VectorNode,
-      expected: `<Image boxSize="24px" src="/icons/VectorIcon.svg" />`,
     },
     {
       title: 'renders svg asset with star node',
@@ -255,7 +248,6 @@ describe('Codegen', () => {
         width: 24,
         height: 24,
       } as unknown as StarNode,
-      expected: `<Image boxSize="24px" src="/icons/StarIcon.svg" />`,
     },
     {
       title: 'renders svg asset with polygon node',
@@ -269,7 +261,6 @@ describe('Codegen', () => {
         width: 24,
         height: 24,
       } as unknown as PolygonNode,
-      expected: `<Image boxSize="24px" src="/icons/PolygonIcon.svg" />`,
     },
     {
       title: 'renders svg asset with ellipse inner radius',
@@ -286,7 +277,6 @@ describe('Codegen', () => {
           innerRadius: 0.5,
         },
       } as unknown as EllipseNode,
-      expected: `<Image boxSize="24px" src="/icons/EllipseIcon.svg" />`,
     },
     {
       title: 'renders svg asset with non-solid fills',
@@ -315,7 +305,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Image boxSize="24px" src="/icons/GradientAsset.svg" />`,
     },
     {
       title: 'renders asset with single child and fills',
@@ -348,9 +337,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="#F00" boxSize="24px">
-  <Image boxSize="24px" src="/icons/ChildVector.svg" />
-</Box>`,
     },
     {
       title: 'renders null for asset with only solid fills',
@@ -372,7 +358,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as RectangleNode,
-      expected: `<Box bg="#F00" boxSize="24px" />`,
     },
     {
       title: 'renders frame with bound variable color',
@@ -399,7 +384,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="$primaryColor" h="50px" w="100px" />`,
     },
     {
       title: 'renders svg asset with same color mask',
@@ -421,13 +405,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as VectorNode,
-      expected: `<Box
-  bg="#F00"
-  boxSize="24px"
-  maskImage="url(/icons/MaskIcon.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
     },
     {
       title: 'renders svg asset with children same color',
@@ -470,13 +447,6 @@ describe('Codegen', () => {
         width: 24,
         height: 24,
       } as unknown as FrameNode,
-      expected: `<Box
-  bg="#F00"
-  boxSize="24px"
-  maskImage="url(/icons/GroupIcon.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
     },
     {
       title: 'renders svg asset with different color children',
@@ -519,7 +489,6 @@ describe('Codegen', () => {
         width: 24,
         height: 24,
       } as unknown as FrameNode,
-      expected: `<Image boxSize="24px" src="/icons/MixedIcon.svg" />`,
     },
     {
       title: 'renders svg asset with non-solid fill',
@@ -548,7 +517,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as VectorNode,
-      expected: `<Image boxSize="24px" src="/icons/GradientIcon.svg" />`,
     },
     {
       title: 'renders svg asset with invisible fill',
@@ -570,7 +538,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as VectorNode,
-      expected: `<Image boxSize="24px" src="/icons/InvisibleIcon.svg" />`,
     },
     {
       title: 'renders nested svg asset with 3 solid fill boxes in frame',
@@ -630,13 +597,6 @@ describe('Codegen', () => {
         width: 24,
         height: 24,
       } as unknown as FrameNode,
-      expected: `<Box
-  bg="#F00"
-  boxSize="24px"
-  maskImage="url(/icons/NestedIcon.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
     },
     {
       title: 'renders nested svg asset with different colors as image',
@@ -696,7 +656,6 @@ describe('Codegen', () => {
         width: 24,
         height: 24,
       } as unknown as FrameNode,
-      expected: `<Image boxSize="24px" src="/icons/NestedMultiColorIcon.svg" />`,
     },
     {
       title: 'renders layout for absolute child same size as parent',
@@ -722,9 +681,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box boxSize="100%" pos="relative">
-  <Box boxSize="100%" left="0px" pos="absolute" top="0px" />
-</Box>`,
     },
     {
       title: 'renders absolute child with horizontal MAX constraint',
@@ -752,9 +708,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Flex boxSize="100%" pos="relative">
-  <Box h="100%" pos="absolute" right="0px" top="50px" />
-</Flex>`,
     },
     {
       title: 'renders absolute child with horizontal CENTER constraint',
@@ -782,15 +735,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<VStack boxSize="100%" pos="relative">
-  <Box
-    h="100%"
-    left="50%"
-    pos="absolute"
-    top="50%"
-    transform="translate(-50%, -50%)"
-  />
-</VStack>`,
     },
     {
       title: 'renders absolute child with vertical MAX constraint',
@@ -818,9 +762,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Flex boxSize="100%" pos="relative">
-  <Box bottom="0px" h="100%" left="50px" pos="absolute" />
-</Flex>`,
     },
     {
       title: 'renders absolute child with vertical CENTER constraint',
@@ -848,15 +789,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<VStack boxSize="100%" pos="relative">
-  <Box
-    h="100%"
-    left="300px"
-    pos="absolute"
-    top="50%"
-    transform="translateY(-50%)"
-  />
-</VStack>`,
     },
     {
       title: 'renders flex=1 when parent is horizontal auto layout',
@@ -874,9 +806,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box boxSize="100%">
-  <Box flex="1" h="50px" w="100%" />
-</Box>`,
     },
     {
       title: 'renders aspect ratio when provided',
@@ -888,7 +817,6 @@ describe('Codegen', () => {
         layoutSizingHorizontal: 'FILL',
         layoutSizingVertical: 'FILL',
       } as unknown as FrameNode,
-      expected: `<Box aspectRatio="1.33" boxSize="100%" />`,
     },
     {
       title:
@@ -915,16 +843,6 @@ describe('Codegen', () => {
         textTruncation: 'DISABLED',
         characters: 'AutoSize',
       } as unknown as TextNode,
-      expected: `<Text
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
->
-  AutoSize
-</Text>`,
     },
     {
       title: 'renders text with special characters',
@@ -949,18 +867,6 @@ describe('Codegen', () => {
         textTruncation: 'DISABLED',
         characters: 'Text with {braces} & <tags>',
       } as unknown as TextNode,
-      expected: `<Text
-  color="#000"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  h="20px"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  w="100px"
->
-  Text with {"{"}braces{"}"} {"&"} {"<"}tags{">"}
-</Text>`,
     },
     {
       title: 'renders text with leading and trailing spaces',
@@ -985,18 +891,6 @@ describe('Codegen', () => {
         textTruncation: 'DISABLED',
         characters: '  spaced  ',
       } as unknown as TextNode,
-      expected: `<Text
-  color="#000"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  h="20px"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  w="100px"
->
-  {"  "}spaced{"  "}
-</Text>`,
     },
     {
       title: 'renders single-line max line props',
@@ -1018,18 +912,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  whiteSpace="nowrap"
->
-  OneLine
-</Text>`,
     },
     {
       title: 'renders multi-line max line props',
@@ -1051,20 +933,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  WebkitBoxOrient="vertical"
-  WebkitLineClamp="3"
-  boxSize="100%"
-  color="#F00"
-  display="-webkit-box"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
->
-  Three lines of text
-</Text>`,
     },
     {
       title: 'renders fixed size frame',
@@ -1077,7 +945,6 @@ describe('Codegen', () => {
         width: 120,
         height: 80,
       } as unknown as FrameNode,
-      expected: `<Box h="80px" w="120px" />`,
     },
     {
       title: 'renders frame with padding',
@@ -1094,7 +961,6 @@ describe('Codegen', () => {
         paddingBottom: 8,
         paddingLeft: 16,
       } as unknown as FrameNode,
-      expected: `<Box h="50px" px="16px" py="8px" w="100px" />`,
     },
     {
       title: 'renders padding shorthand when all sides equal',
@@ -1111,7 +977,6 @@ describe('Codegen', () => {
         paddingBottom: 12,
         paddingLeft: 12,
       } as unknown as FrameNode,
-      expected: `<Box h="40px" p="12px" w="80px" />`,
     },
     {
       title: 'renders padding with top equals bottom but left right different',
@@ -1128,13 +993,6 @@ describe('Codegen', () => {
         paddingBottom: 10,
         paddingLeft: 30,
       } as unknown as FrameNode,
-      expected: `<Box
-  h="60px"
-  pl="30px"
-  pr="20px"
-  py="10px"
-  w="100px"
-/>`,
     },
     {
       title: 'renders padding with left equals right but top bottom different',
@@ -1151,13 +1009,6 @@ describe('Codegen', () => {
         paddingBottom: 25,
         paddingLeft: 15,
       } as unknown as FrameNode,
-      expected: `<Box
-  h="50px"
-  pb="25px"
-  pt="5px"
-  px="15px"
-  w="90px"
-/>`,
     },
     {
       title: 'renders padding with all sides different',
@@ -1174,14 +1025,6 @@ describe('Codegen', () => {
         paddingBottom: 3,
         paddingLeft: 4,
       } as unknown as FrameNode,
-      expected: `<Box
-  h="70px"
-  pb="3px"
-  pl="4px"
-  pr="2px"
-  pt="1px"
-  w="110px"
-/>`,
     },
     {
       title: 'renders padding from inferredAutoLayout',
@@ -1200,7 +1043,6 @@ describe('Codegen', () => {
           paddingLeft: 20,
         },
       } as unknown as FrameNode,
-      expected: `<Box h="50px" px="20px" py="10px" w="100px" />`,
     },
     {
       title: 'renders frame with border radius',
@@ -1214,7 +1056,6 @@ describe('Codegen', () => {
         height: 80,
         cornerRadius: 8,
       } as unknown as FrameNode,
-      expected: `<Box borderRadius="8px" h="80px" w="120px" />`,
     },
     {
       title: 'renders mixed border radius frame',
@@ -1227,7 +1068,6 @@ describe('Codegen', () => {
         bottomRightRadius: 2,
         bottomLeftRadius: 1,
       } as unknown as FrameNode,
-      expected: `<Box borderRadius="8px 4px 2px 1px" boxSize="100%" />`,
     },
     {
       title: 'renders ellipse with 50% border radius',
@@ -1243,7 +1083,6 @@ describe('Codegen', () => {
         width: 100,
         height: 100,
       } as unknown as EllipseNode,
-      expected: `<Box borderRadius="50%" boxSize="100px" />`,
     },
     {
       title: 'renders frame with stroke outline CENTER alignment',
@@ -1266,7 +1105,6 @@ describe('Codegen', () => {
         strokeWeight: 2,
         strokeAlign: 'CENTER',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" outline="solid 2px #00F" outlineOffset="-1px" w="100px" />`,
     },
     {
       title: 'renders frame with stroke outline OUTSIDE alignment',
@@ -1289,7 +1127,6 @@ describe('Codegen', () => {
         strokeWeight: 3,
         strokeAlign: 'OUTSIDE',
       } as unknown as FrameNode,
-      expected: `<Box h="60px" outline="solid 3px #F00" w="120px" />`,
     },
     {
       title: 'renders frame with stroke border INSIDE alignment',
@@ -1312,7 +1149,6 @@ describe('Codegen', () => {
         strokeWeight: 1,
         strokeAlign: 'INSIDE',
       } as unknown as FrameNode,
-      expected: `<Box border="solid 1px #0F0" h="40px" w="80px" />`,
     },
     {
       title: 'renders line with stroke outline',
@@ -1330,7 +1166,6 @@ describe('Codegen', () => {
         strokeWeight: 2,
         strokeAlign: 'CENTER',
       } as unknown as LineNode,
-      expected: `<Box boxSize="100%" maxW="calc(100% - 4px)" outline="solid 2px #F00" transform="translate(2px, -2px)" />`,
     },
     {
       title: 'renders frame with dashed stroke',
@@ -1354,7 +1189,6 @@ describe('Codegen', () => {
         strokeAlign: 'CENTER',
         dashPattern: [5, 3],
       } as unknown as FrameNode,
-      expected: `<Box h="50px" outline="dashed 2px #00F" outlineOffset="-1px" w="100px" />`,
     },
     {
       title: 'renders frame with page parent and width 1920',
@@ -1369,7 +1203,6 @@ describe('Codegen', () => {
           name: 'Page 1',
         },
       } as unknown as FrameNode,
-      expected: `<Box h="100%" />`,
     },
     {
       title: 'renders frame with section parent',
@@ -1384,7 +1217,6 @@ describe('Codegen', () => {
           name: 'Section 1',
         },
       } as unknown as FrameNode,
-      expected: `<Box h="100%" />`,
     },
     {
       title: 'renders frame with vertical center align child width shrinker',
@@ -1413,9 +1245,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<VStack boxSize="100%">
-  <Box h="50px" w="100%" />
-</VStack>`,
     },
     {
       title: 'renders frame with horizontal center align child height shrinker',
@@ -1444,9 +1273,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Flex boxSize="100%">
-  <Box h="100%" w="50px" />
-</Flex>`,
     },
     {
       title: 'renders frame with maxWidth child width shrinker',
@@ -1465,9 +1291,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box boxSize="100%">
-  <Box h="50px" maxW="200px" w="100%" />
-</Box>`,
     },
     {
       title: 'renders frame with maxHeight child height shrinker',
@@ -1486,9 +1309,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box boxSize="100%">
-  <Box h="100%" maxH="200px" w="50px" />
-</Box>`,
     },
     {
       title: 'renders frame with individual stroke weights',
@@ -1515,14 +1335,6 @@ describe('Codegen', () => {
         strokeLeftWeight: 4,
         strokeAlign: 'INSIDE',
       } as unknown as FrameNode,
-      expected: `<Box
-  borderBottom="solid 3px #F00"
-  borderLeft="solid 4px #F00"
-  borderRight="solid 2px #F00"
-  borderTop="solid 1px #F00"
-  h="80px"
-  w="120px"
-/>`,
     },
     {
       title: 'renders group as Box with full size',
@@ -1531,7 +1343,6 @@ describe('Codegen', () => {
         name: 'Group',
         children: [],
       } as unknown as GroupNode,
-      expected: `<Box boxSize="100%" />`,
     },
     {
       title: 'renders boxSize when width equals height',
@@ -1544,7 +1355,6 @@ describe('Codegen', () => {
         width: 64,
         height: 64,
       } as unknown as FrameNode,
-      expected: `<Box boxSize="64px" />`,
     },
     {
       title: 'renders min/max width/height with px',
@@ -1559,13 +1369,6 @@ describe('Codegen', () => {
         maxWidth: 200,
         maxHeight: 120,
       } as unknown as FrameNode,
-      expected: `<Box
-  boxSize="100%"
-  maxH="120px"
-  maxW="200px"
-  minH="20px"
-  minW="50px"
-/>`,
     },
     {
       title: 'renders flex auto layout props',
@@ -1580,7 +1383,6 @@ describe('Codegen', () => {
         primaryAxisAlignItems: 'SPACE_BETWEEN',
         counterAxisAlignItems: 'CENTER',
       } as unknown as FrameNode,
-      expected: `<Flex alignItems="center" boxSize="100%" justifyContent="space-between" />`,
     },
     {
       title: 'renders grid auto layout props',
@@ -1596,13 +1398,6 @@ describe('Codegen', () => {
         gridColumnGap: 8,
         gridRowGap: 12,
       } as unknown as FrameNode,
-      expected: `<Grid
-  boxSize="100%"
-  columnGap="8px"
-  gridTemplateColumns="repeat(3, 1fr)"
-  gridTemplateRows="repeat(2, 1fr)"
-  rowGap="12px"
-/>`,
     },
     {
       title: 'renders grid child positioning props when out of order',
@@ -1637,10 +1432,6 @@ describe('Codegen', () => {
         width: 200,
         height: 100,
       } as unknown as FrameNode,
-      expected: `<Grid gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(1, 1fr)" h="100px" w="200px">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
-</Grid>`,
     },
     {
       title: 'renders vstack auto layout props',
@@ -1662,10 +1453,6 @@ describe('Codegen', () => {
         primaryAxisAlignItems: 'SPACE_BETWEEN',
         counterAxisAlignItems: 'CENTER',
       } as unknown as FrameNode,
-      expected: `<VStack alignItems="center" h="200px" justifyContent="space-between" w="120px">
-  <Box boxSize="100%" />
-  <Box boxSize="100%" />
-</VStack>`,
     },
     {
       title: 'renders center auto layout props',
@@ -1684,7 +1471,6 @@ describe('Codegen', () => {
         primaryAxisAlignItems: 'CENTER',
         counterAxisAlignItems: 'CENTER',
       } as unknown as FrameNode,
-      expected: `<Center boxSize="120px" />`,
     },
     {
       title: 'renders drop shadow effect props',
@@ -1708,7 +1494,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box boxShadow="2px 4px 6px 1px #FF000080" h="60px" w="100px" />`,
     },
     {
       title: 'renders inner shadow effect props',
@@ -1732,7 +1517,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box boxShadow="inset -2px 3px 5px 0 #0F0" h="70px" w="90px" />`,
     },
     {
       title: 'renders layer blur effect props',
@@ -1753,7 +1537,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box filter="blur(4px)" h="80px" w="120px" />`,
     },
     {
       title: 'renders background blur effect props',
@@ -1774,7 +1557,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box backdropFilter="blur(8px)" h="90px" w="110px" />`,
     },
     {
       title: 'renders noise effect props',
@@ -1795,7 +1577,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box filter="contrast(100%) brightness(100%)" h="70px" w="140px" />`,
     },
     {
       title: 'renders texture effect props',
@@ -1816,7 +1597,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box filter="contrast(100%) brightness(100%)" h="60px" w="150px" />`,
     },
     {
       title: 'renders glass effect props',
@@ -1837,7 +1617,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box backdropFilter="blur(12px)" h="80px" w="160px" />`,
     },
     {
       title: 'renders text node with content',
@@ -1858,17 +1637,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
->
-  Hello
-</Text>`,
     },
     {
       title: 'renders another text node with content',
@@ -1889,17 +1657,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
->
-  World
-</Text>`,
     },
     {
       title: 'renders text node with ellipsis props',
@@ -1920,19 +1677,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'ENDING',
       } as unknown as TextNode,
-      expected: `<Text
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  overflow="hidden"
-  textOverflow="ellipsis"
->
-  Ellipsis
-</Text>`,
     },
     {
       title: 'renders text node with single drop shadow',
@@ -1962,19 +1706,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  boxShadow="2px 4px 6px 0 #00000080"
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  textShadow="2px 4px 6px #00000080"
->
-  Shadow
-</Text>`,
     },
     {
       title: 'renders text node with multiple drop shadows',
@@ -2012,19 +1743,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  boxShadow="1px 2px 3px 0 #F00, 4px 5px 6px 0 #0F0C"
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  textShadow="1px 2px 3px #F00, 4px 5px 6px #0F0C"
->
-  MultiShadow
-</Text>`,
     },
     {
       title: 'renders text node with stroke',
@@ -2053,19 +1771,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  WebkitTextStroke="2px #00F"
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  paintOrder="stroke fill"
->
-  Stroke
-</Text>`,
     },
     {
       title: 'renders text node with multiple segments',
@@ -2093,20 +1798,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  boxSize="100%"
-  color="#00F"
-  fontFamily="Arial"
-  fontSize="20px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
->
-  <Text color="#F00" fontSize="16px">
-    Hello
-  </Text>
-  World
-</Text>`,
     },
     {
       title: 'renders text node with unordered list',
@@ -2130,22 +1821,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  as="ul"
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  my="0px"
-  pl="1.5em"
->
-  <li>
-    Item 1
-  </li>
-</Text>`,
     },
     {
       title: 'renders text node with ordered list',
@@ -2169,22 +1844,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  as="ol"
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  my="0px"
-  pl="1.5em"
->
-  <li>
-    Item 1
-  </li>
-</Text>`,
     },
     {
       title: 'renders text node with list and multiple lines',
@@ -2208,25 +1867,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  as="ul"
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  my="0px"
-  pl="1.5em"
->
-  <li>
-    Item 1
-  </li>
-  <li>
-    Item 2
-  </li>
-</Text>`,
     },
     {
       title: 'renders text node with multiple segments without props',
@@ -2253,18 +1893,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  boxSize="100%"
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
->
-  Hello
-  World
-</Text>`,
     },
     {
       title: 'renders frame with rotation transform',
@@ -2278,7 +1906,6 @@ describe('Codegen', () => {
         height: 50,
         rotation: 45,
       } as unknown as FrameNode,
-      expected: `<Box h="50px" transform="rotate(-45deg)" w="100px" />`,
     },
     {
       title: 'renders frame with negative rotation transform',
@@ -2293,7 +1920,6 @@ describe('Codegen', () => {
         rotation: -30,
       } as unknown as FrameNode,
       // revsered rotation
-      expected: `<Box h="40px" transform="rotate(30deg)" w="80px" />`,
     },
     {
       title: 'renders frame with decimal rotation transform',
@@ -2307,7 +1933,6 @@ describe('Codegen', () => {
         height: 60,
         rotation: 15.5,
       } as unknown as FrameNode,
-      expected: `<Box h="60px" transform="rotate(-15.5deg)" w="120px" />`,
     },
     {
       title: 'renders frame with opacity less than 1',
@@ -2322,7 +1947,6 @@ describe('Codegen', () => {
         opacity: 0.5,
         blendMode: 'NORMAL',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" opacity="0.5" w="100px" />`,
     },
     {
       title: 'renders frame with darken blend mode',
@@ -2337,7 +1961,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'DARKEN',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="darken" w="100px" />`,
     },
     {
       title: 'renders frame with multiply blend mode',
@@ -2352,7 +1975,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'MULTIPLY',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="multiply" w="100px" />`,
     },
     {
       title: 'renders frame with screen blend mode',
@@ -2367,7 +1989,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'SCREEN',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="screen" w="100px" />`,
     },
     {
       title: 'renders frame with overlay blend mode',
@@ -2382,7 +2003,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'OVERLAY',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="overlay" w="100px" />`,
     },
     {
       title: 'renders frame with linear burn blend mode',
@@ -2397,7 +2017,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'LINEAR_BURN',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="linearBurn" w="100px" />`,
     },
     {
       title: 'renders frame with color burn blend mode',
@@ -2412,7 +2031,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'COLOR_BURN',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="colorBurn" w="100px" />`,
     },
     {
       title: 'renders frame with lighten blend mode',
@@ -2427,7 +2045,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'LIGHTEN',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="lighten" w="100px" />`,
     },
     {
       title: 'renders frame with linear dodge blend mode',
@@ -2442,7 +2059,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'LINEAR_DODGE',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="linear-dodge" w="100px" />`,
     },
     {
       title: 'renders frame with color dodge blend mode',
@@ -2457,7 +2073,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'COLOR_DODGE',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="color-dodge" w="100px" />`,
     },
     {
       title: 'renders frame with soft light blend mode',
@@ -2472,7 +2087,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'SOFT_LIGHT',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="soft-light" w="100px" />`,
     },
     {
       title: 'renders frame with hard light blend mode',
@@ -2487,7 +2101,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'HARD_LIGHT',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="hard-light" w="100px" />`,
     },
     {
       title: 'renders frame with difference blend mode',
@@ -2502,7 +2115,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'DIFFERENCE',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="difference" w="100px" />`,
     },
     {
       title: 'renders frame with exclusion blend mode',
@@ -2517,7 +2129,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'EXCLUSION',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="exclusion" w="100px" />`,
     },
     {
       title: 'renders frame with hue blend mode',
@@ -2532,7 +2143,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'HUE',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="hue" w="100px" />`,
     },
     {
       title: 'renders frame with saturation blend mode',
@@ -2547,7 +2157,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'SATURATION',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="saturation" w="100px" />`,
     },
     {
       title: 'renders frame with color blend mode',
@@ -2562,7 +2171,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'COLOR',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="color" w="100px" />`,
     },
     {
       title: 'renders frame with luminosity blend mode',
@@ -2577,7 +2185,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'LUMINOSITY',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="luminosity" w="100px" />`,
     },
     {
       title: 'renders frame with pass through blend mode',
@@ -2592,7 +2199,6 @@ describe('Codegen', () => {
         opacity: 1,
         blendMode: 'PASS_THROUGH',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with opacity and blend mode',
@@ -2607,7 +2213,6 @@ describe('Codegen', () => {
         opacity: 0.75,
         blendMode: 'MULTIPLY',
       } as unknown as FrameNode,
-      expected: `<Box h="50px" mixBlendMode="multiply" opacity="0.75" w="100px" />`,
     },
     {
       title: 'renders frame with solid fill and blend mode',
@@ -2629,7 +2234,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="#F00" bgBlendMode="multiply" h="50px" w="100px" />`,
     },
     {
       title: 'renders text node with gradient fill',
@@ -2681,19 +2285,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  bg="linear-gradient(90deg, #F00 0%, #00F 100%)"
-  bgClip="text"
-  boxSize="100%"
-  color="linear-gradient(90deg, #F00 0%, #00F 100%)"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
->
-  Gradient
-</Text>`,
     },
     {
       title: 'renders text node with HEIGHT auto resize and fixed sizing',
@@ -2718,17 +2309,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  w="100px"
->
-  Height
-</Text>`,
     },
     {
       title: 'renders text node with NONE auto resize and fixed sizing',
@@ -2753,18 +2333,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  h="50px"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  w="100px"
->
-  None
-</Text>`,
     },
     {
       title: 'renders text node with TRUNCATE auto resize and fixed sizing',
@@ -2789,18 +2357,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text
-  color="#F00"
-  fontFamily="Arial"
-  fontSize="16px"
-  fontWeight="400"
-  h="50px"
-  letterSpacing="0px"
-  lineHeight="1.5px"
-  w="100px"
->
-  Truncate
-</Text>`,
     },
     {
       title: 'renders text node with textStyleId and typography',
@@ -2821,9 +2377,6 @@ describe('Codegen', () => {
         ],
         textTruncation: 'DISABLED',
       } as unknown as TextNode,
-      expected: `<Text boxSize="100%" color="#F00" typography="heading">
-  Heading
-</Text>`,
     },
     {
       title: 'renders frame with linear gradient fill',
@@ -2851,7 +2404,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="linear-gradient(90deg, #F00 0%, #00F 100%)" h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with radial gradient fill',
@@ -2879,7 +2431,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="radial-gradient(50% 50% at 50% 50%, #F00 0%, #00F 100%)" boxSize="100px" />`,
     },
     {
       title: 'renders frame with angular gradient fill',
@@ -2908,7 +2459,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="conic-gradient(from 90deg at 50% 50%, #F00 0%, #0F0 50%, #00F 100%)" boxSize="100px" />`,
     },
     {
       title: 'renders frame with diamond gradient fill',
@@ -2936,7 +2486,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="linear-gradient(to bottom right, #F00 0%, #00F 50%) bottom right / 50.1% 50.1% no-repeat, linear-gradient(to bottom left, #F00 0%, #00F 50%) bottom left / 50.1% 50.1% no-repeat, linear-gradient(to top left, #F00 0%, #00F 50%) top left / 50.1% 50.1% no-repeat, linear-gradient(to top right, #F00 0%, #00F 50%) top right / 50.1% 50.1% no-repeat" boxSize="100px" />`,
     },
     {
       title: 'renders frame with image fill TILE scaleMode',
@@ -2958,7 +2507,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="url(/icons/image.png) repeat" h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with pattern fill',
@@ -2981,7 +2529,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="url(/icons/PatternIcon.svg) center 10% top 20% repeat" h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with pattern fill START alignment',
@@ -3004,7 +2551,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="url(/icons/PatternIcon.svg) repeat" h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with pattern fill vertical alignment',
@@ -3028,7 +2574,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="url(/icons/PatternIcon.svg) center 10% bottom 20% repeat" h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with multiple fills including non-last solid',
@@ -3055,7 +2600,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box bg="linear-gradient(#F00, #F00), #0F0" h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with invisible gradient fill',
@@ -3083,7 +2627,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with zero opacity gradient fill',
@@ -3111,7 +2654,6 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box h="50px" w="100px" />`,
     },
     {
       title: 'renders frame with solid fill opacity 0',
@@ -3132,20 +2674,17 @@ describe('Codegen', () => {
           },
         ],
       } as unknown as FrameNode,
-      expected: `<Box h="50px" w="100px" />`,
     },
-  ])('$title', async ({ node, expected }) => {
+  ])('$title', async ({ node }) => {
     addParent(node)
     const codegen = new Codegen(node)
     await codegen.run()
-    expect(codegen.getCode()).toBe(expected)
+    expect(codegen.getCode()).toMatchSnapshot()
   })
 
   type ComponentTestCase = {
     title: string
     node: SceneNode
-    expected: string
-    expectedComponents: Array<[string, string]>
   }
 
   test.each<ComponentTestCase>([
@@ -3184,22 +2723,6 @@ describe('Codegen', () => {
           },
         } as unknown as ComponentSetNode
       })(),
-      expected: `<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
-</Box>`,
-      expectedComponents: [
-        [
-          'Button',
-          `export interface ButtonProps {
-  state: 'default' | 'hover'
-}
-
-export function Button({ state }: ButtonProps) {
-  return <Box h="100%" />
-}`,
-        ],
-      ],
     },
     {
       title: 'renders component set with effect property',
@@ -3231,18 +2754,6 @@ export function Button({ state }: ButtonProps) {
           },
         } as unknown as ComponentSetNode
       })(),
-      expected: `<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
-</Box>`,
-      expectedComponents: [
-        [
-          'Button',
-          `export function Button() {
-  return <Box h="100%" />
-}`,
-        ],
-      ],
     },
     {
       title: 'renders component set with transition',
@@ -3297,18 +2808,6 @@ export function Button({ state }: ButtonProps) {
           componentPropertyDefinitions: {},
         } as unknown as ComponentSetNode
       })(),
-      expected: `<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
-</Box>`,
-      expectedComponents: [
-        [
-          'Button',
-          `export function Button() {
-  return <Box h="100%" />
-}`,
-        ],
-      ],
     },
     {
       title: 'renders component set with different props and transition',
@@ -3364,27 +2863,6 @@ export function Button({ state }: ButtonProps) {
           componentPropertyDefinitions: {},
         } as unknown as ComponentSetNode
       })(),
-      expected: `<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" opacity="0.8" />
-</Box>`,
-      expectedComponents: [
-        [
-          'Card',
-          `export function Card() {
-  return (
-    <Box
-      _hover={{
-        "opacity": "0.8"
-      }}
-      h="100%"
-      transition="0.3ms ease-in-out"
-      transitionProperty="opacity"
-    />
-  )
-}`,
-        ],
-      ],
     },
     {
       title: 'renders component with parent component set',
@@ -3438,19 +2916,6 @@ export function Button({ state }: ButtonProps) {
           },
         ],
       } as unknown as ComponentNode,
-      expected: `<Box h="100%" />`,
-      expectedComponents: [
-        [
-          'Button',
-          `export interface ButtonProps {
-  state: 'default' | 'hover'
-}
-
-export function Button({ state }: ButtonProps) {
-  return <Box h="100%" />
-}`,
-        ],
-      ],
     },
     {
       title: 'renders component set with press trigger',
@@ -3482,18 +2947,6 @@ export function Button({ state }: ButtonProps) {
           componentPropertyDefinitions: {},
         } as unknown as ComponentSetNode
       })(),
-      expected: `<Box boxSize="100%">
-  <Box h="100%" />
-  <Box h="100%" />
-</Box>`,
-      expectedComponents: [
-        [
-          'Button',
-          `export function Button() {
-  return <Box h="100%" />
-}`,
-        ],
-      ],
     },
     {
       title: 'renders simple component without variants',
@@ -3502,15 +2955,6 @@ export function Button({ state }: ButtonProps) {
         name: 'Icon',
         children: [],
       } as unknown as ComponentNode,
-      expected: `<Box boxSize="100%" />`,
-      expectedComponents: [
-        [
-          'Icon',
-          `export function Icon() {
-  return <Box boxSize="100%" />
-}`,
-        ],
-      ],
     },
     {
       title: 'renders component with parent component set name',
@@ -3530,23 +2974,17 @@ export function Button({ state }: ButtonProps) {
         },
         children: [],
       } as unknown as ComponentNode,
-      expected: `<Box h="100%" />`,
-      expectedComponents: [
-        [
-          'Button',
-          `export function Button() {
-  return <Box h="100%" />
-}`,
-        ],
-      ],
     },
-  ])('$title', async ({ node, expected, expectedComponents }) => {
+  ])('$title', async ({ node }) => {
     addParent(node)
     const codegen = new Codegen(node)
     await codegen.run()
-    const componentsCodes = codegen.getComponentsCodes()
-    expect(codegen.getCode()).toBe(expected)
-    expect(componentsCodes).toEqual(expectedComponents)
+    expect(codegen.getCode()).toMatchSnapshot()
+
+    const componentTrees = codegen.getComponentTrees()
+    for (const [name, code] of componentTrees) {
+      expect(code).toMatchSnapshot(`component: ${name}`)
+    }
   })
 
   test('renders instance with page root width and sets width to 100%', async () => {
@@ -4357,7 +3795,6 @@ describe('Codegen Tree Methods', () => {
 describe('render real world component', () => {
   it.each([
     {
-      expected: `<Box bg="#D9D9D9" borderRadius="20px" boxSize="150px" />`,
       nodes: [
         {
           id: '7:3',
@@ -4412,8 +3849,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected:
-        '<Box bg="#D9D9D9" borderRadius="20px 30px 50px 40px" boxSize="150px" />',
       nodes: [
         {
           id: '6:2',
@@ -4467,8 +3902,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected:
-        '<Box bg="#D9D9D9" borderRadius="200px 30px" boxSize="150px" />',
       nodes: [
         {
           id: '7:5',
@@ -4523,17 +3956,6 @@ describe('render real world component', () => {
     },
     // gradient
     {
-      expected: `<Flex
-  bg="#FFF"
-  h="223px"
-  overflow="hidden"
-  pb="22px"
-  pl="57px"
-  pr="118px"
-  pt="51px"
->
-  <Box bg="linear-gradient(-180deg, #8ADAFF 0%, #C6C9CE 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '496:2019',
@@ -4704,17 +4126,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Flex
-  bg="#FFF"
-  h="215px"
-  overflow="hidden"
-  pb="16px"
-  pl="147px"
-  pr="110px"
-  pt="49px"
->
-  <Box bg="linear-gradient(-47deg, #8ADAFF 29.62%, #C6C9CE 83.86%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '496:2050',
@@ -4885,17 +4296,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Flex
-  bg="#FFF"
-  h="254px"
-  overflow="hidden"
-  pb="34px"
-  pl="102px"
-  pr="110px"
-  pt="70px"
->
-  <Box bg="radial-gradient(50% 50% at 50% 50%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '496:2051',
@@ -5066,17 +4466,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Flex
-  bg="#FFF"
-  h="259px"
-  overflow="hidden"
-  pb="26px"
-  pl="152px"
-  pr="100px"
-  pt="83px"
->
-  <Box bg="radial-gradient(43% 21% at 32% 39%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '496:2054',
@@ -5247,17 +4636,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Flex
-  bg="#FFF"
-  h="225px"
-  overflow="hidden"
-  pb="38px"
-  pl="71px"
-  pr="69px"
-  pt="37px"
->
-  <Box bg="conic-gradient(from 180deg at 50% 50%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '496:2055',
@@ -5428,17 +4806,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Flex
-  bg="#FFF"
-  h="199px"
-  overflow="hidden"
-  pb="22px"
-  pl="56px"
-  pr="105px"
-  pt="27px"
->
-  <Box bg="conic-gradient(from 0deg at 50% 100%, #8ADAFF 0%, #DDEAFF 100%)" borderRadius="1000px" boxSize="150px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '496:2056',
@@ -5609,17 +4976,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Flex
-  bg="#FFF"
-  h="239px"
-  overflow="hidden"
-  pb="31px"
-  pl="108px"
-  pr="74px"
-  pt="58px"
->
-  <Box bg="linear-gradient(to bottom right, #8ADAFF 0%, #DDEAFF 50%) bottom right / 50.1% 50.1% no-repeat, linear-gradient(to bottom left, #8ADAFF 0%, #DDEAFF 50%) bottom left / 50.1% 50.1% no-repeat, linear-gradient(to top left, #8ADAFF 0%, #DDEAFF 50%) top left / 50.1% 50.1% no-repeat, linear-gradient(to top right, #8ADAFF 0%, #DDEAFF 50%) top right / 50.1% 50.1% no-repeat" borderRadius="1000px" boxSize="150px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '496:2057',
@@ -5791,16 +5147,6 @@ describe('render real world component', () => {
     },
     // text
     {
-      expected: `<Text
-  color="#FFF"
-  fontFamily="Inter"
-  fontSize="12px"
-  fontWeight="400"
-  letterSpacing="0em"
-  lineHeight="normal"
->
-  Hello World
-</Text>`,
       nodes: [
         {
           id: '35:7',
@@ -5868,17 +5214,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  color="#FFF"
-  fontFamily="Inter"
-  fontSize="12px"
-  fontWeight="400"
-  letterSpacing="0em"
-  lineHeight="normal"
-  w="100px"
->
-  Hello World
-</Text>`,
       nodes: [
         {
           id: '35:12',
@@ -5946,17 +5281,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  boxSize="200px"
-  color="#FFF"
-  fontFamily="Inter"
-  fontSize="12px"
-  fontWeight="400"
-  letterSpacing="0em"
-  lineHeight="normal"
->
-  Hello World
-</Text>`,
       nodes: [
         {
           id: '35:18',
@@ -6024,18 +5348,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  color="#FFF"
-  fontFamily="Inter"
-  fontSize="12px"
-  fontWeight="400"
-  letterSpacing="0em"
-  lineHeight="normal"
-  textAlign="right"
-  w="100px"
->
-  Hello World
-</Text>`,
       nodes: [
         {
           id: '41:7',
@@ -6103,19 +5415,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  alignContent="center"
-  boxSize="200px"
-  color="#FFF"
-  fontFamily="Inter"
-  fontSize="12px"
-  fontWeight="400"
-  letterSpacing="0em"
-  lineHeight="normal"
-  textAlign="center"
->
-  Hello World
-</Text>`,
       nodes: [
         {
           id: '41:12',
@@ -6184,19 +5483,6 @@ describe('render real world component', () => {
     },
     // auto layout
     {
-      expected: `<Flex alignItems="center" bg="#50F" gap="10px" p="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="16px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="1.6"
-  >
-    Hello World
-  </Text>
-  <Box bg="#FFF" borderRadius="1000px" boxSize="12px" overflow="hidden" />
-</Flex>`,
       nodes: [
         {
           id: '70:51',
@@ -6390,19 +5676,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack alignItems="center" bg="#50F" gap="10px" p="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="16px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="1.6"
-  >
-    Hello World
-  </Text>
-  <Box bg="#FFF" borderRadius="1000px" boxSize="12px" overflow="hidden" />
-</VStack>`,
       nodes: [
         {
           id: '70:57',
@@ -6596,19 +5869,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack alignItems="center" bg="#50F" gap="6px" p="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="16px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="1.6"
-  >
-    Hello World
-  </Text>
-  <Box bg="#FFF" h="1px" overflow="hidden" w="100%" />
-</VStack>`,
       nodes: [
         {
           id: '71:124',
@@ -6803,32 +6063,6 @@ describe('render real world component', () => {
     },
     // Component
     {
-      expected: `<Flex
-  alignItems="center"
-  bg="$primary"
-  borderRadius="100px"
-  gap="20px"
-  px="60px"
-  py="12px"
->
-  <Text
-    color="#FFF"
-    fontFamily="Pretendard"
-    fontSize="18px"
-    fontWeight="700"
-    letterSpacing="-0.04em"
-    lineHeight="1.6"
-  >
-    더 자세히 알아보기
-  </Text>
-  <Box
-    bg="#FFF"
-    boxSize="20px"
-    maskImage="url(/icons/arrow.svg)"
-    maskRepeat="no-repeat"
-    maskSize="contain"
-  />
-</Flex>`,
       nodes: [
         {
           id: '1:5',
@@ -7070,32 +6304,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack bg="$background" borderRadius="30px" gap="20px" p="40px">
-  <Image boxSize="64px" src="/icons/puzzle-piece.svg" />
-  <Text
-    color="$text"
-    fontFamily="Pretendard"
-    fontSize="20px"
-    fontWeight="800"
-    letterSpacing="-0.04em"
-    lineHeight="1.4"
-  >
-    <Text color="$primary">
-      자사 솔루션과의 연계
-    </Text>
-    를 통해<Box as="br" display={['none', null, 'initial']} />서비스 확장성과 성장 가능성을 높입니다.
-  </Text>
-  <Text
-    color="$text"
-    fontFamily="Pretendard"
-    fontSize="16px"
-    fontWeight="500"
-    letterSpacing="-0.06em"
-    lineHeight="1.6"
-  >
-    웹앱팩토리와 Presskit 등 자체 운영 중인 <Box as="br" display={['none', null, 'initial']} />솔루션과의 연계를 통해 프로젝트의 서비스 범위 확장, <Box as="br" display={['none', null, 'initial']} />운영 효율화, 성장 기회까지 제안드립니다.
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '1:13',
@@ -7655,66 +6863,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Flex alignItems="center" gap="20px" h="280px">
-  <Center
-    bg="#FFF"
-    borderRadius="30px"
-    flex="1"
-    flexDir="column"
-    h="100%"
-    p="40px"
-  >
-    <Text
-      color="#1A1A1A"
-      fontFamily="Pretendard"
-      fontSize="36px"
-      fontWeight="500"
-      letterSpacing="-0.06em"
-      lineHeight="1.6"
-    >
-      CARD 1
-    </Text>
-  </Center>
-  <Center
-    bg="#FFF"
-    borderRadius="30px"
-    flex="1"
-    flexDir="column"
-    h="100%"
-    p="40px"
-  >
-    <Text
-      color="#1A1A1A"
-      fontFamily="Pretendard"
-      fontSize="36px"
-      fontWeight="500"
-      letterSpacing="-0.06em"
-      lineHeight="1.6"
-    >
-      CARD 2
-    </Text>
-  </Center>
-  <Center
-    bg="#FFF"
-    borderRadius="30px"
-    flex="1"
-    flexDir="column"
-    h="100%"
-    p="40px"
-  >
-    <Text
-      color="#1A1A1A"
-      fontFamily="Pretendard"
-      fontSize="36px"
-      fontWeight="500"
-      letterSpacing="-0.06em"
-      lineHeight="1.6"
-    >
-      CARD 3
-    </Text>
-  </Center>
-</Flex>`,
-
       nodes: [
         {
           id: '43:20',
@@ -8312,42 +7460,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack
-  alignItems="flex-end"
-  backdropFilter="blur(4px)"
-  bg="#FFFFFF0F"
-  gap="10px"
-  justifyContent="center"
-  px="20px"
-  py="10px"
->
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="24px"
-    fontStyle="italic"
-    fontWeight="600"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet,{" "}
-    <Text fontWeight="900">
-      consectetur
-    </Text>
-    {" "}adipiscing elit.
-  </Text>
-</VStack>`,
-
       nodes: [
         {
           id: '40:51',
@@ -8729,7 +7841,6 @@ describe('render real world component', () => {
     },
     // outline, border
     {
-      expected: `<Box bg="#FFF" border="solid 3px #FF1C1C" h="240px" overflow="hidden" />`,
       nodes: [
         {
           id: '105:11',
@@ -8812,13 +7923,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  h="240px"
-  outline="solid 3px #FF1C1C"
-  outlineOffset="-1.5px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:64',
@@ -8901,7 +8005,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box bg="#FFF" h="240px" outline="solid 3px #FF1C1C" overflow="hidden" />`,
       nodes: [
         {
           id: '105:12',
@@ -8984,13 +8087,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  border="solid 3px #FF1C1C"
-  borderRadius="20px"
-  h="240px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:75',
@@ -9073,14 +8169,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  h="240px"
-  outline="solid 3px #FF1C1C"
-  outlineOffset="-1.5px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:77',
@@ -9163,13 +8251,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  h="240px"
-  outline="solid 3px #FF1C1C"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:90',
@@ -9252,14 +8333,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  border="solid 3px #FF1C1C"
-  borderRadius="20px"
-  boxShadow="0 4px 4px 0 #00000040"
-  h="240px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '113:67',
@@ -9362,14 +8435,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  boxShadow="0 4px 4px 0 #00000040"
-  h="240px"
-  outline="solid 3px #FF1C1C"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '113:71',
@@ -9473,7 +8538,6 @@ describe('render real world component', () => {
     },
     // circle
     {
-      expected: `<Box bg="#D9D9D9" borderRadius="50%" boxSize="100px" />`,
       nodes: [
         {
           id: '109:69',
@@ -9530,7 +8594,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box bg="#D9D9D9" borderRadius="50%" h="100px" w="50px" />`,
       nodes: [
         {
           id: '109:72',
@@ -9587,13 +8650,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/ellipse3621.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
       nodes: [
         {
           id: '109:71',
@@ -9651,14 +8707,6 @@ describe('render real world component', () => {
     },
     // border
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  h="240px"
-  outline="solid 1px #000"
-  outlineOffset="-0.5px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '80:2',
@@ -9741,14 +8789,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  h="240px"
-  outline="dashed 1px #000"
-  outlineOffset="-0.5px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '80:6',
@@ -9831,13 +8871,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  borderTop="solid 1px #000"
-  maskImage="url(/icons/border.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
       nodes: [
         {
           id: '80:40',
@@ -10074,14 +9107,6 @@ describe('render real world component', () => {
     },
     // opacity
     {
-      expected: `<Box
-  bg="#FFF"
-  border="solid 1px #000"
-  borderRadius="20px"
-  h="240px"
-  opacity="0.2"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '89:3',
@@ -10168,13 +9193,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF3"
-  border="solid 1px #0003"
-  borderRadius="20px"
-  h="240px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:91',
@@ -10262,22 +9280,6 @@ describe('render real world component', () => {
     },
     // clamp
     {
-      expected: `<Flex alignItems="center" bg="#FFF" p="10px">
-  <Text
-    color="#000"
-    flex="1"
-    fontFamily="Inter"
-    fontSize="16px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="1.6"
-    overflow="hidden"
-    textOverflow="ellipsis"
-    whiteSpace="nowrap"
-  >
-    Getting into life {"'"}Cause I found that it{"'"}s not so boring Not anymore.
-  </Text>
-</Flex>`,
       nodes: [
         {
           id: '70:72',
@@ -10474,19 +9476,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Flex alignItems="center" bg="#FFF" p="10px">
-  <Text
-    color="#000"
-    fontFamily="Inter"
-    fontSize="16px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="1.6"
-    whiteSpace="nowrap"
-  >
-    Getting into life {"'"}Cause I found that it{"'"}s not so boring Not anymore.
-  </Text>
-</Flex>`,
       nodes: [
         {
           id: '70:79',
@@ -10683,24 +9672,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Flex alignItems="center" bg="#FFF" p="10px">
-  <Text
-    WebkitBoxOrient="vertical"
-    WebkitLineClamp="2"
-    color="#000"
-    display="-webkit-box"
-    flex="1"
-    fontFamily="Inter"
-    fontSize="16px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="1.6"
-    overflow="hidden"
-    textOverflow="ellipsis"
-  >
-    Getting into life {"'"}Cause I found that it{"'"}s not so boring Not anymore.
-  </Text>
-</Flex>`,
       nodes: [
         {
           id: '70:92',
@@ -10898,13 +9869,6 @@ describe('render real world component', () => {
     },
     // effect
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  boxShadow="0 4px 4px 0 #00000040"
-  h="240px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:95',
@@ -10998,13 +9962,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  boxShadow="inset 0 4px 4px 0 #00000040"
-  h="240px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:99',
@@ -11097,13 +10054,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#FFF"
-  borderRadius="20px"
-  filter="blur(4px)"
-  h="240px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:103',
@@ -11185,13 +10135,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  backdropFilter="blur(10px)"
-  bg="#FFF3"
-  borderRadius="20px"
-  h="240px"
-  overflow="hidden"
-/>`,
       nodes: [
         {
           id: '105:107',
@@ -11274,80 +10217,6 @@ describe('render real world component', () => {
     },
     // Dimmend, absolute
     {
-      expected: `<VStack
-  bg="linear-gradient(90deg, $primaryBgLight 0%, $secondaryBg 100%)"
-  gap="20px"
-  justifyContent="center"
-  overflow="hidden"
-  px="20px"
-  py="50px"
->
-  <Image
-    filter="blur(12px)"
-    h="100%"
-    pos="absolute"
-    right="-108.01px"
-    src="/images/puzzle.png"
-    top="-76px"
-    transform="rotate(8.83deg)"
-    transformOrigin="top left"
-    w="300px"
-  />
-  <Box
-    bg="linear-gradient(0deg, #EDEEFF 0%, #EDEEFF00 100%)"
-    boxSize="100%"
-    left="0px"
-    pos="absolute"
-    top="0px"
-  />
-  <VStack gap="8px" justifyContent="center">
-    <Text
-      color="$primary"
-      fontFamily="Pretendard"
-      fontSize="12px"
-      fontWeight="600"
-      letterSpacing="-0.04em"
-      lineHeight="1.6"
-    >
-      지금 시작할 수 있어요
-    </Text>
-    <Text
-      color="$title"
-      fontFamily="Pretendard"
-      fontSize="20px"
-      fontWeight="700"
-      letterSpacing="-0.04em"
-      lineHeight="1.2"
-    >
-      내 삶을 더 잘 이해하는 첫 걸음
-    </Text>
-  </VStack>
-  <Text
-    color="$text"
-    fontFamily="Pretendard"
-    fontSize="14px"
-    fontWeight="400"
-    letterSpacing="-0.04em"
-    lineHeight="1.6"
-  >
-    자꾸 미뤄졌던 나에 대한 고민, <Box as="br" display={['none', null, 'initial']} />퍼즐핏에서 구체적인 답을 찾아보세요.
-  </Text>
-  <VStack gap="12px" justifyContent="center">
-    <GradientButton />
-    <Text
-      color="$textLight"
-      fontFamily="Pretendard"
-      fontSize="12px"
-      fontWeight="400"
-      letterSpacing="-0.04em"
-      lineHeight="1.6"
-      opacity="0.5"
-    >
-      회원가입 후, 유료로 진행됩니다
-    </Text>
-  </VStack>
-</VStack>`,
-
       nodes: [
         {
           id: '107:26',
@@ -12465,18 +11334,6 @@ describe('render real world component', () => {
     },
     // svg
     {
-      expected: `<Box
-  aspectRatio="1"
-  bg="$caption"
-  h="20px"
-  maskImage="url(/icons/recommend.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-  pb="2.96px"
-  pl="3.49px"
-  pr="2.89px"
-  pt="2.02px"
-/>`,
       nodes: [
         {
           id: '171:1545',
@@ -12620,14 +11477,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Box
-  bg="$caption"
-  maskImage="url(/icons/recommend.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-  px="3px"
-  py="2px"
-/>`,
       nodes: [
         {
           id: '171:1553',
@@ -12813,14 +11662,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Box
-  bg="$caption"
-  maskImage="url(/icons/recommend.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-  px="3px"
-  py="2px"
-/>`,
       nodes: [
         {
           id: '171:1561',
@@ -13046,7 +11887,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Image px="3px" py="2px" src="/icons/recommend.svg" />`,
       nodes: [
         {
           id: '171:1566',
@@ -13269,7 +12109,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Image src="/icons/recommend.svg" />`,
       nodes: [
         {
           id: '171:1548',
@@ -13517,27 +12356,6 @@ describe('render real world component', () => {
     },
     // flex with maxW
     {
-      expected: `<VStack
-  alignItems="center"
-  bg="#FFF"
-  overflow="hidden"
-  px="30px"
-  py="80px"
->
-  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
-    <Text
-      color="#000"
-      fontFamily="Inter"
-      fontSize="40px"
-      fontWeight="400"
-      letterSpacing="0em"
-      lineHeight="normal"
-    >
-      Hello World!
-    </Text>
-    <Image h="500px" src="/images/image.png" w="100%" />
-  </Center>
-</VStack>`,
       nodes: [
         {
           id: '60:2',
@@ -13860,27 +12678,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack
-  alignItems="center"
-  bg="#FFF"
-  overflow="hidden"
-  px="30px"
-  py="80px"
->
-  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
-    <Text
-      color="#000"
-      fontFamily="Inter"
-      fontSize="40px"
-      fontWeight="400"
-      letterSpacing="0em"
-      lineHeight="normal"
-    >
-      Hello World!
-    </Text>
-    <Image aspectRatio="1.77" h="720px" src="/images/image.png" w="100%" />
-  </Center>
-</VStack>`,
       nodes: [
         {
           id: '60:19',
@@ -14207,33 +13004,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack
-  alignItems="center"
-  bg="#FFF"
-  overflow="hidden"
-  px="30px"
-  py="80px"
->
-  <Center
-    flexDir="column"
-    gap="50px"
-    h="600px"
-    maxW="1280px"
-    w="100%"
-  >
-    <Text
-      color="#000"
-      fontFamily="Inter"
-      fontSize="40px"
-      fontWeight="400"
-      letterSpacing="0em"
-      lineHeight="normal"
-    >
-      Hello World!
-    </Text>
-    <Image boxSize="100%" maxH="400px" maxW="800px" src="/images/image.png" />
-  </Center>
-</VStack>`,
       nodes: [
         {
           id: '60:27',
@@ -14556,27 +13326,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack
-  alignItems="center"
-  bg="#FFF"
-  overflow="hidden"
-  px="30px"
-  py="80px"
->
-  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
-    <Text
-      color="#000"
-      fontFamily="Inter"
-      fontSize="40px"
-      fontWeight="400"
-      letterSpacing="0em"
-      lineHeight="normal"
-    >
-      Hello World!
-    </Text>
-    <Image h="400px" maxW="800px" src="/images/image.png" w="100%" />
-  </Center>
-</VStack>`,
       nodes: [
         {
           id: '60:31',
@@ -14899,28 +13648,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<VStack
-  alignItems="center"
-  bg="#FFF"
-  h="760px"
-  overflow="hidden"
-  px="30px"
-  py="80px"
->
-  <Center flexDir="column" gap="50px" maxW="1280px" w="100%">
-    <Text
-      color="#000"
-      fontFamily="Inter"
-      fontSize="40px"
-      fontWeight="400"
-      letterSpacing="0em"
-      lineHeight="normal"
-    >
-      Hello World!
-    </Text>
-    <Image boxSize="100%" maxH="400px" maxW="1024px" src="/images/image.png" />
-  </Center>
-</VStack>`,
       nodes: [
         {
           id: '60:35',
@@ -15244,28 +13971,6 @@ describe('render real world component', () => {
     },
     // Text with auto layout
     {
-      expected: `<VStack gap="10px" justifyContent="center" px="20px" py="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '40:3',
@@ -15549,28 +14254,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Flex alignItems="center" gap="10px" px="20px" py="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</Flex>`,
       nodes: [
         {
           id: '40:57',
@@ -15854,34 +14537,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack
-  gap="10px"
-  h="200px"
-  justifyContent="center"
-  px="20px"
-  py="10px"
->
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '40:9',
@@ -16165,29 +14820,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Flex alignItems="center" gap="10px" px="20px" py="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    flex="1"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</Flex>`,
       nodes: [
         {
           id: '40:78',
@@ -16471,28 +15103,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Center flexDir="column" gap="10px" px="20px" py="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</Center>`,
       nodes: [
         {
           id: '40:18',
@@ -16776,35 +15386,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack
-  alignItems="center"
-  gap="10px"
-  h="200px"
-  justifyContent="flex-end"
-  px="20px"
-  py="10px"
->
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '40:30',
@@ -17088,30 +15669,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack gap="10px" justifyContent="center" px="20px" py="10px">
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-    textAlign="center"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-    textAlign="center"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '40:42',
@@ -17395,34 +15952,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack
-  alignItems="flex-end"
-  gap="10px"
-  justifyContent="flex-end"
-  px="20px"
-  py="10px"
->
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '40:24',
@@ -17706,35 +16235,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack
-  alignItems="flex-end"
-  gap="10px"
-  h="200px"
-  justifyContent="center"
-  px="20px"
-  py="10px"
->
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Hello World
-  </Text>
-  <Text
-    color="#FFF"
-    fontFamily="Inter"
-    fontSize="12px"
-    fontWeight="400"
-    letterSpacing="0em"
-    lineHeight="normal"
-  >
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '40:36',
@@ -18018,9 +16518,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack p="10px">
-  <Image h="500px" src="/images/image.png" />
-</VStack>`,
       nodes: [
         {
           id: '69:9',
@@ -18158,9 +16655,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack p="10px">
-  <Image h="500px" objectFit="contain" src="/images/image.png" />
-</VStack>`,
       nodes: [
         {
           id: '69:13',
@@ -18298,80 +16792,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<VStack
-  bg="$innerBg"
-  gap="16px"
-  outline="solid 1px $border"
-  outlineOffset="-0.5px"
-  p="20px"
->
-  <Flex alignItems="center" gap="8px">
-    <Text
-      color="$caption"
-      fontFamily="SUIT"
-      fontSize="16px"
-      fontWeight="600"
-      letterSpacing="-1px"
-      lineHeight="1.5"
-    >
-      플레이 제목
-    </Text>
-    <Box
-      aspectRatio="1"
-      bg="$caption"
-      borderRadius="50%"
-      boxSize="6px"
-      opacity="0.2"
-    />
-    <Text
-      color="$caption"
-      fontFamily="SUIT"
-      fontSize="15px"
-      fontWeight="400"
-      letterSpacing="-0.5px"
-      lineHeight="1.5"
-    >
-      2025.03.03 18:00
-    </Text>
-    <Box
-      aspectRatio="1"
-      bg="$caption"
-      borderRadius="50%"
-      boxSize="6px"
-      opacity="0.2"
-    />
-    <Flex alignItems="center" gap="4px">
-      <Box
-        aspectRatio="1"
-        bg="$caption"
-        boxSize="20px"
-        maskImage="url(/icons/recommend.svg)"
-        maskRepeat="no-repeat"
-        maskSize="contain"
-      />
-      <Text
-        color="$caption"
-        fontFamily="SUIT"
-        fontSize="15px"
-        fontWeight="600"
-        letterSpacing="-0.5px"
-        lineHeight="1.5"
-      >
-        2
-      </Text>
-    </Flex>
-  </Flex>
-  <Text
-    color="$text"
-    fontFamily="SUIT"
-    fontSize="16px"
-    fontWeight="400"
-    letterSpacing="-1px"
-    lineHeight="1.5"
-  >
-    댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력 댓글 내용 출력
-  </Text>
-</VStack>`,
       nodes: [
         {
           id: '109:51',
@@ -19293,13 +17713,6 @@ describe('render real world component', () => {
     },
     // grid
     {
-      expected: `<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
-  <Box bg="#697F9F" h="100px" overflow="hidden" />
-  <Box bg="#697F9F" h="100px" overflow="hidden" />
-  <Box bg="#697F9F" h="100px" overflow="hidden" />
-  <Box bg="#697F9F" h="100px" overflow="hidden" />
-</Grid>`,
-
       nodes: [
         {
           id: '145:1912',
@@ -19658,22 +18071,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(4, 1fr)" h="430px">
-  <Box
-    bg="#697F9F"
-    gridColumn="1 / span 1"
-    gridRow="4 / span 1"
-    h="100px"
-    overflow="hidden"
-  />
-  <Box
-    bg="#697F9F"
-    gridColumn="2 / span 1"
-    gridRow="3 / span 1"
-    h="100px"
-    overflow="hidden"
-  />
-</Grid>`,
       nodes: [
         {
           id: '169:1545',
@@ -19902,9 +18299,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
-  <Box bg="#697F9F" h="100px" overflow="hidden" />
-</Grid>`,
       nodes: [
         {
           id: '169:1563',
@@ -20068,15 +18462,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Grid gap="10px" gridTemplateColumns="repeat(2, 1fr)" gridTemplateRows="repeat(2, 1fr)" h="210px">
-  <Box
-    bg="#697F9F"
-    gridColumn="2 / span 1"
-    gridRow="2 / span 1"
-    h="100px"
-    overflow="hidden"
-  />
-</Grid>`,
       nodes: [
         {
           id: '179:1554',
@@ -20241,13 +18626,6 @@ describe('render real world component', () => {
     },
     // mix blend
     {
-      expected: `<Image
-  aspectRatio="1"
-  boxSize="413px"
-  mixBlendMode="overlay"
-  opacity="0.8"
-  src="/images/image.png"
-/>`,
       nodes: [
         {
           id: '245:1595',
@@ -20344,13 +18722,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Image
-  aspectRatio="1"
-  boxSize="413px"
-  mixBlendMode="screen"
-  opacity="0.8"
-  src="/images/image.png"
-/>`,
       nodes: [
         {
           id: '245:1600',
@@ -20447,13 +18818,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Image
-  aspectRatio="1"
-  boxSize="413px"
-  mixBlendMode="multiply"
-  opacity="0.8"
-  src="/images/image.png"
-/>`,
       nodes: [
         {
           id: '245:1607',
@@ -20533,7 +18897,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box bg="#D9D9D9" boxSize="100px" mixBlendMode="soft-light" />`,
       nodes: [
         {
           id: '245:1609',
@@ -20598,17 +18961,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Text
-  color="#FF1919"
-  fontFamily="Jalnan Gothic TTF"
-  fontSize="64px"
-  fontWeight="400"
-  letterSpacing="-0.05em"
-  lineHeight="1.4"
-  mixBlendMode="darken"
->
-  데브파이브
-</Text>`,
       nodes: [
         {
           id: '245:1614',
@@ -20728,205 +19080,6 @@ describe('render real world component', () => {
     },
     // testcase dron
     {
-      expected: `<VStack
-  alignItems="flex-end"
-  bg="$primaryBg"
-  border="solid 1px $border"
-  gap="20px"
-  px="40px"
-  py="30px"
->
-  <Text
-    color="$text"
-    fontFamily="SUIT"
-    fontSize="20px"
-    fontWeight="700"
-    letterSpacing="-1px"
-    lineHeight="1.5"
-  >
-    간편 로그인 연동
-  </Text>
-  <VStack>
-    <Flex
-      alignItems="center"
-      borderRadius="10px"
-      gap="12px"
-      px="20px"
-      py="12px"
-    >
-      <Text
-        color="$text"
-        flex="1"
-        fontFamily="SUIT"
-        fontSize="16px"
-        fontWeight="600"
-        letterSpacing="-1px"
-        lineHeight="1.5"
-      >
-        카카오
-      </Text>
-      <Text
-        color="$gray500"
-        fontFamily="SUIT"
-        fontSize="15px"
-        fontWeight="400"
-        letterSpacing="-0.5px"
-        lineHeight="1.5"
-      >
-        연결 전
-      </Text>
-      <Center
-        bg="$primary"
-        border="solid 1px $primary"
-        borderRadius="100px"
-        px="12px"
-        py="4px"
-      >
-        <Text
-          color="#FFF"
-          fontFamily="Pretendard"
-          fontSize="14px"
-          fontWeight="500"
-          letterSpacing="0px"
-          lineHeight="16px"
-        >
-          인증하기
-        </Text>
-      </Center>
-    </Flex>
-    <Flex
-      alignItems="center"
-      borderRadius="10px"
-      gap="12px"
-      px="20px"
-      py="12px"
-    >
-      <Text
-        color="$text"
-        flex="1"
-        fontFamily="SUIT"
-        fontSize="16px"
-        fontWeight="600"
-        letterSpacing="-1px"
-        lineHeight="1.5"
-      >
-        구글
-      </Text>
-      <Text
-        color="$gray500"
-        fontFamily="SUIT"
-        fontSize="15px"
-        fontWeight="400"
-        letterSpacing="-0.5px"
-        lineHeight="1.5"
-      >
-        cooolvita@gmail.com
-      </Text>
-      <Center
-        bg="$primary"
-        border="solid 1px $primary"
-        borderRadius="100px"
-        px="12px"
-        py="4px"
-      >
-        <Text
-          color="#FFF"
-          fontFamily="Pretendard"
-          fontSize="14px"
-          fontWeight="500"
-          letterSpacing="0px"
-          lineHeight="16px"
-        >
-          인증하기
-        </Text>
-      </Center>
-    </Flex>
-  </VStack>
-  <Box bg="$border" h="1px" />
-  <VStack>
-    <Flex
-      alignItems="center"
-      borderRadius="10px"
-      gap="12px"
-      px="20px"
-      py="12px"
-    >
-      <Text
-        color="$text"
-        flex="1"
-        fontFamily="SUIT"
-        fontSize="16px"
-        fontWeight="600"
-        letterSpacing="-1px"
-        lineHeight="1.5"
-      >
-        서비스 이용약관
-      </Text>
-      <Box
-        bg="$gray300"
-        boxSize="24px"
-        maskImage="url(/icons/ic:round-arrow-left.svg)"
-        maskRepeat="no-repeat"
-        maskSize="contain"
-        transform="rotate(180deg)"
-      />
-    </Flex>
-    <Flex
-      alignItems="center"
-      borderRadius="10px"
-      gap="12px"
-      px="20px"
-      py="12px"
-    >
-      <Text
-        color="$text"
-        flex="1"
-        fontFamily="SUIT"
-        fontSize="16px"
-        fontWeight="600"
-        letterSpacing="-1px"
-        lineHeight="1.5"
-      >
-        개인정보 처리방침
-      </Text>
-      <Box
-        bg="$gray300"
-        boxSize="24px"
-        maskImage="url(/icons/ic:round-arrow-left.svg)"
-        maskRepeat="no-repeat"
-        maskSize="contain"
-        transform="rotate(180deg)"
-      />
-    </Flex>
-    <Flex
-      alignItems="center"
-      borderRadius="10px"
-      gap="12px"
-      px="20px"
-      py="12px"
-    >
-      <Text
-        color="$text"
-        flex="1"
-        fontFamily="SUIT"
-        fontSize="16px"
-        fontWeight="600"
-        letterSpacing="-1px"
-        lineHeight="1.5"
-      >
-        회원 탈퇴
-      </Text>
-      <Box
-        bg="$gray300"
-        boxSize="24px"
-        maskImage="url(/icons/ic:round-arrow-left.svg)"
-        maskRepeat="no-repeat"
-        maskSize="contain"
-        transform="rotate(180deg)"
-      />
-    </Flex>
-  </VStack>
-</VStack>`,
       nodes: [
         {
           id: '113:9',
@@ -23204,13 +21357,6 @@ describe('render real world component', () => {
     },
     // many shape
     {
-      expected: `<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/Star7.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
       nodes: [
         {
           id: '188:1567',
@@ -23267,13 +21413,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/Polygon1.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
       nodes: [
         {
           id: '188:1568',
@@ -23330,13 +21469,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box
-  bg="#D9D9D9"
-  boxSize="100px"
-  maskImage="url(/icons/Polygon1.svg)"
-  maskRepeat="no-repeat"
-  maskSize="contain"
-/>`,
       nodes: [
         {
           id: '189:1590',
@@ -23393,7 +21525,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" w="140px" />`,
       nodes: [
         {
           id: '188:1569',
@@ -23449,7 +21580,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box maxW="calc(140px - 6px)" outline="solid 3px #FF000080" transform="translate(3px, -3px)" w="140px" />`,
       nodes: [
         {
           id: '216:1548',
@@ -23505,7 +21635,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box maxW="calc(140px - 6px)" outline="solid 3px #F00" transform="translate(3px, -3px)" w="140px" />`,
       nodes: [
         {
           id: '189:1582',
@@ -23561,7 +21690,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box maxW="calc(140px - 8px)" outline="solid 4px #F00" transform="translate(4px, -4px)" w="140px" />`,
       nodes: [
         {
           id: '189:1586',
@@ -23617,7 +21745,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box maxW="calc(150px - 2px)" outline="solid 1px #F00" transform="rotate(-15deg)" w="150px" />`,
       nodes: [
         {
           id: '199:1545',
@@ -23673,7 +21800,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Box maxW="calc(131px - 2px)" outline="solid 1px #F00" transform="rotate(-90deg)" w="131px" />`,
       nodes: [
         {
           id: '199:1554',
@@ -23729,7 +21855,6 @@ describe('render real world component', () => {
       variables: [],
     },
     {
-      expected: `<Image h="60px" src="/icons/Vector4.svg" w="280px" />`,
       nodes: [
         {
           id: '188:1571',
@@ -23787,7 +21912,6 @@ describe('render real world component', () => {
     },
     // svg detail
     {
-      expected: `<Image h="28px" src="/icons/DevupUI.svg" />`,
       nodes: [
         {
           id: '188:1552',
@@ -24546,7 +22670,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Image src="/icons/DevupUI.svg" />`,
       nodes: [
         {
           id: '189:1760',
@@ -25309,21 +23432,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Center bg="$containerBackground" border="solid 1px $gray200" borderRadius="10px" p="8px">
-  <Box
-    aspectRatio="1"
-    bg="$textLight"
-    boxSize="24px"
-    maskImage="url(/icons/back.svg)"
-    maskRepeat="no-repeat"
-    maskSize="contain"
-    pb="5px"
-    pl="9px"
-    pr="7px"
-    pt="5px"
-    transform="rotate(180deg)"
-  />
-</Center>`,
       nodes: [
         {
           id: '189:1695',
@@ -25578,20 +23686,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
-  <Box
-    aspectRatio="1"
-    bg="$primary"
-    boxSize="20px"
-    maskImage="url(/icons/plus.svg)"
-    maskRepeat="no-repeat"
-    maskSize="contain"
-    pb="2.29px"
-    pl="2.29px"
-    pr="2.29px"
-    pt="2.29px"
-  />
-</Center>`,
       nodes: [
         {
           id: '189:1690',
@@ -25834,9 +23928,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
-  <Image aspectRatio="1" boxSize="20px" src="/icons/plus.svg" />
-</Center>`,
       nodes: [
         {
           id: '189:1744',
@@ -26109,20 +24200,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Center borderRadius="100px" flexDir="column" p="10px">
-  <Box
-    aspectRatio="1"
-    bg="#000"
-    boxSize="28px"
-    maskImage="url(/icons/cog.svg)"
-    maskRepeat="no-repeat"
-    maskSize="contain"
-    pb="2.33px"
-    pl="2.65px"
-    pr="2.65px"
-    pt="2.33px"
-  />
-</Center>`,
       nodes: [
         {
           id: '189:1719',
@@ -26342,9 +24419,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Center aspectRatio="1" bg="$primaryBgLight" borderRadius="8px" h="40px">
-  <Image aspectRatio="1" boxSize="20px" src="/icons/plus.svg" />
-</Center>`,
       nodes: [
         {
           id: '189:1744',
@@ -26617,20 +24691,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Center borderRadius="100px" flexDir="column" p="10px">
-  <Box
-    aspectRatio="1"
-    bg="#000"
-    boxSize="28px"
-    maskImage="url(/icons/cog.svg)"
-    maskRepeat="no-repeat"
-    maskSize="contain"
-    pb="2.33px"
-    pl="2.65px"
-    pr="2.65px"
-    pt="2.33px"
-  />
-</Center>`,
       nodes: [
         {
           id: '189:1719',
@@ -26850,9 +24910,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Center borderRadius="100px" flexDir="column" p="10px">
-  <Image aspectRatio="1" boxSize="28px" src="/icons/cog.svg" />
-</Center>`,
       nodes: [
         {
           id: '189:1736',
@@ -27103,18 +25160,6 @@ describe('render real world component', () => {
     },
     // Decorative Text
     {
-      expected: `<Text
-  bg="linear-gradient(-90deg, #6BB1F2 0%, #8235CA 100%)"
-  bgClip="text"
-  color="linear-gradient(-90deg, #6BB1F2 0%, #8235CA 100%)"
-  fontFamily="Pretendard"
-  fontSize="36px"
-  fontWeight="700"
-  letterSpacing="-0.03em"
-  lineHeight="1.3"
->
-  16.8s
-</Text>`,
       nodes: [
         {
           id: '241:1549',
@@ -27305,20 +25350,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  WebkitTextStroke="3px #FFF"
-  boxShadow="0 0 12px 0 #7C70FF"
-  color="#4C05FF"
-  fontFamily="Jalnan 2 TTF"
-  fontSize="38px"
-  fontWeight="400"
-  letterSpacing="-0.02em"
-  lineHeight="normal"
-  paintOrder="stroke fill"
-  textShadow="0 0 12px #7C70FF"
->
-  홈페이지와 앱 제작
-</Text>`,
       nodes: [
         {
           id: '244:1548',
@@ -27497,19 +25528,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  color="#000"
-  fontFamily="Pretendard"
-  fontSize="40px"
-  fontWeight="500"
-  letterSpacing="-0.05em"
-  lineHeight="1.4"
->
-  <Text color="$primary" fontSize="42px" fontWeight="800">
-    온글
-  </Text>
-  과 함께라면
-</Text>`,
       nodes: [
         {
           id: '244:1564',
@@ -27682,18 +25700,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  bg="url(/icons/image.png) center/cover no-repeat"
-  bgClip="text"
-  color="url(/icons/image.png) center/cover no-repeat"
-  fontFamily="Jalnan Gothic TTF"
-  fontSize="64px"
-  fontWeight="400"
-  letterSpacing="-0.05em"
-  lineHeight="1.4"
->
-  데브파이브
-</Text>`,
       nodes: [
         {
           id: '244:1573',
@@ -27839,20 +25845,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  WebkitTextStroke="2px #FFF"
-  boxShadow="0 0 12px 0 #7C70FF, 0 10px 24px 0 #FFC9FE66"
-  color="transparent"
-  fontFamily="Jalnan Gothic TTF"
-  fontSize="64px"
-  fontWeight="400"
-  letterSpacing="-0.05em"
-  lineHeight="1.4"
-  paintOrder="stroke fill"
-  textShadow="0 0 12px #7C70FF, 0 10px 24px #FFC9FE66"
->
-  데브파이브
-</Text>`,
       nodes: [
         {
           id: '244:1578',
@@ -28028,30 +26020,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `<Text
-  as="ul"
-  color="$text"
-  fontFamily="Pretendard"
-  fontSize="15px"
-  fontWeight="400"
-  letterSpacing="-0.04em"
-  lineHeight="2"
-  my="0px"
-  pl="1.5em"
->
-  <li>
-    어떤 증상이 가장 힘들고 일상생활에 영향을 주나요?
-  </li>
-  <li>
-    증상이 언제부터 시작되었나요?
-  </li>
-  <li>
-    증상이 시간이 지나면서 어떻게 변했나요?
-  </li>
-  <li>
-    스트레스나 상황에 따라 증상이 달라지나요?
-  </li>
-</Text>`,
       nodes: [
         {
           id: '387:1575',
@@ -28183,42 +26151,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `export function GradientButton() {
-  return (
-    <Center
-      _active={{
-        "bg": "linear-gradient(90deg, #7E22CE 0%, #4338CA 100%)",
-        "opacity": "0.8"
-      }}
-      _disabled={{
-        "bg": "$gray200"
-      }}
-      _hover={{
-        "bg": "linear-gradient(90deg, #7E22CE 0%, #4338CA 100%)",
-        "boxShadow": "0 4px 6px -4px #0000001A, 0 10px 15px -3px #0000001A"
-      }}
-      bg="linear-gradient(90deg, #9333EA 0%, #4F46E5 100%)"
-      borderRadius="8px"
-      boxShadow="0 2px 4px -2px #0000001A, 0 4px 6px -1px #0000001A"
-      overflow="hidden"
-      px="30px"
-      py="12px"
-      transition="0.3ms ease-out"
-      transitionProperty="background,box-shadow,opacity"
-    >
-      <Text
-        color="#FFF"
-        fontFamily="Pretendard"
-        fontSize="16px"
-        fontWeight="700"
-        letterSpacing="-0.04em"
-        lineHeight="1.4"
-      >
-        자세히 알아보기 →
-      </Text>
-    </Center>
-  )
-}`,
       nodes: [
         {
           id: '351:1546',
@@ -29288,65 +27220,6 @@ describe('render real world component', () => {
       ],
     },
     {
-      expected: `export interface ButtonProps {
-  size: 'Md' | 'Sm'
-  variant: 'primary' | 'white'
-}
-
-export function Button({ size, variant }: ButtonProps) {
-  return (
-    <Center
-      _active={{
-        "bg": {
-          primary: ["$primaryBold", null, null, null, "$primaryExBold"],
-          white: ["$background", null, null, null, "$backgroundBold"]
-        }[variant]
-      }}
-      _hover={{
-        "bg": {
-          primary: [null, null, null, null, "$primaryBold"],
-          white: [null, null, null, null, "$background"]
-        }[variant]
-      }}
-      bg={{
-        primary: "$primary",
-        white: "$containerBackground"
-      }[variant]}
-      border={{ white: "solid 1px $primaryAccent" }[variant]}
-      borderRadius={{
-        Md: ["10px", null, null, null, "12px"],
-        Sm: ["8px", null, null, null, "10px"]
-      }[size]}
-      px={{
-        Md: ["30px", null, null, null, "40px"],
-        Sm: ["16px", null, null, null, "20px"]
-      }[size]}
-      py={{
-        Md: ["16px", null, null, null, "20px"],
-        Sm: ["12px", null, null, null, "14px"]
-      }[size]}
-      transition="0.2ms ease-out"
-      transitionProperty="background"
-    >
-      <Text
-        color={{
-          primary: "#FFF",
-          white: "$primaryAccent"
-        }[variant]}
-        fontFamily="Noto Sans KR"
-        fontSize={{
-          Md: ["16px", null, null, null, "20px"],
-          Sm: ["14px", null, null, null, "15px"]
-        }[size]}
-        fontWeight="500"
-        letterSpacing="-0.04em"
-        lineHeight="normal"
-      >
-        참가 신청하기
-      </Text>
-    </Center>
-  )
-}`,
       nodes: [
         {
           id: '536:2019',
@@ -33997,7 +31870,5188 @@ export function Button({ size, variant }: ButtonProps) {
         },
       ],
     },
-  ] as const)('$expected', async ({ expected, nodes, variables }) => {
+    {
+      nodes: [
+        {
+          id: '284:18593',
+          name: 'Desktop',
+          type: 'FRAME',
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 40,
+            paddingRight: 40,
+            paddingTop: 120,
+            paddingBottom: 120,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          reactions: [],
+          parent: '284:18782',
+          children: ['284:18783', '284:18625'],
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'CENTER',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'FIXED',
+          layoutSizingHorizontal: 'FIXED',
+          height: 1080,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomRightRadius: 0,
+          bottomLeftRadius: 0,
+          strokes: [],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.9647058844566345,
+                g: 0.9529411792755127,
+                b: 0.929411768913269,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:642]',
+              },
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          isAsset: false,
+          effects: [],
+          rotation: 0,
+          clipsContent: true,
+          visible: true,
+          width: 1920,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          paddingLeft: 40,
+          paddingRight: 40,
+          paddingTop: 120,
+          paddingBottom: 120,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18783',
+          name: 'backgroundImage',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18593',
+          children: [
+            '284:18784',
+            '284:18785',
+            '284:18786',
+            '284:18787',
+            '284:18788',
+          ],
+          effects: [],
+          opacity: 0.20000000298023224,
+          blendMode: 'PASS_THROUGH',
+          width: 2471.312255859375,
+          height: 1578.6072998046875,
+          rotation: -11.242728725472414,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'ABSOLUTE',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          x: -196.2255859375,
+          y: -908,
+        },
+        {
+          id: '284:18784',
+          name: 'Vector 2',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18783',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 2402.24169921875,
+          height: 1479.8109130859375,
+          rotation: -11.242728725472414,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          constraints: {
+            horizontal: 'MIN',
+            vertical: 'MIN',
+          },
+        },
+        {
+          id: '284:18785',
+          name: 'Vector 3',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18783',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 2402.24169921875,
+          height: 1479.8109130859375,
+          rotation: -11.242728725472414,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18786',
+          name: 'Vector 4',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18783',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 2402.24169921875,
+          height: 1479.8109130859375,
+          rotation: -11.242728725472414,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18787',
+          name: 'Vector 5',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18783',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 2402.24169921875,
+          height: 1479.8109130859375,
+          rotation: -11.242728725472416,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18788',
+          name: 'Vector 6',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18783',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 2402.24169921875,
+          height: 1479.8109130859375,
+          rotation: -11.242728725472416,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18625',
+          name: 'Frame 26086061',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18593',
+          children: ['284:18689', '284:18684'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 669,
+          height: 762,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 120,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 120,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18689',
+          name: 'Frame 26086066',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18625',
+          children: ['284:18621', '284:18629', '284:18631'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 669,
+          height: 520,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 60,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 60,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18621',
+          name: 'path1208',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18689',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.6941176652908325,
+                g: 0.529411792755127,
+                b: 0.30980393290519714,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 200,
+          height: 104,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 211.70425415039062,
+            y: 110.56629180908203,
+          },
+          strokeWeight: 1.244274377822876,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18629',
+          name: 'Frame 26086062',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18689',
+          children: ['284:18628', '284:18623'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 669,
+          height: 138,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18628',
+          name: 'Under Construction',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18629',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.48557692766189575,
+                g: 0.2665456235408783,
+                b: 0.1003836914896965,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:171:6908]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 321,
+          height: 43,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Under Construction',
+          fontName: {
+            family: 'MaruBuri',
+            style: 'Bold',
+          },
+          fontSize: 32,
+          fontWeight: 700,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 4,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: 'Under Construction',
+              start: 0,
+              end: 18,
+              fontSize: 32,
+              fontName: {
+                family: 'MaruBuri',
+                style: 'Bold',
+              },
+              fontWeight: 700,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.48557692766189575,
+                    g: 0.2665456235408783,
+                    b: 0.1003836914896965,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:171:6908]',
+                  },
+                },
+              ],
+              textStyleId: 'S:14819e9e5daae015642942d4c39508e2b388720c,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18623',
+          name: '제주국제관악제 리뉴얼 알림',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18629',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.48557692766189575,
+                g: 0.2665456235408783,
+                b: 0.1003836914896965,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:171:6908]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 669,
+          height: 75,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '제주국제관악제 리뉴얼 알림',
+          fontName: {
+            family: 'MaruBuri',
+            style: 'Bold',
+          },
+          fontSize: 56,
+          fontWeight: 700,
+          lineHeight: {
+            unit: 'AUTO',
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: '제주국제관악제 리뉴얼 알림',
+              start: 0,
+              end: 14,
+              fontSize: 56,
+              fontName: {
+                family: 'MaruBuri',
+                style: 'Bold',
+              },
+              fontWeight: 700,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'AUTO',
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.48557692766189575,
+                    g: 0.2665456235408783,
+                    b: 0.1003836914896965,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:171:6908]',
+                  },
+                },
+              ],
+              textStyleId: 'S:9b31c24f538a5e45ca1ffbd51f55bccaf93525aa,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18631',
+          name: 'Frame 26086063',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18689',
+          children: ['284:18626', '284:18630'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 525,
+          height: 158,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18626',
+          name: '더 나은 서비스 제공을 위해 시스템 점검 및 리뉴얼을 진행 중입니다. 이용에 불편을 드려 죄송하며, 빠른 시일 내에 다시 찾아뵙겠습니다.',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18631',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.14509804546833038,
+                g: 0.125490203499794,
+                b: 0.11372549086809158,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:641]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 525,
+          height: 80,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            '더 나은 서비스 제공을 위해 시스템 점검 및 리뉴얼을 진행 중입니다.\n이용에 불편을 드려 죄송하며, 빠른 시일 내에 다시 찾아뵙겠습니다.',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Regular',
+          },
+          fontSize: 20,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 200,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -3,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters:
+                '더 나은 서비스 제공을 위해 시스템 점검 및 리뉴얼을 진행 중입니다.\n이용에 불편을 드려 죄송하며, 빠른 시일 내에 다시 찾아뵙겠습니다.',
+              start: 0,
+              end: 76,
+              fontSize: 20,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 200,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -3,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.14509804546833038,
+                    g: 0.125490203499794,
+                    b: 0.11372549086809158,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:10:641]',
+                  },
+                },
+              ],
+              textStyleId: 'S:c70470a187185991705af339d5d2c1c4e00a599b,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18630',
+          name: 'We are currently updating our website to serve you better. We apologize for the inconvenience.',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18631',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.38461539149284363,
+                g: 0.350098580121994,
+                b: 0.350098580121994,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:68:1448]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 415,
+          height: 58,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'We are currently updating our website to serve you better. \nWe apologize for the inconvenience.',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Regular',
+          },
+          fontSize: 16,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 179.99999523162842,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters:
+                'We are currently updating our website to serve you better. \nWe apologize for the inconvenience.',
+              start: 0,
+              end: 95,
+              fontSize: 16,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 179.99999523162842,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.38461539149284363,
+                    g: 0.350098580121994,
+                    b: 0.350098580121994,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:68:1448]',
+                  },
+                },
+              ],
+              textStyleId: 'S:0714e91638efb392b8350fc7b736633442d95452,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18684',
+          name: 'Frame 26086065',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18625',
+          children: ['284:18685', '284:18662', '284:18633'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 368,
+          height: 122,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 16,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 16,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18685',
+          name: '제주국제관악제 최신 소식 확인하기',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18684',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.3525640070438385,
+                g: 0.2507188618183136,
+                b: 0.17345693707466125,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:638]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 241,
+          height: 29,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '제주국제관악제 최신 소식 확인하기',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Bold',
+          },
+          fontSize: 17,
+          fontWeight: 700,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 170.00000476837158,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: '제주국제관악제 최신 소식 확인하기',
+              start: 0,
+              end: 18,
+              fontSize: 17,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Bold',
+              },
+              fontWeight: 700,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 170.00000476837158,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.3525640070438385,
+                    g: 0.2507188618183136,
+                    b: 0.17345693707466125,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:10:638]',
+                  },
+                },
+              ],
+              textStyleId: 'S:1588167b8be246784a2d7bbf2363c5b98a418e70,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18662',
+          name: 'Frame 26086064',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18684',
+          children: [
+            '284:18663',
+            '284:18666',
+            '284:18670',
+            '284:18673',
+            '284:18678',
+          ],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 156,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 30,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 30,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18663',
+          name: 'twitter_5968830 (1) 1',
+          type: 'FRAME',
+          visible: false,
+          parent: '284:18662',
+          children: ['284:18664', '284:18665'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 1227,
+            y: 1227,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18664',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18663',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0,
+                g: 0,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 16.55889320373535,
+          height: 19.458450317382812,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18665',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18663',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0,
+                g: 0,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18666',
+          name: 'instagram_15713420 1',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18662',
+          children: ['284:18667', '284:18668', '284:18669'],
+          fills: [
+            {
+              type: 'GRADIENT_LINEAR',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              gradientStops: [
+                {
+                  color: {
+                    r: 1,
+                    g: 0.8588235378265381,
+                    b: 0.45098039507865906,
+                    a: 1,
+                  },
+                  position: 0,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9921568632125854,
+                    g: 0.6784313917160034,
+                    b: 0.30588236451148987,
+                    a: 1,
+                  },
+                  position: 0.07999999821186066,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9843137264251709,
+                    g: 0.5137255191802979,
+                    b: 0.18039216101169586,
+                    a: 1,
+                  },
+                  position: 0.15000000596046448,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9803921580314636,
+                    g: 0.45098039507865906,
+                    b: 0.12941177189350128,
+                    a: 1,
+                  },
+                  position: 0.1899999976158142,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9647058844566345,
+                    g: 0.4117647111415863,
+                    b: 0.18431372940540314,
+                    a: 1,
+                  },
+                  position: 0.23000000417232513,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9098039269447327,
+                    g: 0.29019609093666077,
+                    b: 0.3529411852359772,
+                    a: 1,
+                  },
+                  position: 0.3700000047683716,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.8784313797950745,
+                    g: 0.21176470816135406,
+                    b: 0.4588235318660736,
+                    a: 1,
+                  },
+                  position: 0.47999998927116394,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.8666666746139526,
+                    g: 0.18431372940540314,
+                    b: 0.49803921580314636,
+                    a: 1,
+                  },
+                  position: 0.550000011920929,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.7058823704719543,
+                    g: 0.239215686917305,
+                    b: 0.5921568870544434,
+                    a: 1,
+                  },
+                  position: 0.6800000071525574,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.3019607961177826,
+                    g: 0.3764705955982208,
+                    b: 0.8313725590705872,
+                    a: 1,
+                  },
+                  position: 0.9700000286102295,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.25882354378700256,
+                    g: 0.3921568691730499,
+                    b: 0.8588235378265381,
+                    a: 1,
+                  },
+                  position: 1,
+                  boundVariables: {},
+                },
+              ],
+              gradientTransform: [
+                [-0.2444278746843338, -0.8524705171585083, 1.048449158668518],
+                [0.8524705171585083, -0.2444278746843338, 0.19597867131233215],
+              ],
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 512,
+            y: 512,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18667',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18666',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 21.582500457763672,
+          height: 21.473751068115234,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18668',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18666',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 11.108752250671387,
+          height: 11.108752250671387,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18669',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18666',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 2.6337509155273438,
+          height: 2.6337499618530273,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18670',
+          name: 'facebook_1384053 1',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18662',
+          children: ['284:18671', '284:18672'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: false,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 682.6666870117188,
+            y: 682.6666870117188,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18671',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18670',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.25882354378700256,
+                g: 0.40392157435417175,
+                b: 0.6980392336845398,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333333730697632,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18672',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18670',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 14.093750953674316,
+          height: 27.167238235473633,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333333730697632,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18673',
+          name: 'youtube_3991722 1',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18662',
+          children: ['284:18674'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 512,
+            y: 512,
+          },
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18674',
+          name: 'Layer 2',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18673',
+          children: ['284:18675'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 1,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18675',
+          name: '02.youtube',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18674',
+          children: ['284:18676', '284:18677'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'NONE',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 1,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18676',
+          name: 'background',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18675',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.9215686321258545,
+                g: 0,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2.909090995788574,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18677',
+          name: 'icon',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18675',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 20.000892639160156,
+          height: 14.616372108459473,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2.909090995788574,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18678',
+          name: 'Group 21',
+          type: 'GROUP',
+          visible: false,
+          parent: '284:18662',
+          children: ['284:18679', '284:18681'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 533.3333129882812,
+            y: 533.3333129882812,
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18679',
+          name: 'g36',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18678',
+          children: ['284:18680'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18680',
+          name: 'path38',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18679',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.9803921580314636,
+                g: 0.8823529481887817,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333332538604736,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18681',
+          name: 'g92',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18678',
+          children: ['284:18682'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 10.399999618530273,
+          height: 19.251760482788086,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18682',
+          name: 'path94',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18681',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 10.399999618530273,
+          height: 19.251760482788086,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333332538604736,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18633',
+          name: '문의 : 064-722-8704 / bandfestival@hanmail.net',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18684',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.14509804546833038,
+                g: 0.125490203499794,
+                b: 0.11372549086809158,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:641]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 368,
+          height: 29,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '문의 : 064-722-8704 / bandfestival@hanmail.net',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Medium',
+          },
+          fontSize: 17,
+          fontWeight: 500,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 170.00000476837158,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: '문의 : 064-722-8704 / bandfestival@hanmail.net',
+              start: 0,
+              end: 44,
+              fontSize: 17,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Medium',
+              },
+              fontWeight: 500,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 170.00000476837158,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.14509804546833038,
+                    g: 0.125490203499794,
+                    b: 0.11372549086809158,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:10:641]',
+                  },
+                },
+              ],
+              textStyleId: 'S:f3fe0b8adf37a80fc9553b745496cf5b44c4aba9,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18782',
+          name: 'UnderConstruction',
+          type: 'SECTION',
+          children: ['284:18593'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:10:642',
+          name: 'background',
+        },
+        {
+          id: 'VariableID:171:6908',
+          name: 'primaryAccent',
+        },
+        {
+          id: 'VariableID:10:641',
+          name: 'text',
+        },
+        {
+          id: 'VariableID:68:1448',
+          name: 'textLight',
+        },
+        {
+          id: 'VariableID:10:638',
+          name: 'primary',
+        },
+      ],
+    },
+    {
+      nodes: [
+        {
+          id: '284:18736',
+          name: 'Mobile',
+          type: 'FRAME',
+          parent: '284:18782',
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingTop: 60,
+            paddingBottom: 60,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 76,
+            layoutPositioning: 'AUTO',
+          },
+          reactions: [],
+          children: ['284:18804', '284:18746'],
+          primaryAxisAlignItems: 'CENTER',
+          counterAxisAlignItems: 'CENTER',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'FIXED',
+          layoutSizingHorizontal: 'FIXED',
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomRightRadius: 0,
+          bottomLeftRadius: 0,
+          strokes: [],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.9647058844566345,
+                g: 0.9529411792755127,
+                b: 0.929411768913269,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:642]',
+              },
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          isAsset: false,
+          effects: [],
+          rotation: 0,
+          clipsContent: true,
+          visible: true,
+          width: 393,
+          layoutMode: 'VERTICAL',
+          height: 852,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 60,
+          paddingBottom: 60,
+          itemSpacing: 76,
+          counterAxisSpacing: 0,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18754',
+          name: 'We are currently updating our website to serve you better. We apologize for the inconvenience.',
+          type: 'TEXT',
+          maxWidth: null,
+          maxHeight: null,
+          minWidth: null,
+          minHeight: null,
+          parent: '284:18752',
+          layoutPositioning: 'AUTO',
+          layoutSizingVertical: 'HUG',
+          layoutSizingHorizontal: 'FILL',
+          strokes: [],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.38461539149284363,
+                g: 0.350098580121994,
+                b: 0.350098580121994,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:68:1448]',
+              },
+            },
+          ],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          isAsset: false,
+          textTruncation: 'DISABLED',
+          effects: [],
+          rotation: 0,
+          reactions: [],
+          visible: true,
+          width: 353,
+          height: 78,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            'We are currently updating our website \nto serve you better. \nWe apologize for the inconvenience.',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Regular',
+          },
+          fontSize: 15,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 170.00000476837158,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAlignVertical: 'TOP',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters:
+                'We are currently updating our website \nto serve you better. \nWe apologize for the inconvenience.',
+              start: 0,
+              end: 96,
+              fontSize: 15,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 170.00000476837158,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.38461539149284363,
+                    g: 0.350098580121994,
+                    b: 0.350098580121994,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:68:1448]',
+                  },
+                },
+              ],
+              textStyleId: 'S:9385fb03675cd3793e5cd5ff37b1b3f1c6d3a704,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18752',
+          name: 'Frame 26086063',
+          type: 'FRAME',
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 0,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+          parent: '284:18747',
+          layoutMode: 'VERTICAL',
+          visible: true,
+          children: ['284:18753', '284:18754'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 353,
+          height: 234,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18747',
+          name: 'Frame 26086066',
+          type: 'FRAME',
+          parent: '284:18746',
+          visible: true,
+          children: ['284:18748', '284:18749', '284:18752'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 353,
+          height: 502,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 30,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 0,
+            itemSpacing: 30,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18746',
+          name: 'Frame 26086061',
+          type: 'FRAME',
+          parent: '284:18736',
+          visible: true,
+          children: ['284:18747', '284:18755'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 353,
+          height: 715,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 60,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 0,
+            itemSpacing: 60,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18804',
+          name: 'backgroundImage',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18736',
+          children: [
+            '284:18805',
+            '284:18806',
+            '284:18807',
+            '284:18808',
+            '284:18809',
+          ],
+          effects: [],
+          opacity: 0.20000000298023224,
+          blendMode: 'PASS_THROUGH',
+          width: 779.4011840820312,
+          height: 497.8604431152344,
+          rotation: -11.242728725472414,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'ABSOLUTE',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          x: -183.93421936035156,
+          y: -255,
+        },
+        {
+          id: '284:18805',
+          name: 'Vector 2',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18804',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 757.61767578125,
+          height: 466.7019348144531,
+          rotation: -11.242728725472414,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.2000000476837158,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          constraints: {
+            horizontal: 'MIN',
+            vertical: 'MIN',
+          },
+        },
+        {
+          id: '284:18806',
+          name: 'Vector 3',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18804',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 757.61767578125,
+          height: 466.7019348144531,
+          rotation: -11.242728725472412,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.2000000476837158,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18807',
+          name: 'Vector 4',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18804',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 757.61767578125,
+          height: 466.7019348144531,
+          rotation: -11.242728725472414,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.2000000476837158,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18808',
+          name: 'Vector 5',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18804',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 757.61767578125,
+          height: 466.7019348144531,
+          rotation: -11.242728725472414,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.2000000476837158,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18809',
+          name: 'Vector 6',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18804',
+          fills: [],
+          strokes: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.7843137383460999,
+                g: 0.6431372761726379,
+                b: 0.41960784792900085,
+              },
+              boundVariables: {},
+            },
+          ],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 757.61767578125,
+          height: 466.7019348144531,
+          rotation: -11.242728725472414,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.2000000476837158,
+          strokeAlign: 'CENTER',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18748',
+          name: 'path1208',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18747',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.6941176652908325,
+                g: 0.529411792755127,
+                b: 0.30980393290519714,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 100,
+          height: 52,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 211.70425415039062,
+            y: 110.56629180908203,
+          },
+          strokeWeight: 1.244274377822876,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18749',
+          name: 'Frame 26086062',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18747',
+          children: ['284:18750', '284:18751'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 353,
+          height: 156,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 0,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18750',
+          name: 'Under Construction',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18749',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.48557692766189575,
+                g: 0.2665456235408783,
+                b: 0.1003836914896965,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:171:6908]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 201,
+          height: 30,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: 'Under Construction',
+          fontName: {
+            family: 'MaruBuri',
+            style: 'Bold',
+          },
+          fontSize: 20,
+          fontWeight: 700,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 150,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: 4,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'LEFT',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: 'Under Construction',
+              start: 0,
+              end: 18,
+              fontSize: 20,
+              fontName: {
+                family: 'MaruBuri',
+                style: 'Bold',
+              },
+              fontWeight: 700,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 150,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: 4,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.48557692766189575,
+                    g: 0.2665456235408783,
+                    b: 0.1003836914896965,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:171:6908]',
+                  },
+                },
+              ],
+              textStyleId: 'S:3b473a78704138bee802a56e5cc5985142b1cadd,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18751',
+          name: '제주국제관악제 리뉴얼 알림',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18749',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.48557692766189575,
+                g: 0.2665456235408783,
+                b: 0.1003836914896965,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:171:6908]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 353,
+          height: 106,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '제주국제관악제 \n리뉴얼 알림',
+          fontName: {
+            family: 'MaruBuri',
+            style: 'Bold',
+          },
+          fontSize: 35,
+          fontWeight: 700,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 150,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: '제주국제관악제 \n리뉴얼 알림',
+              start: 0,
+              end: 15,
+              fontSize: 35,
+              fontName: {
+                family: 'MaruBuri',
+                style: 'Bold',
+              },
+              fontWeight: 700,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 150,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.48557692766189575,
+                    g: 0.2665456235408783,
+                    b: 0.1003836914896965,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:171:6908]',
+                  },
+                },
+              ],
+              textStyleId: 'S:274c0fed1bc528170a95a809d99939559908f2de,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18753',
+          name: '더 나은 서비스 제공을 위해 시스템 점검 및 리뉴얼을 진행 중입니다. 이용에 불편을 드려 죄송하며, 빠른 시일 내에 다시 찾아뵙겠습니다.',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18752',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.14509804546833038,
+                g: 0.125490203499794,
+                b: 0.11372549086809158,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:641]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 353,
+          height: 136,
+          rotation: 0,
+          layoutAlign: 'STRETCH',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FILL',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters:
+            '더 나은 서비스 제공을 위해 \n시스템 점검 및 리뉴얼을 진행 중입니다.\n이용에 불편을 드려 죄송하며, \n빠른 시일 내에 다시 찾아뵙겠습니다.',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Regular',
+          },
+          fontSize: 17,
+          fontWeight: 400,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 200,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -3,
+          },
+          textAutoResize: 'HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters:
+                '더 나은 서비스 제공을 위해 \n시스템 점검 및 리뉴얼을 진행 중입니다.\n이용에 불편을 드려 죄송하며, \n빠른 시일 내에 다시 찾아뵙겠습니다.',
+              start: 0,
+              end: 78,
+              fontSize: 17,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Regular',
+              },
+              fontWeight: 400,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 200,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -3,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.14509804546833038,
+                    g: 0.125490203499794,
+                    b: 0.11372549086809158,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:10:641]',
+                  },
+                },
+              ],
+              textStyleId: 'S:efc082632af0578b31d7c37ad1d216886c8a3f11,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18755',
+          name: 'Frame 26086065',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18746',
+          children: ['284:18757', '284:18758', '284:18756'],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 227,
+          height: 153,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'VERTICAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'CENTER',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 20,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 20,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18757',
+          name: '제주국제관악제 최신 소식 확인하기',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18755',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.3525640070438385,
+                g: 0.2507188618183136,
+                b: 0.17345693707466125,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:638]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 227,
+          height: 27,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '제주국제관악제 최신 소식 확인하기',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Bold',
+          },
+          fontSize: 16,
+          fontWeight: 700,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 170.00000476837158,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: '제주국제관악제 최신 소식 확인하기',
+              start: 0,
+              end: 18,
+              fontSize: 16,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Bold',
+              },
+              fontWeight: 700,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 170.00000476837158,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.3525640070438385,
+                    g: 0.2507188618183136,
+                    b: 0.17345693707466125,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:10:638]',
+                  },
+                },
+              ],
+              textStyleId: 'S:4fd1225444ddbbfd36aa07500d572aa253bdd93d,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18758',
+          name: 'Frame 26086064',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18755',
+          children: [
+            '284:18759',
+            '284:18762',
+            '284:18766',
+            '284:18769',
+            '284:18774',
+          ],
+          fills: [],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 156,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          topLeftRadius: 0,
+          topRightRadius: 0,
+          bottomLeftRadius: 0,
+          bottomRightRadius: 0,
+          layoutMode: 'HORIZONTAL',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 30,
+          counterAxisSpacing: 0,
+          clipsContent: false,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'AUTO',
+            primaryAxisSizingMode: 'AUTO',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'INHERIT',
+            layoutGrow: 0,
+            itemSpacing: 30,
+            layoutPositioning: 'AUTO',
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18759',
+          name: 'twitter_5968830 (1) 1',
+          type: 'FRAME',
+          visible: false,
+          parent: '284:18758',
+          children: ['284:18760', '284:18761'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 1227,
+            y: 1227,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18760',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18759',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0,
+                g: 0,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 16.55889320373535,
+          height: 19.458450317382812,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18761',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18759',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0,
+                g: 0,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18762',
+          name: 'instagram_15713420 1',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18758',
+          children: ['284:18763', '284:18764', '284:18765'],
+          fills: [
+            {
+              type: 'GRADIENT_LINEAR',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              gradientStops: [
+                {
+                  color: {
+                    r: 1,
+                    g: 0.8588235378265381,
+                    b: 0.45098039507865906,
+                    a: 1,
+                  },
+                  position: 0,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9921568632125854,
+                    g: 0.6784313917160034,
+                    b: 0.30588236451148987,
+                    a: 1,
+                  },
+                  position: 0.07999999821186066,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9843137264251709,
+                    g: 0.5137255191802979,
+                    b: 0.18039216101169586,
+                    a: 1,
+                  },
+                  position: 0.15000000596046448,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9803921580314636,
+                    g: 0.45098039507865906,
+                    b: 0.12941177189350128,
+                    a: 1,
+                  },
+                  position: 0.1899999976158142,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9647058844566345,
+                    g: 0.4117647111415863,
+                    b: 0.18431372940540314,
+                    a: 1,
+                  },
+                  position: 0.23000000417232513,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.9098039269447327,
+                    g: 0.29019609093666077,
+                    b: 0.3529411852359772,
+                    a: 1,
+                  },
+                  position: 0.3700000047683716,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.8784313797950745,
+                    g: 0.21176470816135406,
+                    b: 0.4588235318660736,
+                    a: 1,
+                  },
+                  position: 0.47999998927116394,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.8666666746139526,
+                    g: 0.18431372940540314,
+                    b: 0.49803921580314636,
+                    a: 1,
+                  },
+                  position: 0.550000011920929,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.7058823704719543,
+                    g: 0.239215686917305,
+                    b: 0.5921568870544434,
+                    a: 1,
+                  },
+                  position: 0.6800000071525574,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.3019607961177826,
+                    g: 0.3764705955982208,
+                    b: 0.8313725590705872,
+                    a: 1,
+                  },
+                  position: 0.9700000286102295,
+                  boundVariables: {},
+                },
+                {
+                  color: {
+                    r: 0.25882354378700256,
+                    g: 0.3921568691730499,
+                    b: 0.8588235378265381,
+                    a: 1,
+                  },
+                  position: 1,
+                  boundVariables: {},
+                },
+              ],
+              gradientTransform: [
+                [-0.2444278746843338, -0.8524705171585083, 1.048449158668518],
+                [0.8524705171585083, -0.2444278746843338, 0.19597867131233215],
+              ],
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 512,
+            y: 512,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18763',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18762',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 21.582500457763672,
+          height: 21.473751068115234,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18764',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18762',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 11.108752250671387,
+          height: 11.108752250671387,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18765',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18762',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 2.6337509155273438,
+          height: 2.6337499618530273,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18766',
+          name: 'facebook_1384053 1',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18758',
+          children: ['284:18767', '284:18768'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: false,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 682.6666870117188,
+            y: 682.6666870117188,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18767',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18766',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.25882354378700256,
+                g: 0.40392157435417175,
+                b: 0.6980392336845398,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333333730697632,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18768',
+          name: 'Vector',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18766',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 14.093750953674316,
+          height: 27.167238235473633,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333333730697632,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18769',
+          name: 'youtube_3991722 1',
+          type: 'FRAME',
+          visible: true,
+          parent: '284:18758',
+          children: ['284:18770'],
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 4,
+          topLeftRadius: 4,
+          topRightRadius: 4,
+          bottomLeftRadius: 4,
+          bottomRightRadius: 4,
+          layoutMode: 'NONE',
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          primaryAxisAlignItems: 'MIN',
+          counterAxisAlignItems: 'MIN',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          itemSpacing: 0,
+          counterAxisSpacing: 0,
+          clipsContent: true,
+          isAsset: true,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 512,
+            y: 512,
+          },
+          strokeWeight: 1,
+          strokeTopWeight: 1,
+          strokeBottomWeight: 1,
+          strokeLeftWeight: 1,
+          strokeRightWeight: 1,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          gridColumnCount: 0,
+        },
+        {
+          id: '284:18770',
+          name: 'Layer 2',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18769',
+          children: ['284:18771'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18771',
+          name: '02.youtube',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18770',
+          children: ['284:18772', '284:18773'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'NONE',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'MIN',
+            counterAxisAlignItems: 'MIN',
+            layoutAlign: 'STRETCH',
+            layoutGrow: 1,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18772',
+          name: 'background',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18771',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.9215686321258545,
+                g: 0,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2.909090995788574,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18773',
+          name: 'icon',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18771',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 20.000892639160156,
+          height: 14.616372108459473,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 2.909090995788574,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18774',
+          name: 'Group 21',
+          type: 'GROUP',
+          visible: false,
+          parent: '284:18758',
+          children: ['284:18775', '284:18777'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          targetAspectRatio: {
+            x: 533.3333129882812,
+            y: 533.3333129882812,
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18775',
+          name: 'g36',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18774',
+          children: ['284:18776'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'HORIZONTAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18776',
+          name: 'path38',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18775',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.9803921580314636,
+                g: 0.8823529481887817,
+                b: 0,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 32,
+          height: 32,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333332538604736,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18777',
+          name: 'g92',
+          type: 'GROUP',
+          visible: true,
+          parent: '284:18774',
+          children: ['284:18778'],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 10.399999618530273,
+          height: 19.251760482788086,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          inferredAutoLayout: {
+            layoutMode: 'VERTICAL',
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            counterAxisSizingMode: 'FIXED',
+            primaryAxisSizingMode: 'FIXED',
+            primaryAxisAlignItems: 'CENTER',
+            counterAxisAlignItems: 'CENTER',
+            layoutAlign: 'MIN',
+            layoutGrow: 0,
+            itemSpacing: 0,
+            layoutPositioning: 'AUTO',
+          },
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18778',
+          name: 'path94',
+          type: 'VECTOR',
+          visible: true,
+          parent: '284:18777',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 1,
+                g: 1,
+                b: 1,
+              },
+              boundVariables: {},
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 10.399999618530273,
+          height: 19.251760482788086,
+          rotation: 0,
+          cornerRadius: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'FIXED',
+          layoutSizingVertical: 'FIXED',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1.3333332538604736,
+          strokeAlign: 'INSIDE',
+          dashPattern: [],
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+        },
+        {
+          id: '284:18756',
+          name: '문의 : 064-722-8704 / bandfestival@hanmail.net',
+          type: 'TEXT',
+          visible: true,
+          parent: '284:18755',
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              opacity: 1,
+              blendMode: 'NORMAL',
+              color: {
+                r: 0.14509804546833038,
+                g: 0.125490203499794,
+                b: 0.11372549086809158,
+              },
+              boundVariables: {
+                color: '[NodeId: VariableID:10:641]',
+              },
+            },
+          ],
+          strokes: [],
+          effects: [],
+          opacity: 1,
+          blendMode: 'PASS_THROUGH',
+          width: 195,
+          height: 54,
+          rotation: 0,
+          layoutAlign: 'INHERIT',
+          layoutGrow: 0,
+          layoutSizingHorizontal: 'HUG',
+          layoutSizingVertical: 'HUG',
+          layoutPositioning: 'AUTO',
+          isAsset: false,
+          reactions: [],
+          minWidth: null,
+          maxWidth: null,
+          minHeight: null,
+          maxHeight: null,
+          strokeWeight: 1,
+          strokeAlign: 'OUTSIDE',
+          dashPattern: [],
+          characters: '문의 : 064-722-8704 / \nbandfestival@hanmail.net',
+          fontName: {
+            family: 'Noto Sans KR',
+            style: 'Medium',
+          },
+          fontSize: 16,
+          fontWeight: 500,
+          lineHeight: {
+            unit: 'PERCENT',
+            value: 170.00000476837158,
+          },
+          letterSpacing: {
+            unit: 'PERCENT',
+            value: -2,
+          },
+          textAutoResize: 'WIDTH_AND_HEIGHT',
+          textAlignHorizontal: 'CENTER',
+          textAlignVertical: 'TOP',
+          textTruncation: 'DISABLED',
+          gridColumnAnchorIndex: -1,
+          gridRowAnchorIndex: -1,
+          styledTextSegments: [
+            {
+              characters: '문의 : 064-722-8704 / \nbandfestival@hanmail.net',
+              start: 0,
+              end: 45,
+              fontSize: 16,
+              fontName: {
+                family: 'Noto Sans KR',
+                style: 'Medium',
+              },
+              fontWeight: 500,
+              textDecoration: 'NONE',
+              textCase: 'ORIGINAL',
+              lineHeight: {
+                unit: 'PERCENT',
+                value: 170.00000476837158,
+              },
+              letterSpacing: {
+                unit: 'PERCENT',
+                value: -2,
+              },
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  opacity: 1,
+                  blendMode: 'NORMAL',
+                  color: {
+                    r: 0.14509804546833038,
+                    g: 0.125490203499794,
+                    b: 0.11372549086809158,
+                  },
+                  boundVariables: {
+                    color: '[NodeId: VariableID:10:641]',
+                  },
+                },
+              ],
+              textStyleId: 'S:79f1bafd5cc1856c48f9459f6aeb415762061b9b,',
+              fillStyleId: '',
+              listOptions: {
+                type: 'NONE',
+              },
+              indentation: 0,
+              hyperlink: null,
+            },
+          ],
+        },
+        {
+          id: '284:18782',
+          name: 'UnderConstruction',
+          type: 'SECTION',
+          children: ['284:18736'],
+        },
+      ],
+      variables: [
+        {
+          id: 'VariableID:68:1448',
+          name: 'textLight',
+        },
+        {
+          id: 'VariableID:10:642',
+          name: 'background',
+        },
+        {
+          id: 'VariableID:171:6908',
+          name: 'primaryAccent',
+        },
+        {
+          id: 'VariableID:10:641',
+          name: 'text',
+        },
+        {
+          id: 'VariableID:10:638',
+          name: 'primary',
+        },
+      ],
+    },
+  ] as const)('real world $#', async ({ nodes, variables }) => {
     const root = assembleNodeTree(
       nodes as unknown as NodeData[],
       variables as { id: string; name: string }[] | undefined,
@@ -34013,11 +37067,11 @@ export function Button({ size, variant }: ButtonProps) {
         componentName,
       )
       expect(codes.length).toBeGreaterThan(0)
-      expect(codes[0][1]).toBe(expected)
+      expect(codes[0][1]).toMatchSnapshot()
     } else {
       const codegen = new Codegen(root as unknown as SceneNode)
       await codegen.run()
-      expect(codegen.getCode()).toBe(expected)
+      expect(codegen.getCode()).toMatchSnapshot()
     }
   })
 })
