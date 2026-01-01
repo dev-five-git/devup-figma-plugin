@@ -2705,3 +2705,133 @@ exports[`render real world component real world $ 106`] = `
   </VStack>
 </Center>"
 `;
+
+exports[`render real world component real world $ 107`] = `
+"<Center
+  bg="$background"
+  flexDir="column"
+  gap="76px"
+  overflow="hidden"
+  px="20px"
+  py="60px"
+>
+  <Image
+    left="-183.93px"
+    opacity="0.2"
+    pos="absolute"
+    src="/icons/backgroundImage.svg"
+    top="-255px"
+    transform="rotate(11.24deg)"
+    transformOrigin="top left"
+    w="100%"
+  />
+  <VStack alignItems="center" gap="60px" w="100%">
+    <VStack alignItems="center" gap="30px" w="100%">
+      <Box
+        aspectRatio="1.91"
+        bg="#B1874F"
+        h="52px"
+        maskImage="url(/icons/path1208.svg)"
+        maskRepeat="no-repeat"
+        maskSize="contain"
+        w="100px"
+      />
+      <VStack alignItems="center" gap="20px" w="100%">
+        <Text
+          color="$primaryAccent"
+          fontFamily="MaruBuri"
+          fontSize="20px"
+          fontWeight="700"
+          letterSpacing="0.04em"
+          lineHeight="1.5"
+        >
+          Under Construction
+        </Text>
+        <Text
+          color="$primaryAccent"
+          fontFamily="MaruBuri"
+          fontSize="35px"
+          fontWeight="700"
+          letterSpacing="-0.02em"
+          lineHeight="1.5"
+          textAlign="center"
+          w="100%"
+        >
+          제주국제관악제 <br />리뉴얼 알림
+        </Text>
+      </VStack>
+      <VStack alignItems="center" gap="20px" w="100%">
+        <Text
+          color="$text"
+          fontFamily="Noto Sans KR"
+          fontSize="17px"
+          fontWeight="400"
+          letterSpacing="-0.03em"
+          lineHeight="2"
+          textAlign="center"
+          w="100%"
+        >
+          더 나은 서비스 제공을 위해 <br />시스템 점검 및 리뉴얼을 진행 중입니다.<br />이용에 불편을 드려 죄송하며, <br />빠른 시일 내에 다시 찾아뵙겠습니다.
+        </Text>
+        <Text
+          color="$textLight"
+          fontFamily="Noto Sans KR"
+          fontSize="15px"
+          fontWeight="400"
+          letterSpacing="-0.02em"
+          lineHeight="1.7"
+          textAlign="center"
+          w="100%"
+        >
+          We are currently updating our website <br />to serve you better. <br />We apologize for the inconvenience.
+        </Text>
+      </VStack>
+    </VStack>
+    <VStack alignItems="center" gap="20px">
+      <Text
+        color="$primary"
+        fontFamily="Noto Sans KR"
+        fontSize="16px"
+        fontWeight="700"
+        letterSpacing="-0.02em"
+        lineHeight="1.7"
+      >
+        제주국제관악제 최신 소식 확인하기
+      </Text>
+      <Flex gap="30px">
+        <Image
+          aspectRatio="1"
+          borderRadius="4px"
+          boxSize="32px"
+          display="none"
+          src="/icons/twitter_5968830 (1) 1.svg"
+        />
+        <Image aspectRatio="1" borderRadius="4px" boxSize="32px" src="/icons/instagram_15713420 1.svg" />
+        <Image aspectRatio="1" borderRadius="4px" boxSize="32px" src="/icons/facebook_1384053 1.svg" />
+        <Box
+          aspectRatio="1"
+          bg="#FFF"
+          borderRadius="4px"
+          boxSize="32px"
+          overflow="hidden"
+          pos="relative"
+        >
+          <Image boxSize="32px" src="/icons/Layer 2.svg" />
+        </Box>
+        <Image aspectRatio="1" boxSize="32px" display="none" src="/icons/Group 21.svg" />
+      </Flex>
+      <Text
+        color="$text"
+        fontFamily="Noto Sans KR"
+        fontSize="16px"
+        fontWeight="500"
+        letterSpacing="-0.02em"
+        lineHeight="1.7"
+        textAlign="center"
+      >
+        문의 : 064-722-8704 / <br />bandfestival@hanmail.net
+      </Text>
+    </VStack>
+  </VStack>
+</Center>"
+`;
