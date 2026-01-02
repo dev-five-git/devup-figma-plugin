@@ -2,4 +2,4 @@
 coverage = true
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = ["dist/**"]
-coverageThreshold = 0.9999
+coverageThreshold = 1

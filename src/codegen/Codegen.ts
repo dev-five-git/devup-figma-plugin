@@ -140,6 +140,20 @@ export class Codegen {
 
       const componentName = getComponentName(mainComponent || node)
 
+      // Get variant props from componentProperties (exclude effect and viewport)
+      const componentProps: Record<string, unknown> = {}
+      const excludedVariants = ['effect', 'viewport']
+      const componentProperties = node.componentProperties || {}
+      for (const [key, prop] of Object.entries(componentProperties)) {
+        if (prop.type === 'VARIANT') {
+          // Remove "#xxxx:xxxx" suffix from key if present
+          const cleanKey = key.includes('#') ? key.split('#')[0] : key
+          if (!excludedVariants.includes(cleanKey.toLowerCase())) {
+            componentProps[cleanKey] = prop.value
+          }
+        }
+      }
+
       // Check if needs position wrapper
       if (props.pos) {
         return {
@@ -160,7 +174,7 @@ export class Codegen {
           children: [
             {
               component: componentName,
-              props: {},
+              props: componentProps,
               children: [],
               nodeType: node.type,
               nodeName: node.name,
@@ -174,7 +188,7 @@ export class Codegen {
 
       return {
         component: componentName,
-        props: {},
+        props: componentProps,
         children: [],
         nodeType: node.type,
         nodeName: node.name,

@@ -100,6 +100,7 @@ export class ResponsiveCodegen {
     if (firstTree.isComponent) {
       // For components, we might still need position props
       const propsMap = new Map<BreakpointKey, Props>()
+      const positionKeys = ['pos', 'top', 'left', 'right', 'bottom', 'display']
       for (const [bp, tree] of treesByBreakpoint) {
         const posProps: Props = {}
         if (tree.props.pos) posProps.pos = tree.props.pos
@@ -112,13 +113,26 @@ export class ResponsiveCodegen {
       }
       const mergedProps = mergePropsToResponsive(propsMap)
 
+      // Get variant props from the first tree (they should be the same across breakpoints)
+      const variantProps: Props = {}
+      for (const [key, value] of Object.entries(firstTree.props)) {
+        if (!positionKeys.includes(key)) {
+          variantProps[key] = value
+        }
+      }
+
       // If component has position props, wrap in Box
       if (Object.keys(mergedProps).length > 0) {
-        const componentCode = renderNode(firstTree.component, {}, depth + 1, [])
+        const componentCode = renderNode(
+          firstTree.component,
+          variantProps,
+          depth + 1,
+          [],
+        )
         return renderNode('Box', mergedProps, depth, [componentCode])
       }
 
-      return renderNode(firstTree.component, {}, depth, [])
+      return renderNode(firstTree.component, variantProps, depth, [])
     }
 
     // Handle WRAPPER nodes (position wrapper for components)
