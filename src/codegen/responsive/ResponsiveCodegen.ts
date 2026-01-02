@@ -1400,52 +1400,72 @@ export class ResponsiveCodegen {
       return [...textByBreakpoint.values()][0]
     }
 
-    // Texts differ - need to merge with responsive <br />
-    // Find the text with the most content (usually the one with more \n)
-    const breakpoints = [...normalizedTexts.keys()]
+    // Check if texts only differ in \n positions (not content)
+    // Remove all \n and compare - if same, we can do responsive br merge
+    const withoutNewlines = new Set(
+      [...normalizedTexts.values()].map((t) => t.replace(/\n/g, '')),
+    )
 
-    // Compare character by character, tracking where \n appears
-    // Build merged text with responsive <br /> where needed
+    // Texts differ in content - can't merge, use first breakpoint's text
+    if (withoutNewlines.size !== 1) {
+      return [...textByBreakpoint.values()][0]
+    }
+
+    // Same content, different line breaks
+    // Check if all breakpoints have the same \n positions
+    const breakCounts = [...normalizedTexts.values()].map(
+      (t) => (t.match(/\n/g) || []).length,
+    )
+    const allSameBreaks = breakCounts.every((c) => c === breakCounts[0])
+    if (allSameBreaks) {
+      // Same number of breaks - check if positions are also same
+      // (already handled by uniqueNormalized check above, so just return first)
+      return [...textByBreakpoint.values()][0]
+    }
+
+    // Different \n positions - need to merge with responsive <br />
+    const breakpoints = [...normalizedTexts.keys()]
     return this.buildResponsiveTextChildren(normalizedTexts, breakpoints)
   }
 
   /**
    * Build responsive text children by comparing texts across breakpoints.
    * Inserts responsive <br /> where \n exists in some breakpoints but not others.
+   *
+   * Uses character-based comparison (ignoring \n) to find where breaks differ.
    */
   private buildResponsiveTextChildren(
     normalizedTexts: Map<BreakpointKey, string>,
     breakpoints: BreakpointKey[],
   ): string[] {
-    // Find the longest text to use as base
-    let baseText = ''
-    for (const [, text] of normalizedTexts) {
-      if (text.length > baseText.length) {
-        baseText = text
-      }
-    }
+    // Get the base text (without newlines) - all should be same content
+    const baseContent = [...normalizedTexts.values()][0].replace(/\n/g, '')
 
-    // For each other breakpoint, find where they differ
-    // Build a map of positions where \n appears/doesn't appear per breakpoint
-    const brPositions = new Map<number, Map<BreakpointKey, boolean>>()
+    // For each breakpoint, build a map of character index -> has \n after
+    // Character index is the position in baseContent (without \n)
+    const brAfterChar = new Map<number, Map<BreakpointKey, boolean>>()
 
-    // Find all \n positions in all texts
     for (const [bp, text] of normalizedTexts) {
+      let charIdx = 0
       for (let i = 0; i < text.length; i++) {
         if (text[i] === '\n') {
-          if (!brPositions.has(i)) {
-            brPositions.set(i, new Map())
+          // Mark that there's a \n after charIdx - 1
+          const pos = charIdx - 1
+          if (!brAfterChar.has(pos)) {
+            brAfterChar.set(pos, new Map())
           }
-          const posMap = brPositions.get(i)
+          const posMap = brAfterChar.get(pos)
           if (posMap) {
             posMap.set(bp, true)
           }
+        } else {
+          charIdx++
         }
       }
     }
 
     // For positions that don't have \n in some breakpoints, mark as false
-    for (const [, bpMap] of brPositions) {
+    for (const [, bpMap] of brAfterChar) {
       for (const bp of breakpoints) {
         if (!bpMap.has(bp)) {
           bpMap.set(bp, false)
@@ -1454,21 +1474,15 @@ export class ResponsiveCodegen {
     }
 
     // Now build the result string
-    // Replace \n with appropriate responsive <br />
     const result: string[] = []
     let currentSegment = ''
 
-    for (let i = 0; i < baseText.length; i++) {
-      const char = baseText[i]
+    for (let i = 0; i < baseContent.length; i++) {
+      currentSegment += baseContent[i]
 
-      if (char === '\n') {
-        // Check if all breakpoints have \n here
-        const bpMap = brPositions.get(i)
-        if (!bpMap) {
-          currentSegment += '<br />'
-          continue
-        }
-
+      // Check if there's a \n after this character
+      const bpMap = brAfterChar.get(i)
+      if (bpMap) {
         const allHaveBr = [...bpMap.values()].every((v) => v)
         const noneHaveBr = [...bpMap.values()].every((v) => !v)
 
@@ -1495,9 +1509,7 @@ export class ResponsiveCodegen {
             }
           }
         }
-        // noneHaveBr case: shouldn't happen since we're on base text, skip
-      } else {
-        currentSegment += char
+        // noneHaveBr: no breakpoint has \n here, skip
       }
     }
 

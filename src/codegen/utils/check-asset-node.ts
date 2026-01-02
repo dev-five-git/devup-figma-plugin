@@ -88,16 +88,40 @@ export function checkAssetNode(
       ('fills' in node &&
         (Array.isArray(node.fills)
           ? node.fills.find((fill) => fill.visible)
-          : true))
+          : true) &&
+        !node.isAsset)
     )
       return null
     return checkAssetNode(children[0], true)
   }
   const fillterdChildren = children.filter((child) => child.visible)
 
-  // return children.every((child) => child.visible && checkAssetNode(child))
-  //   ? 'svg'
-  //   : null
+  if (
+    !node.isAsset &&
+    fillterdChildren.every(
+      (child) =>
+        child.isAsset &&
+        Number.isInteger(child.width) &&
+        Number.isInteger(child.height) &&
+        'paddingLeft' in child &&
+        Number.isInteger(child.paddingLeft) &&
+        child.paddingLeft === 0 &&
+        'paddingRight' in child &&
+        Number.isInteger(child.paddingRight) &&
+        child.paddingRight === 0 &&
+        'paddingTop' in child &&
+        Number.isInteger(child.paddingTop) &&
+        child.paddingTop === 0 &&
+        'paddingBottom' in child &&
+        Number.isInteger(child.paddingBottom) &&
+        child.paddingBottom === 0,
+    ) &&
+    'inferredAutoLayout' in node &&
+    node.inferredAutoLayout &&
+    node.inferredAutoLayout.itemSpacing > 0 &&
+    Number.isInteger(node.inferredAutoLayout.itemSpacing)
+  )
+    return null
   return fillterdChildren.every((child) => {
     const result = checkAssetNode(child, true)
     if (result === null) return false

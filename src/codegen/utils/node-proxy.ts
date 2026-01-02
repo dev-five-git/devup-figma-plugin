@@ -459,6 +459,7 @@ class NodeProxyTracker {
     }
 
     // 부모 노드도 포함 (SECTION 타입만)
+    // SECTION의 경우 모든 children을 유지 (반응형 비교를 위해)
     const parentId =
       typeof rootNode.parent === 'string' ? rootNode.parent : undefined
     if (parentId) {
@@ -466,7 +467,7 @@ class NodeProxyTracker {
         return n.id === parentId
       })
       if (parentNode && parentNode.type === 'SECTION') {
-        parentNode.children = [rootId]
+        // SECTION은 children을 그대로 유지
         result.push(parentNode)
       }
     }
