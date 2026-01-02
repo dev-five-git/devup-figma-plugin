@@ -59,6 +59,11 @@ export class Codegen {
     // Build the tree first
     const tree = await this.buildTree(node)
 
+    // If tree is null (non-visible node), return empty string
+    if (!tree) {
+      return ''
+    }
+
     // Render the tree to JSX string
     const ret = Codegen.renderTree(tree, depth)
 
@@ -84,7 +89,12 @@ export class Codegen {
    * Build a NodeTree representation of the node hierarchy.
    * This is the intermediate JSON representation that can be compared/merged.
    */
-  async buildTree(node: SceneNode = this.node): Promise<NodeTree> {
+  async buildTree(node: SceneNode = this.node): Promise<NodeTree | null> {
+    // Skip non-visible nodes (display: none) - they should not be rendered
+    // This only applies to non-root nodes, as root node should always be rendered
+    if (node !== this.node && !node.visible) {
+      return null
+    }
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
@@ -180,7 +190,10 @@ export class Codegen {
           const mainComponent = await child.getMainComponentAsync()
           if (mainComponent) await this.addComponentTree(mainComponent)
         }
-        children.push(await this.buildTree(child))
+        const childTree = await this.buildTree(child)
+        if (childTree) {
+          children.push(childTree)
+        }
       }
     }
 
@@ -208,7 +221,7 @@ export class Codegen {
    * Get the NodeTree representation of the node.
    * Builds the tree if not already built.
    */
-  async getTree(): Promise<NodeTree> {
+  async getTree(): Promise<NodeTree | null> {
     if (!this.tree) {
       this.tree = await this.buildTree(this.node)
     }
@@ -235,7 +248,10 @@ export class Codegen {
           const mainComponent = await child.getMainComponentAsync()
           if (mainComponent) await this.addComponentTree(mainComponent)
         }
-        childrenTrees.push(await this.buildTree(child))
+        const childTree = await this.buildTree(child)
+        if (childTree) {
+          childrenTrees.push(childTree)
+        }
       }
     }
 

@@ -57,6 +57,7 @@ export class ResponsiveCodegen {
       const [, node] = [...this.breakpointNodes.entries()][0]
       const codegen = new Codegen(node)
       const tree = await codegen.getTree()
+      if (!tree) return ''
       return Codegen.renderTree(tree, 0)
     }
 
@@ -65,6 +66,7 @@ export class ResponsiveCodegen {
     for (const [bp, node] of this.breakpointNodes) {
       const codegen = new Codegen(node)
       const tree = await codegen.getTree()
+      if (!tree) continue
       breakpointTrees.set(bp, tree)
     }
 
@@ -352,6 +354,7 @@ export class ResponsiveCodegen {
       for (const [bp, component] of viewportComponents) {
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
+        if (!tree) continue
 
         // Get pseudo-selector props for this specific variant group AND viewport
         // This ensures hover/active colors are correctly responsive per viewport
@@ -526,6 +529,7 @@ export class ResponsiveCodegen {
       for (const [bp, component] of viewportComponents) {
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
+        if (!tree) continue
 
         // Get pseudo-selector props for this specific variant group AND viewport
         // This ensures hover/active colors are correctly responsive per viewport
@@ -576,6 +580,7 @@ export class ResponsiveCodegen {
     // Get base props from defaultVariant
     const codegen = new Codegen(defaultComponent)
     const tree = await codegen.getTree()
+    if (!tree) return []
 
     // Get pseudo-selector props (hover, active, disabled, etc.)
     const selectorProps = await getSelectorPropsForGroup(componentSet, {})
@@ -640,6 +645,7 @@ export class ResponsiveCodegen {
 
       const codegen = new Codegen(component)
       const tree = await codegen.getTree()
+      if (!tree) continue
       // Add pseudo-selector props to tree
       if (selectorProps && Object.keys(selectorProps).length > 0) {
         Object.assign(tree.props, selectorProps)
