@@ -115,7 +115,7 @@ export class ResponsiveCodegen {
 
       // If component has position props, wrap in Box
       if (Object.keys(mergedProps).length > 0) {
-        const componentCode = renderNode(firstTree.component, {}, depth + 1, [])
+        const componentCode = renderNode(firstTree.component, {}, 0, [])
         return renderNode('Box', mergedProps, depth, [componentCode])
       }
 
@@ -139,9 +139,7 @@ export class ResponsiveCodegen {
       }
 
       const innerCode =
-        innerTrees.size > 0
-          ? this.generateMergedCode(innerTrees, depth + 1)
-          : ''
+        innerTrees.size > 0 ? this.generateMergedCode(innerTrees, 0) : ''
 
       return renderNode('Box', mergedProps, depth, innerCode ? [innerCode] : [])
     }

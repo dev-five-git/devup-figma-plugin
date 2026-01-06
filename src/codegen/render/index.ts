@@ -25,10 +25,7 @@ export function renderNode(
     }`,
     hasChildren
       ? childrenCodes
-          .map(
-            (child) =>
-              space(deps + 1) + child.split('\n').join(`\n${space(deps + 1)}`),
-          )
+          .map((child) => space(1) + child.split('\n').join(`\n${space(1)}`))
           .join('\n')
       : '',
     tail,

@@ -2948,17 +2948,17 @@ exports[`render real world component real world $ 104`] = `
       transition="0.3ms ease-out"
       transitionProperty="background,box-shadow,opacity"
     >
-      <Text
-        color="#FFF"
-        fontFamily="Pretendard"
-        fontSize="16px"
-        fontWeight="700"
-        letterSpacing="-0.04em"
-        lineHeight="1.4"
-        wordBreak="keep-all"
-      >
-        자세히 알아보기 →
-      </Text>
+  <Text
+    color="#FFF"
+    fontFamily="Pretendard"
+    fontSize="16px"
+    fontWeight="700"
+    letterSpacing="-0.04em"
+    lineHeight="1.4"
+    wordBreak="keep-all"
+  >
+    자세히 알아보기 →
+  </Text>
     </Center>
   )
 }"
@@ -3005,23 +3005,23 @@ export function Button({ size, variant }: ButtonProps) {
       transition="0.2ms ease-out"
       transitionProperty="background"
     >
-      <Text
-        color={{
-          primary: "#FFF",
-          white: "$primaryAccent"
-        }[variant]}
-        fontFamily="Noto Sans KR"
-        fontSize={{
-          Md: ["16px", null, null, null, "20px"],
-          Sm: ["14px", null, null, null, "15px"]
-        }[size]}
-        fontWeight="500"
-        letterSpacing="-0.04em"
-        lineHeight="normal"
-        wordBreak="keep-all"
-      >
-        참가 신청하기
-      </Text>
+  <Text
+    color={{
+      primary: "#FFF",
+      white: "$primaryAccent"
+    }[variant]}
+    fontFamily="Noto Sans KR"
+    fontSize={{
+      Md: ["16px", null, null, null, "20px"],
+      Sm: ["14px", null, null, null, "15px"]
+    }[size]}
+    fontWeight="500"
+    letterSpacing="-0.04em"
+    lineHeight="normal"
+    wordBreak="keep-all"
+  >
+    참가 신청하기
+  </Text>
     </Center>
   )
 }"
