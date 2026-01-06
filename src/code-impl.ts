@@ -176,9 +176,13 @@ export function registerCodegen(ctx: typeof figma) {
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
 
           // Check if node itself is SECTION or has a parent SECTION
-          const sectionNode = ResponsiveCodegen.canGenerateResponsive(node)
+          const isNodeSection = ResponsiveCodegen.canGenerateResponsive(node)
+          const parentSection = ResponsiveCodegen.hasParentSection(node)
+          const sectionNode = isNodeSection
             ? (node as SectionNode)
-            : ResponsiveCodegen.hasParentSection(node)
+            : parentSection
+          // When parent is Section (not node itself), use Page postfix and export default
+          const isParentSection = !isNodeSection && parentSection !== null
           let responsiveResult: {
             title: string
             language: 'TYPESCRIPT' | 'BASH'
@@ -190,10 +194,14 @@ export function registerCodegen(ctx: typeof figma) {
               const responsiveCodegen = new ResponsiveCodegen(sectionNode)
               const responsiveCode =
                 await responsiveCodegen.generateResponsiveCode()
-              const sectionComponentName = toPascal(sectionNode.name)
+              const baseName = toPascal(sectionNode.name)
+              const sectionComponentName = isParentSection
+                ? `${baseName}Page`
+                : baseName
               const wrappedCode = wrapComponent(
                 sectionComponentName,
                 responsiveCode,
+                { exportDefault: isParentSection },
               )
               const sectionCodes: ReadonlyArray<readonly [string, string]> = [
                 [sectionComponentName, wrappedCode],
