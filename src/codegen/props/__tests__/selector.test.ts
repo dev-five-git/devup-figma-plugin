@@ -176,6 +176,70 @@ describe('getSelectorProps', () => {
       expect(result?.variants.variant).toBe("'Default' | 'Active'")
     })
 
+    test('converts Korean 속성 to property in property names', async () => {
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: '속성1=Default',
+        children: [],
+        visible: true,
+        reactions: [],
+        variantProperties: { 속성1: 'Default' },
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'KoreanPropertySet',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          속성1: {
+            type: 'VARIANT',
+            variantOptions: ['Default', 'Active'],
+          },
+        },
+      } as unknown as ComponentSetNode
+
+      const result = await getSelectorProps(node)
+
+      expect(result).toBeDefined()
+      expect(result?.variants).toBeDefined()
+      // Korean '속성1' should be converted to 'property1'
+      expect(result?.variants.property1).toBe("'Default' | 'Active'")
+    })
+
+    test('converts 속성1 variant name to property1', async () => {
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: '속성1=Default',
+        children: [],
+        visible: true,
+        reactions: [],
+        variantProperties: { 속성1: 'Default' },
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'SpacedPropertySet',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          속성1: {
+            type: 'VARIANT',
+            variantOptions: ['Default', 'Active'],
+          },
+        },
+      } as unknown as ComponentSetNode
+
+      const result = await getSelectorProps(node)
+
+      expect(result).toBeDefined()
+      expect(result?.variants).toBeDefined()
+      // '속성1' should become 'property1'
+      expect(result?.variants.property1).toBe("'Default' | 'Active'")
+    })
+
     test('converts property name with spaces and special chars to camelCase', async () => {
       const defaultVariant = {
         type: 'COMPONENT',

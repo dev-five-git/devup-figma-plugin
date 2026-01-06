@@ -148,6 +148,53 @@ describe('registerCodegen', () => {
       ),
     ).toMatchSnapshot()
   })
+
+  it('should generate responsive code when root node is SECTION', async () => {
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: { on: mock(() => {}) },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    const sectionNode = {
+      type: 'SECTION',
+      name: 'ResponsiveSection',
+      visible: true,
+      children: [
+        {
+          type: 'FRAME',
+          name: 'MobileFrame',
+          visible: true,
+          width: 375,
+          height: 200,
+          children: [],
+          layoutMode: 'VERTICAL',
+        },
+        {
+          type: 'FRAME',
+          name: 'DesktopFrame',
+          visible: true,
+          width: 1440,
+          height: 200,
+          children: [],
+          layoutMode: 'HORIZONTAL',
+        },
+      ],
+    }
+
+    const result = await (
+      figmaMock.codegen.on as ReturnType<typeof mock>
+    ).mock.calls[0][1]({
+      node: sectionNode,
+      language: 'devup-ui',
+    })
+
+    expect(result).toMatchSnapshot()
+  })
 })
 
 it('should not register codegen if figma is not defined', async () => {
@@ -632,5 +679,132 @@ describe('registerCodegen with viewport variant', () => {
         "import { CustomButton } from '@/components/CustomButton'",
       )
     }
+  })
+
+  it('should generate componentsResponsiveCodes when FRAME contains INSTANCE of COMPONENT_SET with viewport', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    // Create a COMPONENT_SET with viewport variants
+    const componentSetNode = {
+      type: 'COMPONENT_SET',
+      name: 'ResponsiveButton',
+      visible: true,
+      componentPropertyDefinitions: {
+        viewport: {
+          type: 'VARIANT',
+          defaultValue: 'desktop',
+          variantOptions: ['mobile', 'desktop'],
+        },
+      },
+      children: [] as unknown[],
+      defaultVariant: null as unknown,
+    }
+
+    // Create COMPONENT children for the COMPONENT_SET
+    const mobileComponent = {
+      type: 'COMPONENT',
+      name: 'viewport=mobile',
+      visible: true,
+      variantProperties: { viewport: 'mobile' },
+      children: [],
+      layoutMode: 'VERTICAL',
+      width: 320,
+      height: 100,
+      parent: componentSetNode,
+      componentPropertyDefinitions: {},
+      reactions: [],
+    }
+
+    const desktopComponent = {
+      type: 'COMPONENT',
+      name: 'viewport=desktop',
+      visible: true,
+      variantProperties: { viewport: 'desktop' },
+      children: [],
+      layoutMode: 'HORIZONTAL',
+      width: 1200,
+      height: 100,
+      parent: componentSetNode,
+      componentPropertyDefinitions: {},
+      reactions: [],
+    }
+
+    componentSetNode.children = [mobileComponent, desktopComponent]
+    componentSetNode.defaultVariant = desktopComponent
+
+    // Create an INSTANCE that references the desktop component
+    const instanceNode = {
+      type: 'INSTANCE',
+      name: 'ResponsiveButton',
+      visible: true,
+      width: 1200,
+      height: 100,
+      getMainComponentAsync: async () => desktopComponent,
+    }
+
+    // Create a FRAME that contains the INSTANCE
+    const frameNode = {
+      type: 'FRAME',
+      name: 'MyFrame',
+      visible: true,
+      children: [instanceNode],
+      width: 1400,
+      height: 200,
+      layoutMode: 'VERTICAL',
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: frameNode,
+      language: 'devup-ui',
+    })
+
+    // Should include Components Responsive results
+    const responsiveResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'MyFrame - Components Responsive',
+    )
+    expect(responsiveResult).toBeDefined()
+
+    // Should also include CLI results for Components Responsive
+    const bashCLI = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title ===
+          'MyFrame - Components Responsive CLI (Bash)',
+    )
+    expect(bashCLI).toBeDefined()
+
+    const powershellCLI = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title ===
+          'MyFrame - Components Responsive CLI (PowerShell)',
+    )
+    expect(powershellCLI).toBeDefined()
   })
 })

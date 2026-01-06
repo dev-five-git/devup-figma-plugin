@@ -222,6 +222,12 @@ export function assembleNodeTree(
     }
   }
 
-  // 3. 첫 번째 노드(루트) 반환
+  // 3. parent가 없는 노드(루트) 찾아서 반환
+  for (const node of nodeMap.values()) {
+    if (!node.parent) {
+      return node
+    }
+  }
+  // fallback: 첫 번째 노드 반환
   return nodeMap.get(nodes[0].id) || nodes[0]
 }

@@ -42,19 +42,21 @@ function toTransitionPropertyName(key: string): string {
 // 속성 이름을 유효한 TypeScript 식별자로 변환
 const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
 
-function sanitizePropertyName(name: string): string {
-  // 1. 공백과 특수문자를 처리하여 camelCase로 변환
-  const result = name
-    .trim()
+export function sanitizePropertyName(name: string): string {
+  // 1. 한글 '속성'을 'property'로 변환 (공백 포함 처리: "속성1" → "property1")
+  const normalized = name.trim().replace(/속성\s*/g, 'property') // 한글 '속성' + 뒤따르는 공백을 'property'로 변환
+
+  // 2. 공백과 특수문자를 처리하여 camelCase로 변환
+  const result = normalized
     // 공백이나 특수문자 뒤의 문자를 대문자로 (camelCase 변환)
     .replace(/[\s\-_]+(.)/g, toUpperCase)
     // 숫자로 시작하면 앞에 _ 추가
     .replace(/^(\d)/, '_$1')
 
-  // 2. 유효하지 않은 문자 제거 (한글, 특수문자 등)
+  // 3. 유효하지 않은 문자 제거 (한글, 특수문자 등)
   const cleaned = result.replace(/[^\w$]/g, '')
 
-  // 3. 완전히 비어있거나 숫자로만 구성된 경우 기본값 사용
+  // 4. 완전히 비어있거나 숫자로만 구성된 경우 기본값 사용
   if (!cleaned || /^\d+$/.test(cleaned)) {
     return 'variant'
   }

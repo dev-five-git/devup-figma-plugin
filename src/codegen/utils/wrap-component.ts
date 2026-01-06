@@ -1,8 +1,17 @@
-import { paddingLeftMultiline } from './padding-left-multiline'
+import { wrapReturnStatement } from './padding-left-multiline'
 
-export function wrapComponent(name: string, code: string) {
-  const hasNewLine = code.includes('\n')
-  return `export function ${name}() {
-  return ${hasNewLine ? '(\n' : ''}${paddingLeftMultiline(code, 2)}${hasNewLine ? '\n  )' : ''}
+interface WrapComponentOptions {
+  exportDefault?: boolean
+}
+
+export function wrapComponent(
+  name: string,
+  code: string,
+  options: WrapComponentOptions = {},
+) {
+  const { exportDefault = false } = options
+  const exportKeyword = exportDefault ? 'export default' : 'export'
+  return `${exportKeyword} function ${name}() {
+  return ${wrapReturnStatement(code, 1)}
 }`
 }

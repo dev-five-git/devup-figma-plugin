@@ -271,6 +271,29 @@ describe('assembleNodeTree', () => {
     // Child should still be an object
     expect((rootNode.children?.[0] as { id: string })?.id).toBe('child-1')
   })
+
+  test('should fallback to first node when all nodes have parent set', () => {
+    // Edge case: all nodes have parent set (e.g., circular or all have parent references)
+    const nodes = [
+      {
+        id: 'node-1',
+        name: 'Node1',
+        type: 'FRAME',
+        parent: { id: 'some-parent', name: 'SomeParent', type: 'FRAME' }, // Has parent set
+      },
+      {
+        id: 'node-2',
+        name: 'Node2',
+        type: 'FRAME',
+        parent: { id: 'another-parent', name: 'AnotherParent', type: 'FRAME' }, // Has parent set
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes)
+
+    // Should fallback to the first node from nodeMap
+    expect(rootNode.id).toBe('node-1')
+  })
 })
 
 describe('setupVariableMocks', () => {

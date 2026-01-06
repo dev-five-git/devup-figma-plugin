@@ -110,7 +110,7 @@ describe('propsToString', () => {
     expect(res).toContain('[size]')
   })
 
-  test('VariantPropValue does not trigger newline separator between props', () => {
+  test('VariantPropValue triggers newline separator between props', () => {
     const variantProp = createVariantPropValue('status', {
       scroll: '10px',
       default: '20px',
@@ -120,11 +120,11 @@ describe('propsToString', () => {
       h: '100px',
       bg: 'red',
     })
-    // Props should be separated by space (not newline between props)
-    // But the VariantPropValue itself uses multiline format internally
+    // VariantPropValue should trigger multiline format for all props
     expect(res).toContain('bg="red"')
     expect(res).toContain('h="100px"')
     expect(res).toContain('[status]')
+    expect(res).toContain('\n')
   })
 
   test('handles VariantPropValue with object values', () => {
@@ -212,14 +212,24 @@ describe('propsToString', () => {
     expect(res).toContain('[size]')
   })
 
-  test('handles VariantPropValue with single entry (inline format)', () => {
-    // Single entry should use inline format
+  test('handles VariantPropValue with single entry (conditional format)', () => {
+    // Single entry should use conditional expression format
     const variantProp = createVariantPropValue('status', {
       scroll: '10px',
     })
     const res = propsToString({ w: variantProp })
-    // Single entry with primitive value uses inline format
-    expect(res).toContain('{ scroll: "10px" }[status]')
+    // Single entry with primitive value uses conditional expression format
+    expect(res).toContain('status === \'scroll\' && "10px"')
+  })
+
+  test('handles VariantPropValue with single entry containing spaces in key', () => {
+    // Single entry with space in key should use conditional expression format
+    const variantProp = createVariantPropValue('property1', {
+      'Frame 646': 'solid 1px $border',
+    })
+    const res = propsToString({ border: variantProp })
+    // Key with spaces is properly quoted in conditional expression
+    expect(res).toContain('property1 === \'Frame 646\' && "solid 1px $border"')
   })
 
   test('handles VariantPropValue with null values', () => {
@@ -278,20 +288,20 @@ describe('propsToString', () => {
     expect(res).toContain('default: "30px"')
   })
 
-  test('valueToJsxString handles number and boolean in inline format', () => {
-    // Tests lines 11-12 (number/boolean handling in valueToJsxString)
-    // Single entry avoids multiline format, so valueToJsxString is used
+  test('valueToJsxString handles number and boolean in conditional format', () => {
+    // Tests number/boolean handling in valueToJsxString
+    // Single entry uses conditional expression format
     const variantPropNumber = createVariantPropValue('status', {
       active: 42,
     })
     const res1 = propsToString({ count: variantPropNumber })
-    expect(res1).toContain('{ active: 42 }[status]')
+    expect(res1).toContain("status === 'active' && 42")
 
     const variantPropBool = createVariantPropValue('status', {
       active: true,
     })
     const res2 = propsToString({ visible: variantPropBool })
-    expect(res2).toContain('{ active: true }[status]')
+    expect(res2).toContain("status === 'active' && true")
   })
 
   test('valueToJsxString handles array in inline format', () => {
@@ -306,9 +316,9 @@ describe('propsToString', () => {
     expect(res).toContain('active:')
   })
 
-  test('valueToJsxString handles nested VariantPropValue in inline format', () => {
-    // Tests lines 19-20 (VariantPropValue handling in valueToJsxString)
-    // This creates a VariantPropValue inside another, but only 1 entry
+  test('valueToJsxString handles nested VariantPropValue in conditional format', () => {
+    // Tests VariantPropValue handling in valueToJsxString
+    // This creates a VariantPropValue inside another, but only 1 entry each
     const inner = createVariantPropValue('size', {
       sm: '10px',
     })
@@ -317,7 +327,8 @@ describe('propsToString', () => {
     })
     const res = propsToString({ w: outer })
     expect(res).toContain('[status]')
-    expect(res).toContain('[size]')
+    // Inner single-entry VariantPropValue uses conditional format
+    expect(res).toContain("size === 'sm'")
   })
 
   test('valueToJsxString handles plain object in inline format', () => {
@@ -394,5 +405,79 @@ describe('propsToString', () => {
     expect(res).toContain('_hover={')
     expect(res).toContain('"onClick":')
     expect(res).toContain('function')
+  })
+
+  test('handles VariantPropValue with keys containing spaces', () => {
+    const variantProp = createVariantPropValue('property1', {
+      'Frame 646': '$containerBackground',
+      'Frame 647': '$primaryAccent',
+    })
+    const res = propsToString({ bg: variantProp })
+    // Keys with spaces should be quoted
+    expect(res).toContain("'Frame 646': ")
+    expect(res).toContain("'Frame 647': ")
+    expect(res).toContain('[property1]')
+  })
+
+  test('handles VariantPropValue with keys containing special characters', () => {
+    const variantProp = createVariantPropValue('status', {
+      'my-value': '10px',
+      'another.value': '20px',
+    })
+    const res = propsToString({ w: variantProp })
+    expect(res).toContain("'my-value': ")
+    expect(res).toContain("'another.value': ")
+  })
+
+  test('handles VariantPropValue with valid identifier keys (no quotes)', () => {
+    const variantProp = createVariantPropValue('status', {
+      scroll: '10px',
+      _default: '20px',
+      $special: '30px',
+    })
+    const res = propsToString({ w: variantProp })
+    // Valid identifiers should NOT be quoted
+    expect(res).toContain('scroll: ')
+    expect(res).toContain('_default: ')
+    expect(res).toContain('$special: ')
+    expect(res).not.toContain("'scroll'")
+    expect(res).not.toContain("'_default'")
+    expect(res).not.toContain("'$special'")
+  })
+
+  test('typography prop uses as const for literal type inference', () => {
+    const variantProp = createVariantPropValue('property1', {
+      'Frame 646': 'body',
+      'Frame 647': 'bodyBold',
+    })
+    const res = propsToString({ typography: variantProp })
+    // typography should use as const pattern
+    expect(res).toContain('as const')
+    expect(res).toContain(')[property1]')
+    expect(res).toContain('\'Frame 646\': "body"')
+    expect(res).toContain('\'Frame 647\': "bodyBold"')
+  })
+
+  test('typography prop with single entry uses as const (not conditional)', () => {
+    const variantProp = createVariantPropValue('property1', {
+      'Frame 646': 'body',
+    })
+    const res = propsToString({ typography: variantProp })
+    // Single entry typography should still use object pattern with as const
+    expect(res).toContain('as const')
+    expect(res).toContain('[property1]')
+    // Should NOT use conditional expression for typography
+    expect(res).not.toContain("property1 === 'Frame 646'")
+  })
+
+  test('non-typography prop does not use as const', () => {
+    const variantProp = createVariantPropValue('property1', {
+      'Frame 646': 'body',
+      'Frame 647': 'bodyBold',
+    })
+    const res = propsToString({ fontFamily: variantProp })
+    // non-typography props should NOT use as const
+    expect(res).not.toContain('as const')
+    expect(res).toContain('[property1]')
   })
 })

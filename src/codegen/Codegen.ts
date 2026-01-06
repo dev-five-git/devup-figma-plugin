@@ -6,6 +6,7 @@ import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
+import { extractInstanceVariantProps } from './utils/extract-instance-variant-props'
 import {
   getDevupComponentByNode,
   getDevupComponentByProps,
@@ -53,6 +54,14 @@ export class Codegen {
   }
 
   /**
+   * Get the component nodes (SceneNode keys from components Map).
+   * Useful for generating responsive codes for each component.
+   */
+  getComponentNodes() {
+    return Array.from(this.components.keys())
+  }
+
+  /**
    * Run the codegen process: build tree and render to JSX string.
    */
   async run(node: SceneNode = this.node, depth: number = 0): Promise<string> {
@@ -71,7 +80,7 @@ export class Codegen {
     for (const [compNode, compTree] of this.componentTrees) {
       if (!this.components.has(compNode)) {
         this.components.set(compNode, {
-          code: Codegen.renderTree(compTree.tree, 2),
+          code: Codegen.renderTree(compTree.tree, 0),
           variants: compTree.variants,
         })
       }
@@ -130,6 +139,9 @@ export class Codegen {
 
       const componentName = getComponentName(mainComponent || node)
 
+      // Extract variant props from instance's componentProperties
+      const variantProps = extractInstanceVariantProps(node)
+
       // Check if needs position wrapper
       if (props.pos) {
         return {
@@ -150,7 +162,7 @@ export class Codegen {
           children: [
             {
               component: componentName,
-              props: {},
+              props: variantProps,
               children: [],
               nodeType: node.type,
               nodeName: node.name,
@@ -164,7 +176,7 @@ export class Codegen {
 
       return {
         component: componentName,
-        props: {},
+        props: variantProps,
         children: [],
         nodeType: node.type,
         nodeName: node.name,
