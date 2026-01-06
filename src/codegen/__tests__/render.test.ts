@@ -37,6 +37,93 @@ describe('renderNode', () => {
   })
 })
 
+/**
+ * Indentation format tests to prevent regression.
+ *
+ * Expected indentation pattern:
+ * - Function body: 2 spaces
+ * - Inside return (): 4 spaces (baseDepth + 1 = 2, so 2 * 2 = 4)
+ * - Nested children: +2 spaces per level (6, 8, 10, ...)
+ * - Props on multiple lines: +2 spaces from component tag
+ */
+describe('renderComponent indentation', () => {
+  test('single line JSX stays on same line as return', () => {
+    const result = renderComponent('Button', '<Button />', {})
+    expect(result).toBe(`export function Button() {
+  return <Button />
+}`)
+  })
+
+  test('multiline JSX has 4 spaces inside return ()', () => {
+    const code = `<Box>
+  <Text />
+</Box>`
+    const result = renderComponent('Card', code, {})
+
+    // Verify indentation pattern
+    const lines = result.split('\n')
+    expect(lines[2]).toBe('    <Box>') // 4 spaces
+    expect(lines[3]).toBe('      <Text />') // 6 spaces
+    expect(lines[4]).toBe('    </Box>') // 4 spaces
+  })
+
+  test('deeply nested children increment by 2 spaces each level', () => {
+    const code = `<VStack>
+  <Flex>
+    <Box>
+      <Text />
+    </Box>
+  </Flex>
+</VStack>`
+    const result = renderComponent('DeepNested', code, {})
+
+    const lines = result.split('\n')
+    expect(lines[2]).toBe('    <VStack>') // 4 spaces (level 1)
+    expect(lines[3]).toBe('      <Flex>') // 6 spaces (level 2)
+    expect(lines[4]).toBe('        <Box>') // 8 spaces (level 3)
+    expect(lines[5]).toBe('          <Text />') // 10 spaces (level 4)
+    expect(lines[6]).toBe('        </Box>') // 8 spaces
+    expect(lines[7]).toBe('      </Flex>') // 6 spaces
+    expect(lines[8]).toBe('    </VStack>') // 4 spaces
+  })
+
+  test('multiline props are indented correctly', () => {
+    // When renderNode produces multiline props (5+ props or complex values)
+    const code = `<Center
+  bg="red"
+  color="white"
+  p="10px"
+  m="5px"
+  w="100%"
+>
+  <Text />
+</Center>`
+    const result = renderComponent('MultiProps', code, {})
+
+    const lines = result.split('\n')
+    expect(lines[2]).toBe('    <Center') // 4 spaces
+    expect(lines[3]).toBe('      bg="red"') // 6 spaces (props)
+    expect(lines[9]).toBe('      <Text />') // 6 spaces (child)
+    expect(lines[10]).toBe('    </Center>') // 4 spaces
+  })
+
+  test('component with variants maintains correct indentation', () => {
+    const code = `<Button>
+  <Text />
+</Button>`
+    const result = renderComponent('MyButton', code, {
+      variant: '"primary" | "secondary"',
+    })
+
+    expect(result).toContain('export interface MyButtonProps')
+    const lines = result.split('\n')
+    // Line 0-2: interface, Line 3: empty, Line 4-5: function + return, Line 6+: JSX
+    expect(lines[6]).toBe('    <Button>') // 4 spaces
+    expect(lines[7]).toBe('      <Text />') // 6 spaces
+    expect(lines[8]).toBe('    </Button>') // 4 spaces
+  })
+})
+
 describe('renderComponent', () => {
   test.each([
     {
