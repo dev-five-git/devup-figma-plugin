@@ -1,10 +1,12 @@
 import { Codegen } from './codegen/Codegen'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
+import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
 import { getComponentName } from './utils'
+import { toPascal } from './utils/to-pascal'
 
 const DEVUP_COMPONENTS = [
   'Center',
@@ -140,25 +142,80 @@ export function registerCodegen(ctx: typeof figma) {
               )
           }
 
+          // Generate responsive codes for components extracted from the page
+          let componentsResponsiveCodes: ReadonlyArray<
+            readonly [string, string]
+          > = []
+          if (componentsCodes.length > 0) {
+            const componentNodes = codegen.getComponentNodes()
+            const processedComponentSets = new Set<string>()
+            const responsiveResults: Array<readonly [string, string]> = []
+
+            for (const componentNode of componentNodes) {
+              // Check if the component belongs to a COMPONENT_SET
+              const parentSet =
+                componentNode.type === 'COMPONENT' &&
+                componentNode.parent?.type === 'COMPONENT_SET'
+                  ? (componentNode.parent as ComponentSetNode)
+                  : null
+
+              if (parentSet && !processedComponentSets.has(parentSet.id)) {
+                processedComponentSets.add(parentSet.id)
+                const componentName = getComponentName(parentSet)
+                const responsiveCodes =
+                  await ResponsiveCodegen.generateVariantResponsiveComponents(
+                    parentSet,
+                    componentName,
+                  )
+                responsiveResults.push(...responsiveCodes)
+              }
+            }
+            componentsResponsiveCodes = responsiveResults
+          }
+
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
 
-          const parentSection = ResponsiveCodegen.hasParentSection(node)
+          // Check if node itself is SECTION or has a parent SECTION
+          const sectionNode = ResponsiveCodegen.canGenerateResponsive(node)
+            ? (node as SectionNode)
+            : ResponsiveCodegen.hasParentSection(node)
           let responsiveResult: {
             title: string
-            language: 'TYPESCRIPT'
+            language: 'TYPESCRIPT' | 'BASH'
             code: string
           }[] = []
 
-          if (parentSection) {
+          if (sectionNode) {
             try {
-              const responsiveCodegen = new ResponsiveCodegen(parentSection)
+              const responsiveCodegen = new ResponsiveCodegen(sectionNode)
               const responsiveCode =
                 await responsiveCodegen.generateResponsiveCode()
+              const sectionComponentName = toPascal(sectionNode.name)
+              const wrappedCode = wrapComponent(
+                sectionComponentName,
+                responsiveCode,
+              )
+              const sectionCodes: ReadonlyArray<readonly [string, string]> = [
+                [sectionComponentName, wrappedCode],
+              ]
+              const importStatement = generateImportStatements(sectionCodes)
+              const fullCode = importStatement + wrappedCode
+
               responsiveResult = [
                 {
-                  title: `${parentSection.name} - Responsive`,
+                  title: `${sectionNode.name} - Responsive`,
                   language: 'TYPESCRIPT' as const,
-                  code: responsiveCode,
+                  code: fullCode,
+                },
+                {
+                  title: `${sectionNode.name} - Responsive CLI (Bash)`,
+                  language: 'BASH' as const,
+                  code: generateBashCLI(sectionCodes),
+                },
+                {
+                  title: `${sectionNode.name} - Responsive CLI (PowerShell)`,
+                  language: 'BASH' as const,
+                  code: generatePowerShellCLI(sectionCodes),
                 },
               ]
             } catch (e) {
@@ -201,6 +258,27 @@ export function registerCodegen(ctx: typeof figma) {
                     code: generatePowerShellCLI(componentsCodes),
                   },
                 ] as const)
+              : []),
+            ...(componentsResponsiveCodes.length > 0
+              ? [
+                  {
+                    title: `${node.name} - Components Responsive`,
+                    language: 'TYPESCRIPT' as const,
+                    code: componentsResponsiveCodes
+                      .map((code) => code[1])
+                      .join('\n\n'),
+                  },
+                  {
+                    title: `${node.name} - Components Responsive CLI (Bash)`,
+                    language: 'BASH' as const,
+                    code: generateBashCLI(componentsResponsiveCodes),
+                  },
+                  {
+                    title: `${node.name} - Components Responsive CLI (PowerShell)`,
+                    language: 'BASH' as const,
+                    code: generatePowerShellCLI(componentsResponsiveCodes),
+                  },
+                ]
               : []),
             ...(responsiveComponentsCodes.length > 0
               ? [

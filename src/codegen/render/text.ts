@@ -105,7 +105,7 @@ export async function renderText(node: TextNode): Promise<{
         let textComponent: 'ul' | 'ol' | null = null
 
         if (seg.listOptions.type === 'NONE') {
-          text = text.map((line) => line.replaceAll('\n', '<br />'))
+          text = text.map((line) => line.replace(/\r\n|\r|\n/g, '<br />'))
         } else {
           switch (seg.listOptions.type) {
             case 'UNORDERED': {

@@ -53,6 +53,14 @@ export class Codegen {
   }
 
   /**
+   * Get the component nodes (SceneNode keys from components Map).
+   * Useful for generating responsive codes for each component.
+   */
+  getComponentNodes() {
+    return Array.from(this.components.keys())
+  }
+
+  /**
    * Run the codegen process: build tree and render to JSX string.
    */
   async run(node: SceneNode = this.node, depth: number = 0): Promise<string> {

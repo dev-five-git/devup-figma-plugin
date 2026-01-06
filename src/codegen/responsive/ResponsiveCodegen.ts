@@ -1,5 +1,8 @@
 import { Codegen } from '../Codegen'
-import { getSelectorPropsForGroup } from '../props/selector'
+import {
+  getSelectorPropsForGroup,
+  sanitizePropertyName,
+} from '../props/selector'
 import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
 import { paddingLeftMultiline } from '../utils/padding-left-multiline'
@@ -283,7 +286,8 @@ export class ResponsiveCodegen {
       componentSet.componentPropertyDefinitions,
     )) {
       if (name.toLowerCase() !== 'viewport' && definition.type === 'VARIANT') {
-        variants[name] =
+        const sanitizedName = sanitizePropertyName(name)
+        variants[sanitizedName] =
           definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') || ''
       }
     }
@@ -410,6 +414,8 @@ export class ResponsiveCodegen {
     // Get all variant keys excluding viewport and effect
     const otherVariantKeys: string[] = []
     const variants: Record<string, string> = {}
+    // Map from original name to sanitized name
+    const variantKeyToSanitized: Record<string, string> = {}
     for (const [name, definition] of Object.entries(
       componentSet.componentPropertyDefinitions,
     )) {
@@ -419,8 +425,10 @@ export class ResponsiveCodegen {
         // viewport is handled by responsive merging
         // effect is handled by getSelectorProps (pseudo-selectors like _hover, _active)
         if (lowerName !== 'viewport' && lowerName !== 'effect') {
-          otherVariantKeys.push(name)
-          variants[name] =
+          const sanitizedName = sanitizePropertyName(name)
+          otherVariantKeys.push(name) // Keep original for Figma data access
+          variantKeyToSanitized[name] = sanitizedName
+          variants[sanitizedName] =
             definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
             ''
         }
@@ -457,23 +465,40 @@ export class ResponsiveCodegen {
     // Group by ALL variant keys combined, then by viewport within each group
     // e.g., for size+variant: { "Md|primary" => { "mobile" => Component, "pc" => Component }, ... }
 
-    // Build a composite key from all variant values
+    // Reverse mapping from sanitized to original names
+    const sanitizedToOriginal: Record<string, string> = {}
+    for (const [original, sanitized] of Object.entries(variantKeyToSanitized)) {
+      sanitizedToOriginal[sanitized] = original
+    }
+
+    // Sanitized variant keys for code generation
+    const sanitizedVariantKeys = otherVariantKeys.map(
+      (key) => variantKeyToSanitized[key],
+    )
+
+    // Build a composite key from all variant values (using sanitized names)
     const buildCompositeKey = (
       variantProps: Record<string, string>,
     ): string => {
       return otherVariantKeys
-        .map((key) => `${key}=${variantProps[key] || '__default__'}`)
+        .map((key) => {
+          const sanitizedKey = variantKeyToSanitized[key]
+          return `${sanitizedKey}=${variantProps[key] || '__default__'}`
+        })
         .join('|')
     }
 
-    // Parse composite key back to variant values
-    const parseCompositeKey = (
+    // Parse composite key to original Figma variant names (for getSelectorPropsForGroup)
+    const parseCompositeKeyToOriginal = (
       compositeKey: string,
     ): Record<string, string> => {
       const result: Record<string, string> = {}
       for (const part of compositeKey.split('|')) {
-        const [key, value] = part.split('=')
-        result[key] = value
+        const [sanitizedKey, value] = part.split('=')
+        const originalKey = sanitizedToOriginal[sanitizedKey]
+        if (originalKey) {
+          result[originalKey] = value
+        }
       }
       return result
     }
@@ -520,7 +545,8 @@ export class ResponsiveCodegen {
     >()
 
     for (const [compositeKey, viewportComponents] of byCompositeVariant) {
-      const variantFilter = parseCompositeKey(compositeKey)
+      // Use original names for Figma data access
+      const variantFilter = parseCompositeKeyToOriginal(compositeKey)
 
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
@@ -548,7 +574,7 @@ export class ResponsiveCodegen {
 
     // Step 2: Merge across variant values, handling multiple variant keys
     const mergedCode = responsiveCodegen.generateMultiVariantMergedCode(
-      otherVariantKeys,
+      sanitizedVariantKeys,
       responsivePropsByComposite,
       2,
     )
@@ -649,8 +675,10 @@ export class ResponsiveCodegen {
 
     // Generate merged code with variant conditionals
     const responsiveCodegen = new ResponsiveCodegen(null)
+    // Use sanitized variant key for code generation (e.g., "속성 1" -> "property1")
+    const sanitizedPrimaryVariantKey = sanitizePropertyName(primaryVariantKey)
     const mergedCode = responsiveCodegen.generateVariantOnlyMergedCode(
-      primaryVariantKey,
+      sanitizedPrimaryVariantKey,
       treesByVariant,
       2,
     )
