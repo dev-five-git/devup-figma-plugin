@@ -1,6 +1,6 @@
 import { getComponentName } from '../utils'
 import { getProps } from './props'
-import { getSelectorProps } from './props/selector'
+import { getSelectorProps, sanitizePropertyName } from './props/selector'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
@@ -79,7 +79,7 @@ export class Codegen {
     for (const [compNode, compTree] of this.componentTrees) {
       if (!this.components.has(compNode)) {
         this.components.set(compNode, {
-          code: Codegen.renderTree(compTree.tree, 2),
+          code: Codegen.renderTree(compTree.tree, 0),
           variants: compTree.variants,
         })
       }
@@ -138,6 +138,17 @@ export class Codegen {
 
       const componentName = getComponentName(mainComponent || node)
 
+      // Extract variant props from instance's componentProperties
+      const variantProps: Record<string, string> = {}
+      if (node.componentProperties) {
+        for (const [key, prop] of Object.entries(node.componentProperties)) {
+          if (prop.type === 'VARIANT') {
+            const sanitizedKey = sanitizePropertyName(key)
+            variantProps[sanitizedKey] = String(prop.value)
+          }
+        }
+      }
+
       // Check if needs position wrapper
       if (props.pos) {
         return {
@@ -158,7 +169,7 @@ export class Codegen {
           children: [
             {
               component: componentName,
-              props: {},
+              props: variantProps,
               children: [],
               nodeType: node.type,
               nodeName: node.name,
@@ -172,7 +183,7 @@ export class Codegen {
 
       return {
         component: componentName,
-        props: {},
+        props: variantProps,
         children: [],
         nodeType: node.type,
         nodeName: node.name,

@@ -29,7 +29,7 @@ describe('renderNode', () => {
       props: { p: '8px' },
       deps: 1,
       children: ['<Text />'] as string[],
-      expected: '  <Box p="8px">\n  <Text />\n  </Box>',
+      expected: '  <Box p="8px">\n    <Text />\n  </Box>',
     },
   ])('$title', ({ component, props, deps, children, expected }) => {
     const result = renderNode(component, props, deps, children)
@@ -61,9 +61,9 @@ describe('renderComponent', () => {
 
 export function Banner({ size }: BannerProps) {
   return (
-<Box>
-  <Text />
-</Box>
+    <Box>
+      <Text />
+    </Box>
   )
 }`,
     },

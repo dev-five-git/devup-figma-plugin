@@ -1,7 +1,10 @@
 import { space } from '../../utils'
 import { filterPropsWithComponent } from '../props'
 import { isDefaultProp } from '../utils/is-default-prop'
-import { paddingLeftMultiline } from '../utils/padding-left-multiline'
+import {
+  paddingLeftMultiline,
+  wrapReturnStatement,
+} from '../utils/padding-left-multiline'
 import { propsToString } from '../utils/props-to-str'
 
 export function renderNode(
@@ -25,7 +28,7 @@ export function renderNode(
     }`,
     hasChildren
       ? childrenCodes
-          .map((child) => space(1) + child.split('\n').join(`\n${space(1)}`))
+          .map((child) => paddingLeftMultiline(child, deps + 1))
           .join('\n')
       : '',
     tail,
@@ -55,14 +58,7 @@ ${Object.entries(filteredVariants)
     ? `{ ${Object.keys(filteredVariants).join(', ')} }: ${component}Props`
     : ''
   return `${interfaceCode}export function ${component}(${propsParam}) {
-  return ${
-    code.includes('\n')
-      ? `(\n${code
-          .split('\n')
-          .map((line) => line)
-          .join('\n')}\n${space(1)})`
-      : code.trim().replace(/\s+/g, ' ')
-  }
+  return ${wrapReturnStatement(code, 1)}
 }`
 }
 

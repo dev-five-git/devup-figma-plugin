@@ -375,7 +375,7 @@ export class ResponsiveCodegen {
       // Generate merged responsive code
       const mergedCode = responsiveCodegen.generateMergedCode(
         treesByBreakpoint,
-        2,
+        0,
       )
 
       results.push([
@@ -574,7 +574,7 @@ export class ResponsiveCodegen {
     const mergedCode = responsiveCodegen.generateMultiVariantMergedCode(
       sanitizedVariantKeys,
       responsivePropsByComposite,
-      2,
+      0,
     )
 
     const result: Array<readonly [string, string]> = [
@@ -608,7 +608,7 @@ export class ResponsiveCodegen {
     }
 
     // Render the tree to JSX
-    const code = Codegen.renderTree(tree, 2)
+    const code = Codegen.renderTree(tree, 0)
 
     // No variant props needed since effect is handled via pseudo-selectors
     const result: Array<readonly [string, string]> = [
@@ -678,7 +678,7 @@ export class ResponsiveCodegen {
     const mergedCode = responsiveCodegen.generateVariantOnlyMergedCode(
       sanitizedPrimaryVariantKey,
       treesByVariant,
-      2,
+      0,
     )
 
     const result: Array<readonly [string, string]> = [
