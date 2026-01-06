@@ -1416,6 +1416,103 @@ describe('ResponsiveCodegen', () => {
       expect(code).not.toMatch(/"outline":\{[^}]*"primary":/)
     })
 
+    it('handles effect-only component set (no viewport, no other variants)', async () => {
+      // Component set with only effect variant (default, hover, active)
+      // This triggers generateEffectOnlyComponents
+      const createComponent = (
+        effect: string,
+        bgColor: { r: number; g: number; b: number },
+      ) =>
+        ({
+          type: 'COMPONENT',
+          name: `effect=${effect}`,
+          variantProperties: { effect },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 200,
+          height: 50,
+          fills: [
+            {
+              type: 'SOLID',
+              visible: true,
+              color: bgColor,
+              opacity: 1,
+            },
+          ],
+          reactions: [],
+        }) as unknown as ComponentNode
+
+      const defaultColor = { r: 0.5, g: 0.5, b: 0.5 } // #808080
+      const hoverColor = { r: 0.6, g: 0.6, b: 0.6 } // #999999
+      const activeColor = { r: 0.4, g: 0.4, b: 0.4 } // #666666
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'EffectOnlyButton',
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            defaultValue: 'default',
+            variantOptions: ['default', 'hover', 'active'],
+          },
+        },
+        children: [
+          createComponent('default', defaultColor),
+          createComponent('hover', hoverColor),
+          createComponent('active', activeColor),
+        ],
+        defaultVariant: null as ComponentNode | null,
+      } as unknown as ComponentSetNode
+
+      // Set default variant
+      ;(componentSet as { defaultVariant: ComponentNode }).defaultVariant =
+        componentSet.children[0] as ComponentNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'EffectOnlyButton',
+        )
+
+      expect(result.length).toBe(1)
+      expect(result[0][0]).toBe('EffectOnlyButton')
+
+      const code = result[0][1]
+
+      // Should NOT have effect in the interface (handled as pseudo-selectors)
+      expect(code).not.toMatch(/effect:\s*['"]/)
+      // Should have _hover pseudo-selector
+      expect(code).toContain('_hover')
+      // Should have _active pseudo-selector
+      expect(code).toContain('_active')
+    })
+
+    it('handles effect-only component set returning empty when no defaultVariant', async () => {
+      // Component set with only effect variant but no defaultVariant
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'NoDefaultVariant',
+        componentPropertyDefinitions: {
+          effect: {
+            type: 'VARIANT',
+            defaultValue: 'default',
+            variantOptions: ['default', 'hover'],
+          },
+        },
+        children: [],
+        defaultVariant: null,
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'NoDefaultVariant',
+        )
+
+      // Should return empty array when no defaultVariant
+      expect(result).toEqual([])
+    })
+
     it('prefers variant key with fewer entries via createNestedVariantProp', () => {
       // When a prop exists only in white variant (for both Md and Sm sizes),
       // using 'variant' as outer key produces 1 entry: { white: "..." }[variant]
@@ -1604,6 +1701,397 @@ describe('ResponsiveCodegen', () => {
       expect(result[0]).toContain('Box')
       expect(result[0]).toContain('as="br"')
       expect(result[0]).toContain('display')
+    })
+
+    it('returns empty array when no breakpoints have text', () => {
+      const treesByBreakpoint = new Map<
+        import('../index').BreakpointKey,
+        NodeTree
+      >([
+        [
+          'pc',
+          {
+            component: 'Text',
+            props: {},
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Text',
+            textChildren: [], // Empty textChildren
+          },
+        ],
+      ])
+
+      const codegen = new ResponsiveCodegen(null)
+      const result = (
+        codegen as unknown as {
+          mergeTextChildrenAcrossBreakpoints: (
+            trees: Map<import('../index').BreakpointKey, NodeTree>,
+          ) => string[]
+        }
+      ).mergeTextChildrenAcrossBreakpoints(treesByBreakpoint)
+
+      // Should return empty array or first text children (which is empty)
+      expect(result).toEqual([])
+    })
+  })
+
+  describe('calculateNestingCost', () => {
+    it('returns 0 for scalar values', () => {
+      const generator = new ResponsiveCodegen(null)
+      const result = (
+        generator as unknown as {
+          calculateNestingCost: (value: unknown) => number
+        }
+      ).calculateNestingCost('scalar')
+
+      expect(result).toBe(0)
+    })
+
+    it('returns 0 for null values', () => {
+      const generator = new ResponsiveCodegen(null)
+      const result = (
+        generator as unknown as {
+          calculateNestingCost: (value: unknown) => number
+        }
+      ).calculateNestingCost(null)
+
+      expect(result).toBe(0)
+    })
+
+    it('returns 1 for simple variant prop', () => {
+      const generator = new ResponsiveCodegen(null)
+      const result = (
+        generator as unknown as {
+          calculateNestingCost: (value: unknown) => number
+        }
+      ).calculateNestingCost({
+        __variantProp: true,
+        variantKey: 'size',
+        values: { Md: 'value1', Sm: 'value2' },
+      })
+
+      expect(result).toBe(1)
+    })
+
+    it('returns 2 for nested variant prop', () => {
+      const generator = new ResponsiveCodegen(null)
+      const result = (
+        generator as unknown as {
+          calculateNestingCost: (value: unknown) => number
+        }
+      ).calculateNestingCost({
+        __variantProp: true,
+        variantKey: 'variant',
+        values: {
+          primary: {
+            __variantProp: true,
+            variantKey: 'size',
+            values: { Md: 'value1', Sm: 'value2' },
+          },
+          white: 'scalar',
+        },
+      })
+
+      expect(result).toBe(2)
+    })
+  })
+
+  describe('generateVariantOnlyMergedCode with textChildren', () => {
+    it('handles TEXT nodes with textChildren', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'scroll',
+          {
+            component: 'Text',
+            props: { fontSize: '14px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Hello'],
+          },
+        ],
+        [
+          'default',
+          {
+            component: 'Text',
+            props: { fontSize: '16px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Hello'],
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'status',
+        treesByVariant,
+        0,
+      )
+
+      // Should render Text component with textChildren
+      expect(result).toContain('Text')
+      expect(result).toContain('Hello')
+    })
+  })
+
+  describe('generateNestedVariantMergedCode with textChildren', () => {
+    it('handles TEXT nodes with textChildren in nested variant', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByComposite = new Map<string, NodeTree>([
+        [
+          'size=Md|variant=primary',
+          {
+            component: 'Text',
+            props: { fontSize: '14px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Button'],
+          },
+        ],
+        [
+          'size=Sm|variant=primary',
+          {
+            component: 'Text',
+            props: { fontSize: '12px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Button'],
+          },
+        ],
+      ])
+
+      const result = (
+        generator as unknown as {
+          generateNestedVariantMergedCode: (
+            variantKeys: string[],
+            trees: Map<string, NodeTree>,
+            depth: number,
+          ) => string
+        }
+      ).generateNestedVariantMergedCode(
+        ['size', 'variant'],
+        treesByComposite,
+        0,
+      )
+
+      // Should render Text component with textChildren
+      expect(result).toContain('Text')
+      expect(result).toContain('Button')
+    })
+  })
+
+  describe('generateMergedCode with isComponent', () => {
+    it('handles component nodes without position props', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByBreakpoint = new Map<
+        import('../index').BreakpointKey,
+        NodeTree
+      >([
+        [
+          'mobile',
+          {
+            component: 'Button',
+            props: { variant: 'primary' },
+            children: [],
+            nodeType: 'INSTANCE',
+            nodeName: 'Button',
+            isComponent: true,
+          },
+        ],
+        [
+          'pc',
+          {
+            component: 'Button',
+            props: { variant: 'primary' },
+            children: [],
+            nodeType: 'INSTANCE',
+            nodeName: 'Button',
+            isComponent: true,
+          },
+        ],
+      ])
+
+      const result = generator.generateMergedCode(treesByBreakpoint, 0)
+
+      // Should render component without Box wrapper since no position props
+      expect(result).toContain('Button')
+    })
+
+    it('handles component nodes with position props', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByBreakpoint = new Map<
+        import('../index').BreakpointKey,
+        NodeTree
+      >([
+        [
+          'mobile',
+          {
+            component: 'Button',
+            props: { variant: 'primary', pos: 'absolute', top: '10px' },
+            children: [],
+            nodeType: 'INSTANCE',
+            nodeName: 'Button',
+            isComponent: true,
+          },
+        ],
+        [
+          'pc',
+          {
+            component: 'Button',
+            props: { variant: 'primary', pos: 'absolute', top: '20px' },
+            children: [],
+            nodeType: 'INSTANCE',
+            nodeName: 'Button',
+            isComponent: true,
+          },
+        ],
+      ])
+
+      const result = generator.generateMergedCode(treesByBreakpoint, 0)
+
+      // Should render Box wrapper with position props
+      expect(result).toContain('Box')
+      expect(result).toContain('Button')
+    })
+
+    it('handles component nodes with reserved variant keys (effect, viewport)', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByBreakpoint = new Map<
+        import('../index').BreakpointKey,
+        NodeTree
+      >([
+        [
+          'mobile',
+          {
+            component: 'Button',
+            props: { variant: 'primary', effect: 'hover', viewport: 'mobile' },
+            children: [],
+            nodeType: 'INSTANCE',
+            nodeName: 'Button',
+            isComponent: true,
+          },
+        ],
+        [
+          'pc',
+          {
+            component: 'Button',
+            props: { variant: 'primary', effect: 'default', viewport: 'pc' },
+            children: [],
+            nodeType: 'INSTANCE',
+            nodeName: 'Button',
+            isComponent: true,
+          },
+        ],
+      ])
+
+      const result = generator.generateMergedCode(treesByBreakpoint, 0)
+
+      // Should filter out effect and viewport from variant props
+      expect(result).toContain('Button')
+      expect(result).toContain('variant')
+      // effect and viewport should NOT be in the output props
+      expect(result).not.toContain('"effect"')
+      expect(result).not.toContain('"viewport"')
+    })
+  })
+
+  describe('generateMergedCode with WRAPPER nodeType', () => {
+    it('handles WRAPPER nodes with inner component', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByBreakpoint = new Map<
+        import('../index').BreakpointKey,
+        NodeTree
+      >([
+        [
+          'mobile',
+          {
+            component: 'Box',
+            props: { pos: 'absolute', top: '10px' },
+            children: [
+              {
+                component: 'Button',
+                props: { variant: 'primary' },
+                children: [],
+                nodeType: 'INSTANCE',
+                nodeName: 'Button',
+                isComponent: true,
+              },
+            ],
+            nodeType: 'WRAPPER',
+            nodeName: 'Wrapper',
+          },
+        ],
+        [
+          'pc',
+          {
+            component: 'Box',
+            props: { pos: 'absolute', top: '20px' },
+            children: [
+              {
+                component: 'Button',
+                props: { variant: 'primary' },
+                children: [],
+                nodeType: 'INSTANCE',
+                nodeName: 'Button',
+                isComponent: true,
+              },
+            ],
+            nodeType: 'WRAPPER',
+            nodeName: 'Wrapper',
+          },
+        ],
+      ])
+
+      const result = generator.generateMergedCode(treesByBreakpoint, 0)
+
+      // Should render Box wrapper with inner component
+      expect(result).toContain('Box')
+      expect(result).toContain('Button')
+    })
+
+    it('handles WRAPPER nodes without children', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByBreakpoint = new Map<
+        import('../index').BreakpointKey,
+        NodeTree
+      >([
+        [
+          'mobile',
+          {
+            component: 'Box',
+            props: { pos: 'absolute' },
+            children: [],
+            nodeType: 'WRAPPER',
+            nodeName: 'Wrapper',
+          },
+        ],
+        [
+          'pc',
+          {
+            component: 'Box',
+            props: { pos: 'absolute' },
+            children: [],
+            nodeType: 'WRAPPER',
+            nodeName: 'Wrapper',
+          },
+        ],
+      ])
+
+      const result = generator.generateMergedCode(treesByBreakpoint, 0)
+
+      // Should render Box without inner children
+      expect(result).toContain('Box')
     })
   })
 })

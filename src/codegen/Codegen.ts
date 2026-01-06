@@ -1,11 +1,12 @@
 import { getComponentName } from '../utils'
 import { getProps } from './props'
-import { getSelectorProps, sanitizePropertyName } from './props/selector'
+import { getSelectorProps } from './props/selector'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
+import { extractInstanceVariantProps } from './utils/extract-instance-variant-props'
 import {
   getDevupComponentByNode,
   getDevupComponentByProps,
@@ -139,15 +140,7 @@ export class Codegen {
       const componentName = getComponentName(mainComponent || node)
 
       // Extract variant props from instance's componentProperties
-      const variantProps: Record<string, string> = {}
-      if (node.componentProperties) {
-        for (const [key, prop] of Object.entries(node.componentProperties)) {
-          if (prop.type === 'VARIANT') {
-            const sanitizedKey = sanitizePropertyName(key)
-            variantProps[sanitizedKey] = String(prop.value)
-          }
-        }
-      }
+      const variantProps = extractInstanceVariantProps(node)
 
       // Check if needs position wrapper
       if (props.pos) {

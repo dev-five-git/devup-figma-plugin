@@ -99,6 +99,19 @@ export class ResponsiveCodegen {
 
     // If node is INSTANCE or COMPONENT, render as component reference
     if (firstTree.isComponent) {
+      // Position props that may need responsive merging
+      const positionPropKeys = [
+        'pos',
+        'top',
+        'left',
+        'right',
+        'bottom',
+        'display',
+      ]
+
+      // Reserved variant keys that should not be passed as props (internal use only)
+      const reservedVariantKeys = ['effect', 'viewport']
+
       // For components, we might still need position props
       const propsMap = new Map<BreakpointKey, Props>()
       for (const [bp, tree] of treesByBreakpoint) {
@@ -111,15 +124,35 @@ export class ResponsiveCodegen {
         if (tree.props.display) posProps.display = tree.props.display
         propsMap.set(bp, posProps)
       }
-      const mergedProps = mergePropsToResponsive(propsMap)
+      const mergedPositionProps = mergePropsToResponsive(propsMap)
 
-      // If component has position props, wrap in Box
-      if (Object.keys(mergedProps).length > 0) {
-        const componentCode = renderNode(firstTree.component, {}, 0, [])
-        return renderNode('Box', mergedProps, depth, [componentCode])
+      // Extract variant props (non-position props) - these are Instance variant values
+      // They should be the same across breakpoints, so just use firstTree
+      // Filter out reserved variant keys (effect, viewport) which are used internally
+      const variantProps: Props = {}
+      for (const [key, value] of Object.entries(firstTree.props)) {
+        const lowerKey = key.toLowerCase()
+        const isPositionProp = positionPropKeys.includes(key)
+        const isReservedVariant = reservedVariantKeys.some(
+          (r) => lowerKey === r,
+        )
+        if (!isPositionProp && !isReservedVariant) {
+          variantProps[key] = value
+        }
       }
 
-      return renderNode(firstTree.component, {}, depth, [])
+      // If component has position props, wrap in Box
+      if (Object.keys(mergedPositionProps).length > 0) {
+        const componentCode = renderNode(
+          firstTree.component,
+          variantProps,
+          0,
+          [],
+        )
+        return renderNode('Box', mergedPositionProps, depth, [componentCode])
+      }
+
+      return renderNode(firstTree.component, variantProps, depth, [])
     }
 
     // Handle WRAPPER nodes (position wrapper for components)
