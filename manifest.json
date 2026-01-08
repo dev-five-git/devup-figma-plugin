@@ -48,6 +48,10 @@
     {
       "name": "Export Components",
       "command": "export-components"
+    },
+    {
+      "name": "Export Pages and Components",
+      "command": "export-pages-and-components"
     }
   ]
 }

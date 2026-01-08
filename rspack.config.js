@@ -2,6 +2,7 @@ module.exports = {
   entry: {
     code: './src/code.ts',
   },
+  performance: false,
   resolve: {
     extensions: ['.ts', '.js'],
   },

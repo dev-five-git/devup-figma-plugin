@@ -11,6 +11,7 @@ import {
 import * as devupModule from '../commands/devup'
 import * as exportAssetsModule from '../commands/exportAssets'
 import * as exportComponentsModule from '../commands/exportComponents'
+import * as exportPagesAndComponentsModule from '../commands/exportPagesAndComponents'
 
 let codeModule: typeof import('../code-impl')
 
@@ -38,6 +39,10 @@ beforeEach(() => {
   spyOn(exportComponentsModule, 'exportComponents').mockImplementation(
     mock(() => Promise.resolve()),
   )
+  spyOn(
+    exportPagesAndComponentsModule,
+    'exportPagesAndComponents',
+  ).mockImplementation(mock(() => Promise.resolve()))
 })
 
 afterEach(() => {
@@ -55,6 +60,7 @@ describe('runCommand', () => {
     ['import-devup-excel', ['excel'], 'importDevup'],
     ['export-assets', [], 'exportAssets'],
     ['export-components', [], 'exportComponents'],
+    ['export-pages-and-components', [], 'exportPagesAndComponents'],
   ] as const)('dispatches %s', async (command, args, fn) => {
     const closePlugin = mock(() => {})
     const figmaMock = {
@@ -77,6 +83,11 @@ describe('runCommand', () => {
         break
       case 'exportComponents':
         expect(exportComponentsModule.exportComponents).toHaveBeenCalled()
+        break
+      case 'exportPagesAndComponents':
+        expect(
+          exportPagesAndComponentsModule.exportPagesAndComponents,
+        ).toHaveBeenCalled()
         break
     }
     expect(closePlugin).toHaveBeenCalled()
