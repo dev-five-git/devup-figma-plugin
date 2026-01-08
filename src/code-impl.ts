@@ -5,6 +5,7 @@ import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
+import { exportPagesAndComponents } from './commands/exportPagesAndComponents'
 import { getComponentName } from './utils'
 import { toPascal } from './utils/to-pascal'
 
@@ -343,6 +344,9 @@ export function runCommand(ctx: typeof figma = figma) {
       break
     case 'export-components':
       exportComponents().finally(() => ctx.closePlugin())
+      break
+    case 'export-pages-and-components':
+      exportPagesAndComponents().finally(() => ctx.closePlugin())
       break
   }
 }
