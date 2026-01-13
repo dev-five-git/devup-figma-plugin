@@ -2,6 +2,7 @@ import JSZip from 'jszip'
 
 import { Codegen } from '../codegen/Codegen'
 import { ResponsiveCodegen } from '../codegen/responsive/ResponsiveCodegen'
+import { checkAssetNode } from '../codegen/utils/check-asset-node'
 import { wrapComponent } from '../codegen/utils/wrap-component'
 import { getComponentName } from '../utils'
 import { downloadFile } from '../utils/download-file'
@@ -104,9 +105,54 @@ export async function exportPagesAndComponents() {
     const zip = new JSZip()
     const componentsFolder = zip.folder('components')
     const pagesFolder = zip.folder('pages')
+    const iconsFolder = zip.folder('icons')
+    const imagesFolder = zip.folder('images')
 
     let componentCount = 0
     let pageCount = 0
+    let assetCount = 0
+
+    // Track processed assets to avoid duplicates
+    const processedAssets = new Set<string>()
+
+    // Helper function to process and export an asset node identified by checkAssetNode
+    async function processAssetNode(node: SceneNode, assetType: 'svg' | 'png') {
+      if (processedAssets.has(node.id)) return
+
+      processedAssets.add(node.id)
+
+      const format = assetType === 'svg' ? 'SVG' : 'PNG'
+      const folder = assetType === 'svg' ? iconsFolder : imagesFolder
+
+      try {
+        const imageData = await node.exportAsync({
+          format,
+          ...(format === 'PNG' && { constraint: { type: 'SCALE', value: 2 } }),
+        })
+        folder?.file(`${node.name}.${assetType}`, imageData)
+        assetCount++
+      } catch (e) {
+        console.error(`Failed to export asset ${node.name}:`, e)
+      }
+    }
+
+    // Recursive function to find and process assets in a node tree using checkAssetNode
+    async function findAndProcessAssets(node: SceneNode) {
+      // Check if current node is an asset using checkAssetNode
+      const assetType = checkAssetNode(node)
+      if (assetType) {
+        await processAssetNode(node, assetType)
+        // Don't recurse into children if this node is an asset
+        return
+      }
+
+      // Recursively process children
+      if ('children' in node) {
+        for (const child of node.children) {
+          await findAndProcessAssets(child as SceneNode)
+        }
+      }
+    }
 
     // Track processed COMPONENT_SETs to avoid duplicates
     const processedComponentSets = new Set<string>()
@@ -219,7 +265,11 @@ export async function exportPagesAndComponents() {
         }
       }
 
-      // 5. Check if node is Section or has parent Section for page generation
+      // 5. Extract image assets (icons, logos, images) from the node tree
+      updateProgress(`Extracting images from: ${node.name}`)
+      await findAndProcessAssets(node)
+
+      // 6. Check if node is Section or has parent Section for page generation
       const isNodeSection = ResponsiveCodegen.canGenerateResponsive(node)
       const parentSection = ResponsiveCodegen.hasParentSection(node)
       const sectionNode = isNodeSection ? (node as SectionNode) : parentSection
@@ -262,9 +312,9 @@ export async function exportPagesAndComponents() {
     }
 
     // Check if we have anything to export
-    if (componentCount === 0 && pageCount === 0) {
+    if (componentCount === 0 && pageCount === 0 && assetCount === 0) {
       notificationHandler.cancel()
-      figma.notify('No components or pages found')
+      figma.notify('No components, pages, or images found')
       return
     }
 
@@ -293,7 +343,7 @@ export async function exportPagesAndComponents() {
 
     notificationHandler.cancel()
     figma.notify(
-      `Exported ${componentCount} components and ${pageCount} pages`,
+      `Exported ${componentCount} components, ${pageCount} pages, and ${assetCount} images`,
       { timeout: 3000 },
     )
   } catch (error) {
