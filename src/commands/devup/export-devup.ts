@@ -11,10 +11,13 @@ import type { Devup, DevupTypography } from './types'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
 
-export async function exportDevup(
-  output: 'json' | 'excel',
+/**
+ * Generate Devup configuration object from Figma design system.
+ * This function extracts colors and typography from the current Figma file.
+ */
+export async function generateDevupConfig(
   treeshaking: boolean = true,
-) {
+): Promise<Devup> {
   const devup: Devup = {}
 
   const collection = await getDevupColorCollection()
@@ -142,6 +145,15 @@ export async function exportDevup(
       {} as Record<string, DevupTypography | (null | DevupTypography)[]>,
     )
   }
+
+  return devup
+}
+
+export async function exportDevup(
+  output: 'json' | 'excel',
+  treeshaking: boolean = true,
+) {
+  const devup = await generateDevupConfig(treeshaking)
 
   switch (output) {
     case 'json':

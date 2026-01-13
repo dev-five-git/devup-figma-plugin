@@ -6,6 +6,23 @@ import { wrapComponent } from '../codegen/utils/wrap-component'
 import { getComponentName } from '../utils'
 import { downloadFile } from '../utils/download-file'
 import { toPascal } from '../utils/to-pascal'
+import { generateDevupConfig } from './devup/export-devup'
+
+/**
+ * Build a filename-safe variant name from variantProperties.
+ * e.g., { viewport: 'mobile', size: 'md' } -> 'viewport=mobile_size=md'
+ */
+function buildVariantFileName(
+  variantProperties: Record<string, string> | null,
+): string {
+  if (!variantProperties || Object.keys(variantProperties).length === 0) {
+    return 'default'
+  }
+  return Object.entries(variantProperties)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('_')
+}
 
 export const DEVUP_COMPONENTS = [
   'Center',
@@ -134,15 +151,28 @@ export async function exportPagesAndComponents() {
         componentCount++
       }
 
-      // Capture screenshot of the component set
-      try {
-        const imageData = await componentSet.exportAsync({
-          format: 'PNG',
-          constraint: { type: 'SCALE', value: 1 },
-        })
-        componentsFolder?.file(`${componentName}.png`, imageData)
-      } catch (e) {
-        console.error(`Failed to capture screenshot for ${componentName}:`, e)
+      // Capture screenshot of each variant in the component set
+      for (const child of componentSet.children) {
+        if (child.type !== 'COMPONENT') continue
+
+        const component = child as ComponentNode
+        const variantName = buildVariantFileName(component.variantProperties)
+
+        try {
+          const imageData = await component.exportAsync({
+            format: 'PNG',
+            constraint: { type: 'SCALE', value: 1 },
+          })
+          componentsFolder?.file(
+            `${componentName}_${variantName}.png`,
+            imageData,
+          )
+        } catch (e) {
+          console.error(
+            `Failed to capture screenshot for ${componentName}_${variantName}:`,
+            e,
+          )
+        }
       }
     }
 
@@ -236,6 +266,19 @@ export async function exportPagesAndComponents() {
       notificationHandler.cancel()
       figma.notify('No components or pages found')
       return
+    }
+
+    // Generate and add devup.json to the ZIP root
+    notificationHandler.cancel()
+    notificationHandler = figma.notify('Generating devup.json...', {
+      timeout: Infinity,
+    })
+
+    try {
+      const devupConfig = await generateDevupConfig(true)
+      zip.file('devup.json', JSON.stringify(devupConfig, null, 2))
+    } catch (e) {
+      console.error('Failed to generate devup.json:', e)
     }
 
     notificationHandler.cancel()
