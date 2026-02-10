@@ -58,27 +58,30 @@ export async function renderText(node: TextNode): Promise<{
       },
       seg.textStyleId,
     )
-    propsArray.push(
-      Object.fromEntries(
-        Object.entries(typo)
-          .filter(([_, value]) => Boolean(value))
-          .map(([key, value]) => [key, String(value)]),
-      ),
-    )
+    const filtered: Record<string, string> = {}
+    for (const key in typo) {
+      const v = typo[key]
+      if (v) filtered[key] = String(v)
+    }
+    propsArray.push(filtered)
   }
-  let defaultTypographyCount = 0
+  const _defaultTypographyCount = 0
   let defaultProps: Record<string, string> = {}
 
   // Check if any segment contains Korean text
   const hasKorean = segs.some((seg) => containsKorean(seg.characters))
 
-  propsArray.forEach((props) => {
-    if (props.characters.length >= defaultTypographyCount) {
-      defaultProps = { ...props }
-      delete defaultProps.characters
-      defaultTypographyCount = props.characters.length
+  let longestIdx = 0
+  for (let i = 0; i < propsArray.length; i++) {
+    if (
+      propsArray[i].characters.length >=
+      propsArray[longestIdx].characters.length
+    ) {
+      longestIdx = i
     }
-  })
+  }
+  defaultProps = { ...propsArray[longestIdx] }
+  delete defaultProps.characters
 
   // Add wordBreak: keep-all for Korean text
   if (hasKorean) {

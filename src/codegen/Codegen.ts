@@ -155,12 +155,12 @@ export class Codegen {
   }
 
   getComponentsCodes() {
-    return Array.from(this.components.values()).map(
-      ({ node, code, variants }) => {
-        const name = getComponentName(node)
-        return [name, renderComponent(name, code, variants)] as const
-      },
-    )
+    const result: Array<readonly [string, string]> = []
+    for (const { node, code, variants } of this.components.values()) {
+      const name = getComponentName(node)
+      result.push([name, renderComponent(name, code, variants)])
+    }
+    return result
   }
 
   /**
@@ -168,7 +168,9 @@ export class Codegen {
    * Useful for generating responsive codes for each component.
    */
   getComponentNodes() {
-    return Array.from(this.components.values()).map(({ node }) => node)
+    const result: SceneNode[] = []
+    for (const { node } of this.components.values()) result.push(node)
+    return result
   }
 
   /**

@@ -138,12 +138,11 @@ export function isEqual(a: PropValue, b: PropValue): boolean {
       }
       return true
     }
-    const keysA = Object.keys(a)
-    const keysB = Object.keys(b)
-    if (keysA.length !== keysB.length) return false
-    for (const key of keysA) {
+    let countA = 0
+    for (const key in a) {
+      countA++
       if (
-        !Object.hasOwn(b, key) ||
+        !Object.hasOwn(b as Record<string, unknown>, key) ||
         !isEqual(
           (a as Record<string, PropValue>)[key],
           (b as Record<string, PropValue>)[key],
@@ -151,7 +150,9 @@ export function isEqual(a: PropValue, b: PropValue): boolean {
       )
         return false
     }
-    return true
+    let countB = 0
+    for (const _key in b as Record<string, unknown>) countB++
+    return countA === countB
   }
   return false
 }
@@ -178,18 +179,23 @@ export function optimizeResponsiveValue(
   arr: (PropValue | null)[],
   key?: string,
 ): PropValue | (PropValue | null)[] {
-  const nonNullValues = arr.filter((v) => v !== null)
-  if (nonNullValues.length === 0) return null
+  let hasNonNull = false
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] !== null) {
+      hasNonNull = true
+      break
+    }
+  }
+  if (!hasNonNull) return null
 
   // Collapse consecutive identical values after the first to null.
-  const optimized: (PropValue | null)[] = [...arr]
   let lastValue: PropValue | null = null
 
-  for (let i = 0; i < optimized.length; i++) {
-    const current = optimized[i]
+  for (let i = 0; i < arr.length; i++) {
+    const current = arr[i]
     if (current !== null) {
       if (isEqual(current, lastValue)) {
-        optimized[i] = null
+        arr[i] = null
       } else {
         lastValue = current
       }
@@ -197,26 +203,26 @@ export function optimizeResponsiveValue(
   }
 
   // If the first value is default for that prop, replace with null.
-  if (key && optimized[0] !== null && isDefaultProp(key, optimized[0])) {
-    optimized[0] = null
+  if (key && arr[0] !== null && isDefaultProp(key, arr[0])) {
+    arr[0] = null
   }
 
   // Remove trailing nulls.
-  while (optimized.length > 0 && optimized[optimized.length - 1] === null) {
-    optimized.pop()
+  while (arr.length > 0 && arr[arr.length - 1] === null) {
+    arr.pop()
   }
 
   // If empty array after optimization, return null.
-  if (optimized.length === 0) {
+  if (arr.length === 0) {
     return null
   }
 
   // If only index 0 has value, return single value.
-  if (optimized.length === 1 && optimized[0] !== null) {
-    return optimized[0]
+  if (arr.length === 1 && arr[0] !== null) {
+    return arr[0]
   }
 
-  return optimized
+  return arr
 }
 
 /**
@@ -244,7 +250,7 @@ export function mergePropsToResponsive(
   // Collect all prop keys.
   const allKeys = new Set<string>()
   for (const props of breakpointProps.values()) {
-    for (const key of Object.keys(props)) {
+    for (const key in props) {
       allKeys.add(key)
     }
   }
@@ -280,12 +286,14 @@ export function mergePropsToResponsive(
     }
 
     // Collect values for 5 fixed slots.
-    const values: (PropValue | null)[] = BREAKPOINT_ORDER.map((bp) => {
+    const values: (PropValue | null)[] = [null, null, null, null, null]
+    for (let i = 0; i < BREAKPOINT_ORDER.length; i++) {
+      const bp = BREAKPOINT_ORDER[i]
       const props = breakpointProps.get(bp)
-      if (!props) return null
-      const value = key in props ? props[key] : null
-      return value ?? null
-    })
+      if (props && key in props) {
+        values[i] = (props[key] as PropValue) ?? null
+      }
+    }
 
     // For display/position family, add 'initial' at the first EXISTING breakpoint
     // where the value changes to null (after a non-null value).
@@ -318,13 +326,19 @@ export function mergePropsToResponsive(
         // Only add 'initial' if we found a position to insert
         if (initialInsertIdx >= 0) {
           // Work with original values array to preserve null positions
-          const newArr = [...values]
+          const newArr = values.slice(0)
           newArr[initialInsertIdx] = 'initial'
           // Trim values after initialInsertIdx (they're not needed)
           newArr.length = initialInsertIdx + 1
           valuesToOptimize = newArr
         }
       }
+    }
+
+    // Clone if still referencing the reusable `values` array, since
+    // optimizeResponsiveValue mutates in-place (T2 optimization).
+    if (valuesToOptimize === values) {
+      valuesToOptimize = values.slice(0)
     }
 
     // Optimize: single when all same, otherwise array.
@@ -443,7 +457,7 @@ export function mergePropsToVariant(
   // Collect all prop keys.
   const allKeys = new Set<string>()
   for (const props of variantProps.values()) {
-    for (const key of Object.keys(props)) {
+    for (const key in props) {
       allKeys.add(key)
     }
   }
@@ -492,11 +506,22 @@ export function mergePropsToVariant(
     if (!hasValue) continue
 
     // Check if all variants have the same value.
-    const values = Object.values(valuesByVariant)
-    const allSame = values.every((v) => isEqual(v, values[0]))
+    let allSame = true
+    let firstVal: PropValue | undefined
+    for (const variant in valuesByVariant) {
+      const v = valuesByVariant[variant]
+      if (firstVal === undefined) {
+        firstVal = v
+        continue
+      }
+      if (!isEqual(v, firstVal)) {
+        allSame = false
+        break
+      }
+    }
 
-    if (allSame && values[0] !== null) {
-      result[key] = values[0]
+    if (allSame && firstVal !== null && firstVal !== undefined) {
+      result[key] = firstVal
     } else {
       // Filter out null values from the variant object
       const filteredValues: Record<string, PropValue> = {}

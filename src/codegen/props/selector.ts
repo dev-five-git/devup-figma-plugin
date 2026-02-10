@@ -183,7 +183,8 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
       }
     }
     if (transition?.type === 'SMART_ANIMATE' && diffKeys.size > 0) {
-      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
+      const keys: string[] = []
+      for (const key of diffKeys) keys.push(toTransitionPropertyName(key))
       keys.sort()
       result.props.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.props.transitionProperty = keys.join(',')
@@ -313,7 +314,8 @@ async function computeSelectorPropsForGroup(
       ?.flatMap(getTransition)
       .flat()[0]
     if (transition?.type === 'SMART_ANIMATE') {
-      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
+      const keys: string[] = []
+      for (const key of diffKeys) keys.push(toTransitionPropertyName(key))
       keys.sort()
       result.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.transitionProperty = keys.join(',')

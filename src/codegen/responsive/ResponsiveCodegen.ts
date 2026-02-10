@@ -315,10 +315,14 @@ export class ResponsiveCodegen {
     componentSet: ComponentSetNode,
     componentName: string,
   ): Promise<ReadonlyArray<readonly [string, string]>> {
-    // Find viewport variant key
-    const viewportKey = Object.keys(
-      componentSet.componentPropertyDefinitions,
-    ).find((key) => key.toLowerCase() === 'viewport')
+    // Find viewport and effect variant keys
+    let viewportKey: string | undefined
+    let effectKey: string | undefined
+    for (const key in componentSet.componentPropertyDefinitions) {
+      const lower = key.toLowerCase()
+      if (lower === 'viewport') viewportKey = key
+      else if (lower === 'effect') effectKey = key
+    }
 
     if (!viewportKey) {
       return []
@@ -326,20 +330,14 @@ export class ResponsiveCodegen {
 
     // Get variants excluding viewport
     const variants: Record<string, string> = {}
-    for (const [name, definition] of Object.entries(
-      componentSet.componentPropertyDefinitions,
-    )) {
+    for (const name in componentSet.componentPropertyDefinitions) {
+      const definition = componentSet.componentPropertyDefinitions[name]
       if (name.toLowerCase() !== 'viewport' && definition.type === 'VARIANT') {
         const sanitizedName = sanitizePropertyName(name)
         variants[sanitizedName] =
           definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') || ''
       }
     }
-
-    // Find effect variant key (to exclude from grouping)
-    const effectKey = Object.keys(
-      componentSet.componentPropertyDefinitions,
-    ).find((key) => key.toLowerCase() === 'effect')
 
     // Group components by non-viewport, non-effect variants
     const groups = new Map<string, Map<BreakpointKey, ComponentNode>>()
@@ -358,16 +356,15 @@ export class ResponsiveCodegen {
 
       const breakpoint = viewportToBreakpoint(viewportValue)
       // Create group key from non-viewport, non-effect variants
-      const otherVariants = Object.entries(variantProps)
-        .filter(([key]) => {
-          const lowerKey = key.toLowerCase()
-          return lowerKey !== 'viewport' && lowerKey !== 'effect'
-        })
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, value]) => `${key}=${value}`)
-        .join('|')
-
-      const groupKey = otherVariants || '__default__'
+      const parts: string[] = []
+      for (const key in variantProps) {
+        const lowerKey = key.toLowerCase()
+        if (lowerKey !== 'viewport' && lowerKey !== 'effect') {
+          parts.push(`${key}=${variantProps[key]}`)
+        }
+      }
+      parts.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+      const groupKey = parts.join('|') || '__default__'
 
       if (!groups.has(groupKey)) {
         groups.set(groupKey, new Map())
@@ -415,7 +412,7 @@ export class ResponsiveCodegen {
           )
           perfEnd('getSelectorPropsForGroup(viewport)', t)
           if (Object.keys(selectorProps).length > 0) {
-            tree.props = { ...tree.props, ...selectorProps }
+            tree.props = Object.assign({}, tree.props, selectorProps)
           }
         }
 
@@ -454,24 +451,22 @@ export class ResponsiveCodegen {
     )
     const tTotal = perfStart()
 
-    // Find viewport variant key
-    const viewportKey = Object.keys(
-      componentSet.componentPropertyDefinitions,
-    ).find((key) => key.toLowerCase() === 'viewport')
-
-    // Find effect variant key
-    const effectKey = Object.keys(
-      componentSet.componentPropertyDefinitions,
-    ).find((key) => key.toLowerCase() === 'effect')
+    // Find viewport and effect variant keys
+    let viewportKey: string | undefined
+    let effectKey: string | undefined
+    for (const key in componentSet.componentPropertyDefinitions) {
+      const lower = key.toLowerCase()
+      if (lower === 'viewport') viewportKey = key
+      else if (lower === 'effect') effectKey = key
+    }
 
     // Get all variant keys excluding viewport and effect
     const otherVariantKeys: string[] = []
     const variants: Record<string, string> = {}
     // Map from original name to sanitized name
     const variantKeyToSanitized: Record<string, string> = {}
-    for (const [name, definition] of Object.entries(
-      componentSet.componentPropertyDefinitions,
-    )) {
+    for (const name in componentSet.componentPropertyDefinitions) {
+      const definition = componentSet.componentPropertyDefinitions[name]
       if (definition.type === 'VARIANT') {
         const lowerName = name.toLowerCase()
         // Exclude both viewport and effect from variant keys
@@ -628,7 +623,7 @@ export class ResponsiveCodegen {
           )
           perfEnd('getSelectorPropsForGroup()', t)
           if (Object.keys(selectorProps).length > 0) {
-            tree.props = { ...tree.props, ...selectorProps }
+            tree.props = Object.assign({}, tree.props, selectorProps)
           }
         }
 
@@ -672,7 +667,7 @@ export class ResponsiveCodegen {
     // Get pseudo-selector props (hover, active, disabled, etc.)
     const selectorProps = await getSelectorPropsForGroup(componentSet, {})
     if (Object.keys(selectorProps).length > 0) {
-      tree.props = { ...tree.props, ...selectorProps }
+      tree.props = Object.assign({}, tree.props, selectorProps)
     }
 
     // Render the tree to JSX
@@ -742,7 +737,7 @@ export class ResponsiveCodegen {
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
       // Add pseudo-selector props to tree — create NEW props to avoid mutating cached tree
       if (selectorProps && Object.keys(selectorProps).length > 0) {
-        tree.props = { ...tree.props, ...selectorProps }
+        tree.props = Object.assign({}, tree.props, selectorProps)
       }
       treesByVariant.set(variantValue, tree)
     }
