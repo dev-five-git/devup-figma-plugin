@@ -1,3 +1,10 @@
+export interface NodeContext {
+  isAsset: 'svg' | 'png' | null
+  canBeAbsolute: boolean
+  isPageRoot: boolean
+  pageNode: SceneNode | null
+}
+
 export type Props = Record<string, unknown>
 
 export interface NodeTree {

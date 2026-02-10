@@ -12,12 +12,23 @@ import {
   type BreakpointKey,
   createVariantPropValue,
   getBreakpointByWidth,
+  isEqual,
   mergePropsToResponsive,
   mergePropsToVariant,
   optimizeResponsiveValue,
   type PropValue,
   viewportToBreakpoint,
 } from '.'
+
+const POSITION_PROP_KEYS = new Set([
+  'pos',
+  'top',
+  'left',
+  'right',
+  'bottom',
+  'display',
+])
+const RESERVED_VARIANT_KEYS = new Set(['effect', 'viewport'])
 
 function firstMapValue<V>(map: Map<unknown, V>): V {
   for (const v of map.values()) return v
@@ -80,14 +91,12 @@ export class ResponsiveCodegen {
     }
 
     // Extract trees per breakpoint using Codegen — all independent, run in parallel.
-    const breakpointEntries = [...this.breakpointNodes.entries()]
-    const treeResults: Array<readonly [BreakpointKey, NodeTree]> = []
-    for (const [bp, node] of breakpointEntries) {
+    const breakpointTrees = new Map<BreakpointKey, NodeTree>()
+    for (const [bp, node] of this.breakpointNodes) {
       const codegen = new Codegen(node)
       const tree = await codegen.getTree()
-      treeResults.push([bp, tree] as const)
+      breakpointTrees.set(bp, tree)
     }
-    const breakpointTrees = new Map<BreakpointKey, NodeTree>(treeResults)
 
     // Merge trees and generate code.
     return this.generateMergedCode(breakpointTrees, 0)
@@ -117,19 +126,6 @@ export class ResponsiveCodegen {
 
     // If node is INSTANCE or COMPONENT, render as component reference
     if (firstTree.isComponent) {
-      // Position props that may need responsive merging
-      const positionPropKeys = [
-        'pos',
-        'top',
-        'left',
-        'right',
-        'bottom',
-        'display',
-      ]
-
-      // Reserved variant keys that should not be passed as props (internal use only)
-      const reservedVariantKeys = ['effect', 'viewport']
-
       // For components, we might still need position props
       const propsMap = new Map<BreakpointKey, Props>()
       for (const [bp, tree] of treesByBreakpoint) {
@@ -150,11 +146,10 @@ export class ResponsiveCodegen {
       const variantProps: Props = {}
       for (const [key, value] of Object.entries(firstTree.props)) {
         const lowerKey = key.toLowerCase()
-        const isPositionProp = positionPropKeys.includes(key)
-        const isReservedVariant = reservedVariantKeys.some(
-          (r) => lowerKey === r,
-        )
-        if (!isPositionProp && !isReservedVariant) {
+        if (
+          !POSITION_PROP_KEYS.has(key) &&
+          !RESERVED_VARIANT_KEYS.has(lowerKey)
+        ) {
           variantProps[key] = value
         }
       }
@@ -401,9 +396,8 @@ export class ResponsiveCodegen {
       }
 
       // Build trees for each viewport — all independent, run in parallel.
-      const viewportEntries = [...viewportComponents.entries()]
-      const viewportTreeResults: Array<readonly [BreakpointKey, NodeTree]> = []
-      for (const [bp, component] of viewportEntries) {
+      const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
+      for (const [bp, component] of viewportComponents) {
         let t = perfStart()
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
@@ -425,11 +419,8 @@ export class ResponsiveCodegen {
           }
         }
 
-        viewportTreeResults.push([bp, tree] as const)
+        treesByBreakpoint.set(bp, tree)
       }
-      const treesByBreakpoint = new Map<BreakpointKey, NodeTree>(
-        viewportTreeResults,
-      )
 
       // Generate merged responsive code
       const mergedCode = responsiveCodegen.generateMergedCode(
@@ -613,19 +604,14 @@ export class ResponsiveCodegen {
       Map<BreakpointKey, NodeTree>
     >()
 
-    // Build trees for all composite variants in parallel — each is independent.
-    const compositeEntries = [...byCompositeVariant.entries()]
-    const compositeResults: Array<
-      readonly [string, Map<BreakpointKey, NodeTree>]
-    > = []
-    for (const [compositeKey, viewportComponents] of compositeEntries) {
+    // Build trees for all composite variants — each is independent.
+    for (const [compositeKey, viewportComponents] of byCompositeVariant) {
       // Use original names for Figma data access
       const variantFilter = parseCompositeKeyToOriginal(compositeKey)
 
-      // Build trees for each viewport within this composite — also parallel.
-      const vpEntries = [...viewportComponents.entries()]
-      const vpResults: Array<readonly [BreakpointKey, NodeTree]> = []
-      for (const [bp, component] of vpEntries) {
+      // Build trees for each viewport within this composite.
+      const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
+      for (const [bp, component] of viewportComponents) {
         let t = perfStart()
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
@@ -646,15 +632,9 @@ export class ResponsiveCodegen {
           }
         }
 
-        vpResults.push([bp, tree] as const)
+        treesByBreakpoint.set(bp, tree)
       }
 
-      compositeResults.push([
-        compositeKey,
-        new Map<BreakpointKey, NodeTree>(vpResults),
-      ] as const)
-    }
-    for (const [compositeKey, treesByBreakpoint] of compositeResults) {
       responsivePropsByComposite.set(compositeKey, treesByBreakpoint)
     }
 
@@ -735,14 +715,17 @@ export class ResponsiveCodegen {
     }
 
     // Check if componentSet has effect variant (pseudo-selector)
-    const hasEffect = Object.keys(
-      componentSet.componentPropertyDefinitions,
-    ).some((key) => key.toLowerCase() === 'effect')
+    let hasEffect = false
+    for (const key in componentSet.componentPropertyDefinitions) {
+      if (key.toLowerCase() === 'effect') {
+        hasEffect = true
+        break
+      }
+    }
 
     // Build trees for each variant — all independent, run in parallel.
-    const variantEntries = [...componentsByVariant.entries()]
-    const variantResults: Array<readonly [string, NodeTree]> = []
-    for (const [variantValue, component] of variantEntries) {
+    const treesByVariant = new Map<string, NodeTree>()
+    for (const [variantValue, component] of componentsByVariant) {
       // Get pseudo-selector props for this specific variant group
       const variantFilter: Record<string, string> = {
         [primaryVariantKey]: variantValue,
@@ -761,9 +744,8 @@ export class ResponsiveCodegen {
       if (selectorProps && Object.keys(selectorProps).length > 0) {
         tree.props = { ...tree.props, ...selectorProps }
       }
-      variantResults.push([variantValue, tree] as const)
+      treesByVariant.set(variantValue, tree)
     }
-    const treesByVariant = new Map<string, NodeTree>(variantResults)
 
     // Generate merged code with variant conditionals
     const responsiveCodegen = new ResponsiveCodegen(null)
@@ -925,7 +907,6 @@ export class ResponsiveCodegen {
     depth: number,
   ): string {
     const firstTree = firstMapValue(treesByVariant)
-    const allVariants = [...treesByVariant.keys()]
 
     // Merge props across variants
     const propsMap = new Map<string, Record<string, unknown>>()
@@ -995,9 +976,8 @@ export class ResponsiveCodegen {
 
         if (childByVariant.size > 0) {
           // Check if child exists in all variants or only some
-          const existsInAllVariants = allVariants.every((v) =>
-            presentVariants.has(v),
-          )
+          const existsInAllVariants =
+            presentVariants.size === treesByVariant.size
 
           if (existsInAllVariants) {
             // Child exists in all variants - merge props
@@ -1159,8 +1139,6 @@ export class ResponsiveCodegen {
     }
 
     // Process each child
-    const allCompositeKeys = [...treesByComposite.keys()]
-
     for (const childName of allChildNames) {
       let maxChildCount = 0
       for (const childMap of childrenMaps.values()) {
@@ -1183,9 +1161,7 @@ export class ResponsiveCodegen {
         }
 
         if (childByComposite.size > 0) {
-          const existsInAll = allCompositeKeys.every((k) =>
-            presentComposites.has(k),
-          )
+          const existsInAll = presentComposites.size === treesByComposite.size
 
           if (existsInAll) {
             // Child exists in all variants - recursively merge
@@ -1279,13 +1255,16 @@ export class ResponsiveCodegen {
       if (!hasValue) continue
 
       // Check if all values are the same (including null checks)
-      const uniqueValues = new Set<string>()
+      const firstValue = firstMapValue(valuesByComposite)
+      let allValsSame = true
       for (const value of valuesByComposite.values()) {
-        uniqueValues.add(JSON.stringify(value))
+        if (!isEqual(value as PropValue, firstValue as PropValue)) {
+          allValsSame = false
+          break
+        }
       }
 
-      const firstValue = firstMapValue(valuesByComposite)
-      if (uniqueValues.size === 1 && firstValue !== null) {
+      if (allValsSame && firstValue !== null) {
         // All values are the same and not null - use as-is
         result[propKey] = firstValue
       } else {
@@ -1343,11 +1322,18 @@ export class ResponsiveCodegen {
       }
 
       // Check if all values are the same
-      const uniqueValues = new Set(
-        Object.values(valuesByVariant).map((v) => JSON.stringify(v)),
-      )
-      if (uniqueValues.size === 1) {
-        return Object.values(valuesByVariant)[0]
+      const variantValues = Object.values(valuesByVariant)
+      let allVariantsSame = true
+      for (let i = 1; i < variantValues.length; i++) {
+        if (
+          !isEqual(variantValues[i] as PropValue, variantValues[0] as PropValue)
+        ) {
+          allVariantsSame = false
+          break
+        }
+      }
+      if (allVariantsSame) {
+        return variantValues[0]
       }
 
       return createVariantPropValue(
@@ -1394,11 +1380,20 @@ export class ResponsiveCodegen {
 
       for (const [variantValue, subValues] of valuesByVariant) {
         // Check if all sub-values are the same (can collapse to scalar)
-        const uniqueSubValues = new Set(
-          [...subValues.values()].map((v) => JSON.stringify(v)),
-        )
+        let allSubSame = true
+        let firstSubVal: unknown | undefined
+        for (const sv of subValues.values()) {
+          if (firstSubVal === undefined) {
+            firstSubVal = sv
+            continue
+          }
+          if (!isEqual(sv as PropValue, firstSubVal as PropValue)) {
+            allSubSame = false
+            break
+          }
+        }
 
-        if (uniqueSubValues.size === 1) {
+        if (allSubSame) {
           // All same - collapse to scalar value (cost 0)
           nestedValues[variantValue] = firstMapValue(subValues)
           // Cost is 0 for scalar
@@ -1517,19 +1512,16 @@ export class ResponsiveCodegen {
     }
 
     // Check if all texts are identical after normalization
-    const uniqueNormalized = new Set([...normalizedTexts.values()])
+    const uniqueNormalized = new Set(normalizedTexts.values())
     if (uniqueNormalized.size === 1) {
       // All same, return first text children
       return firstMapValue(textByBreakpoint)
     }
 
     // Texts differ - need to merge with responsive <br />
-    // Find the text with the most content (usually the one with more \n)
-    const breakpoints = [...normalizedTexts.keys()]
-
     // Compare character by character, tracking where \n appears
     // Build merged text with responsive <br /> where needed
-    return this.buildResponsiveTextChildren(normalizedTexts, breakpoints)
+    return this.buildResponsiveTextChildren(normalizedTexts)
   }
 
   /**
@@ -1538,8 +1530,8 @@ export class ResponsiveCodegen {
    */
   private buildResponsiveTextChildren(
     normalizedTexts: Map<BreakpointKey, string>,
-    breakpoints: BreakpointKey[],
   ): string[] {
+    const breakpoints = normalizedTexts.keys()
     // Find the longest text to use as base
     let baseText = ''
     for (const [, text] of normalizedTexts) {
@@ -1592,8 +1584,13 @@ export class ResponsiveCodegen {
           continue
         }
 
-        const allHaveBr = [...bpMap.values()].every((v) => v)
-        const noneHaveBr = [...bpMap.values()].every((v) => !v)
+        let allHaveBr = true
+        let noneHaveBr = true
+        for (const v of bpMap.values()) {
+          if (!v) allHaveBr = false
+          if (v) noneHaveBr = false
+          if (!allHaveBr && !noneHaveBr) break
+        }
 
         if (allHaveBr) {
           // All breakpoints have <br /> - simple case

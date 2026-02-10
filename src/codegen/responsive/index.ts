@@ -123,7 +123,7 @@ const SPECIAL_PROPS_WITH_INITIAL = new Set([
 /**
  * Compare two prop values for equality.
  */
-function isEqual(a: PropValue, b: PropValue): boolean {
+export function isEqual(a: PropValue, b: PropValue): boolean {
   if (a === b) return true
   if (a === null || b === null) return a === b
   if (typeof a !== typeof b) return false

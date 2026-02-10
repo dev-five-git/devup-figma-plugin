@@ -156,11 +156,10 @@ export class Codegen {
 
   getComponentsCodes() {
     return Array.from(this.components.values()).map(
-      ({ node, code, variants }) =>
-        [
-          getComponentName(node),
-          renderComponent(getComponentName(node), code, variants),
-        ] as const,
+      ({ node, code, variants }) => {
+        const name = getComponentName(node)
+        return [name, renderComponent(name, code, variants)] as const
+      },
     )
   }
 
@@ -525,9 +524,11 @@ export class Codegen {
    */
   hasViewportVariant(): boolean {
     if (this.node.type !== 'COMPONENT_SET') return false
-    return Object.keys(
-      (this.node as ComponentSetNode).componentPropertyDefinitions,
-    ).some((key) => key.toLowerCase() === 'viewport')
+    for (const key in (this.node as ComponentSetNode)
+      .componentPropertyDefinitions) {
+      if (key.toLowerCase() === 'viewport') return true
+    }
+    return false
   }
 
   /**

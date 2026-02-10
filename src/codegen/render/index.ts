@@ -25,22 +25,18 @@ export function renderNode(
 ): string {
   const propsString = propsToString(filterAndTransformProps(component, props))
   const hasChildren = childrenCodes.length > 0
-  const tail = hasChildren ? `${space(deps)}</${component}>` : ''
   const multiProps = propsString.includes('\n')
-  return [
-    `${space(deps)}<${component}${propsString ? (multiProps ? `\n${paddingLeftMultiline(propsString, deps + 1)}` : ` ${propsString}`) : ''}${
-      (multiProps ? `\n${space(deps)}` : !hasChildren ? ' ' : '') +
-      (hasChildren ? '>' : '/>')
-    }`,
-    hasChildren
-      ? childrenCodes
-          .map((child) => paddingLeftMultiline(child, deps + 1))
-          .join('\n')
-      : '',
-    tail,
-  ]
-    .filter(Boolean)
-    .join('\n')
+  let result = `${space(deps)}<${component}${propsString ? (multiProps ? `\n${paddingLeftMultiline(propsString, deps + 1)}` : ` ${propsString}`) : ''}${
+    (multiProps ? `\n${space(deps)}` : !hasChildren ? ' ' : '') +
+    (hasChildren ? '>' : '/>')
+  }`
+  if (hasChildren) {
+    const children = childrenCodes
+      .map((child) => paddingLeftMultiline(child, deps + 1))
+      .join('\n')
+    result += `\n${children}\n${space(deps)}</${component}>`
+  }
+  return result
 }
 
 export function renderComponent(
@@ -48,25 +44,29 @@ export function renderComponent(
   code: string,
   variants: Record<string, string>,
 ) {
-  // Filter out effect variant (treated as reserved property like viewport)
-  const filteredVariants = Object.fromEntries(
-    Object.entries(variants).filter(([key]) => key.toLowerCase() !== 'effect'),
-  )
-  const hasVariants = Object.keys(filteredVariants).length > 0
-  const interfaceCode = hasVariants
-    ? `export interface ${component}Props {
-${Object.entries(filteredVariants)
-  .map(([key, value]) => {
+  // Single pass: collect variant entries, skipping 'effect' (reserved key)
+  const variantEntries: [string, string][] = []
+  for (const key in variants) {
+    if (key.toLowerCase() !== 'effect')
+      variantEntries.push([key, variants[key]])
+  }
+  if (variantEntries.length === 0) {
+    return `export function ${component}() {
+  return ${wrapReturnStatement(code, 1)}
+}`
+  }
+  const interfaceLines: string[] = []
+  const keys: string[] = []
+  for (const [key, value] of variantEntries) {
     const optional = value === 'boolean' ? '?' : ''
-    return `  ${key}${optional}: ${value}`
-  })
-  .join('\n')}
-}\n\n`
-    : ''
-  const propsParam = hasVariants
-    ? `{ ${Object.keys(filteredVariants).join(', ')} }: ${component}Props`
-    : ''
-  return `${interfaceCode}export function ${component}(${propsParam}) {
+    interfaceLines.push(`  ${key}${optional}: ${value}`)
+    keys.push(key)
+  }
+  return `export interface ${component}Props {
+${interfaceLines.join('\n')}
+}
+
+export function ${component}({ ${keys.join(', ')} }: ${component}Props) {
   return ${wrapReturnStatement(code, 1)}
 }`
 }

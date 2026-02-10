@@ -1,3 +1,7 @@
+import type { NodeContext } from '../types'
+import { checkAssetNode } from '../utils/check-asset-node'
+import { getPageNode } from '../utils/get-page-node'
+import { isPageRoot } from '../utils/is-page-root'
 import { perfEnd, perfStart } from '../utils/perf'
 import { getAutoLayoutProps } from './auto-layout'
 import { getBackgroundProps } from './background'
@@ -12,13 +16,27 @@ import { getMaxLineProps } from './max-line'
 import { getObjectFitProps } from './object-fit'
 import { getOverflowProps } from './overflow'
 import { getPaddingProps } from './padding'
-import { getPositionProps } from './position'
+import { canBeAbsolute, getPositionProps } from './position'
 import { getReactionProps } from './reaction'
 import { getTextAlignProps } from './text-align'
 import { getTextShadowProps } from './text-shadow'
 import { getTextStrokeProps } from './text-stroke'
 import { getTransformProps } from './transform'
 import { getVisibilityProps } from './visibility'
+
+export function computeNodeContext(node: SceneNode): NodeContext {
+  const asset = checkAssetNode(node)
+  const pageNode = getPageNode(
+    node as BaseNode & ChildrenMixin,
+  ) as SceneNode | null
+  const pageRoot = isPageRoot(node)
+  return {
+    isAsset: asset,
+    canBeAbsolute: canBeAbsolute(node),
+    isPageRoot: pageRoot,
+    pageNode,
+  }
+}
 
 // Cache getProps() results keyed by node.id to avoid redundant computation.
 // Figma returns new JS wrapper objects for the same node on each property access,
@@ -56,6 +74,9 @@ export async function getProps(
   const promise = (async () => {
     const isText = node.type === 'TEXT'
 
+    // Compute cross-cutting node context ONCE for all sync getters that need it.
+    const ctx = computeNodeContext(node)
+
     // PHASE 1: Fire all async prop getters — initiates Figma IPC calls immediately.
     // These return Promises that resolve when IPC completes.
     const tBorder = perfStart()
@@ -72,9 +93,9 @@ export async function getProps(
     // Compute sync results eagerly; they'll be interleaved in the original merge
     // order below to preserve "last-key-wins" semantics.
     const tSync = perfStart()
-    const autoLayoutProps = getAutoLayoutProps(node)
+    const autoLayoutProps = getAutoLayoutProps(node, ctx)
     const minMaxProps = getMinMaxProps(node)
-    const layoutProps = getLayoutProps(node)
+    const layoutProps = getLayoutProps(node, ctx)
     const borderRadiusProps = getBorderRadiusProps(node)
     const blendProps = getBlendProps(node)
     const paddingProps = getPaddingProps(node)
@@ -85,9 +106,9 @@ export async function getProps(
     const tEffect = perfStart()
     const effectProps = getEffectProps(node)
     perfEnd('getProps.effect', tEffect)
-    const positionProps = getPositionProps(node)
+    const positionProps = getPositionProps(node, ctx)
     const gridChildProps = getGridChildProps(node)
-    const transformProps = getTransformProps(node)
+    const transformProps = getTransformProps(node, ctx)
     const overflowProps = getOverflowProps(node)
     const tTextShadow = perfStart()
     const textShadowProps = isText ? getTextShadowProps(node) : undefined
