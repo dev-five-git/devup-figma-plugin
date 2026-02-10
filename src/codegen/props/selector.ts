@@ -125,20 +125,24 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
   console.info(
     `[perf] getSelectorProps: processing ${node.children.length} children`,
   )
+  // Pre-filter: only call expensive getProps() on children with non-default effects.
+  // The effect/trigger check is a cheap property read — skip children that would be
+  // discarded later anyway (effect === undefined or effect === 'default').
+  const effectChildren: { component: SceneNode; effect: string }[] = []
+  for (const child of node.children) {
+    if (child.type !== 'COMPONENT') continue
+    const effect = hasEffect
+      ? (child as ComponentNode).variantProperties?.effect
+      : triggerTypeToEffect(child.reactions?.[0]?.trigger?.type)
+    if (effect && effect !== 'default') {
+      effectChildren.push({ component: child, effect })
+    }
+  }
   const components = await Promise.all(
-    node.children
-      .filter((child) => {
-        return child.type === 'COMPONENT'
-      })
-      .map(
-        async (component) =>
-          [
-            hasEffect
-              ? component.variantProperties?.effect
-              : triggerTypeToEffect(component.reactions?.[0]?.trigger?.type),
-            await getProps(component),
-          ] as const,
-      ),
+    effectChildren.map(
+      async ({ component, effect }) =>
+        [effect, await getProps(component)] as const,
+    ),
   )
   perfEnd('getSelectorProps.getPropsAll()', tSelector)
 
@@ -175,8 +179,6 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
       .flat()[0]
     const diffKeys = new Set<string>()
     for (const [effect, props] of components) {
-      // Skip if no effect or if effect is "default" (default state doesn't need pseudo-selector)
-      if (!effect || effect === 'default') continue
       const def = difference(props, defaultProps)
       if (Object.keys(def).length === 0) continue
       result.props[`_${effect}`] = def

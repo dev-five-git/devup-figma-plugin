@@ -100,20 +100,23 @@ function getBooleanConditionName(
 }
 
 /**
- * Clone a NodeTree — shallow-clone props at every level so mutations
- * to one clone's props don't affect the cached original or other clones.
+ * Shallow-clone a NodeTree — only the root-level props object is cloned
+ * (downstream code mutates tree.props via Object.assign).
+ * Children and textChildren are shared by reference because they are
+ * never mutated (verified: no push/pop/splice/sort on children arrays,
+ * no child.props mutations in ResponsiveCodegen).
  */
 function cloneTree(tree: NodeTree): NodeTree {
   return {
     component: tree.component,
     props: { ...tree.props },
-    children: tree.children.map(cloneTree),
+    children: tree.children,
     nodeType: tree.nodeType,
     nodeName: tree.nodeName,
     isComponent: tree.isComponent,
     isSlot: tree.isSlot,
     condition: tree.condition,
-    textChildren: tree.textChildren ? [...tree.textChildren] : undefined,
+    textChildren: tree.textChildren,
   }
 }
 

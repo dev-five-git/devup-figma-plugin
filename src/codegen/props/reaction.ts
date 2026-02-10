@@ -24,6 +24,10 @@ const childAnimationCache = new Map<
   Map<string, Record<string, unknown>>
 >()
 
+export function resetChildAnimationCache(): void {
+  childAnimationCache.clear()
+}
+
 // Format duration/delay values (up to 3 decimal places, remove trailing zeros)
 function fmtDuration(n: number): string {
   return (Math.round(n * 1000) / 1000)
@@ -434,233 +438,245 @@ async function generateChildAnimations(
     childrenByName.set(child.name, child)
   })
 
-  // For each child, build its individual keyframes across the animation chain
-  for (const [childName] of childrenByName) {
-    const keyframes: KeyframeData = {}
+  // Parallelize per-child animation building — each child's diff is independent.
+  // Even with single-threaded Figma IPC, Promise.all allows microtask interleaving
+  // between awaits, overlapping computation with I/O.
+  const childEntries = await Promise.all(
+    [...childrenByName.keys()].map(async (childName) => {
+      const keyframes: KeyframeData = {}
 
-    let accumulatedTime = 0
-    let hasChanges = false
+      let accumulatedTime = 0
+      let hasChanges = false
 
-    // First pass: collect all changes to know which properties animate
-    const allChanges: Record<string, unknown>[] = []
-    for (let i = 0; i < chain.length; i++) {
-      const step = chain[i]
-      const prevNode = i === 0 ? startNode : chain[i - 1].node
-      const currentNode = step.node
+      // First pass: collect all changes to know which properties animate
+      const allChanges: Record<string, unknown>[] = []
+      for (let i = 0; i < chain.length; i++) {
+        const step = chain[i]
+        const prevNode = i === 0 ? startNode : chain[i - 1].node
+        const currentNode = step.node
 
-      // Find matching child in current step by name
-      if ('children' in prevNode && 'children' in currentNode) {
-        const prevChildren = prevNode.children as readonly SceneNode[]
-        const currentChildren = currentNode.children as readonly SceneNode[]
+        // Find matching child in current step by name
+        if ('children' in prevNode && 'children' in currentNode) {
+          const prevChildren = prevNode.children as readonly SceneNode[]
+          const currentChildren = currentNode.children as readonly SceneNode[]
 
-        const prevChild = prevChildren.find((c) => c.name === childName)
-        const currentChild = currentChildren.find((c) => c.name === childName)
+          const prevChild = prevChildren.find((c) => c.name === childName)
+          const currentChild = currentChildren.find((c) => c.name === childName)
 
-        if (prevChild && currentChild) {
-          const changes = await generateSingleNodeDifferences(
-            prevChild,
-            currentChild,
-          )
-          allChanges.push(changes)
+          if (prevChild && currentChild) {
+            const changes = await generateSingleNodeDifferences(
+              prevChild,
+              currentChild,
+            )
+            allChanges.push(changes)
+          } else {
+            allChanges.push({})
+          }
         } else {
           allChanges.push({})
         }
-      } else {
-        allChanges.push({})
       }
-    }
 
-    // Find all properties that change during animation
-    const animatedProperties = new Set<string>()
-    for (const changes of allChanges) {
-      for (const key of Object.keys(changes)) {
-        // rotationDelta will be converted to transform
-        if (key === 'rotationDelta') {
-          animatedProperties.add('transform')
-        } else {
-          animatedProperties.add(key)
-        }
-      }
-    }
-
-    // Get initial values for animated properties from the START state
-    // Only include properties that have different values across frames
-    const initialValues: Record<string, unknown> = {}
-    // Check if rotation animation exists
-    const hasRotationAnimation = allChanges.some(
-      (changes) => 'rotationDelta' in changes,
-    )
-
-    if (allChanges.length > 0 && animatedProperties.size > 0) {
-      // For each property, check if it has different values
-      const propertyNeedsInitial = new Map<string, boolean>()
-      for (const key of animatedProperties) {
-        // For transform with rotation, always needs initial value
-        if (key === 'transform' && hasRotationAnimation) {
-          propertyNeedsInitial.set(key, true)
-          continue
-        }
-        const values = new Set<string>()
-        for (const changes of allChanges) {
-          if (changes[key] !== undefined) {
-            values.add(JSON.stringify(changes[key]))
+      // Find all properties that change during animation
+      const animatedProperties = new Set<string>()
+      for (const changes of allChanges) {
+        for (const key of Object.keys(changes)) {
+          // rotationDelta will be converted to transform
+          if (key === 'rotationDelta') {
+            animatedProperties.add('transform')
+          } else {
+            animatedProperties.add(key)
           }
         }
-        // Only include in 0% if property has multiple different values
-        propertyNeedsInitial.set(key, values.size > 1)
       }
 
-      // Get the starting child from startNode
-      const startChild = startChildren.find((c) => c.name === childName)
+      // Get initial values for animated properties from the START state
+      // Only include properties that have different values across frames
+      const initialValues: Record<string, unknown> = {}
+      // Check if rotation animation exists
+      const hasRotationAnimation = allChanges.some(
+        (changes) => 'rotationDelta' in changes,
+      )
 
-      if (startChild) {
-        // Get the first step's matching child
-        const firstStep = chain[0]
-        if ('children' in firstStep.node) {
-          const firstChildren = firstStep.node.children as readonly SceneNode[]
-          const firstChild = firstChildren.find((c) => c.name === childName)
+      if (allChanges.length > 0 && animatedProperties.size > 0) {
+        // For each property, check if it has different values
+        const propertyNeedsInitial = new Map<string, boolean>()
+        for (const key of animatedProperties) {
+          // For transform with rotation, always needs initial value
+          if (key === 'transform' && hasRotationAnimation) {
+            propertyNeedsInitial.set(key, true)
+            continue
+          }
+          const values = new Set<string>()
+          for (const changes of allChanges) {
+            if (changes[key] !== undefined) {
+              values.add(JSON.stringify(changes[key]))
+            }
+          }
+          // Only include in 0% if property has multiple different values
+          propertyNeedsInitial.set(key, values.size > 1)
+        }
 
-          if (firstChild) {
-            // Compare first destination back to source to get starting values
-            const startingValues = await generateSingleNodeDifferences(
-              firstChild,
-              startChild,
-            )
+        // Get the starting child from startNode
+        const startChild = startChildren.find((c) => c.name === childName)
 
-            // For each animated property, use the starting value only if it has multiple different values
-            for (const key of animatedProperties) {
-              if (propertyNeedsInitial.get(key)) {
-                if (startingValues[key] !== undefined) {
-                  initialValues[key] = startingValues[key]
-                } else if (key === 'transform' && hasRotationAnimation) {
-                  // For rotation animation, start at 0deg
-                  initialValues[key] = 'rotate(0deg)'
+        if (startChild) {
+          // Get the first step's matching child
+          const firstStepNode = chain[0]
+          if ('children' in firstStepNode.node) {
+            const firstChildren = firstStepNode.node
+              .children as readonly SceneNode[]
+            const firstChild = firstChildren.find((c) => c.name === childName)
+
+            if (firstChild) {
+              // Compare first destination back to source to get starting values
+              const startingValues = await generateSingleNodeDifferences(
+                firstChild,
+                startChild,
+              )
+
+              // For each animated property, use the starting value only if it has multiple different values
+              for (const key of animatedProperties) {
+                if (propertyNeedsInitial.get(key)) {
+                  if (startingValues[key] !== undefined) {
+                    initialValues[key] = startingValues[key]
+                  } else if (key === 'transform' && hasRotationAnimation) {
+                    // For rotation animation, start at 0deg
+                    initialValues[key] = 'rotate(0deg)'
+                  }
                 }
               }
             }
           }
         }
       }
-    }
 
-    // Set initial keyframe with animated properties
-    keyframes['0%'] = initialValues
+      // Set initial keyframe with animated properties
+      keyframes['0%'] = initialValues
 
-    // Determine which properties should be included
-    // Exclude properties that appear multiple times with the same value
-    const propertyHasMultipleValues = new Map<string, boolean>()
-    for (const key of animatedProperties) {
-      // For transform with rotation, always include (cumulative values are always different)
-      if (key === 'transform' && hasRotationAnimation) {
-        propertyHasMultipleValues.set(key, true)
-        continue
+      // Determine which properties should be included
+      // Exclude properties that appear multiple times with the same value
+      const propertyHasMultipleValues = new Map<string, boolean>()
+      for (const key of animatedProperties) {
+        // For transform with rotation, always include (cumulative values are always different)
+        if (key === 'transform' && hasRotationAnimation) {
+          propertyHasMultipleValues.set(key, true)
+          continue
+        }
+        const values = new Set<string>()
+        let occurrenceCount = 0
+        for (const changes of allChanges) {
+          if (changes[key] !== undefined) {
+            values.add(JSON.stringify(changes[key]))
+            occurrenceCount++
+          }
+        }
+        // Include if: property has multiple different values OR appears only once
+        propertyHasMultipleValues.set(
+          key,
+          values.size > 1 || occurrenceCount === 1,
+        )
       }
-      const values = new Set<string>()
-      let occurrenceCount = 0
-      for (const changes of allChanges) {
-        if (changes[key] !== undefined) {
-          values.add(JSON.stringify(changes[key]))
-          occurrenceCount++
+
+      // Second pass: build keyframes with incremental changes
+      // For loop animations, we need to add one more step to return to initial state
+      // So totalDuration needs to account for this extra step
+      const effectiveTotalDuration = isLoop
+        ? totalDuration + chain[0].duration
+        : totalDuration
+
+      accumulatedTime = 0
+      let previousKeyframe: Record<string, unknown> = { ...initialValues }
+      let cumulativeRotation = 0 // Track cumulative rotation for continuous rotation animation
+
+      for (let i = 0; i < chain.length; i++) {
+        const step = chain[i]
+        accumulatedTime += step.duration
+
+        const percentage = Math.round(
+          (accumulatedTime / effectiveTotalDuration) * 100,
+        )
+        const percentageKey = `${percentage}%`
+
+        const changes = { ...allChanges[i] }
+
+        // Convert rotationDelta to cumulative transform
+        if ('rotationDelta' in changes) {
+          cumulativeRotation += changes.rotationDelta as number
+          const existingTransform = (changes.transform as string) || ''
+          changes.transform = existingTransform
+            ? `${existingTransform} rotate(${fmtPct(cumulativeRotation)}deg)`
+            : `rotate(${fmtPct(cumulativeRotation)}deg)`
+          delete changes.rotationDelta
+        }
+
+        // Only include properties that changed from previous keyframe AND have multiple values
+        const incrementalChanges: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(changes)) {
+          if (
+            propertyHasMultipleValues.get(key) &&
+            previousKeyframe[key] !== value
+          ) {
+            incrementalChanges[key] = value
+          }
+        }
+
+        if (Object.keys(incrementalChanges).length > 0) {
+          keyframes[percentageKey] = incrementalChanges
+          previousKeyframe = { ...previousKeyframe, ...incrementalChanges }
+          hasChanges = true
         }
       }
-      // Include if: property has multiple different values OR appears only once
-      propertyHasMultipleValues.set(
-        key,
-        values.size > 1 || occurrenceCount === 1,
-      )
-    }
 
-    // Second pass: build keyframes with incremental changes
-    // For loop animations, we need to add one more step to return to initial state
-    // So totalDuration needs to account for this extra step
-    const effectiveTotalDuration = isLoop
-      ? totalDuration + chain[0].duration
-      : totalDuration
-
-    accumulatedTime = 0
-    let previousKeyframe: Record<string, unknown> = { ...initialValues }
-    let cumulativeRotation = 0 // Track cumulative rotation for continuous rotation animation
-
-    for (let i = 0; i < chain.length; i++) {
-      const step = chain[i]
-      accumulatedTime += step.duration
-
-      const percentage = Math.round(
-        (accumulatedTime / effectiveTotalDuration) * 100,
-      )
-      const percentageKey = `${percentage}%`
-
-      const changes = { ...allChanges[i] }
-
-      // Convert rotationDelta to cumulative transform
-      if ('rotationDelta' in changes) {
-        cumulativeRotation += changes.rotationDelta as number
-        const existingTransform = (changes.transform as string) || ''
-        changes.transform = existingTransform
-          ? `${existingTransform} rotate(${fmtPct(cumulativeRotation)}deg)`
-          : `rotate(${fmtPct(cumulativeRotation)}deg)`
-        delete changes.rotationDelta
-      }
-
-      // Only include properties that changed from previous keyframe AND have multiple values
-      const incrementalChanges: Record<string, unknown> = {}
-      for (const [key, value] of Object.entries(changes)) {
-        if (
-          propertyHasMultipleValues.get(key) &&
-          previousKeyframe[key] !== value
-        ) {
-          incrementalChanges[key] = value
+      // For loop animations, add 100% keyframe that returns to initial state
+      // For rotation, calculate what the final rotation should be to complete the loop
+      if (isLoop && hasChanges) {
+        const finalKeyframe = { ...initialValues }
+        // If there was rotation, complete the full rotation cycle
+        if (cumulativeRotation !== 0) {
+          // Calculate the final rotation to complete a full cycle back to 0
+          // e.g., if we rotated 270deg (3 steps of 90deg), final should be 360deg
+          const fullRotation =
+            Math.sign(cumulativeRotation) *
+            Math.ceil(Math.abs(cumulativeRotation) / 360) *
+            360
+          // Replace the rotation value entirely (don't append to existing rotate(0deg))
+          finalKeyframe.transform = `rotate(${fmtPct(fullRotation)}deg)`
         }
+        keyframes['100%'] = finalKeyframe
       }
 
-      if (Object.keys(incrementalChanges).length > 0) {
-        keyframes[percentageKey] = incrementalChanges
-        previousKeyframe = { ...previousKeyframe, ...incrementalChanges }
-        hasChanges = true
+      // If this child has changes, return animation props
+      if (hasChanges && Object.keys(keyframes).length > 1) {
+        const firstEasing = firstStep.easing || { type: 'LINEAR' }
+        const delay = chain[0].delay
+
+        const props: Record<string, string> = {
+          animationName: `keyframes(${JSON.stringify(keyframes)})`,
+          animationDuration: `${fmtDuration(effectiveTotalDuration)}s`,
+          animationTimingFunction: getEasingFunction(firstEasing),
+          animationFillMode: 'forwards',
+        }
+
+        // Only add delay if it's significant (>= 0.01s / 10ms)
+        if (delay >= 0.01) {
+          props.animationDelay = `${fmtDuration(delay)}s`
+        }
+
+        // Add infinite iteration if it's a loop
+        if (isLoop) {
+          props.animationIterationCount = 'infinite'
+        }
+
+        return [childName, props] as const
       }
-    }
+      return null
+    }),
+  )
 
-    // For loop animations, add 100% keyframe that returns to initial state
-    // For rotation, calculate what the final rotation should be to complete the loop
-    if (isLoop && hasChanges) {
-      const finalKeyframe = { ...initialValues }
-      // If there was rotation, complete the full rotation cycle
-      if (cumulativeRotation !== 0) {
-        // Calculate the final rotation to complete a full cycle back to 0
-        // e.g., if we rotated 270deg (3 steps of 90deg), final should be 360deg
-        const fullRotation =
-          Math.sign(cumulativeRotation) *
-          Math.ceil(Math.abs(cumulativeRotation) / 360) *
-          360
-        // Replace the rotation value entirely (don't append to existing rotate(0deg))
-        finalKeyframe.transform = `rotate(${fmtPct(fullRotation)}deg)`
-      }
-      keyframes['100%'] = finalKeyframe
-    }
-
-    // If this child has changes, add animation props
-    if (hasChanges && Object.keys(keyframes).length > 1) {
-      const firstEasing = firstStep.easing || { type: 'LINEAR' }
-      const delay = chain[0].delay
-
-      const props: Record<string, string> = {
-        animationName: `keyframes(${JSON.stringify(keyframes)})`,
-        animationDuration: `${fmtDuration(effectiveTotalDuration)}s`,
-        animationTimingFunction: getEasingFunction(firstEasing),
-        animationFillMode: 'forwards',
-      }
-
-      // Only add delay if it's significant (>= 0.01s / 10ms)
-      if (delay >= 0.01) {
-        props.animationDelay = `${fmtDuration(delay)}s`
-      }
-
-      // Add infinite iteration if it's a loop
-      if (isLoop) {
-        props.animationIterationCount = 'infinite'
-      }
-
-      childAnimationsMap.set(childName, props)
+  for (const entry of childEntries) {
+    if (entry) {
+      childAnimationsMap.set(entry[0], entry[1])
     }
   }
 

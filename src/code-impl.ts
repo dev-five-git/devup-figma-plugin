@@ -4,6 +4,7 @@ import {
   resetMainComponentCache,
 } from './codegen/Codegen'
 import { resetGetPropsCache } from './codegen/props'
+import { resetChildAnimationCache } from './codegen/props/reaction'
 import { resetSelectorPropsCache } from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
@@ -139,6 +140,7 @@ export function registerCodegen(ctx: typeof figma) {
           perfReset()
           resetGetPropsCache()
           resetSelectorPropsCache()
+          resetChildAnimationCache()
           resetVariableCache()
           resetTextStyleCache()
           resetMainComponentCache()

@@ -3,7 +3,7 @@ import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { toCamel } from '../../utils/to-camel'
 import { checkAssetNode } from './check-asset-node'
 import { fmtPct } from './fmtPct'
-import { solidToString } from './solid-to-string'
+import { solidToString, solidToStringSync } from './solid-to-string'
 import { getVariableByIdCached } from './variable-cache'
 import { buildCssUrl } from './wrap-url'
 
@@ -86,6 +86,35 @@ export async function paintToCSS(
       return await convertPattern(fill)
     default:
       return null
+  }
+}
+
+/**
+ * Synchronous fast path for paintToCSS.
+ * Returns the CSS string immediately for SOLID (non-variable) and IMAGE fills.
+ * Returns undefined to signal "not handled synchronously — caller must use async paintToCSS".
+ */
+export function paintToCSSSyncIfPossible(
+  fill: Paint,
+  _node: SceneNode,
+  last: boolean,
+): string | null | undefined {
+  switch (fill.type) {
+    case 'SOLID': {
+      if (last) {
+        return solidToStringSync(fill) ?? undefined
+      }
+      // Non-last solid needs linear-gradient wrapper — check sync path
+      if (fill.opacity === 0) return 'transparent'
+      const color = solidToStringSync(fill)
+      if (color === null) return undefined // variable-bound, need async
+      return `linear-gradient(${color}, ${color})`
+    }
+    case 'IMAGE':
+      return convertImage(fill)
+    default:
+      // Gradients and patterns need async
+      return undefined
   }
 }
 
