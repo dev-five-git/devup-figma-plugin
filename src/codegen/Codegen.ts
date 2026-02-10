@@ -69,32 +69,6 @@ function cloneTree(tree: NodeTree): NodeTree {
   }
 }
 
-// Limited-concurrency worker pool for children processing.
-// Preserves output order while allowing N async operations in flight.
-const BUILD_CONCURRENCY = 2
-
-async function mapConcurrent<T, R>(
-  items: readonly T[],
-  fn: (item: T, index: number) => Promise<R>,
-  concurrency: number,
-): Promise<R[]> {
-  if (items.length === 0) return []
-  const results: R[] = new Array(items.length)
-  let nextIndex = 0
-
-  async function worker() {
-    while (nextIndex < items.length) {
-      const i = nextIndex++
-      results[i] = await fn(items[i], i)
-    }
-  }
-
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, () => worker()),
-  )
-  return results
-}
-
 export class Codegen {
   components: Map<
     string,
@@ -326,18 +300,15 @@ export class Codegen {
       )
     }
 
-    // Build children with limited concurrency (2 workers).
-    // getProps(node) is already in-flight concurrently above.
-    // With variable/text-style/getProps caches in place, Figma API contention is low enough
-    // for 2 concurrent subtree builds. This roughly halves wall-clock for wide trees.
-    const children: NodeTree[] =
-      'children' in node
-        ? await mapConcurrent(
-            node.children,
-            (child) => this.buildTree(child),
-            BUILD_CONCURRENCY,
-          )
-        : []
+    // Build children sequentially — Figma's single-threaded IPC means
+    // concurrent subtree builds add overhead without improving throughput,
+    // and sequential order maximizes cache hits for shared nodes.
+    const children: NodeTree[] = []
+    if ('children' in node) {
+      for (const child of node.children) {
+        children.push(await this.buildTree(child))
+      }
+    }
 
     // Now await props (likely already resolved while children were processing)
     const props = await propsPromise
@@ -417,16 +388,13 @@ export class Codegen {
     const t = perfStart()
     const selectorPropsPromise = getSelectorProps(node)
 
-    // Build children with limited concurrency (same as doBuildTree).
-    // INSTANCE children are handled inside doBuildTree when buildTree(child) recurses.
-    const childrenTrees: NodeTree[] =
-      'children' in node
-        ? await mapConcurrent(
-            node.children,
-            (child) => this.buildTree(child),
-            BUILD_CONCURRENCY,
-          )
-        : []
+    // Build children sequentially (same reasoning as doBuildTree).
+    const childrenTrees: NodeTree[] = []
+    if ('children' in node) {
+      for (const child of node.children) {
+        childrenTrees.push(await this.buildTree(child))
+      }
+    }
 
     // Await props + selectorProps (likely already resolved while children built)
     const [props, selectorProps] = await Promise.all([
