@@ -1,6 +1,8 @@
 import { getComponentName } from '../utils'
 import { getProps } from './props'
+import { getPositionProps } from './props/position'
 import { getSelectorProps } from './props/selector'
+import { getTransformProps } from './props/transform'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
@@ -25,6 +27,9 @@ export class Codegen {
   // Tree representations
   private tree: NodeTree | null = null
   private componentTrees: Map<string, ComponentTree> = new Map()
+  // Cache buildTree results by node.id to avoid duplicate subtree builds
+  // (e.g., when addComponentTree and main tree walk process the same children)
+  private buildTreeCache: Map<string, Promise<NodeTree>> = new Map()
 
   constructor(private node: SceneNode) {
     this.node = node
@@ -96,6 +101,19 @@ export class Codegen {
    * This is the intermediate JSON representation that can be compared/merged.
    */
   async buildTree(node: SceneNode = this.node): Promise<NodeTree> {
+    const cacheKey = node.id
+    if (cacheKey) {
+      const cached = this.buildTreeCache.get(cacheKey)
+      if (cached) return cached
+    }
+    const promise = this.doBuildTree(node)
+    if (cacheKey) {
+      this.buildTreeCache.set(cacheKey, promise)
+    }
+    return promise
+  }
+
+  private async doBuildTree(node: SceneNode): Promise<NodeTree> {
     const tBuild = perfStart()
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
@@ -122,46 +140,29 @@ export class Codegen {
       }
     }
 
-    // Run getProps and component tree registration in parallel with children building.
-    // These are independent: props depend only on this node, children depend on child nodes.
-    const propsPromise = getProps(node)
-
-    // Handle COMPONENT_SET or COMPONENT - add to componentTrees
-    const componentTreePromise =
-      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
-      ((this.node.type === 'COMPONENT_SET' &&
-        node === this.node.defaultVariant) ||
-        this.node.type === 'COMPONENT')
-        ? this.addComponentTree(
-            node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-          )
-        : undefined
-
-    // Handle INSTANCE nodes - treat as component reference
+    // Handle INSTANCE nodes first — they only need position props (all sync),
+    // skipping the expensive full getProps() with 6 async Figma API calls.
     if (node.type === 'INSTANCE') {
-      const [props, mainComponent] = await Promise.all([
-        propsPromise,
-        node.getMainComponentAsync(),
-      ])
+      const mainComponent = await node.getMainComponentAsync()
       if (mainComponent) await this.addComponentTree(mainComponent)
 
       const componentName = getComponentName(mainComponent || node)
-
-      // Extract variant props from instance's componentProperties
       const variantProps = extractInstanceVariantProps(node)
 
-      // Check if needs position wrapper
-      if (props.pos) {
+      // Only compute position + transform (sync, no Figma API calls)
+      const posProps = getPositionProps(node)
+      if (posProps?.pos) {
+        const transformProps = getTransformProps(node)
         perfEnd('buildTree()', tBuild)
         return {
           component: 'Box',
           props: {
-            pos: props.pos,
-            top: props.top,
-            left: props.left,
-            right: props.right,
-            bottom: props.bottom,
-            transform: props.transform,
+            pos: posProps.pos,
+            top: posProps.top,
+            left: posProps.left,
+            right: posProps.right,
+            bottom: posProps.bottom,
+            transform: posProps.transform || transformProps?.transform,
             w:
               (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)
                 ?.width === node.width
@@ -194,26 +195,36 @@ export class Codegen {
       }
     }
 
-    // Build children in parallel — each subtree is independent
-    const childrenPromise =
-      'children' in node
-        ? Promise.all(
-            (node.children as SceneNode[]).map(async (child) => {
-              if (child.type === 'INSTANCE') {
-                const mainComponent = await child.getMainComponentAsync()
-                if (mainComponent) await this.addComponentTree(mainComponent)
-              }
-              return this.buildTree(child)
-            }),
-          )
-        : Promise.resolve([] as NodeTree[])
+    // Fire getProps early for non-INSTANCE nodes — it runs while we process children.
+    const propsPromise = getProps(node)
 
-    // Wait for props, children, and component tree in parallel
-    const [props, children] = await Promise.all([
-      propsPromise,
-      childrenPromise,
-      componentTreePromise,
-    ])
+    // Handle COMPONENT_SET or COMPONENT - add to componentTrees
+    if (
+      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
+      ((this.node.type === 'COMPONENT_SET' &&
+        node === this.node.defaultVariant) ||
+        this.node.type === 'COMPONENT')
+    ) {
+      await this.addComponentTree(
+        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
+      )
+    }
+
+    // Build children sequentially to avoid Figma API contention.
+    // getProps(node) is already in-flight concurrently above.
+    const children: NodeTree[] = []
+    if ('children' in node) {
+      for (const child of node.children) {
+        if (child.type === 'INSTANCE') {
+          const mainComponent = await child.getMainComponentAsync()
+          if (mainComponent) await this.addComponentTree(mainComponent)
+        }
+        children.push(await this.buildTree(child))
+      }
+    }
+
+    // Now await props (likely already resolved while children were processing)
+    const props = await propsPromise
 
     // Handle TEXT nodes
     let textChildren: string[] | undefined
@@ -280,25 +291,27 @@ export class Codegen {
   ): Promise<void> {
     const tAdd = perfStart()
 
-    // Build children and get props+selectorProps in parallel
-    const childrenPromise =
-      'children' in node
-        ? Promise.all(
-            (node.children as SceneNode[]).map(async (child) => {
-              if (child.type === 'INSTANCE') {
-                const mainComponent = await child.getMainComponentAsync()
-                if (mainComponent) await this.addComponentTree(mainComponent)
-              }
-              return this.buildTree(child)
-            }),
-          )
-        : Promise.resolve([] as NodeTree[])
-
+    // Fire getProps + getSelectorProps early (2 independent API calls)
+    const propsPromise = getProps(node)
     const t = perfStart()
-    const [childrenTrees, props, selectorProps] = await Promise.all([
-      childrenPromise,
-      getProps(node),
-      getSelectorProps(node),
+    const selectorPropsPromise = getSelectorProps(node)
+
+    // Build children sequentially to avoid Figma API contention
+    const childrenTrees: NodeTree[] = []
+    if ('children' in node) {
+      for (const child of node.children) {
+        if (child.type === 'INSTANCE') {
+          const mainComponent = await child.getMainComponentAsync()
+          if (mainComponent) await this.addComponentTree(mainComponent)
+        }
+        childrenTrees.push(await this.buildTree(child))
+      }
+    }
+
+    // Await props + selectorProps (likely already resolved while children built)
+    const [props, selectorProps] = await Promise.all([
+      propsPromise,
+      selectorPropsPromise,
     ])
     perfEnd('getSelectorProps()', t)
 
