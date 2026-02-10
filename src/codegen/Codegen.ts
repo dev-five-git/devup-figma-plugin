@@ -1,6 +1,8 @@
 import { getComponentName } from '../utils'
 import { getProps } from './props'
+import { getPositionProps } from './props/position'
 import { getSelectorProps } from './props/selector'
+import { getTransformProps } from './props/transform'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
@@ -12,18 +14,77 @@ import {
   getDevupComponentByProps,
 } from './utils/get-devup-component'
 import { getPageNode } from './utils/get-page-node'
+import { perfEnd, perfStart } from './utils/perf'
 import { buildCssUrl } from './utils/wrap-url'
+
+// Global cache for node.getMainComponentAsync() results.
+// Multiple Codegen instances (from ResponsiveCodegen) process the same INSTANCE nodes,
+// each calling getMainComponentAsync which is an expensive Figma IPC call.
+// Keyed by instance node.id; stores the Promise to deduplicate concurrent calls.
+const mainComponentCache = new Map<string, Promise<ComponentNode | null>>()
+
+export function resetMainComponentCache(): void {
+  mainComponentCache.clear()
+}
+
+function getMainComponentCached(
+  node: InstanceNode,
+): Promise<ComponentNode | null> {
+  const cacheKey = node.id
+  if (cacheKey) {
+    const cached = mainComponentCache.get(cacheKey)
+    if (cached) return cached
+  }
+  const promise = node.getMainComponentAsync()
+  if (cacheKey) {
+    mainComponentCache.set(cacheKey, promise)
+  }
+  return promise
+}
+
+// Global buildTree cache shared across all Codegen instances.
+// ResponsiveCodegen creates multiple Codegen instances for the same component
+// variants — without this, each instance rebuilds the entire subtree.
+// Returns cloned trees (shallow-cloned props at every level) because
+// downstream code mutates tree.props via Object.assign.
+const globalBuildTreeCache = new Map<string, Promise<NodeTree>>()
+
+export function resetGlobalBuildTreeCache(): void {
+  globalBuildTreeCache.clear()
+}
+
+/**
+ * Clone a NodeTree — shallow-clone props at every level so mutations
+ * to one clone's props don't affect the cached original or other clones.
+ */
+function cloneTree(tree: NodeTree): NodeTree {
+  return {
+    component: tree.component,
+    props: { ...tree.props },
+    children: tree.children.map(cloneTree),
+    nodeType: tree.nodeType,
+    nodeName: tree.nodeName,
+    isComponent: tree.isComponent,
+    textChildren: tree.textChildren ? [...tree.textChildren] : undefined,
+  }
+}
 
 export class Codegen {
   components: Map<
-    SceneNode,
-    { code: string; variants: Record<string, string> }
+    string,
+    { node: SceneNode; code: string; variants: Record<string, string> }
   > = new Map()
   code: string = ''
 
   // Tree representations
   private tree: NodeTree | null = null
-  private componentTrees: Map<SceneNode, ComponentTree> = new Map()
+  private componentTrees: Map<string, ComponentTree> = new Map()
+  // Cache buildTree results by node.id to avoid duplicate subtree builds
+  // (e.g., when addComponentTree and main tree walk process the same children)
+  private buildTreeCache: Map<string, Promise<NodeTree>> = new Map()
+  // Collect fire-and-forget addComponentTree promises so we can await them
+  // before rendering component codes (decouples INSTANCE buildTree from addComponentTree)
+  private pendingComponentTrees: Promise<void>[] = []
 
   constructor(private node: SceneNode) {
     this.node = node
@@ -44,8 +105,8 @@ export class Codegen {
   }
 
   getComponentsCodes() {
-    return Array.from(this.components.entries()).map(
-      ([node, { code, variants }]) =>
+    return Array.from(this.components.values()).map(
+      ({ node, code, variants }) =>
         [
           getComponentName(node),
           renderComponent(getComponentName(node), code, variants),
@@ -54,11 +115,11 @@ export class Codegen {
   }
 
   /**
-   * Get the component nodes (SceneNode keys from components Map).
+   * Get the component nodes (SceneNode values from components Map).
    * Useful for generating responsive codes for each component.
    */
   getComponentNodes() {
-    return Array.from(this.components.keys())
+    return Array.from(this.components.values()).map(({ node }) => node)
   }
 
   /**
@@ -76,10 +137,17 @@ export class Codegen {
       this.tree = tree
     }
 
+    // Await all fire-and-forget addComponentTree calls before rendering
+    if (this.pendingComponentTrees.length > 0) {
+      await Promise.all(this.pendingComponentTrees)
+      this.pendingComponentTrees = []
+    }
+
     // Sync componentTrees to components
-    for (const [compNode, compTree] of this.componentTrees) {
-      if (!this.components.has(compNode)) {
-        this.components.set(compNode, {
+    for (const [compId, compTree] of this.componentTrees) {
+      if (!this.components.has(compId)) {
+        this.components.set(compId, {
+          node: compTree.node,
           code: Codegen.renderTree(compTree.tree, 0),
           variants: compTree.variants,
         })
@@ -92,8 +160,45 @@ export class Codegen {
   /**
    * Build a NodeTree representation of the node hierarchy.
    * This is the intermediate JSON representation that can be compared/merged.
+   *
+   * Uses a two-level cache:
+   * 1. Global cache (across instances) — returns cloned trees to prevent mutation leaks
+   * 2. Per-instance cache — returns the same promise within a single Codegen.run()
    */
   async buildTree(node: SceneNode = this.node): Promise<NodeTree> {
+    const cacheKey = node.id
+    if (cacheKey) {
+      // Per-instance cache (same tree object reused within one Codegen)
+      const instanceCached = this.buildTreeCache.get(cacheKey)
+      if (instanceCached) return instanceCached
+
+      // Global cache (shared across Codegen instances from ResponsiveCodegen).
+      // Returns a CLONE because downstream code mutates tree.props.
+      const globalCached = globalBuildTreeCache.get(cacheKey)
+      if (globalCached) {
+        const cloned = globalCached.then(cloneTree)
+        this.buildTreeCache.set(cacheKey, cloned)
+        return cloned
+      }
+    }
+    const promise = this.doBuildTree(node)
+    if (cacheKey) {
+      this.buildTreeCache.set(cacheKey, promise)
+      globalBuildTreeCache.set(cacheKey, promise)
+    }
+    const result = await promise
+    // When called as the root-level buildTree (node === this.node),
+    // drain any fire-and-forget addComponentTree promises so that
+    // getComponentTrees() is populated before the caller inspects it.
+    if (node === this.node && this.pendingComponentTrees.length > 0) {
+      await Promise.all(this.pendingComponentTrees)
+      this.pendingComponentTrees = []
+    }
+    return result
+  }
+
+  private async doBuildTree(node: SceneNode): Promise<NodeTree> {
+    const tBuild = perfStart()
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
@@ -109,6 +214,7 @@ export class Codegen {
           delete props.src
         }
       }
+      perfEnd('buildTree()', tBuild)
       return {
         component: 'src' in props ? 'Image' : 'Box',
         props,
@@ -118,41 +224,33 @@ export class Codegen {
       }
     }
 
-    const props = await getProps(node)
-
-    // Handle COMPONENT_SET or COMPONENT - add to componentTrees
-    if (
-      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
-      ((this.node.type === 'COMPONENT_SET' &&
-        node === this.node.defaultVariant) ||
-        this.node.type === 'COMPONENT')
-    ) {
-      await this.addComponentTree(
-        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-      )
-    }
-
-    // Handle INSTANCE nodes - treat as component reference
+    // Handle INSTANCE nodes first — they only need position props (all sync),
+    // skipping the expensive full getProps() with 6 async Figma API calls.
     if (node.type === 'INSTANCE') {
-      const mainComponent = await node.getMainComponentAsync()
-      if (mainComponent) await this.addComponentTree(mainComponent)
+      const mainComponent = await getMainComponentCached(node)
+      // Fire addComponentTree without awaiting — it runs in the background.
+      // All pending promises are collected and awaited in run() before rendering.
+      if (mainComponent) {
+        this.pendingComponentTrees.push(this.addComponentTree(mainComponent))
+      }
 
       const componentName = getComponentName(mainComponent || node)
-
-      // Extract variant props from instance's componentProperties
       const variantProps = extractInstanceVariantProps(node)
 
-      // Check if needs position wrapper
-      if (props.pos) {
+      // Only compute position + transform (sync, no Figma API calls)
+      const posProps = getPositionProps(node)
+      if (posProps?.pos) {
+        const transformProps = getTransformProps(node)
+        perfEnd('buildTree()', tBuild)
         return {
           component: 'Box',
           props: {
-            pos: props.pos,
-            top: props.top,
-            left: props.left,
-            right: props.right,
-            bottom: props.bottom,
-            transform: props.transform,
+            pos: posProps.pos,
+            top: posProps.top,
+            left: posProps.left,
+            right: posProps.right,
+            bottom: posProps.bottom,
+            transform: posProps.transform || transformProps?.transform,
             w:
               (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)
                 ?.width === node.width
@@ -174,6 +272,7 @@ export class Codegen {
         }
       }
 
+      perfEnd('buildTree()', tBuild)
       return {
         component: componentName,
         props: variantProps,
@@ -184,17 +283,35 @@ export class Codegen {
       }
     }
 
-    // Build children recursively
+    // Fire getProps early for non-INSTANCE nodes — it runs while we process children.
+    const propsPromise = getProps(node)
+
+    // Handle COMPONENT_SET or COMPONENT - add to componentTrees (fire-and-forget)
+    if (
+      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
+      ((this.node.type === 'COMPONENT_SET' &&
+        node === this.node.defaultVariant) ||
+        this.node.type === 'COMPONENT')
+    ) {
+      this.pendingComponentTrees.push(
+        this.addComponentTree(
+          node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
+        ),
+      )
+    }
+
+    // Build children sequentially — Figma's single-threaded IPC means
+    // concurrent subtree builds add overhead without improving throughput,
+    // and sequential order maximizes cache hits for shared nodes.
     const children: NodeTree[] = []
     if ('children' in node) {
       for (const child of node.children) {
-        if (child.type === 'INSTANCE') {
-          const mainComponent = await child.getMainComponentAsync()
-          if (mainComponent) await this.addComponentTree(mainComponent)
-        }
         children.push(await this.buildTree(child))
       }
     }
+
+    // Now await props (likely already resolved while children were processing)
+    const props = await propsPromise
 
     // Handle TEXT nodes
     let textChildren: string[] | undefined
@@ -206,6 +323,7 @@ export class Codegen {
 
     const component = getDevupComponentByNode(node, props)
 
+    perfEnd('buildTree()', tBuild)
     return {
       component,
       props,
@@ -223,6 +341,11 @@ export class Codegen {
   async getTree(): Promise<NodeTree> {
     if (!this.tree) {
       this.tree = await this.buildTree(this.node)
+      // Await any fire-and-forget addComponentTree calls launched during buildTree
+      if (this.pendingComponentTrees.length > 0) {
+        await Promise.all(this.pendingComponentTrees)
+        this.pendingComponentTrees = []
+      }
     }
     return this.tree
   }
@@ -230,29 +353,56 @@ export class Codegen {
   /**
    * Get component trees (for COMPONENT_SET/COMPONENT nodes).
    */
-  getComponentTrees(): Map<SceneNode, ComponentTree> {
+  getComponentTrees(): Map<string, ComponentTree> {
     return this.componentTrees
   }
 
   /**
    * Add a component to componentTrees.
    */
-  private async addComponentTree(node: ComponentNode): Promise<void> {
-    if (this.componentTrees.has(node)) return
+  // Cache in-flight addComponentTree promises to prevent duplicate work
+  // when multiple INSTANCE nodes reference the same component
+  private addComponentTreePromises: Map<string, Promise<void>> = new Map()
 
+  private async addComponentTree(node: ComponentNode): Promise<void> {
+    const nodeId = node.id || node.name
+    if (this.componentTrees.has(nodeId)) return
+
+    // If already in-flight, await the same promise
+    const inflight = this.addComponentTreePromises.get(nodeId)
+    if (inflight) return inflight
+
+    const promise = this.doAddComponentTree(node, nodeId)
+    this.addComponentTreePromises.set(nodeId, promise)
+    return promise
+  }
+
+  private async doAddComponentTree(
+    node: ComponentNode,
+    nodeId: string,
+  ): Promise<void> {
+    const tAdd = perfStart()
+
+    // Fire getProps + getSelectorProps early (2 independent API calls)
+    const propsPromise = getProps(node)
+    const t = perfStart()
+    const selectorPropsPromise = getSelectorProps(node)
+
+    // Build children sequentially (same reasoning as doBuildTree).
     const childrenTrees: NodeTree[] = []
     if ('children' in node) {
       for (const child of node.children) {
-        if (child.type === 'INSTANCE') {
-          const mainComponent = await child.getMainComponentAsync()
-          if (mainComponent) await this.addComponentTree(mainComponent)
-        }
         childrenTrees.push(await this.buildTree(child))
       }
     }
 
-    const props = await getProps(node)
-    const selectorProps = await getSelectorProps(node)
+    // Await props + selectorProps (likely already resolved while children built)
+    const [props, selectorProps] = await Promise.all([
+      propsPromise,
+      selectorPropsPromise,
+    ])
+    perfEnd('getSelectorProps()', t)
+
     const variants: Record<string, string> = {}
 
     if (selectorProps) {
@@ -260,8 +410,9 @@ export class Codegen {
       Object.assign(variants, selectorProps.variants)
     }
 
-    this.componentTrees.set(node, {
+    this.componentTrees.set(nodeId, {
       name: getComponentName(node),
+      node,
       tree: {
         component: getDevupComponentByProps(props),
         props,
@@ -271,6 +422,7 @@ export class Codegen {
       },
       variants,
     })
+    perfEnd('addComponentTree()', tAdd)
   }
 
   /**

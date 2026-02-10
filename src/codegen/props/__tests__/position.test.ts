@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'bun:test'
 import { canBeAbsolute, getPositionProps } from '../position'
 
 vi.mock('../../utils/check-asset-node', () => ({

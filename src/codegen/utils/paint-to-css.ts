@@ -4,6 +4,7 @@ import { toCamel } from '../../utils/to-camel'
 import { checkAssetNode } from './check-asset-node'
 import { fmtPct } from './fmtPct'
 import { solidToString } from './solid-to-string'
+import { getVariableByIdCached } from './variable-cache'
 import { buildCssUrl } from './wrap-url'
 
 interface Point {
@@ -19,7 +20,7 @@ async function processGradientStopColor(
   opacity: number,
 ): Promise<string> {
   if (stop.boundVariables?.color) {
-    const variable = await figma.variables.getVariableByIdAsync(
+    const variable = await getVariableByIdCached(
       stop.boundVariables.color.id as string,
     )
     if (variable?.name) {

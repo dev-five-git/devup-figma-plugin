@@ -1,5 +1,27 @@
 import { fmtPct } from '../utils/fmtPct'
+import { perfEnd, perfStart } from '../utils/perf'
 import { getProps } from '.'
+
+// Cache getSelectorProps() keyed by ComponentSetNode.id.
+// Called from addComponentTree() for each component — but the result depends only on the parent set.
+const selectorPropsCache = new Map<
+  string,
+  Promise<{
+    props: Record<string, object | string>
+    variants: Record<string, string>
+  }>
+>()
+
+// Cache getSelectorPropsForGroup() keyed by "setId::filter::viewport".
+const selectorPropsForGroupCache = new Map<
+  string,
+  Promise<Record<string, object | string>>
+>()
+
+export function resetSelectorPropsCache(): void {
+  selectorPropsCache.clear()
+  selectorPropsForGroupCache.clear()
+}
 
 // Shorthand prop names to CSS standard property names
 const shortToCssProperty: Record<string, string> = {
@@ -77,7 +99,29 @@ export async function getSelectorProps(
     return getSelectorProps(node.parent)
   }
   if (node.type !== 'COMPONENT_SET') return
+
+  const cacheKey = node.id
+  if (cacheKey) {
+    const cached = selectorPropsCache.get(cacheKey)
+    if (cached) return cached
+  }
+
+  const promise = computeSelectorProps(node)
+  if (cacheKey) {
+    selectorPropsCache.set(cacheKey, promise)
+  }
+  return promise
+}
+
+async function computeSelectorProps(node: ComponentSetNode): Promise<{
+  props: Record<string, object | string>
+  variants: Record<string, string>
+}> {
   const hasEffect = !!node.componentPropertyDefinitions.effect
+  const tSelector = perfStart()
+  console.info(
+    `[perf] getSelectorProps: processing ${node.children.length} children`,
+  )
   const components = await Promise.all(
     node.children
       .filter((child) => {
@@ -93,6 +137,7 @@ export async function getSelectorProps(
           ] as const,
       ),
   )
+  perfEnd('getSelectorProps.getPropsAll()', tSelector)
 
   const defaultProps = await getProps(node.defaultVariant)
 
@@ -159,6 +204,36 @@ export async function getSelectorPropsForGroup(
   const hasEffect = !!componentSet.componentPropertyDefinitions.effect
   if (!hasEffect) return {}
 
+  // Build cache key from componentSet.id + filter + viewport
+  const setId = componentSet.id
+  const filterKey = Object.entries(variantFilter)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join('|')
+  const cacheKey = setId ? `${setId}::${filterKey}::${viewportValue ?? ''}` : ''
+
+  if (cacheKey) {
+    const cached = selectorPropsForGroupCache.get(cacheKey)
+    if (cached) return cached
+  }
+
+  const promise = computeSelectorPropsForGroup(
+    componentSet,
+    variantFilter,
+    viewportValue,
+  )
+
+  if (cacheKey) {
+    selectorPropsForGroupCache.set(cacheKey, promise)
+  }
+  return promise
+}
+
+async function computeSelectorPropsForGroup(
+  componentSet: ComponentSetNode,
+  variantFilter: Record<string, string>,
+  viewportValue?: string,
+): Promise<Record<string, object | string>> {
   // Find viewport key if needed
   const viewportKey = Object.keys(
     componentSet.componentPropertyDefinitions,
@@ -190,16 +265,27 @@ export async function getSelectorPropsForGroup(
   )
   if (!defaultComponent) return {}
 
+  const tGroup = perfStart()
+  console.info(
+    `[perf] getSelectorPropsForGroup: processing ${matchingComponents.length} matching components`,
+  )
   const defaultProps = await getProps(defaultComponent)
   const result: Record<string, object | string> = {}
   const diffKeys = new Set<string>()
 
-  // Calculate diffs for each effect state
-  for (const component of matchingComponents) {
-    const effect = component.variantProperties?.effect
-    if (!effect || effect === 'default') continue
-
-    const props = await getProps(component)
+  // Calculate diffs for each effect state — fire all getProps() concurrently
+  const effectComponents = matchingComponents.filter((c) => {
+    const effect = c.variantProperties?.effect
+    return effect && effect !== 'default'
+  })
+  const effectPropsResults = await Promise.all(
+    effectComponents.map(async (component) => {
+      const effect = component.variantProperties?.effect as string
+      const props = await getProps(component)
+      return { effect, props }
+    }),
+  )
+  for (const { effect, props } of effectPropsResults) {
     const def = difference(props, defaultProps)
     if (Object.keys(def).length === 0) continue
 
@@ -225,6 +311,7 @@ export async function getSelectorPropsForGroup(
     }
   }
 
+  perfEnd('getSelectorPropsForGroup.inner()', tGroup)
   return result
 }
 
@@ -241,7 +328,7 @@ function triggerTypeToEffect(triggerType: Trigger['type'] | undefined) {
 function difference(a: Record<string, unknown>, b: Record<string, unknown>) {
   return Object.entries(a).reduce(
     (acc, [key, value]) => {
-      if (b[key] !== value) {
+      if (value !== undefined && b[key] !== value) {
         acc[key] = value
       }
       return acc

@@ -1,12 +1,20 @@
-import { Codegen } from './codegen/Codegen'
+import {
+  Codegen,
+  resetGlobalBuildTreeCache,
+  resetMainComponentCache,
+} from './codegen/Codegen'
+import { resetGetPropsCache } from './codegen/props'
+import { resetSelectorPropsCache } from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
+import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
+import { resetVariableCache } from './codegen/utils/variable-cache'
 import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
 import { exportPagesAndComponents } from './commands/exportPagesAndComponents'
-import { getComponentName } from './utils'
+import { getComponentName, resetTextStyleCache } from './utils'
 import { toPascal } from './utils/to-pascal'
 
 const DEVUP_COMPONENTS = [
@@ -122,13 +130,28 @@ const debug = true
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
     ctx.codegen.on('generate', async ({ node: n, language }) => {
-      const node = debug ? nodeProxyTracker.wrap(n) : n
+      // Use the raw node for codegen (no Proxy overhead).
+      // Debug tracking happens AFTER codegen completes via separate walk.
+      const node = n
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()
+          perfReset()
+          resetGetPropsCache()
+          resetSelectorPropsCache()
+          resetVariableCache()
+          resetTextStyleCache()
+          resetMainComponentCache()
+          resetGlobalBuildTreeCache()
+
+          let t = perfStart()
           const codegen = new Codegen(node)
           await codegen.run()
+          perfEnd('Codegen.run()', t)
+
+          t = perfStart()
           const componentsCodes = codegen.getComponentsCodes()
+          perfEnd('getComponentsCodes()', t)
 
           // Generate responsive component codes with variant support
           let responsiveComponentsCodes: ReadonlyArray<
@@ -136,11 +159,13 @@ export function registerCodegen(ctx: typeof figma) {
           > = []
           if (node.type === 'COMPONENT_SET') {
             const componentName = getComponentName(node)
+            t = perfStart()
             responsiveComponentsCodes =
               await ResponsiveCodegen.generateVariantResponsiveComponents(
                 node,
                 componentName,
               )
+            perfEnd('generateVariantResponsiveComponents(COMPONENT_SET)', t)
           }
 
           // Generate responsive codes for components extracted from the page
@@ -163,11 +188,16 @@ export function registerCodegen(ctx: typeof figma) {
               if (parentSet && !processedComponentSets.has(parentSet.id)) {
                 processedComponentSets.add(parentSet.id)
                 const componentName = getComponentName(parentSet)
+                t = perfStart()
                 const responsiveCodes =
                   await ResponsiveCodegen.generateVariantResponsiveComponents(
                     parentSet,
                     componentName,
                   )
+                perfEnd(
+                  `generateVariantResponsiveComponents(${componentName})`,
+                  t,
+                )
                 responsiveResults.push(...responsiveCodes)
               }
             }
@@ -175,6 +205,7 @@ export function registerCodegen(ctx: typeof figma) {
           }
 
           console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
+          console.info(perfReport())
 
           // Check if node itself is SECTION or has a parent SECTION
           const isNodeSection = ResponsiveCodegen.canGenerateResponsive(node)
@@ -232,6 +263,9 @@ export function registerCodegen(ctx: typeof figma) {
             }
           }
           if (debug) {
+            // Track AFTER codegen — collects all node properties for test case
+            // generation without Proxy overhead during the hot codegen path.
+            nodeProxyTracker.trackTree(node)
             console.log(
               await nodeProxyTracker.toTestCaseFormatWithVariables(node.id),
             )
