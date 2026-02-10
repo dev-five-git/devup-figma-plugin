@@ -1,4 +1,8 @@
-import { Codegen } from './codegen/Codegen'
+import {
+  Codegen,
+  resetGlobalBuildTreeCache,
+  resetMainComponentCache,
+} from './codegen/Codegen'
 import { resetGetPropsCache } from './codegen/props'
 import { resetSelectorPropsCache } from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
@@ -126,7 +130,9 @@ const debug = true
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
     ctx.codegen.on('generate', async ({ node: n, language }) => {
-      const node = debug ? nodeProxyTracker.wrap(n) : n
+      // Use the raw node for codegen (no Proxy overhead).
+      // Debug tracking happens AFTER codegen completes via separate walk.
+      const node = n
       switch (language) {
         case 'devup-ui': {
           const time = Date.now()
@@ -135,6 +141,8 @@ export function registerCodegen(ctx: typeof figma) {
           resetSelectorPropsCache()
           resetVariableCache()
           resetTextStyleCache()
+          resetMainComponentCache()
+          resetGlobalBuildTreeCache()
 
           let t = perfStart()
           const codegen = new Codegen(node)
@@ -255,6 +263,9 @@ export function registerCodegen(ctx: typeof figma) {
             }
           }
           if (debug) {
+            // Track AFTER codegen — collects all node properties for test case
+            // generation without Proxy overhead during the hot codegen path.
+            nodeProxyTracker.trackTree(node)
             console.log(
               await nodeProxyTracker.toTestCaseFormatWithVariables(node.id),
             )

@@ -17,6 +17,84 @@ import { getPageNode } from './utils/get-page-node'
 import { perfEnd, perfStart } from './utils/perf'
 import { buildCssUrl } from './utils/wrap-url'
 
+// Global cache for node.getMainComponentAsync() results.
+// Multiple Codegen instances (from ResponsiveCodegen) process the same INSTANCE nodes,
+// each calling getMainComponentAsync which is an expensive Figma IPC call.
+// Keyed by instance node.id; stores the Promise to deduplicate concurrent calls.
+const mainComponentCache = new Map<string, Promise<ComponentNode | null>>()
+
+export function resetMainComponentCache(): void {
+  mainComponentCache.clear()
+}
+
+function getMainComponentCached(
+  node: InstanceNode,
+): Promise<ComponentNode | null> {
+  const cacheKey = node.id
+  if (cacheKey) {
+    const cached = mainComponentCache.get(cacheKey)
+    if (cached) return cached
+  }
+  const promise = node.getMainComponentAsync()
+  if (cacheKey) {
+    mainComponentCache.set(cacheKey, promise)
+  }
+  return promise
+}
+
+// Global buildTree cache shared across all Codegen instances.
+// ResponsiveCodegen creates multiple Codegen instances for the same component
+// variants — without this, each instance rebuilds the entire subtree.
+// Returns cloned trees (shallow-cloned props at every level) because
+// downstream code mutates tree.props via Object.assign.
+const globalBuildTreeCache = new Map<string, Promise<NodeTree>>()
+
+export function resetGlobalBuildTreeCache(): void {
+  globalBuildTreeCache.clear()
+}
+
+/**
+ * Clone a NodeTree — shallow-clone props at every level so mutations
+ * to one clone's props don't affect the cached original or other clones.
+ */
+function cloneTree(tree: NodeTree): NodeTree {
+  return {
+    component: tree.component,
+    props: { ...tree.props },
+    children: tree.children.map(cloneTree),
+    nodeType: tree.nodeType,
+    nodeName: tree.nodeName,
+    isComponent: tree.isComponent,
+    textChildren: tree.textChildren ? [...tree.textChildren] : undefined,
+  }
+}
+
+// Limited-concurrency worker pool for children processing.
+// Preserves output order while allowing N async operations in flight.
+const BUILD_CONCURRENCY = 2
+
+async function mapConcurrent<T, R>(
+  items: readonly T[],
+  fn: (item: T, index: number) => Promise<R>,
+  concurrency: number,
+): Promise<R[]> {
+  if (items.length === 0) return []
+  const results: R[] = new Array(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const i = nextIndex++
+      results[i] = await fn(items[i], i)
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker()),
+  )
+  return results
+}
+
 export class Codegen {
   components: Map<
     string,
@@ -99,16 +177,31 @@ export class Codegen {
   /**
    * Build a NodeTree representation of the node hierarchy.
    * This is the intermediate JSON representation that can be compared/merged.
+   *
+   * Uses a two-level cache:
+   * 1. Global cache (across instances) — returns cloned trees to prevent mutation leaks
+   * 2. Per-instance cache — returns the same promise within a single Codegen.run()
    */
   async buildTree(node: SceneNode = this.node): Promise<NodeTree> {
     const cacheKey = node.id
     if (cacheKey) {
-      const cached = this.buildTreeCache.get(cacheKey)
-      if (cached) return cached
+      // Per-instance cache (same tree object reused within one Codegen)
+      const instanceCached = this.buildTreeCache.get(cacheKey)
+      if (instanceCached) return instanceCached
+
+      // Global cache (shared across Codegen instances from ResponsiveCodegen).
+      // Returns a CLONE because downstream code mutates tree.props.
+      const globalCached = globalBuildTreeCache.get(cacheKey)
+      if (globalCached) {
+        const cloned = globalCached.then(cloneTree)
+        this.buildTreeCache.set(cacheKey, cloned)
+        return cloned
+      }
     }
     const promise = this.doBuildTree(node)
     if (cacheKey) {
       this.buildTreeCache.set(cacheKey, promise)
+      globalBuildTreeCache.set(cacheKey, promise)
     }
     return promise
   }
@@ -143,7 +236,7 @@ export class Codegen {
     // Handle INSTANCE nodes first — they only need position props (all sync),
     // skipping the expensive full getProps() with 6 async Figma API calls.
     if (node.type === 'INSTANCE') {
-      const mainComponent = await node.getMainComponentAsync()
+      const mainComponent = await getMainComponentCached(node)
       if (mainComponent) await this.addComponentTree(mainComponent)
 
       const componentName = getComponentName(mainComponent || node)
@@ -210,16 +303,18 @@ export class Codegen {
       )
     }
 
-    // Build children sequentially to avoid Figma API contention.
+    // Build children with limited concurrency (2 workers).
     // getProps(node) is already in-flight concurrently above.
-    // INSTANCE children are handled inside doBuildTree when buildTree(child) recurses —
-    // no pre-call to getMainComponentAsync needed (was causing duplicate Figma API calls).
-    const children: NodeTree[] = []
-    if ('children' in node) {
-      for (const child of node.children) {
-        children.push(await this.buildTree(child))
-      }
-    }
+    // With variable/text-style/getProps caches in place, Figma API contention is low enough
+    // for 2 concurrent subtree builds. This roughly halves wall-clock for wide trees.
+    const children: NodeTree[] =
+      'children' in node
+        ? await mapConcurrent(
+            node.children,
+            (child) => this.buildTree(child),
+            BUILD_CONCURRENCY,
+          )
+        : []
 
     // Now await props (likely already resolved while children were processing)
     const props = await propsPromise
@@ -294,14 +389,16 @@ export class Codegen {
     const t = perfStart()
     const selectorPropsPromise = getSelectorProps(node)
 
-    // Build children sequentially to avoid Figma API contention.
+    // Build children with limited concurrency (same as doBuildTree).
     // INSTANCE children are handled inside doBuildTree when buildTree(child) recurses.
-    const childrenTrees: NodeTree[] = []
-    if ('children' in node) {
-      for (const child of node.children) {
-        childrenTrees.push(await this.buildTree(child))
-      }
-    }
+    const childrenTrees: NodeTree[] =
+      'children' in node
+        ? await mapConcurrent(
+            node.children,
+            (child) => this.buildTree(child),
+            BUILD_CONCURRENCY,
+          )
+        : []
 
     // Await props + selectorProps (likely already resolved while children built)
     const [props, selectorProps] = await Promise.all([

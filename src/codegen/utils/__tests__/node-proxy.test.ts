@@ -749,6 +749,106 @@ describe('nodeProxyTracker', () => {
     expect(result.variables[0].id).toBe('VariableID:direct')
   })
 
+  test('trackTree should track all nodes without Proxy overhead', () => {
+    const childNode = createMockNode({
+      id: 'child-1',
+      name: 'ChildNode',
+      type: 'FRAME',
+      width: 50,
+      height: 50,
+    })
+
+    const parentNode = {
+      ...createMockNode({ id: 'parent-1', name: 'ParentNode' }),
+      children: [childNode],
+    } as unknown as SceneNode
+
+    nodeProxyTracker.trackTree(parentNode)
+
+    const logs = nodeProxyTracker.getAllAccessLogs()
+    expect(logs.length).toBe(2)
+
+    const parentLog = nodeProxyTracker.getAccessLog('parent-1')
+    const childLog = nodeProxyTracker.getAccessLog('child-1')
+
+    expect(parentLog).toBeDefined()
+    expect(childLog).toBeDefined()
+
+    // Parent should have children serialized as node ID references
+    const childrenProp = parentLog?.properties.find((p) => p.key === 'children')
+    expect(childrenProp).toBeDefined()
+    expect(Array.isArray(childrenProp?.value)).toBe(true)
+    expect((childrenProp?.value as string[])[0]).toBe('[NodeId: child-1]')
+
+    // Child should have properties tracked
+    expect(childLog?.properties.length).toBeGreaterThan(0)
+    expect(childLog?.properties.some((p) => p.key === 'width')).toBe(true)
+  })
+
+  test('trackTree should track TEXT nodes with styledTextSegments', () => {
+    const textNode = {
+      id: 'text-node-1',
+      name: 'TextNode',
+      type: 'TEXT',
+      characters: 'Hello World',
+      fontSize: 16,
+      fontName: { family: 'Inter', style: 'Regular' },
+      fontWeight: 400,
+      visible: true,
+      fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, opacity: 1 }],
+      getStyledTextSegments: () => [
+        {
+          start: 0,
+          end: 11,
+          characters: 'Hello World',
+          fontName: { family: 'Inter', style: 'Regular' },
+          fontWeight: 400,
+          fontSize: 16,
+          textDecoration: 'NONE',
+          textCase: 'ORIGINAL',
+          lineHeight: { value: 24, unit: 'PIXELS' },
+          letterSpacing: { value: 0, unit: 'PIXELS' },
+          fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, opacity: 1 }],
+          textStyleId: '',
+          fillStyleId: '',
+          listOptions: { type: 'NONE' },
+          indentation: 0,
+          hyperlink: null,
+        },
+      ],
+    } as unknown as SceneNode
+
+    const parentNode = {
+      ...createMockNode({ id: 'parent-1', name: 'ParentNode' }),
+      children: [textNode],
+    } as unknown as SceneNode
+
+    nodeProxyTracker.trackTree(parentNode)
+
+    const log = nodeProxyTracker.getAccessLog('text-node-1')
+    expect(log).toBeDefined()
+    expect(log?.nodeType).toBe('TEXT')
+
+    // Check that styledTextSegments was tracked
+    const segmentsProp = log?.properties.find(
+      (p) => p.key === 'styledTextSegments',
+    )
+    expect(segmentsProp).toBeDefined()
+    expect(Array.isArray(segmentsProp?.value)).toBe(true)
+  })
+
+  test('trackTree should skip already-tracked nodes', () => {
+    const node = createMockNode({ id: 'node-1', name: 'Node1' })
+
+    // Track twice
+    nodeProxyTracker.trackTree(node)
+    nodeProxyTracker.trackTree(node)
+
+    // Should still only have one log entry
+    const logs = nodeProxyTracker.getAllAccessLogs()
+    expect(logs.length).toBe(1)
+  })
+
   test('re-exported assembleNodeTree works from node-proxy', () => {
     const nodes = [{ id: 'test-1', name: 'Test', type: 'FRAME' }]
     const result = assembleNodeTree(nodes)

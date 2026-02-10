@@ -121,6 +121,194 @@ class NodeProxyTracker {
     return new Proxy(node, handler)
   }
 
+  /**
+   * Walk the entire node tree and record all properties without Proxy overhead.
+   * Call AFTER codegen completes to collect test case data.
+   */
+  trackTree(node: SceneNode): void {
+    this.trackNodeDirect(node)
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) {
+        if (
+          child &&
+          typeof child === 'object' &&
+          'id' in child &&
+          'type' in child
+        ) {
+          this.trackTree(child as unknown as SceneNode)
+        }
+      }
+    }
+  }
+
+  /**
+   * Record all properties of a single node without Proxy.
+   * Direct property access — no interception overhead.
+   */
+  private trackNodeDirect(node: SceneNode): void {
+    const nodeId = node.id
+    if (this.accessLogs.has(nodeId)) return
+
+    const log: AccessLog = {
+      nodeId,
+      nodeName: node.name,
+      nodeType: node.type,
+      properties: [],
+    }
+    this.accessLogs.set(nodeId, log)
+
+    const propsToTrack = [
+      'id',
+      'name',
+      'type',
+      'visible',
+      'parent',
+      'children',
+      'fills',
+      'strokes',
+      'effects',
+      'opacity',
+      'blendMode',
+      'width',
+      'height',
+      'rotation',
+      'cornerRadius',
+      'topLeftRadius',
+      'topRightRadius',
+      'bottomLeftRadius',
+      'bottomRightRadius',
+      'layoutMode',
+      'layoutAlign',
+      'layoutGrow',
+      'layoutSizingHorizontal',
+      'layoutSizingVertical',
+      'layoutPositioning',
+      'primaryAxisAlignItems',
+      'counterAxisAlignItems',
+      'paddingLeft',
+      'paddingRight',
+      'paddingTop',
+      'paddingBottom',
+      'itemSpacing',
+      'counterAxisSpacing',
+      'clipsContent',
+      'isAsset',
+      'reactions',
+      'minWidth',
+      'maxWidth',
+      'minHeight',
+      'maxHeight',
+      'targetAspectRatio',
+      'inferredAutoLayout',
+      'strokeWeight',
+      'strokeTopWeight',
+      'strokeBottomWeight',
+      'strokeLeftWeight',
+      'strokeRightWeight',
+      'strokeAlign',
+      'dashPattern',
+      'characters',
+      'fontName',
+      'fontSize',
+      'fontWeight',
+      'lineHeight',
+      'letterSpacing',
+      'textAutoResize',
+      'textAlignHorizontal',
+      'textAlignVertical',
+      'textTruncation',
+      'maxLines',
+      'gridColumnAnchorIndex',
+      'gridRowAnchorIndex',
+      'gridColumnCount',
+    ]
+
+    const nodeObj = node as unknown as Record<string, unknown>
+    for (const prop of propsToTrack) {
+      try {
+        const value = nodeObj[prop]
+        if (value === undefined) continue
+
+        let serializedValue: unknown
+        if (value === null) {
+          serializedValue = value
+        } else if (typeof value === 'function') {
+          continue
+        } else if (typeof value === 'object') {
+          const valueObj = value as Record<string, unknown>
+          if (Array.isArray(value)) {
+            if (prop === 'children') {
+              // Store children as node ID references
+              serializedValue = value.map((child) => {
+                if (
+                  child &&
+                  typeof child === 'object' &&
+                  'id' in child &&
+                  'type' in child
+                ) {
+                  return `[NodeId: ${(child as Record<string, unknown>).id}]`
+                }
+                return child
+              })
+            } else {
+              serializedValue = this.serializeArray(value)
+            }
+          } else if ('id' in valueObj && 'type' in valueObj) {
+            serializedValue = `[NodeId: ${valueObj.id}]`
+          } else {
+            serializedValue = this.serializeObject(valueObj)
+          }
+        } else {
+          serializedValue = value
+        }
+
+        log.properties.push({ key: prop, value: serializedValue })
+      } catch {
+        // ignore - property may not exist on this node type
+      }
+    }
+
+    // TEXT nodes: extract styled text segments
+    if (node.type === 'TEXT') {
+      try {
+        const textNode = node as TextNode
+        const SEGMENT_TYPE = [
+          'fontName',
+          'fontWeight',
+          'fontSize',
+          'textDecoration',
+          'textCase',
+          'lineHeight',
+          'letterSpacing',
+          'fills',
+          'textStyleId',
+          'fillStyleId',
+          'listOptions',
+          'indentation',
+          'hyperlink',
+        ] as const
+        const segments = textNode.getStyledTextSegments(
+          SEGMENT_TYPE as unknown as (keyof Omit<
+            StyledTextSegment,
+            'characters' | 'start' | 'end'
+          >)[],
+        )
+        const serializedSegments = segments.map((seg) => {
+          return {
+            ...seg,
+            fills: this.serializeArray(seg.fills as unknown[]),
+          }
+        })
+        log.properties.push({
+          key: 'styledTextSegments',
+          value: serializedSegments,
+        })
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   private trackNodeRecursively(node: SceneNode): void {
     const wrappedNode = this.wrap(node)
 
