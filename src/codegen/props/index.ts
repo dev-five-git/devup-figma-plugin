@@ -45,30 +45,53 @@ export async function getProps(
   }
 
   const t = perfStart()
-  const promise = (async () => ({
-    ...getAutoLayoutProps(node),
-    ...getMinMaxProps(node),
-    ...getLayoutProps(node),
-    ...getBorderRadiusProps(node),
-    ...(await getBorderProps(node)),
-    ...(await getBackgroundProps(node)),
-    ...getBlendProps(node),
-    ...getPaddingProps(node),
-    ...getTextAlignProps(node),
-    ...getObjectFitProps(node),
-    ...getMaxLineProps(node),
-    ...getEllipsisProps(node),
-    ...(await getEffectProps(node)),
-    ...getPositionProps(node),
-    ...getGridChildProps(node),
-    ...getTransformProps(node),
-    ...getOverflowProps(node),
-    ...(await getTextStrokeProps(node)),
-    ...(await getTextShadowProps(node)),
-    ...(await getReactionProps(node)),
-    ...getCursorProps(node),
-    ...getVisibilityProps(node),
-  }))()
+  const promise = (async () => {
+    const isText = node.type === 'TEXT'
+
+    // Fire all async prop getters in parallel — they are independent
+    // (no shared mutable state, no inter-function data dependencies).
+    // Skip TEXT-only async getters for non-TEXT nodes.
+    const [
+      borderProps,
+      backgroundProps,
+      effectProps,
+      textStrokeProps,
+      textShadowProps,
+      reactionProps,
+    ] = await Promise.all([
+      getBorderProps(node),
+      getBackgroundProps(node),
+      getEffectProps(node),
+      isText ? getTextStrokeProps(node) : undefined,
+      isText ? getTextShadowProps(node) : undefined,
+      getReactionProps(node),
+    ])
+
+    return {
+      ...getAutoLayoutProps(node),
+      ...getMinMaxProps(node),
+      ...getLayoutProps(node),
+      ...getBorderRadiusProps(node),
+      ...borderProps,
+      ...backgroundProps,
+      ...getBlendProps(node),
+      ...getPaddingProps(node),
+      ...(isText ? getTextAlignProps(node) : undefined),
+      ...getObjectFitProps(node),
+      ...(isText ? getMaxLineProps(node) : undefined),
+      ...(isText ? getEllipsisProps(node) : undefined),
+      ...effectProps,
+      ...getPositionProps(node),
+      ...getGridChildProps(node),
+      ...getTransformProps(node),
+      ...getOverflowProps(node),
+      ...textStrokeProps,
+      ...textShadowProps,
+      ...reactionProps,
+      ...getCursorProps(node),
+      ...getVisibilityProps(node),
+    }
+  })()
 
   if (cacheKey) {
     getPropsCache.set(cacheKey, promise)
