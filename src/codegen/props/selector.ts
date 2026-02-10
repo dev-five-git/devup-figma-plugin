@@ -146,27 +146,25 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
 
   const defaultProps = await getProps(node.defaultVariant)
 
-  const result = Object.entries(node.componentPropertyDefinitions).reduce(
-    (acc, [name, definition]) => {
-      if (name === 'effect' || name === 'viewport') return acc
-
-      const sanitizedName = sanitizePropertyName(name)
-      if (definition.type === 'VARIANT' && definition.variantOptions) {
-        acc.variants[sanitizedName] = definition.variantOptions
-          .map((option) => `'${option}'`)
-          .join(' | ')
-      } else if (definition.type === 'INSTANCE_SWAP') {
-        acc.variants[sanitizedName] = 'React.ReactNode'
-      } else if (definition.type === 'BOOLEAN') {
-        acc.variants[sanitizedName] = 'boolean'
-      }
-      return acc
-    },
-    {
-      props: {} as Record<string, object | string>,
-      variants: {} as Record<string, string>,
-    },
-  )
+  const result: {
+    props: Record<string, object | string>
+    variants: Record<string, string>
+  } = { props: {}, variants: {} }
+  const defs = node.componentPropertyDefinitions
+  for (const name in defs) {
+    if (name === 'effect' || name === 'viewport') continue
+    const definition = defs[name]
+    const sanitizedName = sanitizePropertyName(name)
+    if (definition.type === 'VARIANT' && definition.variantOptions) {
+      result.variants[sanitizedName] = definition.variantOptions
+        .map((option) => `'${option}'`)
+        .join(' | ')
+    } else if (definition.type === 'INSTANCE_SWAP') {
+      result.variants[sanitizedName] = 'React.ReactNode'
+    } else if (definition.type === 'BOOLEAN') {
+      result.variants[sanitizedName] = 'boolean'
+    }
+  }
 
   if (components.length > 0) {
     const findNodeAction = (action: Action) => action.type === 'NODE'
@@ -213,10 +211,12 @@ export async function getSelectorPropsForGroup(
 
   // Build cache key from componentSet.id + filter + viewport
   const setId = componentSet.id
-  const filterKey = Object.entries(variantFilter)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`)
-    .join('|')
+  const filterParts: string[] = []
+  for (const k in variantFilter) {
+    filterParts.push(`${k}=${variantFilter[k]}`)
+  }
+  filterParts.sort()
+  const filterKey = filterParts.join('|')
   const cacheKey = setId ? `${setId}::${filterKey}::${viewportValue ?? ''}` : ''
 
   if (cacheKey) {
@@ -252,8 +252,8 @@ async function computeSelectorPropsForGroup(
     const variantProps = child.variantProperties || {}
 
     // Check all filter conditions match
-    for (const [key, value] of Object.entries(variantFilter)) {
-      if (variantProps[key] !== value) return false
+    for (const key in variantFilter) {
+      if (variantProps[key] !== variantFilter[key]) return false
     }
 
     // Check viewport if specified
@@ -335,13 +335,12 @@ function triggerTypeToEffect(triggerType: Trigger['type'] | undefined) {
 }
 
 function difference(a: Record<string, unknown>, b: Record<string, unknown>) {
-  return Object.entries(a).reduce(
-    (acc, [key, value]) => {
-      if (value !== undefined && b[key] !== value) {
-        acc[key] = value
-      }
-      return acc
-    },
-    {} as Record<string, unknown>,
-  )
+  const result: Record<string, unknown> = {}
+  for (const key in a) {
+    const value = a[key]
+    if (value !== undefined && b[key] !== value) {
+      result[key] = value
+    }
+  }
+  return result
 }

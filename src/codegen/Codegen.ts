@@ -100,16 +100,15 @@ function getBooleanConditionName(
 }
 
 /**
- * Shallow-clone a NodeTree — only the root-level props object is cloned
- * (downstream code mutates tree.props via Object.assign).
- * Children and textChildren are shared by reference because they are
- * never mutated (verified: no push/pop/splice/sort on children arrays,
- * no child.props mutations in ResponsiveCodegen).
+ * Shallow-clone a NodeTree — creates a new object so that per-instance
+ * property reassignment (e.g., `tree.props = { ...tree.props, ...selectorProps }`)
+ * doesn't leak across Codegen instances. Props object itself is shared by
+ * reference — callers that need to merge create their own objects.
  */
 function cloneTree(tree: NodeTree): NodeTree {
   return {
     component: tree.component,
-    props: { ...tree.props },
+    props: tree.props,
     children: tree.children,
     nodeType: tree.nodeType,
     nodeName: tree.nodeName,
@@ -364,14 +363,17 @@ export class Codegen {
     }
 
     // Now await props (likely already resolved while children were processing)
-    const props = await propsPromise
+    const baseProps = await propsPromise
 
-    // Handle TEXT nodes
+    // Handle TEXT nodes — create NEW merged object instead of mutating getProps() result.
     let textChildren: string[] | undefined
+    let props: Record<string, unknown>
     if (node.type === 'TEXT') {
       const { children: textContent, props: textProps } = await renderText(node)
       textChildren = textContent
-      Object.assign(props, textProps)
+      props = { ...baseProps, ...textProps }
+    } else {
+      props = baseProps
     }
 
     const component = getDevupComponentByNode(node, props)
@@ -486,7 +488,7 @@ export class Codegen {
     }
 
     // Await props + selectorProps (likely already resolved while children built)
-    const [props, selectorProps] = await Promise.all([
+    const [baseProps, selectorProps] = await Promise.all([
       propsPromise,
       selectorPropsPromise,
     ])
@@ -494,8 +496,12 @@ export class Codegen {
 
     const variants: Record<string, string> = {}
 
+    // Create a NEW merged object instead of mutating getProps() result.
+    // This allows getProps cache to return raw references without cloning.
+    const props = selectorProps
+      ? { ...baseProps, ...selectorProps.props }
+      : baseProps
     if (selectorProps) {
-      Object.assign(props, selectorProps.props)
       Object.assign(variants, selectorProps.variants)
     }
 

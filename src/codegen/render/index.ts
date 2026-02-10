@@ -1,5 +1,4 @@
 import { space } from '../../utils'
-import { filterPropsWithComponent } from '../props'
 import { isDefaultProp } from '../utils/is-default-prop'
 import {
   paddingLeftMultiline,
@@ -7,17 +6,24 @@ import {
 } from '../utils/padding-left-multiline'
 import { propsToString } from '../utils/props-to-str'
 
+const CENTER_SKIP_KEYS = new Set(['alignItems', 'justifyContent'])
+const IMAGE_BOX_SKIP_KEYS = new Set([
+  'alignItems',
+  'justifyContent',
+  'flexDir',
+  'gap',
+  'outline',
+  'outlineOffset',
+  'overflow',
+])
+
 export function renderNode(
   component: string,
   props: Record<string, unknown>,
   deps: number = 0,
   childrenCodes: string[],
 ): string {
-  const filteredProps = filterProps(props)
-
-  const propsString = propsToString(
-    filterPropsWithComponent(component, filteredProps),
-  )
+  const propsString = propsToString(filterAndTransformProps(component, props))
   const hasChildren = childrenCodes.length > 0
   const tail = hasChildren ? `${space(deps)}</${component}>` : ''
   const multiProps = propsString.includes('\n')
@@ -65,15 +71,45 @@ ${Object.entries(filteredVariants)
 }`
 }
 
-function filterProps(props: Record<string, unknown>) {
+function filterAndTransformProps(
+  component: string,
+  props: Record<string, unknown>,
+) {
+  const hasMaskImage = 'maskImage' in props
   const newProps: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(props)) {
+  for (const key in props) {
+    const value = props[key]
     if (value === null || value === undefined) {
       continue
     }
     const newValue = typeof value === 'number' ? String(value) : value
     if (isDefaultProp(key, newValue)) {
       continue
+    }
+    switch (component) {
+      case 'Flex':
+        if (key === 'display' && newValue === 'flex') continue
+        if (key === 'flexDir' && newValue === 'row') continue
+        break
+      case 'Grid':
+        if (key === 'display' && newValue === 'grid') continue
+        break
+      case 'Center':
+        if (CENTER_SKIP_KEYS.has(key)) continue
+        if (key === 'display' && newValue === 'flex') continue
+        if (key === 'flexDir' && newValue === 'row') continue
+        break
+      case 'VStack':
+        if (key === 'flexDir' && newValue === 'column') continue
+        if (key === 'display' && newValue === 'flex') continue
+        break
+      case 'Image':
+      case 'Box':
+        if (component === 'Box' && !hasMaskImage) break
+        if (IMAGE_BOX_SKIP_KEYS.has(key)) continue
+        if (key === 'display' && newValue === 'flex') continue
+        if (!hasMaskImage && key === 'bg') continue
+        break
     }
     newProps[key] = newValue
   }

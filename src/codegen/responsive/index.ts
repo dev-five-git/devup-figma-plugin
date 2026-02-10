@@ -128,7 +128,30 @@ function isEqual(a: PropValue, b: PropValue): boolean {
   if (a === null || b === null) return a === b
   if (typeof a !== typeof b) return false
   if (typeof a === 'object' && typeof b === 'object') {
-    return JSON.stringify(a) === JSON.stringify(b)
+    const isArrayA = Array.isArray(a)
+    const isArrayB = Array.isArray(b)
+    if (isArrayA !== isArrayB) return false
+    if (isArrayA && isArrayB) {
+      if (a.length !== b.length) return false
+      for (let i = 0; i < a.length; i++) {
+        if (!isEqual(a[i] as PropValue, b[i] as PropValue)) return false
+      }
+      return true
+    }
+    const keysA = Object.keys(a)
+    const keysB = Object.keys(b)
+    if (keysA.length !== keysB.length) return false
+    for (const key of keysA) {
+      if (
+        !Object.hasOwn(b, key) ||
+        !isEqual(
+          (a as Record<string, PropValue>)[key],
+          (b as Record<string, PropValue>)[key],
+        )
+      )
+        return false
+    }
+    return true
   }
   return false
 }
@@ -214,7 +237,7 @@ export function mergePropsToResponsive(
 
   // If only one breakpoint, return props as-is.
   if (breakpointProps.size === 1) {
-    const onlyProps = [...breakpointProps.values()][0]
+    const onlyProps = breakpointProps.values().next().value
     return onlyProps ? { ...onlyProps } : {}
   }
 
@@ -413,7 +436,7 @@ export function mergePropsToVariant(
 
   // If only one variant, return props as-is.
   if (variantProps.size === 1) {
-    const onlyProps = [...variantProps.values()][0]
+    const onlyProps = variantProps.values().next().value
     return onlyProps ? { ...onlyProps } : {}
   }
 
@@ -477,7 +500,8 @@ export function mergePropsToVariant(
     } else {
       // Filter out null values from the variant object
       const filteredValues: Record<string, PropValue> = {}
-      for (const [variant, value] of Object.entries(valuesByVariant)) {
+      for (const variant in valuesByVariant) {
+        const value = valuesByVariant[variant]
         if (value !== null) {
           filteredValues[variant] = value
         }

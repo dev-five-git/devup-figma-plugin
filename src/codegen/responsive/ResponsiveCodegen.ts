@@ -421,7 +421,7 @@ export class ResponsiveCodegen {
           )
           perfEnd('getSelectorPropsForGroup(viewport)', t)
           if (Object.keys(selectorProps).length > 0) {
-            Object.assign(tree.props, selectorProps)
+            tree.props = { ...tree.props, ...selectorProps }
           }
         }
 
@@ -642,7 +642,7 @@ export class ResponsiveCodegen {
           )
           perfEnd('getSelectorPropsForGroup()', t)
           if (Object.keys(selectorProps).length > 0) {
-            Object.assign(tree.props, selectorProps)
+            tree.props = { ...tree.props, ...selectorProps }
           }
         }
 
@@ -692,7 +692,7 @@ export class ResponsiveCodegen {
     // Get pseudo-selector props (hover, active, disabled, etc.)
     const selectorProps = await getSelectorPropsForGroup(componentSet, {})
     if (Object.keys(selectorProps).length > 0) {
-      Object.assign(tree.props, selectorProps)
+      tree.props = { ...tree.props, ...selectorProps }
     }
 
     // Render the tree to JSX
@@ -757,9 +757,9 @@ export class ResponsiveCodegen {
       const codegen = new Codegen(component)
       const tree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
-      // Add pseudo-selector props to tree
+      // Add pseudo-selector props to tree — create NEW props to avoid mutating cached tree
       if (selectorProps && Object.keys(selectorProps).length > 0) {
-        Object.assign(tree.props, selectorProps)
+        tree.props = { ...tree.props, ...selectorProps }
       }
       variantResults.push([variantValue, tree] as const)
     }

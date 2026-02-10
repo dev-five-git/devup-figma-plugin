@@ -5,8 +5,28 @@ import { isVariantPropValue } from '../responsive'
  * If not, it needs to be quoted when used as an object key.
  */
 function needsQuotes(key: string): boolean {
-  // Valid identifier: starts with letter/$/_, contains only letters/digits/$/_
-  return !/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)
+  if (key.length === 0) return true
+  const first = key.charCodeAt(0)
+  // Must start with a-z, A-Z, _, $
+  if (
+    !(first >= 97 && first <= 122) &&
+    !(first >= 65 && first <= 90) &&
+    first !== 95 &&
+    first !== 36
+  )
+    return true
+  for (let i = 1; i < key.length; i++) {
+    const c = key.charCodeAt(i)
+    if (
+      !(c >= 97 && c <= 122) &&
+      !(c >= 65 && c <= 90) &&
+      !(c >= 48 && c <= 57) &&
+      c !== 95 &&
+      c !== 36
+    )
+      return true
+  }
+  return false
 }
 
 /**

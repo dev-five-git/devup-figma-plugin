@@ -38,16 +38,17 @@ export async function getProps(
 ): Promise<Record<string, unknown>> {
   const cacheKey = node.id
   if (cacheKey) {
-    // Sync fast path: return shallow clone from resolved cache (no microtask)
+    // Sync fast path: return raw reference from resolved cache (no clone needed —
+    // all callers that need to merge selectorProps create their own objects now).
     const resolved = getPropsResolved.get(cacheKey)
     if (resolved) {
       perfEnd('getProps(cached)', perfStart())
-      return { ...resolved }
+      return resolved
     }
     const cached = getPropsCache.get(cacheKey)
     if (cached) {
       perfEnd('getProps(cached)', perfStart())
-      return { ...(await cached) }
+      return await cached
     }
   }
 
@@ -152,55 +153,4 @@ export async function getProps(
   }
   perfEnd('getProps()', t)
   return result
-}
-
-const CENTER_SKIP_KEYS = new Set(['alignItems', 'justifyContent'])
-const IMAGE_BOX_SKIP_KEYS = new Set([
-  'alignItems',
-  'justifyContent',
-  'flexDir',
-  'gap',
-  'outline',
-  'outlineOffset',
-  'overflow',
-])
-
-export function filterPropsWithComponent(
-  component: string,
-  props: Record<string, unknown>,
-): Record<string, unknown> {
-  const newProps: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(props)) {
-    switch (component) {
-      case 'Flex':
-        // Only skip display/flexDir if it's exactly the default value (not responsive array)
-        if (key === 'display' && value === 'flex') continue
-        if (key === 'flexDir' && value === 'row') continue
-        break
-      case 'Grid':
-        // Only skip display if it's exactly 'grid' (not responsive array or other value)
-        if (key === 'display' && value === 'grid') continue
-        break
-      case 'Center':
-        if (CENTER_SKIP_KEYS.has(key)) continue
-        if (key === 'display' && value === 'flex') continue
-        if (key === 'flexDir' && value === 'row') continue
-        break
-      case 'VStack':
-        // Only skip flexDir if it's exactly 'column' (not responsive array or other value)
-        if (key === 'flexDir' && value === 'column') continue
-        if (key === 'display' && value === 'flex') continue
-        break
-
-      case 'Image':
-      case 'Box':
-        if (component === 'Box' && !('maskImage' in props)) break
-        if (IMAGE_BOX_SKIP_KEYS.has(key)) continue
-        if (key === 'display' && value === 'flex') continue
-        if (!('maskImage' in props) && ['bg'].includes(key)) continue
-        break
-    }
-    newProps[key] = value
-  }
-  return newProps
 }
