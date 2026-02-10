@@ -54,12 +54,8 @@ export async function getProps(
     const borderP = getBorderProps(node)
     const tBg = perfStart()
     const bgP = getBackgroundProps(node)
-    const tEffect = perfStart()
-    const effectP = getEffectProps(node)
     const tTextStroke = perfStart()
     const textStrokeP = isText ? getTextStrokeProps(node) : undefined
-    const tTextShadow = perfStart()
-    const textShadowP = isText ? getTextShadowProps(node) : undefined
     const tReaction = perfStart()
     const reactionP = getReactionProps(node)
 
@@ -78,52 +74,42 @@ export async function getProps(
     const objectFitProps = getObjectFitProps(node)
     const maxLineProps = isText ? getMaxLineProps(node) : undefined
     const ellipsisProps = isText ? getEllipsisProps(node) : undefined
+    const tEffect = perfStart()
+    const effectProps = getEffectProps(node)
+    perfEnd('getProps.effect', tEffect)
     const positionProps = getPositionProps(node)
     const gridChildProps = getGridChildProps(node)
     const transformProps = getTransformProps(node)
     const overflowProps = getOverflowProps(node)
+    const tTextShadow = perfStart()
+    const textShadowProps = isText ? getTextShadowProps(node) : undefined
+    perfEnd('getProps.textShadow', tTextShadow)
     const cursorProps = getCursorProps(node)
     const visibilityProps = getVisibilityProps(node)
     perfEnd('getProps.sync', tSync)
 
     // PHASE 3: Await async results — likely already resolved during sync phase.
-    const [
-      borderProps,
-      backgroundProps,
-      effectProps,
-      textStrokeProps,
-      textShadowProps,
-      reactionProps,
-    ] = await Promise.all([
-      borderP.then((r) => {
-        perfEnd('getProps.border', tBorder)
-        return r
-      }),
-      bgP.then((r) => {
-        perfEnd('getProps.background', tBg)
-        return r
-      }),
-      effectP.then((r) => {
-        perfEnd('getProps.effect', tEffect)
-        return r
-      }),
-      textStrokeP
-        ? textStrokeP.then((r) => {
-            perfEnd('getProps.textStroke', tTextStroke)
-            return r
-          })
-        : undefined,
-      textShadowP
-        ? textShadowP.then((r) => {
-            perfEnd('getProps.textShadow', tTextShadow)
-            return r
-          })
-        : undefined,
-      reactionP.then((r) => {
-        perfEnd('getProps.reaction', tReaction)
-        return r
-      }),
-    ])
+    const [borderProps, backgroundProps, textStrokeProps, reactionProps] =
+      await Promise.all([
+        borderP.then((r) => {
+          perfEnd('getProps.border', tBorder)
+          return r
+        }),
+        bgP.then((r) => {
+          perfEnd('getProps.background', tBg)
+          return r
+        }),
+        textStrokeP
+          ? textStrokeP.then((r) => {
+              perfEnd('getProps.textStroke', tTextStroke)
+              return r
+            })
+          : undefined,
+        reactionP.then((r) => {
+          perfEnd('getProps.reaction', tReaction)
+          return r
+        }),
+      ])
 
     // PHASE 4: Merge in the ORIGINAL interleaved order to preserve last-key-wins.
     // async results (border, background, effect, textStroke, textShadow, reaction)
