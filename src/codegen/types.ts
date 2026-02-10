@@ -12,6 +12,7 @@ export interface NodeTree {
 
 export interface ComponentTree {
   name: string
+  node: SceneNode
   tree: NodeTree
   variants: Record<string, string>
 }

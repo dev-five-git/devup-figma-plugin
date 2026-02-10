@@ -6,6 +6,7 @@ import {
 import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
 import { paddingLeftMultiline } from '../utils/padding-left-multiline'
+import { perfEnd, perfStart } from '../utils/perf'
 import {
   BREAKPOINT_ORDER,
   type BreakpointKey,
@@ -385,18 +386,22 @@ export class ResponsiveCodegen {
       // Build trees for each viewport
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
+        let t = perfStart()
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
+        perfEnd('Codegen.getTree(viewportVariant)', t)
 
         // Get pseudo-selector props for this specific variant group AND viewport
         // This ensures hover/active colors are correctly responsive per viewport
         if (effectKey) {
           const viewportValue = component.variantProperties?.[viewportKey]
+          t = perfStart()
           const selectorProps = await getSelectorPropsForGroup(
             componentSet,
             variantFilter,
             viewportValue,
           )
+          perfEnd('getSelectorPropsForGroup(viewport)', t)
           if (Object.keys(selectorProps).length > 0) {
             Object.assign(tree.props, selectorProps)
           }
@@ -432,6 +437,11 @@ export class ResponsiveCodegen {
     componentSet: ComponentSetNode,
     componentName: string,
   ): Promise<ReadonlyArray<readonly [string, string]>> {
+    console.info(
+      `[perf] generateVariantResponsiveComponents: ${componentName}, ${componentSet.children.length} children, ${Object.keys(componentSet.componentPropertyDefinitions).length} variant keys`,
+    )
+    const tTotal = perfStart()
+
     // Find viewport variant key
     const viewportKey = Object.keys(
       componentSet.componentPropertyDefinitions,
@@ -468,28 +478,34 @@ export class ResponsiveCodegen {
 
     // If effect variant only, generate code from defaultVariant with pseudo-selectors
     if (effectKey && !viewportKey && otherVariantKeys.length === 0) {
-      return ResponsiveCodegen.generateEffectOnlyComponents(
+      const r = await ResponsiveCodegen.generateEffectOnlyComponents(
         componentSet,
         componentName,
       )
+      perfEnd('generateVariantResponsiveComponents(total)', tTotal)
+      return r
     }
 
     // If no viewport variant, just handle other variants
     if (!viewportKey) {
-      return ResponsiveCodegen.generateNonViewportVariantComponents(
+      const r = await ResponsiveCodegen.generateNonViewportVariantComponents(
         componentSet,
         componentName,
         otherVariantKeys,
         variants,
       )
+      perfEnd('generateVariantResponsiveComponents(total)', tTotal)
+      return r
     }
 
     // If no other variants, use existing viewport-only logic
     if (otherVariantKeys.length === 0) {
-      return ResponsiveCodegen.generateViewportResponsiveComponents(
+      const r = await ResponsiveCodegen.generateViewportResponsiveComponents(
         componentSet,
         componentName,
       )
+      perfEnd('generateVariantResponsiveComponents(total)', tTotal)
+      return r
     }
 
     // Handle both viewport and other variants
@@ -564,6 +580,7 @@ export class ResponsiveCodegen {
     }
 
     if (byCompositeVariant.size === 0) {
+      perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return []
     }
 
@@ -581,18 +598,22 @@ export class ResponsiveCodegen {
 
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
+        let t = perfStart()
         const codegen = new Codegen(component)
         const tree = await codegen.getTree()
+        perfEnd('Codegen.getTree(variant)', t)
 
         // Get pseudo-selector props for this specific variant group AND viewport
         // This ensures hover/active colors are correctly responsive per viewport
         if (effectKey) {
           const viewportValue = component.variantProperties?.[viewportKey]
+          t = perfStart()
           const selectorProps = await getSelectorPropsForGroup(
             componentSet,
             variantFilter,
             viewportValue,
           )
+          perfEnd('getSelectorPropsForGroup()', t)
           if (Object.keys(selectorProps).length > 0) {
             Object.assign(tree.props, selectorProps)
           }
@@ -691,12 +712,16 @@ export class ResponsiveCodegen {
       const variantFilter: Record<string, string> = {
         [primaryVariantKey]: variantValue,
       }
+      let t = perfStart()
       const selectorProps = hasEffect
         ? await getSelectorPropsForGroup(componentSet, variantFilter)
         : null
+      perfEnd('getSelectorPropsForGroup(nonViewport)', t)
 
+      t = perfStart()
       const codegen = new Codegen(component)
       const tree = await codegen.getTree()
+      perfEnd('Codegen.getTree(nonViewportVariant)', t)
       // Add pseudo-selector props to tree
       if (selectorProps && Object.keys(selectorProps).length > 0) {
         Object.assign(tree.props, selectorProps)

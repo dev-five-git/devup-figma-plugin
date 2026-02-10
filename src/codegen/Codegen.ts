@@ -12,18 +12,19 @@ import {
   getDevupComponentByProps,
 } from './utils/get-devup-component'
 import { getPageNode } from './utils/get-page-node'
+import { perfEnd, perfStart } from './utils/perf'
 import { buildCssUrl } from './utils/wrap-url'
 
 export class Codegen {
   components: Map<
-    SceneNode,
-    { code: string; variants: Record<string, string> }
+    string,
+    { node: SceneNode; code: string; variants: Record<string, string> }
   > = new Map()
   code: string = ''
 
   // Tree representations
   private tree: NodeTree | null = null
-  private componentTrees: Map<SceneNode, ComponentTree> = new Map()
+  private componentTrees: Map<string, ComponentTree> = new Map()
 
   constructor(private node: SceneNode) {
     this.node = node
@@ -44,8 +45,8 @@ export class Codegen {
   }
 
   getComponentsCodes() {
-    return Array.from(this.components.entries()).map(
-      ([node, { code, variants }]) =>
+    return Array.from(this.components.values()).map(
+      ({ node, code, variants }) =>
         [
           getComponentName(node),
           renderComponent(getComponentName(node), code, variants),
@@ -54,11 +55,11 @@ export class Codegen {
   }
 
   /**
-   * Get the component nodes (SceneNode keys from components Map).
+   * Get the component nodes (SceneNode values from components Map).
    * Useful for generating responsive codes for each component.
    */
   getComponentNodes() {
-    return Array.from(this.components.keys())
+    return Array.from(this.components.values()).map(({ node }) => node)
   }
 
   /**
@@ -77,9 +78,10 @@ export class Codegen {
     }
 
     // Sync componentTrees to components
-    for (const [compNode, compTree] of this.componentTrees) {
-      if (!this.components.has(compNode)) {
-        this.components.set(compNode, {
+    for (const [compId, compTree] of this.componentTrees) {
+      if (!this.components.has(compId)) {
+        this.components.set(compId, {
+          node: compTree.node,
           code: Codegen.renderTree(compTree.tree, 0),
           variants: compTree.variants,
         })
@@ -94,6 +96,7 @@ export class Codegen {
    * This is the intermediate JSON representation that can be compared/merged.
    */
   async buildTree(node: SceneNode = this.node): Promise<NodeTree> {
+    const tBuild = perfStart()
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
@@ -109,6 +112,7 @@ export class Codegen {
           delete props.src
         }
       }
+      perfEnd('buildTree()', tBuild)
       return {
         component: 'src' in props ? 'Image' : 'Box',
         props,
@@ -118,23 +122,27 @@ export class Codegen {
       }
     }
 
-    const props = await getProps(node)
+    // Run getProps and component tree registration in parallel with children building.
+    // These are independent: props depend only on this node, children depend on child nodes.
+    const propsPromise = getProps(node)
 
     // Handle COMPONENT_SET or COMPONENT - add to componentTrees
-    if (
+    const componentTreePromise =
       (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
       ((this.node.type === 'COMPONENT_SET' &&
         node === this.node.defaultVariant) ||
         this.node.type === 'COMPONENT')
-    ) {
-      await this.addComponentTree(
-        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-      )
-    }
+        ? this.addComponentTree(
+            node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
+          )
+        : undefined
 
     // Handle INSTANCE nodes - treat as component reference
     if (node.type === 'INSTANCE') {
-      const mainComponent = await node.getMainComponentAsync()
+      const [props, mainComponent] = await Promise.all([
+        propsPromise,
+        node.getMainComponentAsync(),
+      ])
       if (mainComponent) await this.addComponentTree(mainComponent)
 
       const componentName = getComponentName(mainComponent || node)
@@ -144,6 +152,7 @@ export class Codegen {
 
       // Check if needs position wrapper
       if (props.pos) {
+        perfEnd('buildTree()', tBuild)
         return {
           component: 'Box',
           props: {
@@ -174,6 +183,7 @@ export class Codegen {
         }
       }
 
+      perfEnd('buildTree()', tBuild)
       return {
         component: componentName,
         props: variantProps,
@@ -184,17 +194,26 @@ export class Codegen {
       }
     }
 
-    // Build children recursively
-    const children: NodeTree[] = []
-    if ('children' in node) {
-      for (const child of node.children) {
-        if (child.type === 'INSTANCE') {
-          const mainComponent = await child.getMainComponentAsync()
-          if (mainComponent) await this.addComponentTree(mainComponent)
-        }
-        children.push(await this.buildTree(child))
-      }
-    }
+    // Build children in parallel — each subtree is independent
+    const childrenPromise =
+      'children' in node
+        ? Promise.all(
+            (node.children as SceneNode[]).map(async (child) => {
+              if (child.type === 'INSTANCE') {
+                const mainComponent = await child.getMainComponentAsync()
+                if (mainComponent) await this.addComponentTree(mainComponent)
+              }
+              return this.buildTree(child)
+            }),
+          )
+        : Promise.resolve([] as NodeTree[])
+
+    // Wait for props, children, and component tree in parallel
+    const [props, children] = await Promise.all([
+      propsPromise,
+      childrenPromise,
+      componentTreePromise,
+    ])
 
     // Handle TEXT nodes
     let textChildren: string[] | undefined
@@ -206,6 +225,7 @@ export class Codegen {
 
     const component = getDevupComponentByNode(node, props)
 
+    perfEnd('buildTree()', tBuild)
     return {
       component,
       props,
@@ -230,29 +250,58 @@ export class Codegen {
   /**
    * Get component trees (for COMPONENT_SET/COMPONENT nodes).
    */
-  getComponentTrees(): Map<SceneNode, ComponentTree> {
+  getComponentTrees(): Map<string, ComponentTree> {
     return this.componentTrees
   }
 
   /**
    * Add a component to componentTrees.
    */
+  // Cache in-flight addComponentTree promises to prevent duplicate work
+  // when multiple INSTANCE nodes reference the same component
+  private addComponentTreePromises: Map<string, Promise<void>> = new Map()
+
   private async addComponentTree(node: ComponentNode): Promise<void> {
-    if (this.componentTrees.has(node)) return
+    const nodeId = node.id || node.name
+    if (this.componentTrees.has(nodeId)) return
 
-    const childrenTrees: NodeTree[] = []
-    if ('children' in node) {
-      for (const child of node.children) {
-        if (child.type === 'INSTANCE') {
-          const mainComponent = await child.getMainComponentAsync()
-          if (mainComponent) await this.addComponentTree(mainComponent)
-        }
-        childrenTrees.push(await this.buildTree(child))
-      }
-    }
+    // If already in-flight, await the same promise
+    const inflight = this.addComponentTreePromises.get(nodeId)
+    if (inflight) return inflight
 
-    const props = await getProps(node)
-    const selectorProps = await getSelectorProps(node)
+    const promise = this.doAddComponentTree(node, nodeId)
+    this.addComponentTreePromises.set(nodeId, promise)
+    return promise
+  }
+
+  private async doAddComponentTree(
+    node: ComponentNode,
+    nodeId: string,
+  ): Promise<void> {
+    const tAdd = perfStart()
+
+    // Build children and get props+selectorProps in parallel
+    const childrenPromise =
+      'children' in node
+        ? Promise.all(
+            (node.children as SceneNode[]).map(async (child) => {
+              if (child.type === 'INSTANCE') {
+                const mainComponent = await child.getMainComponentAsync()
+                if (mainComponent) await this.addComponentTree(mainComponent)
+              }
+              return this.buildTree(child)
+            }),
+          )
+        : Promise.resolve([] as NodeTree[])
+
+    const t = perfStart()
+    const [childrenTrees, props, selectorProps] = await Promise.all([
+      childrenPromise,
+      getProps(node),
+      getSelectorProps(node),
+    ])
+    perfEnd('getSelectorProps()', t)
+
     const variants: Record<string, string> = {}
 
     if (selectorProps) {
@@ -260,8 +309,9 @@ export class Codegen {
       Object.assign(variants, selectorProps.variants)
     }
 
-    this.componentTrees.set(node, {
+    this.componentTrees.set(nodeId, {
       name: getComponentName(node),
+      node,
       tree: {
         component: getDevupComponentByProps(props),
         props,
@@ -271,6 +321,7 @@ export class Codegen {
       },
       variants,
     })
+    perfEnd('addComponentTree()', tAdd)
   }
 
   /**
