@@ -4,12 +4,13 @@ import { resetSelectorPropsCache } from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
 import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
+import { resetVariableCache } from './codegen/utils/variable-cache'
 import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
 import { exportPagesAndComponents } from './commands/exportPagesAndComponents'
-import { getComponentName } from './utils'
+import { getComponentName, resetTextStyleCache } from './utils'
 import { toPascal } from './utils/to-pascal'
 
 const DEVUP_COMPONENTS = [
@@ -132,6 +133,8 @@ export function registerCodegen(ctx: typeof figma) {
           perfReset()
           resetGetPropsCache()
           resetSelectorPropsCache()
+          resetVariableCache()
+          resetTextStyleCache()
 
           let t = perfStart()
           const codegen = new Codegen(node)

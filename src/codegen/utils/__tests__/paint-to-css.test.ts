@@ -1,5 +1,6 @@
-import { describe, expect, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { paintToCSS } from '../paint-to-css'
+import { resetVariableCache } from '../variable-cache'
 
 // mock asset checker to avoid real node handling
 mock.module('../check-asset-node', () => ({
@@ -7,6 +8,9 @@ mock.module('../check-asset-node', () => ({
 }))
 
 describe('paintToCSS', () => {
+  beforeEach(() => {
+    resetVariableCache()
+  })
   test('converts image paint with TILE scaleMode to repeat url', async () => {
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },

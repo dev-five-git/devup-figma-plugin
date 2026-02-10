@@ -1,6 +1,33 @@
 import { toCamel } from './utils/to-camel'
 import { toPascal } from './utils/to-pascal'
 
+// Cache for figma.getLocalTextStylesAsync() — called once per codegen run
+let localTextStyleIdsCache: Promise<Set<string>> | null = null
+
+function getLocalTextStyleIds(): Promise<Set<string>> {
+  if (localTextStyleIdsCache) return localTextStyleIdsCache
+  localTextStyleIdsCache = Promise.resolve(
+    figma.getLocalTextStylesAsync(),
+  ).then((styles) => new Set(styles.map((s) => s.id)))
+  return localTextStyleIdsCache
+}
+
+// Cache for figma.getStyleByIdAsync() — keyed by style ID
+const styleByIdCache = new Map<string, Promise<BaseStyle | null>>()
+
+function getStyleByIdCached(styleId: string): Promise<BaseStyle | null> {
+  const cached = styleByIdCache.get(styleId)
+  if (cached) return cached
+  const promise = Promise.resolve(figma.getStyleByIdAsync(styleId))
+  styleByIdCache.set(styleId, promise)
+  return promise
+}
+
+export function resetTextStyleCache(): void {
+  localTextStyleIdsCache = null
+  styleByIdCache.clear()
+}
+
 export async function propsToPropsWithTypography(
   props: Record<string, unknown>,
   textStyleId: string,
@@ -8,9 +35,9 @@ export async function propsToPropsWithTypography(
   const ret: Record<string, unknown> = { ...props }
   delete ret.w
   delete ret.h
-  const styles = await figma.getLocalTextStylesAsync()
-  if (textStyleId && styles.find((style) => style.id === textStyleId)) {
-    const style = await figma.getStyleByIdAsync(textStyleId)
+  const localStyleIds = await getLocalTextStyleIds()
+  if (textStyleId && localStyleIds.has(textStyleId)) {
+    const style = await getStyleByIdCached(textStyleId)
     if (style) {
       const split = style.name.split('/')
       ret.typography = toCamel(split[split.length - 1])

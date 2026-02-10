@@ -212,13 +212,11 @@ export class Codegen {
 
     // Build children sequentially to avoid Figma API contention.
     // getProps(node) is already in-flight concurrently above.
+    // INSTANCE children are handled inside doBuildTree when buildTree(child) recurses —
+    // no pre-call to getMainComponentAsync needed (was causing duplicate Figma API calls).
     const children: NodeTree[] = []
     if ('children' in node) {
       for (const child of node.children) {
-        if (child.type === 'INSTANCE') {
-          const mainComponent = await child.getMainComponentAsync()
-          if (mainComponent) await this.addComponentTree(mainComponent)
-        }
         children.push(await this.buildTree(child))
       }
     }
@@ -296,14 +294,11 @@ export class Codegen {
     const t = perfStart()
     const selectorPropsPromise = getSelectorProps(node)
 
-    // Build children sequentially to avoid Figma API contention
+    // Build children sequentially to avoid Figma API contention.
+    // INSTANCE children are handled inside doBuildTree when buildTree(child) recurses.
     const childrenTrees: NodeTree[] = []
     if ('children' in node) {
       for (const child of node.children) {
-        if (child.type === 'INSTANCE') {
-          const mainComponent = await child.getMainComponentAsync()
-          if (mainComponent) await this.addComponentTree(mainComponent)
-        }
         childrenTrees.push(await this.buildTree(child))
       }
     }

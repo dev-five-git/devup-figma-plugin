@@ -2,6 +2,7 @@ import { propsToPropsWithTypography } from '../../utils'
 import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
 import { fixTextChild } from '../utils/fix-text-child'
 import { paintToCSS } from '../utils/paint-to-css'
+import { perfEnd, perfStart } from '../utils/perf'
 import { renderNode } from '.'
 
 /**
@@ -34,6 +35,7 @@ export async function renderText(node: TextNode): Promise<{
   children: string[]
   props: Record<string, string>
 }> {
+  const tRender = perfStart()
   const segs = node.getStyledTextSegments(SEGMENT_TYPE)
 
   // select main color
@@ -139,7 +141,8 @@ export async function renderText(node: TextNode): Promise<{
   )
   const resultChildren = children.flat()
 
-  if (resultChildren.length === 1)
+  if (resultChildren.length === 1) {
+    perfEnd('renderText()', tRender)
     return {
       children: resultChildren[0].children,
       props: {
@@ -147,7 +150,9 @@ export async function renderText(node: TextNode): Promise<{
         ...resultChildren[0].props,
       },
     }
+  }
 
+  perfEnd('renderText()', tRender)
   return {
     children: resultChildren.map((child) => {
       if (Object.keys(child.props).length === 0)

@@ -51,6 +51,19 @@ export async function getProps(
     // Fire all async prop getters in parallel — they are independent
     // (no shared mutable state, no inter-function data dependencies).
     // Skip TEXT-only async getters for non-TEXT nodes.
+    const tBorder = perfStart()
+    const borderP = getBorderProps(node)
+    const tBg = perfStart()
+    const bgP = getBackgroundProps(node)
+    const tEffect = perfStart()
+    const effectP = getEffectProps(node)
+    const tTextStroke = perfStart()
+    const textStrokeP = isText ? getTextStrokeProps(node) : undefined
+    const tTextShadow = perfStart()
+    const textShadowP = isText ? getTextShadowProps(node) : undefined
+    const tReaction = perfStart()
+    const reactionP = getReactionProps(node)
+
     const [
       borderProps,
       backgroundProps,
@@ -59,12 +72,34 @@ export async function getProps(
       textShadowProps,
       reactionProps,
     ] = await Promise.all([
-      getBorderProps(node),
-      getBackgroundProps(node),
-      getEffectProps(node),
-      isText ? getTextStrokeProps(node) : undefined,
-      isText ? getTextShadowProps(node) : undefined,
-      getReactionProps(node),
+      borderP.then((r) => {
+        perfEnd('getProps.border', tBorder)
+        return r
+      }),
+      bgP.then((r) => {
+        perfEnd('getProps.background', tBg)
+        return r
+      }),
+      effectP.then((r) => {
+        perfEnd('getProps.effect', tEffect)
+        return r
+      }),
+      textStrokeP
+        ? textStrokeP.then((r) => {
+            perfEnd('getProps.textStroke', tTextStroke)
+            return r
+          })
+        : undefined,
+      textShadowP
+        ? textShadowP.then((r) => {
+            perfEnd('getProps.textShadow', tTextShadow)
+            return r
+          })
+        : undefined,
+      reactionP.then((r) => {
+        perfEnd('getProps.reaction', tReaction)
+        return r
+      }),
     ])
 
     return {
