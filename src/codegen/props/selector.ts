@@ -65,8 +65,11 @@ function toTransitionPropertyName(key: string): string {
 const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
 
 export function sanitizePropertyName(name: string): string {
+  // 0. Strip Figma's internal "#nodeId:uniqueId" suffix (e.g., "leftIcon#60:123" → "leftIcon")
+  const stripped = name.replace(/#\d+:\d+$/, '')
+
   // 1. 한글 '속성'을 'property'로 변환 (공백 포함 처리: "속성1" → "property1")
-  const normalized = name.trim().replace(/속성\s*/g, 'property') // 한글 '속성' + 뒤따르는 공백을 'property'로 변환
+  const normalized = stripped.trim().replace(/속성\s*/g, 'property') // 한글 '속성' + 뒤따르는 공백을 'property'로 변환
 
   // 2. 공백과 특수문자를 처리하여 camelCase로 변환
   const result = normalized
@@ -143,13 +146,17 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
 
   const result = Object.entries(node.componentPropertyDefinitions).reduce(
     (acc, [name, definition]) => {
-      if (name !== 'effect' && name !== 'viewport') {
-        const sanitizedName = sanitizePropertyName(name)
-        // variant 옵션값들을 문자열 리터럴로 감싸기
-        acc.variants[sanitizedName] =
-          definition.variantOptions
-            ?.map((option) => `'${option}'`)
-            .join(' | ') || ''
+      if (name === 'effect' || name === 'viewport') return acc
+
+      const sanitizedName = sanitizePropertyName(name)
+      if (definition.type === 'VARIANT' && definition.variantOptions) {
+        acc.variants[sanitizedName] = definition.variantOptions
+          .map((option) => `'${option}'`)
+          .join(' | ')
+      } else if (definition.type === 'INSTANCE_SWAP') {
+        acc.variants[sanitizedName] = 'React.ReactNode'
+      } else if (definition.type === 'BOOLEAN') {
+        acc.variants[sanitizedName] = 'boolean'
       }
       return acc
     },

@@ -3,6 +3,7 @@ import { getComponentName } from '../../utils'
 import { toPascal } from '../../utils/to-pascal'
 import { Codegen } from '../Codegen'
 import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
+import type { NodeTree } from '../types'
 import { assembleNodeTree, type NodeData } from '../utils/node-proxy'
 import { wrapComponent } from '../utils/wrap-component'
 
@@ -3649,6 +3650,180 @@ describe('Codegen Tree Methods', () => {
       const componentTrees = codegen.getComponentTrees()
       expect(componentTrees.size).toBe(2) // ParentComp and NestedComp
     })
+
+    test('detects INSTANCE_SWAP slots via componentPropertyReferences', async () => {
+      const iconChild = {
+        type: 'INSTANCE',
+        name: 'IconInstance',
+        visible: true,
+        componentPropertyReferences: { mainComponent: 'leftIcon#60:123' },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'Icon',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [iconChild],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'ButtonWithSlot',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          'leftIcon#60:123': {
+            type: 'INSTANCE_SWAP',
+            defaultValue: '1:1',
+            preferredValues: [],
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      expect(componentTrees.size).toBeGreaterThan(0)
+
+      // Find the ButtonWithSlot component tree
+      const compTree = [...componentTrees.values()].find(
+        (ct) => ct.name === 'ButtonWithSlot',
+      )
+      expect(compTree).toBeDefined()
+
+      // The icon child should be turned into a slot placeholder
+      const slotChild = compTree?.tree.children.find((c) => c.isSlot)
+      expect(slotChild).toBeDefined()
+      expect(slotChild?.component).toBe('leftIcon')
+      expect(slotChild?.nodeType).toBe('SLOT')
+    })
+
+    test('detects BOOLEAN conditions via componentPropertyReferences', async () => {
+      const conditionalChild = {
+        type: 'FRAME',
+        name: 'ConditionalFrame',
+        children: [],
+        visible: true,
+        componentPropertyReferences: { visible: 'showIcon#70:456' },
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as FrameNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [conditionalChild],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'ButtonWithBool',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          'showIcon#70:456': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      const compTree = [...componentTrees.values()].find(
+        (ct) => ct.name === 'ButtonWithBool',
+      )
+      expect(compTree).toBeDefined()
+
+      // The conditional child should have a condition set
+      const condChild = compTree?.tree.children.find((c) => c.condition)
+      expect(condChild).toBeDefined()
+      expect(condChild?.condition).toBe('showIcon')
+    })
+
+    test('detects combined INSTANCE_SWAP + BOOLEAN slot with condition', async () => {
+      const iconChild = {
+        type: 'INSTANCE',
+        name: 'IconInstance',
+        visible: true,
+        componentPropertyReferences: {
+          mainComponent: 'leftIcon#60:123',
+          visible: 'showIcon#70:456',
+        },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'Icon',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [iconChild],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'ButtonWithSlotAndBool',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          'leftIcon#60:123': {
+            type: 'INSTANCE_SWAP',
+            defaultValue: '1:1',
+            preferredValues: [],
+          },
+          'showIcon#70:456': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      const compTree = [...componentTrees.values()].find(
+        (ct) => ct.name === 'ButtonWithSlotAndBool',
+      )
+      expect(compTree).toBeDefined()
+
+      // Should be a slot with condition
+      const slotChild = compTree?.tree.children.find((c) => c.isSlot)
+      expect(slotChild).toBeDefined()
+      expect(slotChild?.component).toBe('leftIcon')
+      expect(slotChild?.condition).toBe('showIcon')
+
+      // renderTree should produce {showIcon && leftIcon}
+      const rendered = Codegen.renderTree(slotChild as NodeTree)
+      expect(rendered).toBe('{showIcon && leftIcon}')
+    })
   })
 
   describe('renderTree (static)', () => {
@@ -3755,6 +3930,44 @@ describe('Codegen Tree Methods', () => {
 
       const result = Codegen.renderTree(tree)
       expect(result).toContain('<MyButton')
+    })
+
+    test('renders multi-line conditional with extra indent', () => {
+      const tree: NodeTree = {
+        component: 'Flex',
+        props: { gap: '10px' },
+        children: [
+          {
+            component: 'Box',
+            props: { w: '20px' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Inner',
+          },
+        ],
+        nodeType: 'FRAME',
+        nodeName: 'ConditionalWrapper',
+        condition: 'showContent',
+      }
+
+      const result = Codegen.renderTree(tree)
+      // Multi-line result should be indented inside the conditional
+      expect(result).toMatch(/^\{showContent && \(\n {2}<Flex/)
+      expect(result).toMatch(/\n\)\}$/)
+    })
+
+    test('renders single-line conditional without extra indent', () => {
+      const tree: NodeTree = {
+        component: 'Box',
+        props: {},
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'SimpleConditional',
+        condition: 'showBox',
+      }
+
+      const result = Codegen.renderTree(tree)
+      expect(result).toBe('{showBox && <Box />}')
     })
   })
 

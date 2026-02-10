@@ -50,7 +50,10 @@ export function renderComponent(
   const interfaceCode = hasVariants
     ? `export interface ${component}Props {
 ${Object.entries(filteredVariants)
-  .map(([key, value]) => `  ${key}: ${value}`)
+  .map(([key, value]) => {
+    const optional = value === 'boolean' ? '?' : ''
+    return `  ${key}${optional}: ${value}`
+  })
   .join('\n')}
 }\n\n`
     : ''

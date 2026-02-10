@@ -154,6 +154,25 @@ export function Banner({ size }: BannerProps) {
   )
 }`,
     },
+    {
+      title: 'renders boolean variants as optional in interface',
+      component: 'Button',
+      code: '<Center />',
+      variants: {
+        leftIcon: 'boolean',
+        size: '"sm" | "lg"',
+        rightIcon: 'boolean',
+      } as Record<string, string>,
+      expected: `export interface ButtonProps {
+  leftIcon?: boolean
+  size: "sm" | "lg"
+  rightIcon?: boolean
+}
+
+export function Button({ leftIcon, size, rightIcon }: ButtonProps) {
+  return <Center />
+}`,
+    },
   ])('$title', ({ component, code, variants, expected }) => {
     const result = renderComponent(component, code, variants)
     expect(result).toBe(expected)
