@@ -64,13 +64,16 @@ export class ResponsiveCodegen {
       return Codegen.renderTree(tree, 0)
     }
 
-    // Extract trees per breakpoint using Codegen.
-    const breakpointTrees = new Map<BreakpointKey, NodeTree>()
-    for (const [bp, node] of this.breakpointNodes) {
-      const codegen = new Codegen(node)
-      const tree = await codegen.getTree()
-      breakpointTrees.set(bp, tree)
-    }
+    // Extract trees per breakpoint using Codegen — all independent, run in parallel.
+    const breakpointEntries = [...this.breakpointNodes.entries()]
+    const treeResults = await Promise.all(
+      breakpointEntries.map(async ([bp, node]) => {
+        const codegen = new Codegen(node)
+        const tree = await codegen.getTree()
+        return [bp, tree] as const
+      }),
+    )
+    const breakpointTrees = new Map<BreakpointKey, NodeTree>(treeResults)
 
     // Merge trees and generate code.
     return this.generateMergedCode(breakpointTrees, 0)
@@ -383,32 +386,37 @@ export class ResponsiveCodegen {
         }
       }
 
-      // Build trees for each viewport
-      const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
-      for (const [bp, component] of viewportComponents) {
-        let t = perfStart()
-        const codegen = new Codegen(component)
-        const tree = await codegen.getTree()
-        perfEnd('Codegen.getTree(viewportVariant)', t)
+      // Build trees for each viewport — all independent, run in parallel.
+      const viewportEntries = [...viewportComponents.entries()]
+      const viewportTreeResults = await Promise.all(
+        viewportEntries.map(async ([bp, component]) => {
+          let t = perfStart()
+          const codegen = new Codegen(component)
+          const tree = await codegen.getTree()
+          perfEnd('Codegen.getTree(viewportVariant)', t)
 
-        // Get pseudo-selector props for this specific variant group AND viewport
-        // This ensures hover/active colors are correctly responsive per viewport
-        if (effectKey) {
-          const viewportValue = component.variantProperties?.[viewportKey]
-          t = perfStart()
-          const selectorProps = await getSelectorPropsForGroup(
-            componentSet,
-            variantFilter,
-            viewportValue,
-          )
-          perfEnd('getSelectorPropsForGroup(viewport)', t)
-          if (Object.keys(selectorProps).length > 0) {
-            Object.assign(tree.props, selectorProps)
+          // Get pseudo-selector props for this specific variant group AND viewport
+          // This ensures hover/active colors are correctly responsive per viewport
+          if (effectKey) {
+            const viewportValue = component.variantProperties?.[viewportKey]
+            t = perfStart()
+            const selectorProps = await getSelectorPropsForGroup(
+              componentSet,
+              variantFilter,
+              viewportValue,
+            )
+            perfEnd('getSelectorPropsForGroup(viewport)', t)
+            if (Object.keys(selectorProps).length > 0) {
+              Object.assign(tree.props, selectorProps)
+            }
           }
-        }
 
-        treesByBreakpoint.set(bp, tree)
-      }
+          return [bp, tree] as const
+        }),
+      )
+      const treesByBreakpoint = new Map<BreakpointKey, NodeTree>(
+        viewportTreeResults,
+      )
 
       // Generate merged responsive code
       const mergedCode = responsiveCodegen.generateMergedCode(
@@ -592,35 +600,48 @@ export class ResponsiveCodegen {
       Map<BreakpointKey, NodeTree>
     >()
 
-    for (const [compositeKey, viewportComponents] of byCompositeVariant) {
-      // Use original names for Figma data access
-      const variantFilter = parseCompositeKeyToOriginal(compositeKey)
+    // Build trees for all composite variants in parallel — each is independent.
+    const compositeEntries = [...byCompositeVariant.entries()]
+    const compositeResults = await Promise.all(
+      compositeEntries.map(async ([compositeKey, viewportComponents]) => {
+        // Use original names for Figma data access
+        const variantFilter = parseCompositeKeyToOriginal(compositeKey)
 
-      const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
-      for (const [bp, component] of viewportComponents) {
-        let t = perfStart()
-        const codegen = new Codegen(component)
-        const tree = await codegen.getTree()
-        perfEnd('Codegen.getTree(variant)', t)
+        // Build trees for each viewport within this composite — also parallel.
+        const vpEntries = [...viewportComponents.entries()]
+        const vpResults = await Promise.all(
+          vpEntries.map(async ([bp, component]) => {
+            let t = perfStart()
+            const codegen = new Codegen(component)
+            const tree = await codegen.getTree()
+            perfEnd('Codegen.getTree(variant)', t)
 
-        // Get pseudo-selector props for this specific variant group AND viewport
-        // This ensures hover/active colors are correctly responsive per viewport
-        if (effectKey) {
-          const viewportValue = component.variantProperties?.[viewportKey]
-          t = perfStart()
-          const selectorProps = await getSelectorPropsForGroup(
-            componentSet,
-            variantFilter,
-            viewportValue,
-          )
-          perfEnd('getSelectorPropsForGroup()', t)
-          if (Object.keys(selectorProps).length > 0) {
-            Object.assign(tree.props, selectorProps)
-          }
-        }
+            // Get pseudo-selector props for this specific variant group AND viewport
+            if (effectKey) {
+              const viewportValue = component.variantProperties?.[viewportKey]
+              t = perfStart()
+              const selectorProps = await getSelectorPropsForGroup(
+                componentSet,
+                variantFilter,
+                viewportValue,
+              )
+              perfEnd('getSelectorPropsForGroup()', t)
+              if (Object.keys(selectorProps).length > 0) {
+                Object.assign(tree.props, selectorProps)
+              }
+            }
 
-        treesByBreakpoint.set(bp, tree)
-      }
+            return [bp, tree] as const
+          }),
+        )
+
+        return [
+          compositeKey,
+          new Map<BreakpointKey, NodeTree>(vpResults),
+        ] as const
+      }),
+    )
+    for (const [compositeKey, treesByBreakpoint] of compositeResults) {
       responsivePropsByComposite.set(compositeKey, treesByBreakpoint)
     }
 
@@ -705,29 +726,32 @@ export class ResponsiveCodegen {
       componentSet.componentPropertyDefinitions,
     ).some((key) => key.toLowerCase() === 'effect')
 
-    // Build trees for each variant
-    const treesByVariant = new Map<string, NodeTree>()
-    for (const [variantValue, component] of componentsByVariant) {
-      // Get pseudo-selector props for this specific variant group
-      const variantFilter: Record<string, string> = {
-        [primaryVariantKey]: variantValue,
-      }
-      let t = perfStart()
-      const selectorProps = hasEffect
-        ? await getSelectorPropsForGroup(componentSet, variantFilter)
-        : null
-      perfEnd('getSelectorPropsForGroup(nonViewport)', t)
+    // Build trees for each variant — all independent, run in parallel.
+    const variantEntries = [...componentsByVariant.entries()]
+    const variantResults = await Promise.all(
+      variantEntries.map(async ([variantValue, component]) => {
+        // Get pseudo-selector props for this specific variant group
+        const variantFilter: Record<string, string> = {
+          [primaryVariantKey]: variantValue,
+        }
+        let t = perfStart()
+        const selectorProps = hasEffect
+          ? await getSelectorPropsForGroup(componentSet, variantFilter)
+          : null
+        perfEnd('getSelectorPropsForGroup(nonViewport)', t)
 
-      t = perfStart()
-      const codegen = new Codegen(component)
-      const tree = await codegen.getTree()
-      perfEnd('Codegen.getTree(nonViewportVariant)', t)
-      // Add pseudo-selector props to tree
-      if (selectorProps && Object.keys(selectorProps).length > 0) {
-        Object.assign(tree.props, selectorProps)
-      }
-      treesByVariant.set(variantValue, tree)
-    }
+        t = perfStart()
+        const codegen = new Codegen(component)
+        const tree = await codegen.getTree()
+        perfEnd('Codegen.getTree(nonViewportVariant)', t)
+        // Add pseudo-selector props to tree
+        if (selectorProps && Object.keys(selectorProps).length > 0) {
+          Object.assign(tree.props, selectorProps)
+        }
+        return [variantValue, tree] as const
+      }),
+    )
+    const treesByVariant = new Map<string, NodeTree>(variantResults)
 
     // Generate merged code with variant conditionals
     const responsiveCodegen = new ResponsiveCodegen(null)

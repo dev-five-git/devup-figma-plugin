@@ -273,12 +273,19 @@ async function computeSelectorPropsForGroup(
   const result: Record<string, object | string> = {}
   const diffKeys = new Set<string>()
 
-  // Calculate diffs for each effect state
-  for (const component of matchingComponents) {
-    const effect = component.variantProperties?.effect
-    if (!effect || effect === 'default') continue
-
-    const props = await getProps(component)
+  // Calculate diffs for each effect state — fire all getProps() concurrently
+  const effectComponents = matchingComponents.filter((c) => {
+    const effect = c.variantProperties?.effect
+    return effect && effect !== 'default'
+  })
+  const effectPropsResults = await Promise.all(
+    effectComponents.map(async (component) => {
+      const effect = component.variantProperties?.effect as string
+      const props = await getProps(component)
+      return { effect, props }
+    }),
+  )
+  for (const { effect, props } of effectPropsResults) {
     const def = difference(props, defaultProps)
     if (Object.keys(def).length === 0) continue
 

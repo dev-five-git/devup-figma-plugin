@@ -108,6 +108,9 @@ export class Codegen {
   // Cache buildTree results by node.id to avoid duplicate subtree builds
   // (e.g., when addComponentTree and main tree walk process the same children)
   private buildTreeCache: Map<string, Promise<NodeTree>> = new Map()
+  // Collect fire-and-forget addComponentTree promises so we can await them
+  // before rendering component codes (decouples INSTANCE buildTree from addComponentTree)
+  private pendingComponentTrees: Promise<void>[] = []
 
   constructor(private node: SceneNode) {
     this.node = node
@@ -160,6 +163,12 @@ export class Codegen {
       this.tree = tree
     }
 
+    // Await all fire-and-forget addComponentTree calls before rendering
+    if (this.pendingComponentTrees.length > 0) {
+      await Promise.all(this.pendingComponentTrees)
+      this.pendingComponentTrees = []
+    }
+
     // Sync componentTrees to components
     for (const [compId, compTree] of this.componentTrees) {
       if (!this.components.has(compId)) {
@@ -203,7 +212,15 @@ export class Codegen {
       this.buildTreeCache.set(cacheKey, promise)
       globalBuildTreeCache.set(cacheKey, promise)
     }
-    return promise
+    const result = await promise
+    // When called as the root-level buildTree (node === this.node),
+    // drain any fire-and-forget addComponentTree promises so that
+    // getComponentTrees() is populated before the caller inspects it.
+    if (node === this.node && this.pendingComponentTrees.length > 0) {
+      await Promise.all(this.pendingComponentTrees)
+      this.pendingComponentTrees = []
+    }
+    return result
   }
 
   private async doBuildTree(node: SceneNode): Promise<NodeTree> {
@@ -237,7 +254,11 @@ export class Codegen {
     // skipping the expensive full getProps() with 6 async Figma API calls.
     if (node.type === 'INSTANCE') {
       const mainComponent = await getMainComponentCached(node)
-      if (mainComponent) await this.addComponentTree(mainComponent)
+      // Fire addComponentTree without awaiting — it runs in the background.
+      // All pending promises are collected and awaited in run() before rendering.
+      if (mainComponent) {
+        this.pendingComponentTrees.push(this.addComponentTree(mainComponent))
+      }
 
       const componentName = getComponentName(mainComponent || node)
       const variantProps = extractInstanceVariantProps(node)
@@ -291,15 +312,17 @@ export class Codegen {
     // Fire getProps early for non-INSTANCE nodes — it runs while we process children.
     const propsPromise = getProps(node)
 
-    // Handle COMPONENT_SET or COMPONENT - add to componentTrees
+    // Handle COMPONENT_SET or COMPONENT - add to componentTrees (fire-and-forget)
     if (
       (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
       ((this.node.type === 'COMPONENT_SET' &&
         node === this.node.defaultVariant) ||
         this.node.type === 'COMPONENT')
     ) {
-      await this.addComponentTree(
-        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
+      this.pendingComponentTrees.push(
+        this.addComponentTree(
+          node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
+        ),
       )
     }
 
@@ -347,6 +370,11 @@ export class Codegen {
   async getTree(): Promise<NodeTree> {
     if (!this.tree) {
       this.tree = await this.buildTree(this.node)
+      // Await any fire-and-forget addComponentTree calls launched during buildTree
+      if (this.pendingComponentTrees.length > 0) {
+        await Promise.all(this.pendingComponentTrees)
+        this.pendingComponentTrees = []
+      }
     }
     return this.tree
   }
