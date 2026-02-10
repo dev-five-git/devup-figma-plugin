@@ -227,9 +227,11 @@ export class Codegen {
       // Returns a CLONE because downstream code mutates tree.props.
       const globalCached = globalBuildTreeCache.get(cacheKey)
       if (globalCached) {
-        const cloned = globalCached.then(cloneTree)
-        this.buildTreeCache.set(cacheKey, cloned)
-        return cloned
+        const resolved = await globalCached
+        const cloned = cloneTree(resolved)
+        const clonedPromise = Promise.resolve(cloned)
+        this.buildTreeCache.set(cacheKey, clonedPromise)
+        return clonedPromise
       }
     }
     const promise = this.doBuildTree(node)

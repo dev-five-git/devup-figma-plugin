@@ -1,7 +1,7 @@
 import { propsToPropsWithTypography } from '../../utils'
 import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
 import { fixTextChild } from '../utils/fix-text-child'
-import { paintToCSS } from '../utils/paint-to-css'
+import { paintToCSS, paintToCSSSyncIfPossible } from '../utils/paint-to-css'
 import { perfEnd, perfStart } from '../utils/perf'
 import { renderNode } from '.'
 
@@ -39,35 +39,33 @@ export async function renderText(node: TextNode): Promise<{
   const segs = node.getStyledTextSegments(SEGMENT_TYPE)
 
   // select main color
-  const propsArray = await Promise.all(
-    segs.map(async (seg) =>
+  const propsArray: Record<string, string>[] = []
+  for (const seg of segs) {
+    const colorParts: string[] = []
+    for (let idx = 0; idx < seg.fills.length; idx++) {
+      const fill = seg.fills[idx]
+      const last = idx === seg.fills.length - 1
+      const color =
+        paintToCSSSyncIfPossible(fill, node, last) ??
+        (await paintToCSS(fill, node, last))
+      if (color) colorParts.push(color)
+    }
+    const typo = await propsToPropsWithTypography(
+      {
+        ...textSegmentToTypography(seg),
+        color: colorParts.join(','),
+        characters: seg.characters,
+      },
+      seg.textStyleId,
+    )
+    propsArray.push(
       Object.fromEntries(
-        Object.entries(
-          await propsToPropsWithTypography(
-            {
-              ...(await textSegmentToTypography(seg)),
-              color: (
-                await Promise.all(
-                  seg.fills.map(
-                    async (fill, idx) =>
-                      await paintToCSS(
-                        fill,
-                        node,
-                        idx === seg.fills.length - 1,
-                      ),
-                  ),
-                )
-              ).join(','),
-              characters: seg.characters,
-            },
-            seg.textStyleId,
-          ),
-        )
+        Object.entries(typo)
           .filter(([_, value]) => Boolean(value))
           .map(([key, value]) => [key, String(value)]),
       ),
-    ),
-  )
+    )
+  }
   let defaultTypographyCount = 0
   let defaultProps: Record<string, string> = {}
 
@@ -87,57 +85,53 @@ export async function renderText(node: TextNode): Promise<{
     defaultProps.wordBreak = 'keep-all'
   }
 
-  const children = await Promise.all(
-    segs.map(
-      async (
-        seg,
-        idx,
-      ): Promise<{
-        children: string[]
-        props: Record<string, string>
-      }> => {
-        const props = propsArray[idx]
-        if (segs.length > 1) {
-          for (const key in defaultProps) {
-            if (defaultProps[key as keyof typeof defaultProps] === props[key])
-              delete props[key]
-          }
+  const children = segs.map(
+    (
+      seg,
+      idx,
+    ): {
+      children: string[]
+      props: Record<string, string>
+    } => {
+      const props = propsArray[idx]
+      if (segs.length > 1) {
+        for (const key in defaultProps) {
+          if (defaultProps[key as keyof typeof defaultProps] === props[key])
+            delete props[key]
         }
-        let text: string[] = [fixTextChild(seg.characters)]
-        let textComponent: 'ul' | 'ol' | null = null
+      }
+      let text: string[] = [fixTextChild(seg.characters)]
+      let textComponent: 'ul' | 'ol' | null = null
 
-        if (seg.listOptions.type === 'NONE') {
-          text = text.map((line) => line.replace(/\r\n|\r|\n/g, '<br />'))
-        } else {
-          switch (seg.listOptions.type) {
-            case 'UNORDERED': {
-              textComponent = 'ul'
-              break
-            }
-            case 'ORDERED': {
-              textComponent = 'ol'
-              break
-            }
+      if (seg.listOptions.type === 'NONE') {
+        text = text.map((line) => line.replace(/\r\n|\r|\n/g, '<br />'))
+      } else {
+        switch (seg.listOptions.type) {
+          case 'UNORDERED': {
+            textComponent = 'ul'
+            break
           }
-          text = text.flatMap((line) =>
-            line.split('\n').map((line) => renderNode('li', {}, 0, [line])),
-          )
+          case 'ORDERED': {
+            textComponent = 'ol'
+            break
+          }
         }
-        const resultProps: Record<string, string> = {
-          ...props,
-          ...(textComponent
-            ? { as: textComponent, my: '0px', pl: '1.5em' }
-            : {}),
-        }
-        delete resultProps.characters
-        if (Object.keys(resultProps).length === 0)
-          return { children: text, props: {} }
-        return {
-          children: text,
-          props: resultProps,
-        }
-      },
-    ),
+        text = text.flatMap((line) =>
+          line.split('\n').map((line) => renderNode('li', {}, 0, [line])),
+        )
+      }
+      const resultProps: Record<string, string> = {
+        ...props,
+        ...(textComponent ? { as: textComponent, my: '0px', pl: '1.5em' } : {}),
+      }
+      delete resultProps.characters
+      if (Object.keys(resultProps).length === 0)
+        return { children: text, props: {} }
+      return {
+        children: text,
+        props: resultProps,
+      }
+    },
   )
   const resultChildren = children.flat()
 

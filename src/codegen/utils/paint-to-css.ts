@@ -43,6 +43,23 @@ async function processGradientStopColor(
 }
 
 /**
+ * Synchronous fast path for processGradientStopColor.
+ * Returns null when the stop has a variable-bound color (caller must use async).
+ */
+function processGradientStopColorSync(
+  stop: ColorStop,
+  opacity: number,
+): string | null {
+  if (stop.boundVariables?.color) return null
+
+  const colorWithOpacity = figma.util.rgba({
+    ...stop.color,
+    a: stop.color.a * opacity,
+  })
+  return optimizeHex(rgbaToHex(colorWithOpacity))
+}
+
+/**
  * Map gradient stops to CSS color strings with positions
  */
 async function mapSimpleGradientStops(
@@ -50,6 +67,20 @@ async function mapSimpleGradientStops(
   opacity: number,
   positionMultiplier: number = 100,
 ): Promise<string> {
+  // Sync fast path: try to resolve all stops without async
+  const syncResults: string[] = []
+  let allSync = true
+  for (const stop of stops) {
+    const color = processGradientStopColorSync(stop, opacity)
+    if (color === null) {
+      allSync = false
+      break
+    }
+    syncResults.push(`${color} ${fmtPct(stop.position * positionMultiplier)}%`)
+  }
+  if (allSync) return syncResults.join(', ')
+
+  // Async fallback for variable-bound colors
   const stopsArray = await Promise.all(
     stops.map(async (stop) => {
       const colorString = await processGradientStopColor(stop, opacity)
@@ -410,27 +441,44 @@ async function _mapGradientStops(
   }
   const cssLengthSquared = cssVector.x ** 2 + cssVector.y ** 2
 
-  return await Promise.all(
+  const mapStop = (stop: ColorStop, colorString: string) => {
+    const offsetX = figmaStartPoint.x + figmaVector.x * stop.position
+    const offsetY = figmaStartPoint.y + figmaVector.y * stop.position
+
+    const pointFromStart = {
+      x: offsetX - cssStartPoint.x,
+      y: offsetY - cssStartPoint.y,
+    }
+    const dot = pointFromStart.x * cssVector.x + pointFromStart.y * cssVector.y
+    const relativePosition = cssLengthSquared === 0 ? 0 : dot / cssLengthSquared
+
+    return {
+      position: relativePosition,
+      colorString,
+      hasToken: !!stop.boundVariables?.color,
+    }
+  }
+
+  // Sync fast path: try to resolve all stop colors without async
+  const syncResults: string[] = []
+  let allSync = true
+  for (const stop of stops) {
+    const color = processGradientStopColorSync(stop, opacity)
+    if (color === null) {
+      allSync = false
+      break
+    }
+    syncResults.push(color)
+  }
+  if (allSync) {
+    return stops.map((stop, i) => mapStop(stop, syncResults[i]))
+  }
+
+  // Async fallback for variable-bound colors
+  return Promise.all(
     stops.map(async (stop) => {
-      const offsetX = figmaStartPoint.x + figmaVector.x * stop.position
-      const offsetY = figmaStartPoint.y + figmaVector.y * stop.position
-
-      const pointFromStart = {
-        x: offsetX - cssStartPoint.x,
-        y: offsetY - cssStartPoint.y,
-      }
-      const dot =
-        pointFromStart.x * cssVector.x + pointFromStart.y * cssVector.y
-      const relativePosition =
-        cssLengthSquared === 0 ? 0 : dot / cssLengthSquared
-
       const colorString = await processGradientStopColor(stop, opacity)
-
-      return {
-        position: relativePosition,
-        colorString,
-        hasToken: !!stop.boundVariables?.color,
-      }
+      return mapStop(stop, colorString)
     }),
   )
 }

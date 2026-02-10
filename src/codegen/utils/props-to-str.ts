@@ -179,8 +179,10 @@ function formatObjectValue(value: unknown, indent: number): string {
 
 export function propsToString(props: Record<string, unknown>) {
   const sorted = Object.entries(props).sort((a, b) => {
-    const isAUpper = /^[A-Z]/.test(a[0])
-    const isBUpper = /^[A-Z]/.test(b[0])
+    const aCode = a[0].charCodeAt(0)
+    const bCode = b[0].charCodeAt(0)
+    const isAUpper = aCode >= 65 && aCode <= 90
+    const isBUpper = bCode >= 65 && bCode <= 90
     if (isAUpper && !isBUpper) return -1
     if (!isAUpper && isBUpper) return 1
     return a[0].localeCompare(b[0])

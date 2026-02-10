@@ -26,9 +26,11 @@ import { getVisibilityProps } from './visibility'
 // For a COMPONENT_SET with N variants, getProps() is called O(N²) without caching
 // because getSelectorProps/getSelectorPropsForGroup call it on overlapping node sets.
 const getPropsCache = new Map<string, Promise<Record<string, unknown>>>()
+const getPropsResolved = new Map<string, Record<string, unknown>>()
 
 export function resetGetPropsCache(): void {
   getPropsCache.clear()
+  getPropsResolved.clear()
 }
 
 export async function getProps(
@@ -36,10 +38,15 @@ export async function getProps(
 ): Promise<Record<string, unknown>> {
   const cacheKey = node.id
   if (cacheKey) {
+    // Sync fast path: return shallow clone from resolved cache (no microtask)
+    const resolved = getPropsResolved.get(cacheKey)
+    if (resolved) {
+      perfEnd('getProps(cached)', perfStart())
+      return { ...resolved }
+    }
     const cached = getPropsCache.get(cacheKey)
     if (cached) {
       perfEnd('getProps(cached)', perfStart())
-      // Return a shallow clone to prevent mutation of cached values
       return { ...(await cached) }
     }
   }
@@ -89,64 +96,74 @@ export async function getProps(
     perfEnd('getProps.sync', tSync)
 
     // PHASE 3: Await async results — likely already resolved during sync phase.
-    const [borderProps, backgroundProps, textStrokeProps, reactionProps] =
-      await Promise.all([
-        borderP.then((r) => {
-          perfEnd('getProps.border', tBorder)
-          return r
-        }),
-        bgP.then((r) => {
-          perfEnd('getProps.background', tBg)
-          return r
-        }),
-        textStrokeP
-          ? textStrokeP.then((r) => {
-              perfEnd('getProps.textStroke', tTextStroke)
-              return r
-            })
-          : undefined,
-        reactionP.then((r) => {
-          perfEnd('getProps.reaction', tReaction)
-          return r
-        }),
-      ])
+    // Sequential await: all 4 promises are already in-flight, so this just
+    // picks up resolved values in order without Promise.all + .then() overhead.
+    const borderProps = await borderP
+    perfEnd('getProps.border', tBorder)
+    const backgroundProps = await bgP
+    perfEnd('getProps.background', tBg)
+    const textStrokeProps = textStrokeP ? await textStrokeP : undefined
+    if (textStrokeP) perfEnd('getProps.textStroke', tTextStroke)
+    const reactionProps = await reactionP
+    perfEnd('getProps.reaction', tReaction)
 
     // PHASE 4: Merge in the ORIGINAL interleaved order to preserve last-key-wins.
     // async results (border, background, effect, textStroke, textShadow, reaction)
     // are placed at their original positions relative to sync getters.
-    return {
-      ...autoLayoutProps,
-      ...minMaxProps,
-      ...layoutProps,
-      ...borderRadiusProps,
-      ...borderProps,
-      ...backgroundProps,
-      ...blendProps,
-      ...paddingProps,
-      ...textAlignProps,
-      ...objectFitProps,
-      ...maxLineProps,
-      ...ellipsisProps,
-      ...effectProps,
-      ...positionProps,
-      ...gridChildProps,
-      ...transformProps,
-      ...overflowProps,
-      ...textStrokeProps,
-      ...textShadowProps,
-      ...reactionProps,
-      ...cursorProps,
-      ...visibilityProps,
-    }
+    const result: Record<string, unknown> = {}
+    Object.assign(
+      result,
+      autoLayoutProps,
+      minMaxProps,
+      layoutProps,
+      borderRadiusProps,
+    )
+    Object.assign(
+      result,
+      borderProps,
+      backgroundProps,
+      blendProps,
+      paddingProps,
+    )
+    if (textAlignProps) Object.assign(result, textAlignProps)
+    Object.assign(result, objectFitProps)
+    if (maxLineProps) Object.assign(result, maxLineProps)
+    if (ellipsisProps) Object.assign(result, ellipsisProps)
+    Object.assign(
+      result,
+      effectProps,
+      positionProps,
+      gridChildProps,
+      transformProps,
+    )
+    Object.assign(result, overflowProps)
+    if (textStrokeProps) Object.assign(result, textStrokeProps)
+    if (textShadowProps) Object.assign(result, textShadowProps)
+    Object.assign(result, reactionProps, cursorProps, visibilityProps)
+    return result
   })()
 
   if (cacheKey) {
     getPropsCache.set(cacheKey, promise)
   }
   const result = await promise
+  if (cacheKey) {
+    getPropsResolved.set(cacheKey, result)
+  }
   perfEnd('getProps()', t)
   return result
 }
+
+const CENTER_SKIP_KEYS = new Set(['alignItems', 'justifyContent'])
+const IMAGE_BOX_SKIP_KEYS = new Set([
+  'alignItems',
+  'justifyContent',
+  'flexDir',
+  'gap',
+  'outline',
+  'outlineOffset',
+  'overflow',
+])
 
 export function filterPropsWithComponent(
   component: string,
@@ -165,7 +182,7 @@ export function filterPropsWithComponent(
         if (key === 'display' && value === 'grid') continue
         break
       case 'Center':
-        if (['alignItems', 'justifyContent'].includes(key)) continue
+        if (CENTER_SKIP_KEYS.has(key)) continue
         if (key === 'display' && value === 'flex') continue
         if (key === 'flexDir' && value === 'row') continue
         break
@@ -178,18 +195,7 @@ export function filterPropsWithComponent(
       case 'Image':
       case 'Box':
         if (component === 'Box' && !('maskImage' in props)) break
-        if (
-          [
-            'alignItems',
-            'justifyContent',
-            'flexDir',
-            'gap',
-            'outline',
-            'outlineOffset',
-            'overflow',
-          ].includes(key)
-        )
-          continue
+        if (IMAGE_BOX_SKIP_KEYS.has(key)) continue
         if (key === 'display' && value === 'flex') continue
         if (!('maskImage' in props) && ['bg'].includes(key)) continue
         break

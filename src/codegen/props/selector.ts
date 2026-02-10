@@ -138,12 +138,10 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
       effectChildren.push({ component: child, effect })
     }
   }
-  const components = await Promise.all(
-    effectChildren.map(
-      async ({ component, effect }) =>
-        [effect, await getProps(component)] as const,
-    ),
-  )
+  const components: (readonly [string, Record<string, unknown>])[] = []
+  for (const { component, effect } of effectChildren) {
+    components.push([effect, await getProps(component)] as const)
+  }
   perfEnd('getSelectorProps.getPropsAll()', tSelector)
 
   const defaultProps = await getProps(node.defaultVariant)
@@ -287,13 +285,15 @@ async function computeSelectorPropsForGroup(
     const effect = c.variantProperties?.effect
     return effect && effect !== 'default'
   })
-  const effectPropsResults = await Promise.all(
-    effectComponents.map(async (component) => {
-      const effect = component.variantProperties?.effect as string
-      const props = await getProps(component)
-      return { effect, props }
-    }),
-  )
+  const effectPropsResults: {
+    effect: string
+    props: Record<string, unknown>
+  }[] = []
+  for (const component of effectComponents) {
+    const effect = component.variantProperties?.effect as string
+    const props = await getProps(component)
+    effectPropsResults.push({ effect, props })
+  }
   for (const { effect, props } of effectPropsResults) {
     const def = difference(props, defaultProps)
     if (Object.keys(def).length === 0) continue
