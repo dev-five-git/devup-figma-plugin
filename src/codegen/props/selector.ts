@@ -328,7 +328,7 @@ function triggerTypeToEffect(triggerType: Trigger['type'] | undefined) {
 function difference(a: Record<string, unknown>, b: Record<string, unknown>) {
   return Object.entries(a).reduce(
     (acc, [key, value]) => {
-      if (b[key] !== value) {
+      if (value !== undefined && b[key] !== value) {
         acc[key] = value
       }
       return acc
