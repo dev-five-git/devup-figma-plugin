@@ -1,3 +1,4 @@
+import type { NodeContext } from '../types'
 import { addPx } from '../utils/add-px'
 import { checkAssetNode } from '../utils/check-asset-node'
 import { isPageRoot } from '../utils/is-page-root'
@@ -25,8 +26,13 @@ export function canBeAbsolute(node: SceneNode): boolean {
 
 export function getPositionProps(
   node: SceneNode,
+  ctx?: NodeContext,
 ): Record<string, string | undefined> | undefined {
-  if ('parent' in node && node.parent && canBeAbsolute(node)) {
+  if (
+    'parent' in node &&
+    node.parent &&
+    (ctx ? ctx.canBeAbsolute : canBeAbsolute(node))
+  ) {
     const constraints =
       'constraints' in node
         ? node.constraints
@@ -105,7 +111,7 @@ export function getPositionProps(
   }
   if (
     'children' in node &&
-    !checkAssetNode(node) &&
+    (ctx ? ctx.isAsset === null : !checkAssetNode(node)) &&
     (node.children.some(
       (child) =>
         'layoutPositioning' in child && child.layoutPositioning === 'ABSOLUTE',
@@ -115,7 +121,7 @@ export function getPositionProps(
           (child) =>
             'layoutPositioning' in child && child.layoutPositioning === 'AUTO',
         ))) &&
-    !isPageRoot(node)
+    !(ctx ? ctx.isPageRoot : isPageRoot(node))
   ) {
     return {
       pos: 'relative',

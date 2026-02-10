@@ -5,6 +5,9 @@ export function getGridChildProps(
     'gridColumnAnchorIndex' in node &&
     'gridRowAnchorIndex' in node &&
     node.parent &&
+    // COMPONENT_SET uses grid layout internally to arrange variants —
+    // those grid positions are not CSS styles of the component itself.
+    node.parent.type !== 'COMPONENT_SET' &&
     'inferredAutoLayout' in node.parent &&
     node.parent.inferredAutoLayout &&
     node.parent.inferredAutoLayout.layoutMode === 'GRID'

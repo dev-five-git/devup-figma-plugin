@@ -1,3 +1,4 @@
+import type { NodeContext } from '../types'
 import { addPx } from '../utils/add-px'
 import { checkAssetNode } from '../utils/check-asset-node'
 import { getPageNode } from '../utils/get-page-node'
@@ -17,8 +18,9 @@ export function getMinMaxProps(
 
 export function getLayoutProps(
   node: SceneNode,
+  ctx?: NodeContext,
 ): Record<string, boolean | string | number | undefined | null> {
-  const ret = _getLayoutProps(node)
+  const ret = _getLayoutProps(node, ctx)
   if (ret.w && ret.h === ret.w) {
     ret.boxSize = ret.w
     delete ret.w
@@ -45,15 +47,16 @@ function _getTextLayoutProps(
 
 function _getLayoutProps(
   node: SceneNode,
+  ctx?: NodeContext,
 ): Record<string, boolean | string | number | undefined | null> {
-  if (canBeAbsolute(node)) {
+  if (ctx ? ctx.canBeAbsolute : canBeAbsolute(node)) {
     return {
       w:
         node.type === 'TEXT' ||
         (node.parent &&
           'width' in node.parent &&
           node.parent.width > node.width)
-          ? checkAssetNode(node) ||
+          ? (ctx ? ctx.isAsset !== null : !!checkAssetNode(node)) ||
             ('children' in node && node.children.length === 0)
             ? addPx(node.width)
             : undefined
@@ -77,7 +80,9 @@ function _getLayoutProps(
   }
   const aspectRatio =
     'targetAspectRatio' in node ? node.targetAspectRatio : undefined
-  const rootNode = getPageNode(node as BaseNode & ChildrenMixin)
+  const rootNode = ctx
+    ? ctx.pageNode
+    : getPageNode(node as BaseNode & ChildrenMixin)
 
   return {
     aspectRatio: aspectRatio

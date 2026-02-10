@@ -65,8 +65,11 @@ function toTransitionPropertyName(key: string): string {
 const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
 
 export function sanitizePropertyName(name: string): string {
+  // 0. Strip Figma's internal "#nodeId:uniqueId" suffix (e.g., "leftIcon#60:123" → "leftIcon")
+  const stripped = name.replace(/#\d+:\d+$/, '')
+
   // 1. 한글 '속성'을 'property'로 변환 (공백 포함 처리: "속성1" → "property1")
-  const normalized = name.trim().replace(/속성\s*/g, 'property') // 한글 '속성' + 뒤따르는 공백을 'property'로 변환
+  const normalized = stripped.trim().replace(/속성\s*/g, 'property') // 한글 '속성' + 뒤따르는 공백을 'property'로 변환
 
   // 2. 공백과 특수문자를 처리하여 camelCase로 변환
   const result = normalized
@@ -122,42 +125,46 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
   console.info(
     `[perf] getSelectorProps: processing ${node.children.length} children`,
   )
-  const components = await Promise.all(
-    node.children
-      .filter((child) => {
-        return child.type === 'COMPONENT'
-      })
-      .map(
-        async (component) =>
-          [
-            hasEffect
-              ? component.variantProperties?.effect
-              : triggerTypeToEffect(component.reactions?.[0]?.trigger?.type),
-            await getProps(component),
-          ] as const,
-      ),
-  )
+  // Pre-filter: only call expensive getProps() on children with non-default effects.
+  // The effect/trigger check is a cheap property read — skip children that would be
+  // discarded later anyway (effect === undefined or effect === 'default').
+  const effectChildren: { component: SceneNode; effect: string }[] = []
+  for (const child of node.children) {
+    if (child.type !== 'COMPONENT') continue
+    const effect = hasEffect
+      ? (child as ComponentNode).variantProperties?.effect
+      : triggerTypeToEffect(child.reactions?.[0]?.trigger?.type)
+    if (effect && effect !== 'default') {
+      effectChildren.push({ component: child, effect })
+    }
+  }
+  const components: (readonly [string, Record<string, unknown>])[] = []
+  for (const { component, effect } of effectChildren) {
+    components.push([effect, await getProps(component)] as const)
+  }
   perfEnd('getSelectorProps.getPropsAll()', tSelector)
 
   const defaultProps = await getProps(node.defaultVariant)
 
-  const result = Object.entries(node.componentPropertyDefinitions).reduce(
-    (acc, [name, definition]) => {
-      if (name !== 'effect' && name !== 'viewport') {
-        const sanitizedName = sanitizePropertyName(name)
-        // variant 옵션값들을 문자열 리터럴로 감싸기
-        acc.variants[sanitizedName] =
-          definition.variantOptions
-            ?.map((option) => `'${option}'`)
-            .join(' | ') || ''
-      }
-      return acc
-    },
-    {
-      props: {} as Record<string, object | string>,
-      variants: {} as Record<string, string>,
-    },
-  )
+  const result: {
+    props: Record<string, object | string>
+    variants: Record<string, string>
+  } = { props: {}, variants: {} }
+  const defs = node.componentPropertyDefinitions
+  for (const name in defs) {
+    if (name === 'effect' || name === 'viewport') continue
+    const definition = defs[name]
+    const sanitizedName = sanitizePropertyName(name)
+    if (definition.type === 'VARIANT' && definition.variantOptions) {
+      result.variants[sanitizedName] = definition.variantOptions
+        .map((option) => `'${option}'`)
+        .join(' | ')
+    } else if (definition.type === 'INSTANCE_SWAP') {
+      result.variants[sanitizedName] = 'React.ReactNode'
+    } else if (definition.type === 'BOOLEAN') {
+      result.variants[sanitizedName] = 'boolean'
+    }
+  }
 
   if (components.length > 0) {
     const findNodeAction = (action: Action) => action.type === 'NODE'
@@ -168,8 +175,6 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
       .flat()[0]
     const diffKeys = new Set<string>()
     for (const [effect, props] of components) {
-      // Skip if no effect or if effect is "default" (default state doesn't need pseudo-selector)
-      if (!effect || effect === 'default') continue
       const def = difference(props, defaultProps)
       if (Object.keys(def).length === 0) continue
       result.props[`_${effect}`] = def
@@ -178,7 +183,8 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
       }
     }
     if (transition?.type === 'SMART_ANIMATE' && diffKeys.size > 0) {
-      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
+      const keys: string[] = []
+      for (const key of diffKeys) keys.push(toTransitionPropertyName(key))
       keys.sort()
       result.props.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.props.transitionProperty = keys.join(',')
@@ -206,10 +212,12 @@ export async function getSelectorPropsForGroup(
 
   // Build cache key from componentSet.id + filter + viewport
   const setId = componentSet.id
-  const filterKey = Object.entries(variantFilter)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`)
-    .join('|')
+  const filterParts: string[] = []
+  for (const k in variantFilter) {
+    filterParts.push(`${k}=${variantFilter[k]}`)
+  }
+  filterParts.sort()
+  const filterKey = filterParts.join('|')
   const cacheKey = setId ? `${setId}::${filterKey}::${viewportValue ?? ''}` : ''
 
   if (cacheKey) {
@@ -245,8 +253,8 @@ async function computeSelectorPropsForGroup(
     const variantProps = child.variantProperties || {}
 
     // Check all filter conditions match
-    for (const [key, value] of Object.entries(variantFilter)) {
-      if (variantProps[key] !== value) return false
+    for (const key in variantFilter) {
+      if (variantProps[key] !== variantFilter[key]) return false
     }
 
     // Check viewport if specified
@@ -278,13 +286,15 @@ async function computeSelectorPropsForGroup(
     const effect = c.variantProperties?.effect
     return effect && effect !== 'default'
   })
-  const effectPropsResults = await Promise.all(
-    effectComponents.map(async (component) => {
-      const effect = component.variantProperties?.effect as string
-      const props = await getProps(component)
-      return { effect, props }
-    }),
-  )
+  const effectPropsResults: {
+    effect: string
+    props: Record<string, unknown>
+  }[] = []
+  for (const component of effectComponents) {
+    const effect = component.variantProperties?.effect as string
+    const props = await getProps(component)
+    effectPropsResults.push({ effect, props })
+  }
   for (const { effect, props } of effectPropsResults) {
     const def = difference(props, defaultProps)
     if (Object.keys(def).length === 0) continue
@@ -304,7 +314,8 @@ async function computeSelectorPropsForGroup(
       ?.flatMap(getTransition)
       .flat()[0]
     if (transition?.type === 'SMART_ANIMATE') {
-      const keys = Array.from(diffKeys).map(toTransitionPropertyName)
+      const keys: string[] = []
+      for (const key of diffKeys) keys.push(toTransitionPropertyName(key))
       keys.sort()
       result.transition = `${fmtPct(transition.duration)}ms ${transition.easing.type.toLocaleLowerCase().replaceAll('_', '-')}`
       result.transitionProperty = keys.join(',')
@@ -326,13 +337,12 @@ function triggerTypeToEffect(triggerType: Trigger['type'] | undefined) {
 }
 
 function difference(a: Record<string, unknown>, b: Record<string, unknown>) {
-  return Object.entries(a).reduce(
-    (acc, [key, value]) => {
-      if (value !== undefined && b[key] !== value) {
-        acc[key] = value
-      }
-      return acc
-    },
-    {} as Record<string, unknown>,
-  )
+  const result: Record<string, unknown> = {}
+  for (const key in a) {
+    const value = a[key]
+    if (value !== undefined && b[key] !== value) {
+      result[key] = value
+    }
+  }
+  return result
 }

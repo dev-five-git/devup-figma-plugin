@@ -68,6 +68,15 @@ describe('responsive index helpers', () => {
     expect(optimized).toEqual(obj)
   })
 
+  it('collapses equal array values in responsive optimization', () => {
+    const optimized = optimizeResponsiveValue([
+      ['10px', '20px'],
+      ['10px', '20px'],
+      null,
+    ])
+    expect(optimized).toEqual(['10px', '20px'])
+  })
+
   it('converts viewport variant values to breakpoints (case-insensitive)', () => {
     // lowercase
     expect(viewportToBreakpoint('mobile')).toBe('mobile')

@@ -1,0 +1,55 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`renderComponent interface snapshot VARIANT + BOOLEAN + INSTANCE_SWAP mixed interface 1`] = `
+"export interface ButtonProps {
+  leftIcon: React.ReactNode
+  showLeftIcon?: boolean
+  rightIcon: React.ReactNode
+  showRightIcon?: boolean
+  size: 'lg' | 'md' | 'sm'
+  variant: 'primary' | 'ghost' | 'disabled'
+}
+
+export function Button({ leftIcon, showLeftIcon, rightIcon, showRightIcon, size, variant }: ButtonProps) {
+  return (
+    <Center gap="10px" px="24px">
+      {leftIcon}
+      <Text fontSize="16px">buttonLg</Text>
+      {rightIcon}
+    </Center>
+  )
+}"
+`;
+
+exports[`renderComponent interface snapshot BOOLEAN-only interface (all optional) 1`] = `
+"export interface CardProps {
+  showBadge?: boolean
+  showIcon?: boolean
+}
+
+export function Card({ showBadge, showIcon }: CardProps) {
+  return (
+    <Flex>
+      {showBadge && <Box />}
+      {showIcon && <Box />}
+    </Flex>
+  )
+}"
+`;
+
+exports[`renderComponent interface snapshot INSTANCE_SWAP-only interface (all required) 1`] = `
+"export interface IconButtonProps {
+  leftIcon: React.ReactNode
+  rightIcon: React.ReactNode
+}
+
+export function IconButton({ leftIcon, rightIcon }: IconButtonProps) {
+  return (
+    <Flex>
+      {leftIcon}
+      <Text>label</Text>
+      {rightIcon}
+    </Flex>
+  )
+}"
+`;

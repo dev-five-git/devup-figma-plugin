@@ -1,6 +1,6 @@
 import { fmtPct } from '../utils/fmtPct'
 import { isPageRoot } from '../utils/is-page-root'
-import { solidToString } from '../utils/solid-to-string'
+import { solidToString, solidToStringSync } from '../utils/solid-to-string'
 
 interface KeyframeData {
   [percentage: string]: Record<string, unknown>
@@ -23,6 +23,10 @@ const childAnimationCache = new Map<
   string,
   Map<string, Record<string, unknown>>
 >()
+
+export function resetChildAnimationCache(): void {
+  childAnimationCache.clear()
+}
 
 // Format duration/delay values (up to 3 decimal places, remove trailing zeros)
 function fmtDuration(n: number): string {
@@ -434,8 +438,11 @@ async function generateChildAnimations(
     childrenByName.set(child.name, child)
   })
 
-  // For each child, build its individual keyframes across the animation chain
-  for (const [childName] of childrenByName) {
+  // Parallelize per-child animation building — each child's diff is independent.
+  // Even with single-threaded Figma IPC, Promise.all allows microtask interleaving
+  // between awaits, overlapping computation with I/O.
+  const childEntries: (readonly [string, Record<string, unknown>] | null)[] = []
+  for (const childName of childrenByName.keys()) {
     const keyframes: KeyframeData = {}
 
     let accumulatedTime = 0
@@ -515,9 +522,10 @@ async function generateChildAnimations(
 
       if (startChild) {
         // Get the first step's matching child
-        const firstStep = chain[0]
-        if ('children' in firstStep.node) {
-          const firstChildren = firstStep.node.children as readonly SceneNode[]
+        const firstStepNode = chain[0]
+        if ('children' in firstStepNode.node) {
+          const firstChildren = firstStepNode.node
+            .children as readonly SceneNode[]
           const firstChild = firstChildren.find((c) => c.name === childName)
 
           if (firstChild) {
@@ -638,7 +646,7 @@ async function generateChildAnimations(
       keyframes['100%'] = finalKeyframe
     }
 
-    // If this child has changes, add animation props
+    // If this child has changes, return animation props
     if (hasChanges && Object.keys(keyframes).length > 1) {
       const firstEasing = firstStep.easing || { type: 'LINEAR' }
       const delay = chain[0].delay
@@ -660,7 +668,15 @@ async function generateChildAnimations(
         props.animationIterationCount = 'infinite'
       }
 
-      childAnimationsMap.set(childName, props)
+      childEntries.push([childName, props] as const)
+      continue
+    }
+    childEntries.push(null)
+  }
+
+  for (const entry of childEntries) {
+    if (entry) {
+      childAnimationsMap.set(entry[0], entry[1])
     }
   }
 
@@ -730,7 +746,7 @@ async function generateSingleNodeDifferences(
         toFill.type === 'SOLID' &&
         !isSameColor(fromFill.color, toFill.color)
       ) {
-        changes.bg = await solidToString(toFill)
+        changes.bg = solidToStringSync(toFill) ?? (await solidToString(toFill))
       }
     }
   }

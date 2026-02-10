@@ -1,5 +1,5 @@
 import { BLEND_MODE_MAP } from '../utils/blend-mode-map'
-import { paintToCSS } from '../utils/paint-to-css'
+import { paintToCSS, paintToCSSSyncIfPossible } from '../utils/paint-to-css'
 
 export async function getBackgroundProps(
   node: SceneNode,
@@ -21,7 +21,9 @@ export async function getBackgroundProps(
     for (let i = 0; i < node.fills.length; i++) {
       const fill = node.fills[node.fills.length - 1 - i]
       if (fill.opacity === 0 || !fill.visible) continue
-      const cssFill = await paintToCSS(fill, node, i === node.fills.length - 1)
+      const cssFill =
+        paintToCSSSyncIfPossible(fill, node, i === node.fills.length - 1) ??
+        (await paintToCSS(fill, node, i === node.fills.length - 1))
       if (
         fill.type === 'SOLID' &&
         fill.blendMode &&

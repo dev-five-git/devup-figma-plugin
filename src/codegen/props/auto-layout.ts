@@ -1,19 +1,22 @@
+import type { NodeContext } from '../types'
 import { addPx } from '../utils/add-px'
 import { checkAssetNode } from '../utils/check-asset-node'
 
 export function getAutoLayoutProps(
   node: SceneNode,
+  ctx?: NodeContext,
 ): Record<string, boolean | string | number | undefined | null> | undefined {
   if (
     !('inferredAutoLayout' in node) ||
     !node.inferredAutoLayout ||
     node.inferredAutoLayout.layoutMode === 'NONE' ||
-    checkAssetNode(node)
+    (ctx ? ctx.isAsset !== null : !!checkAssetNode(node))
   )
     return
   const { layoutMode } = node.inferredAutoLayout
   if (layoutMode === 'GRID') return getGridProps(node)
-  const childrenCount = node.children.filter((c) => c.visible).length
+  let childrenCount = 0
+  for (const c of node.children) if (c.visible) childrenCount++
   return {
     display: {
       HORIZONTAL: 'flex',

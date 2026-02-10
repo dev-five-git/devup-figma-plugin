@@ -5,10 +5,8 @@ import { space } from '../../utils'
  */
 export function paddingLeftMultiline(code: string, depth = 0) {
   if (depth === 0) return code
-  return code
-    .split('\n')
-    .map((line) => space(depth) + line)
-    .join('\n')
+  const indent = space(depth)
+  return indent + code.replaceAll('\n', `\n${indent}`)
 }
 
 /**

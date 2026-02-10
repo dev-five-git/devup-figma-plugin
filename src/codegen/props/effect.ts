@@ -2,9 +2,9 @@ import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { addPx } from '../utils/add-px'
 
-export async function getEffectProps(
+export function getEffectProps(
   node: SceneNode,
-): Promise<Record<string, string> | undefined> {
+): Record<string, string> | undefined {
   if ('effects' in node && node.effects.length > 0) {
     return node.effects.reduce(
       (acc, effect) => {

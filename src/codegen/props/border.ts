@@ -1,6 +1,6 @@
 import { addPx } from '../utils/add-px'
 import { fourValueShortcut } from '../utils/four-value-shortcut'
-import { paintToCSS } from '../utils/paint-to-css'
+import { paintToCSS, paintToCSSSyncIfPossible } from '../utils/paint-to-css'
 
 export function getBorderRadiusProps(
   node: SceneNode,
@@ -45,7 +45,8 @@ export async function getBorderProps(
     const paint = node.strokes[node.strokes.length - 1 - i]
     if (paint.visible && paint.opacity !== 0) {
       paintCssList.push(
-        await paintToCSS(paint, node, i === node.strokes.length - 1),
+        paintToCSSSyncIfPossible(paint, node, i === node.strokes.length - 1) ??
+          (await paintToCSS(paint, node, i === node.strokes.length - 1)),
       )
     }
   }

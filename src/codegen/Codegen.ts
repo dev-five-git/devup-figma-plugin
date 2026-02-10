@@ -1,7 +1,7 @@
 import { getComponentName } from '../utils'
 import { getProps } from './props'
 import { getPositionProps } from './props/position'
-import { getSelectorProps } from './props/selector'
+import { getSelectorProps, sanitizePropertyName } from './props/selector'
 import { getTransformProps } from './props/transform'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
@@ -14,6 +14,7 @@ import {
   getDevupComponentByProps,
 } from './utils/get-devup-component'
 import { getPageNode } from './utils/get-page-node'
+import { paddingLeftMultiline } from './utils/padding-left-multiline'
 import { perfEnd, perfStart } from './utils/perf'
 import { buildCssUrl } from './utils/wrap-url'
 
@@ -54,18 +55,67 @@ export function resetGlobalBuildTreeCache(): void {
 }
 
 /**
- * Clone a NodeTree — shallow-clone props at every level so mutations
- * to one clone's props don't affect the cached original or other clones.
+ * Get componentPropertyReferences from a node (if available).
+ */
+function getPropertyRefs(node: SceneNode): Record<string, string> | undefined {
+  if (
+    'componentPropertyReferences' in node &&
+    node.componentPropertyReferences
+  ) {
+    return node.componentPropertyReferences as Record<string, string>
+  }
+  return undefined
+}
+
+/**
+ * Check if a child node is bound to an INSTANCE_SWAP component property.
+ * Returns the sanitized slot name if it is, undefined otherwise.
+ */
+function getInstanceSwapSlotName(
+  node: SceneNode,
+  swapSlots: Map<string, string>,
+): string | undefined {
+  if (swapSlots.size === 0) return undefined
+  const refs = getPropertyRefs(node)
+  if (refs?.mainComponent && swapSlots.has(refs.mainComponent)) {
+    return swapSlots.get(refs.mainComponent)
+  }
+  return undefined
+}
+
+/**
+ * Check if a child node is controlled by a BOOLEAN component property (visibility).
+ * Returns the sanitized boolean prop name if it is, undefined otherwise.
+ */
+function getBooleanConditionName(
+  node: SceneNode,
+  booleanSlots: Map<string, string>,
+): string | undefined {
+  if (booleanSlots.size === 0) return undefined
+  const refs = getPropertyRefs(node)
+  if (refs?.visible && booleanSlots.has(refs.visible)) {
+    return booleanSlots.get(refs.visible)
+  }
+  return undefined
+}
+
+/**
+ * Shallow-clone a NodeTree — creates a new object so that per-instance
+ * property reassignment (e.g., `tree.props = { ...tree.props, ...selectorProps }`)
+ * doesn't leak across Codegen instances. Props object itself is shared by
+ * reference — callers that need to merge create their own objects.
  */
 function cloneTree(tree: NodeTree): NodeTree {
   return {
     component: tree.component,
-    props: { ...tree.props },
-    children: tree.children.map(cloneTree),
+    props: tree.props,
+    children: tree.children,
     nodeType: tree.nodeType,
     nodeName: tree.nodeName,
     isComponent: tree.isComponent,
-    textChildren: tree.textChildren ? [...tree.textChildren] : undefined,
+    isSlot: tree.isSlot,
+    condition: tree.condition,
+    textChildren: tree.textChildren,
   }
 }
 
@@ -105,13 +155,12 @@ export class Codegen {
   }
 
   getComponentsCodes() {
-    return Array.from(this.components.values()).map(
-      ({ node, code, variants }) =>
-        [
-          getComponentName(node),
-          renderComponent(getComponentName(node), code, variants),
-        ] as const,
-    )
+    const result: Array<readonly [string, string]> = []
+    for (const { node, code, variants } of this.components.values()) {
+      const name = getComponentName(node)
+      result.push([name, renderComponent(name, code, variants)])
+    }
+    return result
   }
 
   /**
@@ -119,7 +168,9 @@ export class Codegen {
    * Useful for generating responsive codes for each component.
    */
   getComponentNodes() {
-    return Array.from(this.components.values()).map(({ node }) => node)
+    const result: SceneNode[] = []
+    for (const { node } of this.components.values()) result.push(node)
+    return result
   }
 
   /**
@@ -176,9 +227,11 @@ export class Codegen {
       // Returns a CLONE because downstream code mutates tree.props.
       const globalCached = globalBuildTreeCache.get(cacheKey)
       if (globalCached) {
-        const cloned = globalCached.then(cloneTree)
-        this.buildTreeCache.set(cacheKey, cloned)
-        return cloned
+        const resolved = await globalCached
+        const cloned = cloneTree(resolved)
+        const clonedPromise = Promise.resolve(cloned)
+        this.buildTreeCache.set(cacheKey, clonedPromise)
+        return clonedPromise
       }
     }
     const promise = this.doBuildTree(node)
@@ -311,14 +364,17 @@ export class Codegen {
     }
 
     // Now await props (likely already resolved while children were processing)
-    const props = await propsPromise
+    const baseProps = await propsPromise
 
-    // Handle TEXT nodes
+    // Handle TEXT nodes — create NEW merged object instead of mutating getProps() result.
     let textChildren: string[] | undefined
+    let props: Record<string, unknown>
     if (node.type === 'TEXT') {
       const { children: textContent, props: textProps } = await renderText(node)
       textChildren = textContent
-      Object.assign(props, textProps)
+      props = { ...baseProps, ...textProps }
+    } else {
+      props = baseProps
     }
 
     const component = getDevupComponentByNode(node, props)
@@ -388,16 +444,52 @@ export class Codegen {
     const t = perfStart()
     const selectorPropsPromise = getSelectorProps(node)
 
-    // Build children sequentially (same reasoning as doBuildTree).
+    // Collect INSTANCE_SWAP and BOOLEAN property definitions for slot/condition detection.
+    const parentSet = node.parent?.type === 'COMPONENT_SET' ? node.parent : null
+    const propDefs =
+      parentSet?.componentPropertyDefinitions ||
+      node.componentPropertyDefinitions ||
+      {}
+    const instanceSwapSlots = new Map<string, string>()
+    const booleanSlots = new Map<string, string>()
+    for (const [key, def] of Object.entries(propDefs)) {
+      if (def.type === 'INSTANCE_SWAP') {
+        instanceSwapSlots.set(key, sanitizePropertyName(key))
+      } else if (def.type === 'BOOLEAN') {
+        booleanSlots.set(key, sanitizePropertyName(key))
+      }
+    }
+
+    // Build children sequentially, replacing INSTANCE_SWAP targets with slot placeholders
+    // and wrapping BOOLEAN-controlled children with conditional rendering.
     const childrenTrees: NodeTree[] = []
     if ('children' in node) {
       for (const child of node.children) {
-        childrenTrees.push(await this.buildTree(child))
+        const slotName = getInstanceSwapSlotName(child, instanceSwapSlots)
+        if (slotName) {
+          const conditionName = getBooleanConditionName(child, booleanSlots)
+          childrenTrees.push({
+            component: slotName,
+            props: {},
+            children: [],
+            nodeType: 'SLOT',
+            nodeName: child.name,
+            isSlot: true,
+            condition: conditionName,
+          })
+        } else {
+          const tree = await this.buildTree(child)
+          const conditionName = getBooleanConditionName(child, booleanSlots)
+          if (conditionName) {
+            tree.condition = conditionName
+          }
+          childrenTrees.push(tree)
+        }
       }
     }
 
     // Await props + selectorProps (likely already resolved while children built)
-    const [props, selectorProps] = await Promise.all([
+    const [baseProps, selectorProps] = await Promise.all([
       propsPromise,
       selectorPropsPromise,
     ])
@@ -405,8 +497,12 @@ export class Codegen {
 
     const variants: Record<string, string> = {}
 
+    // Create a NEW merged object instead of mutating getProps() result.
+    // This allows getProps cache to return raw references without cloning.
+    const props = selectorProps
+      ? { ...baseProps, ...selectorProps.props }
+      : baseProps
     if (selectorProps) {
-      Object.assign(props, selectorProps.props)
       Object.assign(variants, selectorProps.variants)
     }
 
@@ -430,9 +526,11 @@ export class Codegen {
    */
   hasViewportVariant(): boolean {
     if (this.node.type !== 'COMPONENT_SET') return false
-    return Object.keys(
-      (this.node as ComponentSetNode).componentPropertyDefinitions,
-    ).some((key) => key.toLowerCase() === 'viewport')
+    for (const key in (this.node as ComponentSetNode)
+      .componentPropertyDefinitions) {
+      if (key.toLowerCase() === 'viewport') return true
+    }
+    return false
   }
 
   /**
@@ -440,15 +538,33 @@ export class Codegen {
    * Static method so it can be used independently.
    */
   static renderTree(tree: NodeTree, depth: number = 0): string {
-    // Handle TEXT nodes with textChildren
-    if (tree.textChildren && tree.textChildren.length > 0) {
-      return renderNode(tree.component, tree.props, depth, tree.textChildren)
+    // Handle INSTANCE_SWAP slot placeholders — render as {propName}
+    if (tree.isSlot) {
+      if (tree.condition) {
+        return `{${tree.condition} && ${tree.component}}`
+      }
+      return `{${tree.component}}`
     }
 
-    // Children are rendered with depth 0 because renderNode handles indentation internally
-    const childrenCodes = tree.children.map((child) =>
-      Codegen.renderTree(child, 0),
-    )
-    return renderNode(tree.component, tree.props, depth, childrenCodes)
+    // Render the core JSX
+    let result: string
+    if (tree.textChildren && tree.textChildren.length > 0) {
+      result = renderNode(tree.component, tree.props, depth, tree.textChildren)
+    } else {
+      const childrenCodes = tree.children.map((child) =>
+        Codegen.renderTree(child, 0),
+      )
+      result = renderNode(tree.component, tree.props, depth, childrenCodes)
+    }
+
+    // Wrap with BOOLEAN conditional rendering if needed
+    if (tree.condition) {
+      if (result.includes('\n')) {
+        return `{${tree.condition} && (\n${paddingLeftMultiline(result, 1)}\n)}`
+      }
+      return `{${tree.condition} && ${result}}`
+    }
+
+    return result
   }
 }

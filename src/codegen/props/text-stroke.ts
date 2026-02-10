@@ -1,4 +1,4 @@
-import { solidToString } from '../utils/solid-to-string'
+import { solidToString, solidToStringSync } from '../utils/solid-to-string'
 
 export async function getTextStrokeProps(
   node: SceneNode,
@@ -12,8 +12,10 @@ export async function getTextStrokeProps(
   if (solidStrokes.length === 0) return
   const solidStroke = solidStrokes[0]
   if (typeof node.strokeWeight !== 'number' || node.strokeWeight === 0) return
+  const color =
+    solidToStringSync(solidStroke) ?? (await solidToString(solidStroke))
   return {
     paintOrder: 'stroke fill',
-    WebkitTextStroke: `${node.strokeWeight}px ${await solidToString(solidStroke)}`,
+    WebkitTextStroke: `${node.strokeWeight}px ${color}`,
   }
 }

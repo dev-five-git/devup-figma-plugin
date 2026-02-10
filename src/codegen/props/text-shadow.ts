@@ -2,9 +2,9 @@ import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { addPx } from '../utils/add-px'
 
-export async function getTextShadowProps(
+export function getTextShadowProps(
   node: SceneNode,
-): Promise<Record<string, string> | undefined> {
+): Record<string, string> | undefined {
   if (node.type !== 'TEXT') return
 
   const effects = node.effects.filter((effect) => effect.visible)

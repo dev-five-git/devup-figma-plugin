@@ -3,7 +3,7 @@ import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { toCamel } from '../../utils/to-camel'
 import { checkAssetNode } from './check-asset-node'
 import { fmtPct } from './fmtPct'
-import { solidToString } from './solid-to-string'
+import { solidToString, solidToStringSync } from './solid-to-string'
 import { getVariableByIdCached } from './variable-cache'
 import { buildCssUrl } from './wrap-url'
 
@@ -43,6 +43,23 @@ async function processGradientStopColor(
 }
 
 /**
+ * Synchronous fast path for processGradientStopColor.
+ * Returns null when the stop has a variable-bound color (caller must use async).
+ */
+function processGradientStopColorSync(
+  stop: ColorStop,
+  opacity: number,
+): string | null {
+  if (stop.boundVariables?.color) return null
+
+  const colorWithOpacity = figma.util.rgba({
+    ...stop.color,
+    a: stop.color.a * opacity,
+  })
+  return optimizeHex(rgbaToHex(colorWithOpacity))
+}
+
+/**
  * Map gradient stops to CSS color strings with positions
  */
 async function mapSimpleGradientStops(
@@ -50,6 +67,20 @@ async function mapSimpleGradientStops(
   opacity: number,
   positionMultiplier: number = 100,
 ): Promise<string> {
+  // Sync fast path: try to resolve all stops without async
+  const syncResults: string[] = []
+  let allSync = true
+  for (const stop of stops) {
+    const color = processGradientStopColorSync(stop, opacity)
+    if (color === null) {
+      allSync = false
+      break
+    }
+    syncResults.push(`${color} ${fmtPct(stop.position * positionMultiplier)}%`)
+  }
+  if (allSync) return syncResults.join(', ')
+
+  // Async fallback for variable-bound colors
   const stopsArray = await Promise.all(
     stops.map(async (stop) => {
       const colorString = await processGradientStopColor(stop, opacity)
@@ -86,6 +117,35 @@ export async function paintToCSS(
       return await convertPattern(fill)
     default:
       return null
+  }
+}
+
+/**
+ * Synchronous fast path for paintToCSS.
+ * Returns the CSS string immediately for SOLID (non-variable) and IMAGE fills.
+ * Returns undefined to signal "not handled synchronously — caller must use async paintToCSS".
+ */
+export function paintToCSSSyncIfPossible(
+  fill: Paint,
+  _node: SceneNode,
+  last: boolean,
+): string | null | undefined {
+  switch (fill.type) {
+    case 'SOLID': {
+      if (last) {
+        return solidToStringSync(fill) ?? undefined
+      }
+      // Non-last solid needs linear-gradient wrapper — check sync path
+      if (fill.opacity === 0) return 'transparent'
+      const color = solidToStringSync(fill)
+      if (color === null) return undefined // variable-bound, need async
+      return `linear-gradient(${color}, ${color})`
+    }
+    case 'IMAGE':
+      return convertImage(fill)
+    default:
+      // Gradients and patterns need async
+      return undefined
   }
 }
 
@@ -381,27 +441,44 @@ async function _mapGradientStops(
   }
   const cssLengthSquared = cssVector.x ** 2 + cssVector.y ** 2
 
-  return await Promise.all(
+  const mapStop = (stop: ColorStop, colorString: string) => {
+    const offsetX = figmaStartPoint.x + figmaVector.x * stop.position
+    const offsetY = figmaStartPoint.y + figmaVector.y * stop.position
+
+    const pointFromStart = {
+      x: offsetX - cssStartPoint.x,
+      y: offsetY - cssStartPoint.y,
+    }
+    const dot = pointFromStart.x * cssVector.x + pointFromStart.y * cssVector.y
+    const relativePosition = cssLengthSquared === 0 ? 0 : dot / cssLengthSquared
+
+    return {
+      position: relativePosition,
+      colorString,
+      hasToken: !!stop.boundVariables?.color,
+    }
+  }
+
+  // Sync fast path: try to resolve all stop colors without async
+  const syncResults: string[] = []
+  let allSync = true
+  for (const stop of stops) {
+    const color = processGradientStopColorSync(stop, opacity)
+    if (color === null) {
+      allSync = false
+      break
+    }
+    syncResults.push(color)
+  }
+  if (allSync) {
+    return stops.map((stop, i) => mapStop(stop, syncResults[i]))
+  }
+
+  // Async fallback for variable-bound colors
+  return Promise.all(
     stops.map(async (stop) => {
-      const offsetX = figmaStartPoint.x + figmaVector.x * stop.position
-      const offsetY = figmaStartPoint.y + figmaVector.y * stop.position
-
-      const pointFromStart = {
-        x: offsetX - cssStartPoint.x,
-        y: offsetY - cssStartPoint.y,
-      }
-      const dot =
-        pointFromStart.x * cssVector.x + pointFromStart.y * cssVector.y
-      const relativePosition =
-        cssLengthSquared === 0 ? 0 : dot / cssLengthSquared
-
       const colorString = await processGradientStopColor(stop, opacity)
-
-      return {
-        position: relativePosition,
-        colorString,
-        hasToken: !!stop.boundVariables?.color,
-      }
+      return mapStop(stop, colorString)
     }),
   )
 }

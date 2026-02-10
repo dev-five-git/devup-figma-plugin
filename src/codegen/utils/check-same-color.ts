@@ -1,4 +1,4 @@
-import { solidToString } from './solid-to-string'
+import { solidToString, solidToStringSync } from './solid-to-string'
 
 export async function checkSameColor(
   node: SceneNode,
@@ -9,8 +9,14 @@ export async function checkSameColor(
     for (const fill of node.fills) {
       if (!fill.visible) continue
       if (fill.type === 'SOLID') {
-        if (targetColor === null) targetColor = await solidToString(fill)
-        else if (targetColor !== (await solidToString(fill))) return false
+        const syncColor = solidToStringSync(fill)
+        if (syncColor !== null) {
+          if (targetColor === null) targetColor = syncColor
+          else if (targetColor !== syncColor) return false
+        } else {
+          if (targetColor === null) targetColor = await solidToString(fill)
+          else if (targetColor !== (await solidToString(fill))) return false
+        }
       } else return null
     }
   }

@@ -154,8 +154,74 @@ export function Banner({ size }: BannerProps) {
   )
 }`,
     },
+    {
+      title: 'renders boolean variants as optional in interface',
+      component: 'Button',
+      code: '<Center />',
+      variants: {
+        leftIcon: 'boolean',
+        size: '"sm" | "lg"',
+        rightIcon: 'boolean',
+      } as Record<string, string>,
+      expected: `export interface ButtonProps {
+  leftIcon?: boolean
+  size: "sm" | "lg"
+  rightIcon?: boolean
+}
+
+export function Button({ leftIcon, size, rightIcon }: ButtonProps) {
+  return <Center />
+}`,
+    },
   ])('$title', ({ component, code, variants, expected }) => {
     const result = renderComponent(component, code, variants)
     expect(result).toBe(expected)
+  })
+})
+
+describe('renderComponent interface snapshot', () => {
+  test('VARIANT + BOOLEAN + INSTANCE_SWAP mixed interface', () => {
+    const code = `<Center gap="10px" px="24px">
+  {leftIcon}
+  <Text fontSize="16px">buttonLg</Text>
+  {rightIcon}
+</Center>`
+    const variants: Record<string, string> = {
+      leftIcon: 'React.ReactNode',
+      showLeftIcon: 'boolean',
+      rightIcon: 'React.ReactNode',
+      showRightIcon: 'boolean',
+      size: "'lg' | 'md' | 'sm'",
+      variant: "'primary' | 'ghost' | 'disabled'",
+    }
+    const result = renderComponent('Button', code, variants)
+    expect(result).toMatchSnapshot()
+  })
+
+  test('BOOLEAN-only interface (all optional)', () => {
+    const code = `<Flex>
+  {showBadge && <Box />}
+  {showIcon && <Box />}
+</Flex>`
+    const variants: Record<string, string> = {
+      showBadge: 'boolean',
+      showIcon: 'boolean',
+    }
+    const result = renderComponent('Card', code, variants)
+    expect(result).toMatchSnapshot()
+  })
+
+  test('INSTANCE_SWAP-only interface (all required)', () => {
+    const code = `<Flex>
+  {leftIcon}
+  <Text>label</Text>
+  {rightIcon}
+</Flex>`
+    const variants: Record<string, string> = {
+      leftIcon: 'React.ReactNode',
+      rightIcon: 'React.ReactNode',
+    }
+    const result = renderComponent('IconButton', code, variants)
+    expect(result).toMatchSnapshot()
   })
 })

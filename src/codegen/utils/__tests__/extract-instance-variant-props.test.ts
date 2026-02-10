@@ -13,10 +13,10 @@ describe('extractInstanceVariantProps', () => {
 
     const result = extractInstanceVariantProps(node)
 
-    // sanitizePropertyName keeps alphanumeric characters
+    // sanitizePropertyName strips "#nodeId:uniqueId" suffix
     expect(result).toEqual({
-      status123456: 'scroll',
-      size789012: 'Md',
+      status: 'scroll',
+      size: 'Md',
     })
   })
 
@@ -32,7 +32,7 @@ describe('extractInstanceVariantProps', () => {
     const result = extractInstanceVariantProps(node)
 
     expect(result).toEqual({
-      status123456: 'active',
+      status: 'active',
     })
   })
 
@@ -65,8 +65,8 @@ describe('extractInstanceVariantProps', () => {
 
     const result = extractInstanceVariantProps(node)
 
-    // sanitizePropertyName converts "속성 1" to "property1"
-    expect(result.property1789012).toBe('값1')
+    // sanitizePropertyName strips "#789:012" suffix, then converts "속성 1" to "property1"
+    expect(result.property1).toBe('값1')
   })
 
   test('converts values to string', () => {
@@ -113,7 +113,7 @@ describe('extractInstanceVariantProps', () => {
       status: 'active',
     })
     expect(result.effect).toBeUndefined()
-    expect(result.Effect123456).toBeUndefined()
+    expect(result.Effect).toBeUndefined()
   })
 
   test('filters out reserved "viewport" variant key', () => {
@@ -131,7 +131,7 @@ describe('extractInstanceVariantProps', () => {
       status: 'active',
     })
     expect(result.viewport).toBeUndefined()
-    expect(result.Viewport123456).toBeUndefined()
+    expect(result.Viewport).toBeUndefined()
   })
 
   test('filters out both effect and viewport but keeps other variants', () => {

@@ -111,6 +111,83 @@ describe('getSelectorProps', () => {
     expect(result?.variants.State).toBe("'Default'")
   })
 
+  test('includes BOOLEAN properties as boolean in variants', async () => {
+    const defaultVariant = {
+      type: 'COMPONENT',
+      name: 'size=Default',
+      children: [],
+      visible: true,
+      reactions: [],
+      variantProperties: { size: 'Default' },
+    } as unknown as ComponentNode
+
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'ButtonWithToggle',
+      children: [defaultVariant],
+      defaultVariant,
+      visible: true,
+      componentPropertyDefinitions: {
+        size: {
+          type: 'VARIANT',
+          variantOptions: ['Default', 'Small'],
+        },
+        'showIcon#70:123': {
+          type: 'BOOLEAN',
+          defaultValue: true,
+        },
+      },
+    } as unknown as ComponentSetNode
+
+    const result = await getSelectorProps(node)
+
+    expect(result).toBeDefined()
+    expect(result?.variants.size).toBe("'Default' | 'Small'")
+    expect(result?.variants.showIcon).toBe('boolean')
+  })
+
+  test('includes INSTANCE_SWAP properties as React.ReactNode in variants', async () => {
+    const defaultVariant = {
+      type: 'COMPONENT',
+      name: 'size=Default',
+      children: [],
+      visible: true,
+      reactions: [],
+      variantProperties: { size: 'Default' },
+    } as unknown as ComponentNode
+
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'ButtonWithIcon',
+      children: [defaultVariant],
+      defaultVariant,
+      visible: true,
+      componentPropertyDefinitions: {
+        size: {
+          type: 'VARIANT',
+          variantOptions: ['Default', 'Small'],
+        },
+        'leftIcon#60:123': {
+          type: 'INSTANCE_SWAP',
+          defaultValue: 'comp_abc',
+          preferredValues: [],
+        },
+        'rightIcon#61:456': {
+          type: 'INSTANCE_SWAP',
+          defaultValue: 'comp_def',
+          preferredValues: [],
+        },
+      },
+    } as unknown as ComponentSetNode
+
+    const result = await getSelectorProps(node)
+
+    expect(result).toBeDefined()
+    expect(result?.variants.size).toBe("'Default' | 'Small'")
+    expect(result?.variants.leftIcon).toBe('React.ReactNode')
+    expect(result?.variants.rightIcon).toBe('React.ReactNode')
+  })
+
   describe('sanitizePropertyName', () => {
     test('returns variant for numeric-only property name', async () => {
       const defaultVariant = {
