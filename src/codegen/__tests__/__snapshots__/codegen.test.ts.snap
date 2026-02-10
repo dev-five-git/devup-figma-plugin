@@ -672,9 +672,55 @@ exports[`Codegen renders component set with variants 1`] = `
 </Box>"
 `;
 
-exports[`Codegen renders component set with variants: component: [object Object] 1`] = `
+exports[`Codegen renders component set with variants: component: Default 1`] = `
 {
   "name": "Button",
+  "node": {
+    "children": [],
+    "name": "Default",
+    "parent": {
+      "children": [
+        [Circular],
+        {
+          "children": [],
+          "name": "Hover",
+          "parent": [Circular],
+          "reactions": [
+            {
+              "actions": [],
+              "trigger": {
+                "type": "ON_HOVER",
+              },
+            },
+          ],
+          "type": "COMPONENT",
+          "variantProperties": {
+            "state": "hover",
+          },
+          "visible": true,
+        },
+      ],
+      "componentPropertyDefinitions": {
+        "state": {
+          "type": "VARIANT",
+          "variantOptions": [
+            "default",
+            "hover",
+          ],
+        },
+      },
+      "defaultVariant": [Circular],
+      "name": "Button",
+      "type": "COMPONENT_SET",
+      "visible": true,
+    },
+    "reactions": [],
+    "type": "COMPONENT",
+    "variantProperties": {
+      "state": "default",
+    },
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -704,9 +750,48 @@ exports[`Codegen renders component set with effect property 1`] = `
 </Box>"
 `;
 
-exports[`Codegen renders component set with effect property: component: [object Object] 1`] = `
+exports[`Codegen renders component set with effect property: component: Default 1`] = `
 {
   "name": "Button",
+  "node": {
+    "children": [],
+    "name": "Default",
+    "parent": {
+      "children": [
+        [Circular],
+        {
+          "children": [],
+          "name": "Hover",
+          "parent": [Circular],
+          "reactions": [],
+          "type": "COMPONENT",
+          "variantProperties": {
+            "effect": "hover",
+          },
+          "visible": true,
+        },
+      ],
+      "componentPropertyDefinitions": {
+        "effect": {
+          "type": "VARIANT",
+          "variantOptions": [
+            "default",
+            "hover",
+          ],
+        },
+      },
+      "defaultVariant": [Circular],
+      "name": "Button",
+      "type": "COMPONENT_SET",
+      "visible": true,
+    },
+    "reactions": [],
+    "type": "COMPONENT",
+    "variantProperties": {
+      "effect": "default",
+    },
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -734,9 +819,72 @@ exports[`Codegen renders component set with transition 1`] = `
 </Box>"
 `;
 
-exports[`Codegen renders component set with transition: component: [object Object] 1`] = `
+exports[`Codegen renders component set with transition: component: Default 1`] = `
 {
   "name": "Button",
+  "node": {
+    "children": [],
+    "name": "Default",
+    "parent": {
+      "children": [
+        [Circular],
+        {
+          "children": [],
+          "name": "Hover",
+          "parent": [Circular],
+          "reactions": [
+            {
+              "actions": [
+                {
+                  "transition": {
+                    "duration": 0.3,
+                    "easing": {
+                      "type": "EASE_IN_OUT",
+                    },
+                    "type": "SMART_ANIMATE",
+                  },
+                  "type": "NODE",
+                },
+              ],
+              "trigger": {
+                "type": "ON_HOVER",
+              },
+            },
+          ],
+          "type": "COMPONENT",
+          "variantProperties": {},
+          "visible": true,
+        },
+      ],
+      "componentPropertyDefinitions": {},
+      "defaultVariant": [Circular],
+      "name": "Button",
+      "type": "COMPONENT_SET",
+      "visible": true,
+    },
+    "reactions": [
+      {
+        "actions": [
+          {
+            "transition": {
+              "duration": 0.3,
+              "easing": {
+                "type": "EASE_IN_OUT",
+              },
+              "type": "SMART_ANIMATE",
+            },
+            "type": "NODE",
+          },
+        ],
+        "trigger": {
+          "type": "ON_HOVER",
+        },
+      },
+    ],
+    "type": "COMPONENT",
+    "variantProperties": {},
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -764,9 +912,73 @@ exports[`Codegen renders component set with different props and transition 1`] =
 </Box>"
 `;
 
-exports[`Codegen renders component set with different props and transition: component: [object Object] 1`] = `
+exports[`Codegen renders component set with different props and transition: component: Default 1`] = `
 {
   "name": "Card",
+  "node": {
+    "children": [],
+    "name": "Default",
+    "parent": {
+      "children": [
+        [Circular],
+        {
+          "children": [],
+          "name": "Hover",
+          "opacity": 0.8,
+          "parent": [Circular],
+          "reactions": [
+            {
+              "actions": [
+                {
+                  "transition": {
+                    "duration": 0.3,
+                    "easing": {
+                      "type": "EASE_IN_OUT",
+                    },
+                    "type": "SMART_ANIMATE",
+                  },
+                  "type": "NODE",
+                },
+              ],
+              "trigger": {
+                "type": "ON_HOVER",
+              },
+            },
+          ],
+          "type": "COMPONENT",
+          "variantProperties": {},
+          "visible": true,
+        },
+      ],
+      "componentPropertyDefinitions": {},
+      "defaultVariant": [Circular],
+      "name": "Card",
+      "type": "COMPONENT_SET",
+      "visible": true,
+    },
+    "reactions": [
+      {
+        "actions": [
+          {
+            "transition": {
+              "duration": 0.3,
+              "easing": {
+                "type": "EASE_IN_OUT",
+              },
+              "type": "SMART_ANIMATE",
+            },
+            "type": "NODE",
+          },
+        ],
+        "trigger": {
+          "type": "ON_HOVER",
+        },
+      },
+    ],
+    "type": "COMPONENT",
+    "variantProperties": {},
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -794,9 +1006,79 @@ exports[`Codegen renders component set with different props and transition: comp
 
 exports[`Codegen renders component with parent component set 1`] = `"<Box />"`;
 
-exports[`Codegen renders component with parent component set: component: [object Object] 1`] = `
+exports[`Codegen renders component with parent component set: component: Hover 1`] = `
 {
   "name": "Button",
+  "node": {
+    "children": [],
+    "name": "Hover",
+    "parent": {
+      "children": [
+        {
+          "children": [],
+          "name": "Default",
+          "reactions": [],
+          "type": "COMPONENT",
+          "variantProperties": {
+            "state": "default",
+          },
+          "visible": true,
+        },
+        {
+          "children": [],
+          "name": "Hover",
+          "reactions": [
+            {
+              "actions": [],
+              "trigger": {
+                "type": "ON_HOVER",
+              },
+            },
+          ],
+          "type": "COMPONENT",
+          "variantProperties": {
+            "state": "hover",
+          },
+          "visible": true,
+        },
+      ],
+      "componentPropertyDefinitions": {
+        "state": {
+          "type": "VARIANT",
+          "variantOptions": [
+            "default",
+            "hover",
+          ],
+        },
+      },
+      "defaultVariant": {
+        "children": [],
+        "name": "Default",
+        "reactions": [],
+        "type": "COMPONENT",
+        "variantProperties": {
+          "state": "default",
+        },
+        "visible": true,
+      },
+      "name": "Button",
+      "type": "COMPONENT_SET",
+      "visible": true,
+    },
+    "reactions": [
+      {
+        "actions": [],
+        "trigger": {
+          "type": "ON_HOVER",
+        },
+      },
+    ],
+    "type": "COMPONENT",
+    "variantProperties": {
+      "state": "hover",
+    },
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -826,9 +1108,43 @@ exports[`Codegen renders component set with press trigger 1`] = `
 </Box>"
 `;
 
-exports[`Codegen renders component set with press trigger: component: [object Object] 1`] = `
+exports[`Codegen renders component set with press trigger: component: Default 1`] = `
 {
   "name": "Button",
+  "node": {
+    "children": [],
+    "name": "Default",
+    "parent": {
+      "children": [
+        [Circular],
+        {
+          "children": [],
+          "name": "Active",
+          "parent": [Circular],
+          "reactions": [
+            {
+              "actions": [],
+              "trigger": {
+                "type": "ON_PRESS",
+              },
+            },
+          ],
+          "type": "COMPONENT",
+          "variantProperties": {},
+          "visible": true,
+        },
+      ],
+      "componentPropertyDefinitions": {},
+      "defaultVariant": [Circular],
+      "name": "Button",
+      "type": "COMPONENT_SET",
+      "visible": true,
+    },
+    "reactions": [],
+    "type": "COMPONENT",
+    "variantProperties": {},
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -851,9 +1167,15 @@ exports[`Codegen renders component set with press trigger: component: [object Ob
 
 exports[`Codegen renders simple component without variants 2`] = `"<Box boxSize="100%" />"`;
 
-exports[`Codegen renders simple component without variants: component: [object Object] 1`] = `
+exports[`Codegen renders simple component without variants: component: Icon 1`] = `
 {
   "name": "Icon",
+  "node": {
+    "children": [],
+    "name": "Icon",
+    "type": "COMPONENT",
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -875,9 +1197,28 @@ exports[`Codegen renders simple component without variants: component: [object O
 
 exports[`Codegen renders component with parent component set name 1`] = `"<Box />"`;
 
-exports[`Codegen renders component with parent component set name: component: [object Object] 1`] = `
+exports[`Codegen renders component with parent component set name: component: Hover 1`] = `
 {
   "name": "Button",
+  "node": {
+    "children": [],
+    "name": "Hover",
+    "parent": {
+      "children": [],
+      "componentPropertyDefinitions": {},
+      "defaultVariant": {
+        "children": [],
+        "name": "Default",
+        "type": "COMPONENT",
+        "visible": true,
+      },
+      "name": "Button",
+      "type": "COMPONENT_SET",
+      "visible": true,
+    },
+    "type": "COMPONENT",
+    "visible": true,
+  },
   "tree": {
     "children": [],
     "component": "Box",
@@ -896,6 +1237,112 @@ exports[`Codegen renders component with parent component set name: component: [o
   },
   "variants": {},
 }
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP slot: INSTANCE_SWAP slot: Icon 1`] = `
+"export function Icon() {
+  return <Box boxSize="100%" />
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP slot: INSTANCE_SWAP slot: IconButton 1`] = `
+"export interface IconButtonProps {
+  size: 'sm' | 'md' | 'lg'
+  leftIcon: React.ReactNode
+}
+
+export function IconButton({ size, leftIcon }: IconButtonProps) {
+  return (
+    <Box>
+      {leftIcon}
+      <Text
+        boxSize="100%"
+        color="#F00"
+        fontFamily="Arial"
+        fontSize="16px"
+        fontWeight="400"
+        letterSpacing="0px"
+        lineHeight="1.5px"
+        overflow="hidden"
+        textOverflow="ellipsis"
+      >
+        Click
+      </Text>
+    </Box>
+  )
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with BOOLEAN conditional: BOOLEAN conditional: AlertCard 1`] = `
+"export interface AlertCardProps {
+  State: 'Default' | 'Hover'
+  showBadge?: boolean
+}
+
+export function AlertCard({ State, showBadge }: AlertCardProps) {
+  return (
+    <Box>
+      {showBadge && <Box boxSize="100%" />}
+      <Text
+        boxSize="100%"
+        color="#F00"
+        fontFamily="Arial"
+        fontSize="16px"
+        fontWeight="400"
+        letterSpacing="0px"
+        lineHeight="1.5px"
+        overflow="hidden"
+        textOverflow="ellipsis"
+      >
+        Hello
+      </Text>
+    </Box>
+  )
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP + BOOLEAN combined: INSTANCE_SWAP+BOOLEAN: Icon 1`] = `
+"export function Icon() {
+  return <Box boxSize="100%" />
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP + BOOLEAN combined: INSTANCE_SWAP+BOOLEAN: Button 1`] = `
+"export interface ButtonProps {
+  size: 'sm' | 'md' | 'lg'
+  leftIcon: React.ReactNode
+  showLeftIcon?: boolean
+  rightIcon: React.ReactNode
+  showRightIcon?: boolean
+}
+
+export function Button({ size, leftIcon, showLeftIcon, rightIcon, showRightIcon }: ButtonProps) {
+  return (
+    <Box>
+      {showLeftIcon && leftIcon}
+      <Text
+        boxSize="100%"
+        color="#F00"
+        fontFamily="Arial"
+        fontSize="16px"
+        fontWeight="400"
+        letterSpacing="0px"
+        lineHeight="1.5px"
+        overflow="hidden"
+        textOverflow="ellipsis"
+      >
+        Submit
+      </Text>
+      {showRightIcon && rightIcon}
+    </Box>
+  )
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP + BOOLEAN combined: INSTANCE_SWAP+BOOLEAN: ArrowIcon 1`] = `
+"export function ArrowIcon() {
+  return <Box boxSize="100%" />
+}"
 `;
 
 exports[`render real world component real world $ 1`] = `
@@ -3472,537 +3919,4 @@ exports[`render real world component real world $ 109`] = `
     </VStack>
   )
 }"
-`;
-
-exports[`Codegen renders component set with variants: component: Default 1`] = `
-{
-  "name": "Button",
-  "node": {
-    "children": [],
-    "name": "Default",
-    "parent": {
-      "children": [
-        [Circular],
-        {
-          "children": [],
-          "name": "Hover",
-          "parent": [Circular],
-          "reactions": [
-            {
-              "actions": [],
-              "trigger": {
-                "type": "ON_HOVER",
-              },
-            },
-          ],
-          "type": "COMPONENT",
-          "variantProperties": {
-            "state": "hover",
-          },
-          "visible": true,
-        },
-      ],
-      "componentPropertyDefinitions": {
-        "state": {
-          "type": "VARIANT",
-          "variantOptions": [
-            "default",
-            "hover",
-          ],
-        },
-      },
-      "defaultVariant": [Circular],
-      "name": "Button",
-      "type": "COMPONENT_SET",
-      "visible": true,
-    },
-    "reactions": [],
-    "type": "COMPONENT",
-    "variantProperties": {
-      "state": "default",
-    },
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Default",
-    "nodeType": "COMPONENT",
-    "props": {
-      "aspectRatio": undefined,
-      "flex": undefined,
-      "h": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-      "w": undefined,
-    },
-  },
-  "variants": {
-    "state": "'default' | 'hover'",
-  },
-}
-`;
-
-exports[`Codegen renders component set with effect property: component: Default 1`] = `
-{
-  "name": "Button",
-  "node": {
-    "children": [],
-    "name": "Default",
-    "parent": {
-      "children": [
-        [Circular],
-        {
-          "children": [],
-          "name": "Hover",
-          "parent": [Circular],
-          "reactions": [],
-          "type": "COMPONENT",
-          "variantProperties": {
-            "effect": "hover",
-          },
-          "visible": true,
-        },
-      ],
-      "componentPropertyDefinitions": {
-        "effect": {
-          "type": "VARIANT",
-          "variantOptions": [
-            "default",
-            "hover",
-          ],
-        },
-      },
-      "defaultVariant": [Circular],
-      "name": "Button",
-      "type": "COMPONENT_SET",
-      "visible": true,
-    },
-    "reactions": [],
-    "type": "COMPONENT",
-    "variantProperties": {
-      "effect": "default",
-    },
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Default",
-    "nodeType": "COMPONENT",
-    "props": {
-      "aspectRatio": undefined,
-      "flex": undefined,
-      "h": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-      "w": undefined,
-    },
-  },
-  "variants": {},
-}
-`;
-
-exports[`Codegen renders component set with transition: component: Default 1`] = `
-{
-  "name": "Button",
-  "node": {
-    "children": [],
-    "name": "Default",
-    "parent": {
-      "children": [
-        [Circular],
-        {
-          "children": [],
-          "name": "Hover",
-          "parent": [Circular],
-          "reactions": [
-            {
-              "actions": [
-                {
-                  "transition": {
-                    "duration": 0.3,
-                    "easing": {
-                      "type": "EASE_IN_OUT",
-                    },
-                    "type": "SMART_ANIMATE",
-                  },
-                  "type": "NODE",
-                },
-              ],
-              "trigger": {
-                "type": "ON_HOVER",
-              },
-            },
-          ],
-          "type": "COMPONENT",
-          "variantProperties": {},
-          "visible": true,
-        },
-      ],
-      "componentPropertyDefinitions": {},
-      "defaultVariant": [Circular],
-      "name": "Button",
-      "type": "COMPONENT_SET",
-      "visible": true,
-    },
-    "reactions": [
-      {
-        "actions": [
-          {
-            "transition": {
-              "duration": 0.3,
-              "easing": {
-                "type": "EASE_IN_OUT",
-              },
-              "type": "SMART_ANIMATE",
-            },
-            "type": "NODE",
-          },
-        ],
-        "trigger": {
-          "type": "ON_HOVER",
-        },
-      },
-    ],
-    "type": "COMPONENT",
-    "variantProperties": {},
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Default",
-    "nodeType": "COMPONENT",
-    "props": {
-      "aspectRatio": undefined,
-      "flex": undefined,
-      "h": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-      "w": undefined,
-    },
-  },
-  "variants": {},
-}
-`;
-
-exports[`Codegen renders component set with different props and transition: component: Default 1`] = `
-{
-  "name": "Card",
-  "node": {
-    "children": [],
-    "name": "Default",
-    "parent": {
-      "children": [
-        [Circular],
-        {
-          "children": [],
-          "name": "Hover",
-          "opacity": 0.8,
-          "parent": [Circular],
-          "reactions": [
-            {
-              "actions": [
-                {
-                  "transition": {
-                    "duration": 0.3,
-                    "easing": {
-                      "type": "EASE_IN_OUT",
-                    },
-                    "type": "SMART_ANIMATE",
-                  },
-                  "type": "NODE",
-                },
-              ],
-              "trigger": {
-                "type": "ON_HOVER",
-              },
-            },
-          ],
-          "type": "COMPONENT",
-          "variantProperties": {},
-          "visible": true,
-        },
-      ],
-      "componentPropertyDefinitions": {},
-      "defaultVariant": [Circular],
-      "name": "Card",
-      "type": "COMPONENT_SET",
-      "visible": true,
-    },
-    "reactions": [
-      {
-        "actions": [
-          {
-            "transition": {
-              "duration": 0.3,
-              "easing": {
-                "type": "EASE_IN_OUT",
-              },
-              "type": "SMART_ANIMATE",
-            },
-            "type": "NODE",
-          },
-        ],
-        "trigger": {
-          "type": "ON_HOVER",
-        },
-      },
-    ],
-    "type": "COMPONENT",
-    "variantProperties": {},
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Default",
-    "nodeType": "COMPONENT",
-    "props": {
-      "_hover": {
-        "opacity": "0.8",
-      },
-      "aspectRatio": undefined,
-      "flex": undefined,
-      "h": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-      "transition": "0.3ms ease-in-out",
-      "transitionProperty": "opacity",
-      "w": undefined,
-    },
-  },
-  "variants": {},
-}
-`;
-
-exports[`Codegen renders component with parent component set: component: Hover 1`] = `
-{
-  "name": "Button",
-  "node": {
-    "children": [],
-    "name": "Hover",
-    "parent": {
-      "children": [
-        {
-          "children": [],
-          "name": "Default",
-          "reactions": [],
-          "type": "COMPONENT",
-          "variantProperties": {
-            "state": "default",
-          },
-          "visible": true,
-        },
-        {
-          "children": [],
-          "name": "Hover",
-          "reactions": [
-            {
-              "actions": [],
-              "trigger": {
-                "type": "ON_HOVER",
-              },
-            },
-          ],
-          "type": "COMPONENT",
-          "variantProperties": {
-            "state": "hover",
-          },
-          "visible": true,
-        },
-      ],
-      "componentPropertyDefinitions": {
-        "state": {
-          "type": "VARIANT",
-          "variantOptions": [
-            "default",
-            "hover",
-          ],
-        },
-      },
-      "defaultVariant": {
-        "children": [],
-        "name": "Default",
-        "reactions": [],
-        "type": "COMPONENT",
-        "variantProperties": {
-          "state": "default",
-        },
-        "visible": true,
-      },
-      "name": "Button",
-      "type": "COMPONENT_SET",
-      "visible": true,
-    },
-    "reactions": [
-      {
-        "actions": [],
-        "trigger": {
-          "type": "ON_HOVER",
-        },
-      },
-    ],
-    "type": "COMPONENT",
-    "variantProperties": {
-      "state": "hover",
-    },
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Hover",
-    "nodeType": "COMPONENT",
-    "props": {
-      "aspectRatio": undefined,
-      "flex": undefined,
-      "h": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-      "w": undefined,
-    },
-  },
-  "variants": {
-    "state": "'default' | 'hover'",
-  },
-}
-`;
-
-exports[`Codegen renders component set with press trigger: component: Default 1`] = `
-{
-  "name": "Button",
-  "node": {
-    "children": [],
-    "name": "Default",
-    "parent": {
-      "children": [
-        [Circular],
-        {
-          "children": [],
-          "name": "Active",
-          "parent": [Circular],
-          "reactions": [
-            {
-              "actions": [],
-              "trigger": {
-                "type": "ON_PRESS",
-              },
-            },
-          ],
-          "type": "COMPONENT",
-          "variantProperties": {},
-          "visible": true,
-        },
-      ],
-      "componentPropertyDefinitions": {},
-      "defaultVariant": [Circular],
-      "name": "Button",
-      "type": "COMPONENT_SET",
-      "visible": true,
-    },
-    "reactions": [],
-    "type": "COMPONENT",
-    "variantProperties": {},
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Default",
-    "nodeType": "COMPONENT",
-    "props": {
-      "aspectRatio": undefined,
-      "flex": undefined,
-      "h": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-      "w": undefined,
-    },
-  },
-  "variants": {},
-}
-`;
-
-exports[`Codegen renders simple component without variants: component: Icon 1`] = `
-{
-  "name": "Icon",
-  "node": {
-    "children": [],
-    "name": "Icon",
-    "type": "COMPONENT",
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Icon",
-    "nodeType": "COMPONENT",
-    "props": {
-      "aspectRatio": undefined,
-      "boxSize": "100%",
-      "flex": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-    },
-  },
-  "variants": {},
-}
-`;
-
-exports[`Codegen renders component with parent component set name: component: Hover 1`] = `
-{
-  "name": "Button",
-  "node": {
-    "children": [],
-    "name": "Hover",
-    "parent": {
-      "children": [],
-      "componentPropertyDefinitions": {},
-      "defaultVariant": {
-        "children": [],
-        "name": "Default",
-        "type": "COMPONENT",
-        "visible": true,
-      },
-      "name": "Button",
-      "type": "COMPONENT_SET",
-      "visible": true,
-    },
-    "type": "COMPONENT",
-    "visible": true,
-  },
-  "tree": {
-    "children": [],
-    "component": "Box",
-    "nodeName": "Hover",
-    "nodeType": "COMPONENT",
-    "props": {
-      "aspectRatio": undefined,
-      "flex": undefined,
-      "h": undefined,
-      "maxH": undefined,
-      "maxW": undefined,
-      "minH": undefined,
-      "minW": undefined,
-      "w": undefined,
-    },
-  },
-  "variants": {},
-}
 `;

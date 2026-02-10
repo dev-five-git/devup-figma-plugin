@@ -3971,6 +3971,246 @@ describe('Codegen Tree Methods', () => {
     })
   })
 
+  describe('INSTANCE_SWAP / BOOLEAN snapshot', () => {
+    test('renders component with INSTANCE_SWAP slot', async () => {
+      const iconChild = {
+        type: 'INSTANCE',
+        name: 'IconInstance',
+        visible: true,
+        componentPropertyReferences: { mainComponent: 'leftIcon#60:1' },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'Icon',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const textChild = {
+        type: 'TEXT',
+        name: 'Label',
+        visible: true,
+        characters: 'Click',
+        getStyledTextSegments: () => [createTextSegment('Click')],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+      } as unknown as TextNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'size=md',
+        children: [iconChild, textChild],
+        visible: true,
+        reactions: [],
+        variantProperties: { size: 'md' },
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'IconButton',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          size: {
+            type: 'VARIANT',
+            variantOptions: ['sm', 'md', 'lg'],
+          },
+          'leftIcon#60:1': {
+            type: 'INSTANCE_SWAP',
+            defaultValue: '1:1',
+            preferredValues: [],
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.run()
+
+      for (const [name, code] of codegen.getComponentsCodes()) {
+        expect(code).toMatchSnapshot(`INSTANCE_SWAP slot: ${name}`)
+      }
+    })
+
+    test('renders component with BOOLEAN conditional', async () => {
+      const conditionalChild = {
+        type: 'FRAME',
+        name: 'Badge',
+        children: [],
+        visible: true,
+        componentPropertyReferences: { visible: 'showBadge#70:1' },
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as FrameNode
+
+      const textChild = {
+        type: 'TEXT',
+        name: 'Label',
+        visible: true,
+        characters: 'Hello',
+        getStyledTextSegments: () => [createTextSegment('Hello')],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+      } as unknown as TextNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [conditionalChild, textChild],
+        visible: true,
+        reactions: [],
+        variantProperties: { State: 'Default' },
+      } as unknown as ComponentNode
+
+      const hoverVariant = {
+        type: 'COMPONENT',
+        name: 'State=Hover',
+        children: [],
+        visible: true,
+        reactions: [],
+        variantProperties: { State: 'Hover' },
+        fills: [
+          {
+            type: 'SOLID',
+            visible: true,
+            color: { r: 0.9, g: 0.9, b: 0.9 },
+            opacity: 1,
+          },
+        ],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'AlertCard',
+        children: [defaultVariant, hoverVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          State: {
+            type: 'VARIANT',
+            variantOptions: ['Default', 'Hover'],
+          },
+          'showBadge#70:1': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.run()
+
+      for (const [name, code] of codegen.getComponentsCodes()) {
+        expect(code).toMatchSnapshot(`BOOLEAN conditional: ${name}`)
+      }
+    })
+
+    test('renders component with INSTANCE_SWAP + BOOLEAN combined', async () => {
+      const leftIconChild = {
+        type: 'INSTANCE',
+        name: 'LeftIconInstance',
+        visible: true,
+        componentPropertyReferences: {
+          mainComponent: 'leftIcon#60:1',
+          visible: 'showLeftIcon#70:1',
+        },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'Icon',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const rightIconChild = {
+        type: 'INSTANCE',
+        name: 'RightIconInstance',
+        visible: true,
+        componentPropertyReferences: {
+          mainComponent: 'rightIcon#60:2',
+          visible: 'showRightIcon#70:2',
+        },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'ArrowIcon',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const textChild = {
+        type: 'TEXT',
+        name: 'Label',
+        visible: true,
+        characters: 'Submit',
+        getStyledTextSegments: () => [createTextSegment('Submit')],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+      } as unknown as TextNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'size=md',
+        children: [leftIconChild, textChild, rightIconChild],
+        visible: true,
+        reactions: [],
+        variantProperties: { size: 'md' },
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'Button',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          size: {
+            type: 'VARIANT',
+            variantOptions: ['sm', 'md', 'lg'],
+          },
+          'leftIcon#60:1': {
+            type: 'INSTANCE_SWAP',
+            defaultValue: '1:1',
+            preferredValues: [],
+          },
+          'showLeftIcon#70:1': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+          'rightIcon#60:2': {
+            type: 'INSTANCE_SWAP',
+            defaultValue: '1:2',
+            preferredValues: [],
+          },
+          'showRightIcon#70:2': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.run()
+
+      for (const [name, code] of codegen.getComponentsCodes()) {
+        expect(code).toMatchSnapshot(`INSTANCE_SWAP+BOOLEAN: ${name}`)
+      }
+    })
+  })
+
   describe('getSelectorProps with numeric property names', () => {
     test('sanitizes property name that is only digits', async () => {
       const defaultVariant = {
