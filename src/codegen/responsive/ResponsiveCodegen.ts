@@ -35,14 +35,116 @@ function firstMapValue<V>(map: Map<unknown, V>): V {
   throw new Error('empty map')
 }
 
-function firstMapKey<K>(map: Map<K, unknown>): K {
-  for (const k of map.keys()) return k
-  throw new Error('empty map')
-}
-
 function firstMapEntry<K, V>(map: Map<K, V>): [K, V] {
   for (const entry of map.entries()) return entry
   throw new Error('empty map')
+}
+
+/**
+ * Build a stable merged order of child names across multiple variants/breakpoints.
+ * Uses topological sort on a DAG of ordering constraints from all variants,
+ * with average-position tie-breaking for deterministic output.
+ *
+ * Example: variant A has [Icon, TextA, Arrow], variant B has [Icon, TextB, Arrow]
+ * → edges: Icon→TextA, TextA→Arrow, Icon→TextB, TextB→Arrow
+ * → topo sort: [Icon, TextA, TextB, Arrow] (Arrow stays last)
+ */
+function mergeChildNameOrder(
+  childrenMaps: Map<unknown, Map<string, NodeTree[]>>,
+): string[] {
+  // Collect distinct child name sequences from each variant
+  const sequences: string[][] = []
+  for (const childMap of childrenMaps.values()) {
+    const seq: string[] = []
+    for (const name of childMap.keys()) {
+      seq.push(name)
+    }
+    sequences.push(seq)
+  }
+
+  // Collect all unique names
+  const allNames = new Set<string>()
+  for (const seq of sequences) {
+    for (const name of seq) {
+      allNames.add(name)
+    }
+  }
+
+  if (allNames.size === 0) return []
+  if (allNames.size === 1) return [...allNames]
+
+  // Build DAG: for each variant, add edge from consecutive distinct names
+  const edges = new Map<string, Set<string>>()
+  const inDegree = new Map<string, number>()
+  for (const name of allNames) {
+    edges.set(name, new Set())
+    inDegree.set(name, 0)
+  }
+
+  for (const seq of sequences) {
+    for (let i = 0; i < seq.length - 1; i++) {
+      const from = seq[i]
+      const to = seq[i + 1]
+      const fromEdges = edges.get(from)
+      if (fromEdges && !fromEdges.has(to)) {
+        fromEdges.add(to)
+        inDegree.set(to, (inDegree.get(to) || 0) + 1)
+      }
+    }
+  }
+
+  // Compute average normalized position for tie-breaking
+  const avgPosition = new Map<string, number>()
+  for (const name of allNames) {
+    let totalPos = 0
+    let count = 0
+    for (const seq of sequences) {
+      const idx = seq.indexOf(name)
+      if (idx >= 0) {
+        // Normalize to 0..1 range
+        totalPos += seq.length > 1 ? idx / (seq.length - 1) : 0.5
+        count++
+      }
+    }
+    avgPosition.set(name, count > 0 ? totalPos / count : 0.5)
+  }
+
+  // Kahn's algorithm with priority-based tie-breaking
+  const queue: string[] = []
+  for (const [name, deg] of inDegree) {
+    if (deg === 0) queue.push(name)
+  }
+  // Sort initial queue by average position (stable)
+  queue.sort((a, b) => (avgPosition.get(a) || 0) - (avgPosition.get(b) || 0))
+
+  const result: string[] = []
+  while (queue.length > 0) {
+    const node = queue.shift()
+    if (!node) break
+    result.push(node)
+    for (const neighbor of edges.get(node) || []) {
+      const newDeg = (inDegree.get(neighbor) || 1) - 1
+      inDegree.set(neighbor, newDeg)
+      if (newDeg === 0) {
+        queue.push(neighbor)
+        // Re-sort to maintain priority order
+        queue.sort(
+          (a, b) => (avgPosition.get(a) || 0) - (avgPosition.get(b) || 0),
+        )
+      }
+    }
+  }
+
+  // Cycle fallback: append any remaining nodes (shouldn't happen with consistent data)
+  if (result.length < allNames.size) {
+    for (const name of allNames) {
+      if (!result.includes(name)) {
+        result.push(name)
+      }
+    }
+  }
+
+  return result
 }
 
 /**
@@ -212,7 +314,6 @@ export class ResponsiveCodegen {
 
     // Merge children by name
     const childrenCodes: string[] = []
-    const processedChildNames = new Set<string>()
 
     // Convert all trees' children to maps
     const childrenMaps = new Map<BreakpointKey, Map<string, NodeTree[]>>()
@@ -220,27 +321,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(bp, this.treeChildrenToMap(tree))
     }
 
-    // Get all child names in order (first tree's order, then others)
-    const firstBreakpoint = firstMapKey(treesByBreakpoint)
-    const firstChildrenMap = childrenMaps.get(firstBreakpoint)
-    const allChildNames: string[] = []
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    // Add children that exist only in other breakpoints
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all child names in stable merged order across all breakpoints
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     for (const childName of allChildNames) {
       // Find the maximum number of children with this name across all breakpoints
@@ -991,26 +1073,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(bp, this.treeChildrenToMap(tree))
     }
 
-    const processedChildNames = new Set<string>()
-    const allChildNames: string[] = []
-    const firstBreakpoint = firstMapKey(treesByBreakpoint)
-    const firstChildrenMap = childrenMaps.get(firstBreakpoint)
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all child names in stable merged order across all breakpoints
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     const mergedChildren: NodeTree[] = []
 
@@ -1111,26 +1175,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(variant, this.treeChildrenToMap(tree))
     }
 
-    const processedChildNames = new Set<string>()
-    const allChildNames: string[] = []
-    const firstVariant = firstMapKey(treesByVariant)
-    const firstChildrenMap = childrenMaps.get(firstVariant)
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all child names in stable merged order across all variants
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     for (const childName of allChildNames) {
       let maxChildCount = 0
@@ -1338,27 +1384,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(compositeKey, this.treeChildrenToMap(tree))
     }
 
-    // Get all unique child names
-    const processedChildNames = new Set<string>()
-    const allChildNames: string[] = []
-    const firstComposite = firstMapKey(treesByComposite)
-    const firstChildrenMap = childrenMaps.get(firstComposite)
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all unique child names in stable merged order across all composites
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     // Process each child
     for (const childName of allChildNames) {

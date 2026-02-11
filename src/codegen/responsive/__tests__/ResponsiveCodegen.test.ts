@@ -2857,4 +2857,201 @@ describe('ResponsiveCodegen', () => {
       expect(result).toContain('[size]')
     })
   })
+
+  describe('child ordering across variants', () => {
+    it('preserves relative child order when merging variants with different children', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Simulates a Button component: lg has [LeftIcon, TextLg, RightIcon]
+      // md has [LeftIcon, TextMd, RightIcon], tag has [TextTag]
+      // RightIcon must appear AFTER all text nodes in merged output
+      const leftIcon: NodeTree = {
+        component: 'Box',
+        props: { maskImage: 'url(/icons/left.svg)' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'LeftIcon',
+        condition: 'leftIcon',
+      }
+      const rightIcon: NodeTree = {
+        component: 'Box',
+        props: { maskImage: 'url(/icons/right.svg)' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'RightIcon',
+        condition: 'rightIcon',
+      }
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'lg',
+          {
+            component: 'Flex',
+            props: {},
+            children: [
+              { ...leftIcon },
+              {
+                component: 'Text',
+                props: { fontSize: '16px' },
+                children: [],
+                nodeType: 'TEXT',
+                nodeName: 'TextLg',
+                textChildren: ['buttonLg'],
+              },
+              { ...rightIcon },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'md',
+          {
+            component: 'Flex',
+            props: {},
+            children: [
+              { ...leftIcon },
+              {
+                component: 'Text',
+                props: { fontSize: '14px' },
+                children: [],
+                nodeType: 'TEXT',
+                nodeName: 'TextMd',
+                textChildren: ['button'],
+              },
+              { ...rightIcon },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'tag',
+          {
+            component: 'Flex',
+            props: {},
+            children: [
+              {
+                component: 'Text',
+                props: { fontSize: '12px' },
+                children: [],
+                nodeType: 'TEXT',
+                nodeName: 'TextTag',
+                textChildren: ['Tag'],
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'size',
+        treesByVariant,
+        0,
+      )
+
+      // Mock output format: render:Component:depth=N:props|children
+      // Use unique prop values to identify each child's position:
+      // LeftIcon → url(/icons/left.svg), RightIcon → url(/icons/right.svg)
+      // TextLg → buttonLg, TextMd → button, TextTag → Tag
+      const leftIconPos = result.indexOf('url(/icons/left.svg)')
+      const textLgPos = result.indexOf('buttonLg')
+      const textTagPos = result.indexOf('Tag')
+      const rightIconPos = result.indexOf('url(/icons/right.svg)')
+
+      // LeftIcon should appear
+      expect(leftIconPos).toBeGreaterThanOrEqual(0)
+      // RightIcon should appear after LeftIcon and all texts
+      expect(rightIconPos).toBeGreaterThan(leftIconPos)
+      expect(rightIconPos).toBeGreaterThan(textLgPos)
+      // Tag text should come before RightIcon
+      if (textTagPos >= 0) {
+        expect(rightIconPos).toBeGreaterThan(textTagPos)
+      }
+    })
+
+    it('preserves order in nested variant merge with multiple child types', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // 4 composites: size × varient, with [IconComp, Text, ArrowComp] order
+      // Use unique component names to make assertions easy
+      // ArrowComp must always be last in merged output
+      const makeTree = (
+        textName: string,
+        textContent: string,
+        fontSize: string,
+      ): NodeTree => ({
+        component: 'Flex',
+        props: {},
+        children: [
+          {
+            component: 'IconComp',
+            props: { id: 'icon' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Icon',
+          },
+          {
+            component: 'Text',
+            props: { fontSize },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: textName,
+            textChildren: [textContent],
+          },
+          {
+            component: 'ArrowComp',
+            props: { id: 'arrow' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Arrow',
+          },
+        ],
+        nodeType: 'FRAME',
+        nodeName: 'Root',
+      })
+
+      const bp = 'pc' as import('../index').BreakpointKey
+      const treesByCompositeAndBreakpoint = new Map<
+        string,
+        Map<import('../index').BreakpointKey, NodeTree>
+      >([
+        [
+          'size=lg|varient=primary',
+          new Map([[bp, makeTree('LgText', 'Large', '16px')]]),
+        ],
+        [
+          'size=sm|varient=primary',
+          new Map([[bp, makeTree('SmText', 'Small', '12px')]]),
+        ],
+        [
+          'size=lg|varient=white',
+          new Map([[bp, makeTree('LgText', 'Large', '16px')]]),
+        ],
+        [
+          'size=sm|varient=white',
+          new Map([[bp, makeTree('SmText', 'Small', '12px')]]),
+        ],
+      ])
+
+      const result = generator.generateMultiVariantMergedCode(
+        ['size', 'varient'],
+        treesByCompositeAndBreakpoint,
+        0,
+      )
+
+      // ArrowComp must appear after all text-related content
+      const iconPos = result.indexOf('render:IconComp')
+      const arrowPos = result.indexOf('render:ArrowComp')
+      const lgTextPos = result.indexOf('Large')
+      const smTextPos = result.indexOf('Small')
+
+      expect(iconPos).toBeGreaterThanOrEqual(0)
+      expect(arrowPos).toBeGreaterThan(iconPos)
+      expect(arrowPos).toBeGreaterThan(lgTextPos)
+      expect(arrowPos).toBeGreaterThan(smTextPos)
+    })
+  })
 })
