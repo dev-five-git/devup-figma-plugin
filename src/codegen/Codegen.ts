@@ -154,6 +154,18 @@ export class Codegen {
     return this.code
   }
 
+  /**
+   * Get the component tree built by addComponentTree for this node.
+   * Unlike getTree(), which skips invisible children in buildTree(),
+   * this tree includes ALL children with BOOLEAN conditions and
+   * INSTANCE_SWAP slot placeholders preserved.
+   * Returns undefined if no component tree was built (non-COMPONENT nodes).
+   */
+  getComponentTree(): ComponentTree | undefined {
+    const nodeId = this.node.id || this.node.name
+    return this.componentTrees.get(nodeId)
+  }
+
   getComponentsCodes() {
     const result: Array<readonly [string, string]> = []
     for (const { node, code, variants } of this.components.values()) {
@@ -252,6 +264,23 @@ export class Codegen {
 
   private async doBuildTree(node: SceneNode): Promise<NodeTree> {
     const tBuild = perfStart()
+
+    // Handle COMPONENT_SET or COMPONENT — fire addComponentTree BEFORE any early returns
+    // (e.g., asset detection) so that BOOLEAN conditions and INSTANCE_SWAP slots are always
+    // detected on children, even when the COMPONENT itself is classified as an asset.
+    if (
+      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
+      ((this.node.type === 'COMPONENT_SET' &&
+        node === this.node.defaultVariant) ||
+        this.node.type === 'COMPONENT')
+    ) {
+      this.pendingComponentTrees.push(
+        this.addComponentTree(
+          node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
+        ),
+      )
+    }
+
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
@@ -263,6 +292,7 @@ export class Codegen {
           props.maskImage = buildCssUrl(props.src as string)
           props.maskRepeat = 'no-repeat'
           props.maskSize = 'contain'
+          props.maskPos = 'center'
           props.bg = maskColor
           delete props.src
         }
@@ -338,20 +368,6 @@ export class Codegen {
 
     // Fire getProps early for non-INSTANCE nodes — it runs while we process children.
     const propsPromise = getProps(node)
-
-    // Handle COMPONENT_SET or COMPONENT - add to componentTrees (fire-and-forget)
-    if (
-      (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
-      ((this.node.type === 'COMPONENT_SET' &&
-        node === this.node.defaultVariant) ||
-        this.node.type === 'COMPONENT')
-    ) {
-      this.pendingComponentTrees.push(
-        this.addComponentTree(
-          node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-        ),
-      )
-    }
 
     // Build children sequentially — Figma's single-threaded IPC means
     // concurrent subtree builds add overhead without improving throughput,

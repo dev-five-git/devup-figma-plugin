@@ -409,7 +409,7 @@ describe('registerCodegen with viewport variant', () => {
         typeof r === 'object' &&
         r !== null &&
         'title' in r &&
-        (r as { title: string }).title.includes('Responsive'),
+        (r as { title: string }).title.endsWith('- Components'),
     )
     expect(responsiveResult).toBeDefined()
   })
@@ -494,7 +494,7 @@ describe('registerCodegen with viewport variant', () => {
         typeof r === 'object' &&
         r !== null &&
         'title' in r &&
-        (r as { title: string }).title.includes('Responsive'),
+        (r as { title: string }).title.endsWith('- Components'),
     )
     expect(responsiveResult).toBeDefined()
 
@@ -502,6 +502,118 @@ describe('registerCodegen with viewport variant', () => {
     const resultWithCode = responsiveResult as { code: string } | undefined
     if (resultWithCode?.code) {
       expect(resultWithCode.code).toContain('size')
+    }
+  })
+
+  it('should generate responsive component with multiple non-viewport variants (size + varient)', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    // COMPONENT_SET with two non-viewport variants: size and varient
+    const componentSetNode = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      visible: true,
+      componentPropertyDefinitions: {
+        size: {
+          type: 'VARIANT',
+          defaultValue: 'md',
+          variantOptions: ['sm', 'md'],
+        },
+        varient: {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'white'],
+        },
+      },
+      children: [
+        {
+          type: 'COMPONENT',
+          name: 'size=sm, varient=primary',
+          visible: true,
+          variantProperties: { size: 'sm', varient: 'primary' },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 100,
+          height: 40,
+        },
+        {
+          type: 'COMPONENT',
+          name: 'size=md, varient=primary',
+          visible: true,
+          variantProperties: { size: 'md', varient: 'primary' },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 200,
+          height: 50,
+        },
+        {
+          type: 'COMPONENT',
+          name: 'size=sm, varient=white',
+          visible: true,
+          variantProperties: { size: 'sm', varient: 'white' },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 100,
+          height: 40,
+        },
+        {
+          type: 'COMPONENT',
+          name: 'size=md, varient=white',
+          visible: true,
+          variantProperties: { size: 'md', varient: 'white' },
+          children: [],
+          layoutMode: 'HORIZONTAL',
+          width: 200,
+          height: 50,
+        },
+      ],
+      defaultVariant: {
+        type: 'COMPONENT',
+        name: 'size=md, varient=primary',
+        visible: true,
+        variantProperties: { size: 'md', varient: 'primary' },
+        children: [],
+      },
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: componentSetNode,
+      language: 'devup-ui',
+    })
+
+    // Should include responsive components result
+    const responsiveResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title.endsWith('- Components'),
+    )
+    expect(responsiveResult).toBeDefined()
+
+    // The generated code should include BOTH variant keys in the interface
+    const resultWithCode = responsiveResult as { code: string } | undefined
+    if (resultWithCode?.code) {
+      expect(resultWithCode.code).toContain('size')
+      expect(resultWithCode.code).toContain('varient')
     }
   })
 
@@ -576,7 +688,7 @@ describe('registerCodegen with viewport variant', () => {
         typeof r === 'object' &&
         r !== null &&
         'title' in r &&
-        (r as { title: string }).title.includes('Responsive'),
+        (r as { title: string }).title.endsWith('- Responsive'),
     )
     expect(responsiveResult).toBeDefined()
   })
@@ -601,6 +713,33 @@ describe('registerCodegen with viewport variant', () => {
     expect(capturedHandler).not.toBeNull()
     if (capturedHandler === null) throw new Error('Handler not captured')
 
+    // Create a nested custom component (NestedIcon) that CustomButton references.
+    // When CustomButton's code renders <NestedIcon />, generateImportStatements
+    // will extract it as a custom import — covering the customImports loop.
+    const nestedIconComponent = {
+      type: 'COMPONENT',
+      name: 'NestedIcon',
+      visible: true,
+      children: [],
+      width: 16,
+      height: 16,
+      layoutMode: 'NONE',
+      componentPropertyDefinitions: {},
+      variantProperties: {} as Record<string, string>,
+      reactions: [],
+      parent: null,
+    }
+
+    // INSTANCE of NestedIcon, placed inside CustomButton variants
+    const nestedIconInstance = {
+      type: 'INSTANCE',
+      name: 'NestedIcon',
+      visible: true,
+      width: 16,
+      height: 16,
+      getMainComponentAsync: async () => nestedIconComponent,
+    }
+
     // Create a custom component that will be referenced
     const customComponent = {
       type: 'COMPONENT',
@@ -611,6 +750,7 @@ describe('registerCodegen with viewport variant', () => {
       height: 40,
       layoutMode: 'NONE',
       componentPropertyDefinitions: {},
+      variantProperties: {} as Record<string, string>,
       parent: null,
     }
 
@@ -624,36 +764,93 @@ describe('registerCodegen with viewport variant', () => {
       getMainComponentAsync: async () => customComponent,
     }
 
-    // Create a COMPONENT that contains the INSTANCE
-    const componentNode = {
+    // Create COMPONENT variants that the instance references.
+    // Each variant contains a NestedIcon INSTANCE child — this causes
+    // the generated component code to include <NestedIcon />.
+    const componentVariant1 = {
       type: 'COMPONENT',
-      name: 'MyComponent',
+      name: 'CustomButton',
+      visible: true,
+      children: [
+        {
+          ...nestedIconInstance,
+          name: 'NestedIcon',
+          parent: null as unknown,
+        },
+      ],
+      width: 100,
+      height: 40,
+      layoutMode: 'HORIZONTAL',
+      componentPropertyDefinitions: {},
+      reactions: [],
+      variantProperties: { size: 'md' },
+      parent: null,
+    }
+
+    const componentVariant2 = {
+      type: 'COMPONENT',
+      name: 'CustomButton',
+      visible: true,
+      children: [
+        {
+          ...nestedIconInstance,
+          name: 'NestedIcon',
+          parent: null as unknown,
+        },
+      ],
+      width: 100,
+      height: 40,
+      layoutMode: 'HORIZONTAL',
+      componentPropertyDefinitions: {},
+      reactions: [],
+      variantProperties: { size: 'lg' },
+      parent: null,
+    }
+
+    // Create COMPONENT_SET parent with a variant key so Components tab is generated
+    const componentSetNode = {
+      type: 'COMPONENT_SET',
+      name: 'CustomButton',
+      componentPropertyDefinitions: {
+        size: {
+          type: 'VARIANT',
+          variantOptions: ['md', 'lg'],
+        },
+      },
+      children: [componentVariant1, componentVariant2],
+      defaultVariant: componentVariant1,
+      reactions: [],
+    }
+
+    // Set parent references
+    ;(componentVariant1 as { parent: unknown }).parent = componentSetNode
+    ;(componentVariant2 as { parent: unknown }).parent = componentSetNode
+    for (const variant of [componentVariant1, componentVariant2]) {
+      for (const child of variant.children) {
+        ;(child as { parent: unknown }).parent = variant
+      }
+    }
+    ;(customComponent as { parent: unknown }).parent = componentSetNode
+    ;(customComponent as { variantProperties: unknown }).variantProperties = {
+      size: 'md',
+    }
+
+    // Create a FRAME that contains the INSTANCE (not a COMPONENT)
+    const frameNode = {
+      type: 'FRAME',
+      name: 'MyFrame',
       visible: true,
       children: [instanceNode],
       width: 200,
       height: 100,
       layoutMode: 'VERTICAL',
-      componentPropertyDefinitions: {},
       reactions: [],
       parent: null,
     } as unknown as SceneNode
 
-    // Create COMPONENT_SET parent with proper children array
-    const componentSetNode = {
-      type: 'COMPONENT_SET',
-      name: 'MyComponentSet',
-      componentPropertyDefinitions: {},
-      children: [componentNode],
-      defaultVariant: componentNode,
-      reactions: [],
-    }
-
-    // Set parent reference
-    ;(componentNode as { parent: unknown }).parent = componentSetNode
-
     const handler = capturedHandler as CodegenHandler
     const result = await handler({
-      node: componentNode,
+      node: frameNode,
       language: 'devup-ui',
     })
 
@@ -676,19 +873,17 @@ describe('registerCodegen with viewport variant', () => {
     expect(bashCLI).toBeDefined()
     expect(powershellCLI).toBeDefined()
 
-    // Check that custom component import is included (bash escapes quotes)
+    // Check that custom component file is included in CLI output
     const bashCode = (bashCLI as { code: string } | undefined)?.code
     const powershellCode = (powershellCLI as { code: string } | undefined)?.code
 
     if (bashCode) {
-      expect(bashCode).toContain(
-        "import { CustomButton } from \\'@/components/CustomButton\\'",
-      )
+      expect(bashCode).toContain('CustomButton')
+      expect(bashCode).toContain('src/components/CustomButton.tsx')
     }
     if (powershellCode) {
-      expect(powershellCode).toContain(
-        "import { CustomButton } from '@/components/CustomButton'",
-      )
+      expect(powershellCode).toContain('CustomButton')
+      expect(powershellCode).toContain('src\\components\\CustomButton.tsx')
     }
   })
 
@@ -793,18 +988,17 @@ describe('registerCodegen with viewport variant', () => {
         typeof r === 'object' &&
         r !== null &&
         'title' in r &&
-        (r as { title: string }).title === 'MyFrame - Components Responsive',
+        (r as { title: string }).title === 'MyFrame - Components',
     )
     expect(responsiveResult).toBeDefined()
 
-    // Should also include CLI results for Components Responsive
+    // Should also include CLI results for Components
     const bashCLI = result.find(
       (r: unknown) =>
         typeof r === 'object' &&
         r !== null &&
         'title' in r &&
-        (r as { title: string }).title ===
-          'MyFrame - Components Responsive CLI (Bash)',
+        (r as { title: string }).title === 'MyFrame - Components CLI (Bash)',
     )
     expect(bashCLI).toBeDefined()
 
@@ -814,7 +1008,7 @@ describe('registerCodegen with viewport variant', () => {
         r !== null &&
         'title' in r &&
         (r as { title: string }).title ===
-          'MyFrame - Components Responsive CLI (PowerShell)',
+          'MyFrame - Components CLI (PowerShell)',
     )
     expect(powershellCLI).toBeDefined()
   })

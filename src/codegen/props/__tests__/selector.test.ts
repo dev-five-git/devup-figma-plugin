@@ -146,6 +146,41 @@ describe('getSelectorProps', () => {
     expect(result?.variants.showIcon).toBe('boolean')
   })
 
+  test('includes TEXT properties as string in variants', async () => {
+    const defaultVariant = {
+      type: 'COMPONENT',
+      name: 'size=Default',
+      children: [],
+      visible: true,
+      reactions: [],
+      variantProperties: { size: 'Default' },
+    } as unknown as ComponentNode
+
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'ButtonWithLabel',
+      children: [defaultVariant],
+      defaultVariant,
+      visible: true,
+      componentPropertyDefinitions: {
+        size: {
+          type: 'VARIANT',
+          variantOptions: ['Default', 'Small'],
+        },
+        'label#80:456': {
+          type: 'TEXT',
+          defaultValue: 'Click me',
+        },
+      },
+    } as unknown as ComponentSetNode
+
+    const result = await getSelectorProps(node)
+
+    expect(result).toBeDefined()
+    expect(result?.variants.size).toBe("'Default' | 'Small'")
+    expect(result?.variants.label).toBe('string')
+  })
+
   test('includes INSTANCE_SWAP properties as React.ReactNode in variants', async () => {
     const defaultVariant = {
       type: 'COMPONENT',

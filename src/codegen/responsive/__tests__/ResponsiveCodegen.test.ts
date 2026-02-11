@@ -46,6 +46,7 @@ const mockRenderTree = mock((tree: NodeTree, depth: number) =>
 
 const MockCodegen = class {
   getTree = mockGetTree
+  getComponentTree = mock(() => undefined)
   static renderTree = mockRenderTree
 }
 
@@ -570,6 +571,325 @@ describe('ResponsiveCodegen', () => {
       expect(result).toContain('&&')
       expect(result).toMatchSnapshot()
     })
+
+    it('prepends BOOLEAN condition on partial children (single variant, single value)', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // MypageIcon exists only in "lg" variant with condition: 'leftIcon'
+      const iconChild: NodeTree = {
+        component: 'Box',
+        props: { maskImage: 'url(/icons/MypageIcon.svg)' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'MypageIcon',
+        condition: 'leftIcon',
+      }
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'lg',
+          {
+            component: 'Flex',
+            props: {},
+            children: [iconChild],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'tag',
+          {
+            component: 'Flex',
+            props: {},
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'size',
+        treesByVariant,
+        0,
+      )
+
+      // Should prepend BOOLEAN condition before variant condition
+      expect(result).toContain('leftIcon && size === "lg"')
+    })
+
+    it('prepends BOOLEAN condition on partial children (single variant, multiple values)', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // MypageIcon exists in lg, md, sm but NOT tag — all with condition 'leftIcon'
+      const iconChild: NodeTree = {
+        component: 'Box',
+        props: { maskImage: 'url(/icons/MypageIcon.svg)' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'MypageIcon',
+        condition: 'leftIcon',
+      }
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'lg',
+          {
+            component: 'Flex',
+            props: {},
+            children: [{ ...iconChild }],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'md',
+          {
+            component: 'Flex',
+            props: {},
+            children: [{ ...iconChild }],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'sm',
+          {
+            component: 'Flex',
+            props: {},
+            children: [{ ...iconChild }],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'tag',
+          {
+            component: 'Flex',
+            props: {},
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'size',
+        treesByVariant,
+        0,
+      )
+
+      // Should prepend BOOLEAN condition before OR variant condition
+      expect(result).toContain(
+        'leftIcon && (size === "lg" || size === "md" || size === "sm")',
+      )
+    })
+
+    it('prepends BOOLEAN condition on partial children (multi-variant, single controlling key)', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // MypageIcon exists in lg|primary and lg|white but NOT tag|primary and tag|white
+      // Controlling key = size (lg vs tag), shared condition = 'leftIcon'
+      const iconChild: NodeTree = {
+        component: 'Box',
+        props: { maskImage: 'url(/icons/MypageIcon.svg)' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'MypageIcon',
+        condition: 'leftIcon',
+      }
+
+      // Use generateMultiVariantMergedCode (public), which wraps each tree in a single-breakpoint map
+      const treesByCompositeAndBreakpoint = new Map<
+        string,
+        Map<import('../index').BreakpointKey, NodeTree>
+      >([
+        [
+          'size=lg|varient=primary',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [{ ...iconChild }],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=lg|varient=white',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [{ ...iconChild }],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=tag|varient=primary',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=tag|varient=white',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+      ])
+
+      const result = generator.generateMultiVariantMergedCode(
+        ['size', 'varient'],
+        treesByCompositeAndBreakpoint,
+        0,
+      )
+
+      // Should prepend BOOLEAN condition before variant condition
+      expect(result).toContain('leftIcon && size === "lg"')
+    })
+
+    it('does not prepend condition when partial children have different conditions', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Child in "lg" has condition 'leftIcon', child in "md" has condition 'rightIcon'
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'lg',
+          {
+            component: 'Flex',
+            props: {},
+            children: [
+              {
+                component: 'Box',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Icon',
+                condition: 'leftIcon',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'md',
+          {
+            component: 'Flex',
+            props: {},
+            children: [
+              {
+                component: 'Box',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Icon',
+                condition: 'rightIcon',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'tag',
+          {
+            component: 'Flex',
+            props: {},
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'size',
+        treesByVariant,
+        0,
+      )
+
+      // Should NOT contain leftIcon or rightIcon since conditions don't match
+      expect(result).not.toContain('leftIcon')
+      expect(result).not.toContain('rightIcon')
+      // Should still have variant condition
+      expect(result).toContain('size === "lg" || size === "md"')
+    })
+
+    it('does not prepend condition when partial children have no condition', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Partial child without condition
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'lg',
+          {
+            component: 'Flex',
+            props: {},
+            children: [
+              {
+                component: 'Box',
+                props: { id: 'icon' },
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Icon',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'tag',
+          {
+            component: 'Flex',
+            props: {},
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'size',
+        treesByVariant,
+        0,
+      )
+
+      // Should have variant condition but no boolean prefix
+      expect(result).toContain('size === "lg"')
+      expect(result).not.toContain('leftIcon')
+    })
   })
 
   describe('createNestedVariantProp optimization', () => {
@@ -917,6 +1237,160 @@ describe('ResponsiveCodegen', () => {
       expect(result.length).toBe(1)
       expect(result[0][0]).toBe('StatusVariant')
       expect(result[0][1]).toContain('status')
+    })
+
+    it('handles component set with multiple non-viewport variants', async () => {
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'MultiVariant',
+        componentPropertyDefinitions: {
+          size: {
+            type: 'VARIANT',
+            variantOptions: ['sm', 'lg'],
+          },
+          color: {
+            type: 'VARIANT',
+            variantOptions: ['red', 'blue'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'size=sm, color=red',
+            variantProperties: { size: 'sm', color: 'red' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 100,
+            height: 50,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'size=sm, color=blue',
+            variantProperties: { size: 'sm', color: 'blue' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 100,
+            height: 50,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'size=lg, color=red',
+            variantProperties: { size: 'lg', color: 'red' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 200,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'size=lg, color=blue',
+            variantProperties: { size: 'lg', color: 'blue' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 200,
+            height: 100,
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'MultiVariant',
+        )
+
+      expect(result.length).toBe(1)
+      expect(result[0][0]).toBe('MultiVariant')
+      // Should contain both variant keys
+      expect(result[0][1]).toContain('size')
+      expect(result[0][1]).toContain('color')
+    })
+
+    it('handles component set with multiple non-viewport variants and effect', async () => {
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'MultiVariantEffect',
+        componentPropertyDefinitions: {
+          size: {
+            type: 'VARIANT',
+            variantOptions: ['sm', 'lg'],
+          },
+          color: {
+            type: 'VARIANT',
+            variantOptions: ['red', 'blue'],
+          },
+          effect: {
+            type: 'VARIANT',
+            variantOptions: ['default', 'hover'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'size=sm, color=red, effect=default',
+            variantProperties: {
+              size: 'sm',
+              color: 'red',
+              effect: 'default',
+            },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 100,
+            height: 50,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'size=sm, color=red, effect=hover',
+            variantProperties: {
+              size: 'sm',
+              color: 'red',
+              effect: 'hover',
+            },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 100,
+            height: 50,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'size=lg, color=blue, effect=default',
+            variantProperties: {
+              size: 'lg',
+              color: 'blue',
+              effect: 'default',
+            },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 200,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'size=lg, color=blue, effect=hover',
+            variantProperties: {
+              size: 'lg',
+              color: 'blue',
+              effect: 'hover',
+            },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 200,
+            height: 100,
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'MultiVariantEffect',
+        )
+
+      expect(result.length).toBe(1)
+      expect(result[0][0]).toBe('MultiVariantEffect')
+      // Should contain both variant keys (not effect)
+      expect(result[0][1]).toContain('size')
+      expect(result[0][1]).toContain('color')
     })
 
     it('delegates to generateViewportResponsiveComponents when only viewport exists', async () => {
@@ -2092,6 +2566,295 @@ describe('ResponsiveCodegen', () => {
 
       // Should render Box without inner children
       expect(result).toContain('Box')
+    })
+  })
+
+  describe('generateNestedVariantMergedCode partial children with multiple presentValues', () => {
+    it('generates OR condition when child exists in multiple values of controlling key', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Child "Badge" exists in variant=primary and variant=white, but NOT variant=outline
+      // Controlling key = varient, presentValues = ["primary", "white"] (length 2 → line 1498 branch)
+      const badgeChild: NodeTree = {
+        component: 'Box',
+        props: { bg: 'red' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'Badge',
+      }
+
+      const treesByCompositeAndBreakpoint = new Map<
+        string,
+        Map<import('../index').BreakpointKey, NodeTree>
+      >([
+        [
+          'size=lg|varient=primary',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [{ ...badgeChild }],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=lg|varient=white',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [{ ...badgeChild }],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=lg|varient=outline',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+      ])
+
+      const result = generator.generateMultiVariantMergedCode(
+        ['size', 'varient'],
+        treesByCompositeAndBreakpoint,
+        0,
+      )
+
+      // Should generate OR condition: (varient === "primary" || varient === "white")
+      expect(result).toContain('varient === "primary"')
+      expect(result).toContain('varient === "white"')
+      expect(result).toContain('||')
+    })
+  })
+
+  describe('generateNestedVariantMergedCode with no single controlling key', () => {
+    it('generates combined AND/OR condition when multiple keys control presence', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // Child "Icon" exists in size=lg|varient=primary and size=sm|varient=white
+      // but NOT in size=lg|varient=white and size=sm|varient=primary
+      // Neither key alone separates present from absent → line 1518 branch
+      const iconChild: NodeTree = {
+        component: 'Box',
+        props: { maskImage: 'url(/icon.svg)' },
+        children: [],
+        nodeType: 'FRAME',
+        nodeName: 'Icon',
+      }
+
+      const treesByCompositeAndBreakpoint = new Map<
+        string,
+        Map<import('../index').BreakpointKey, NodeTree>
+      >([
+        [
+          'size=lg|varient=primary',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [{ ...iconChild }],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=lg|varient=white',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=sm|varient=primary',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+        [
+          'size=sm|varient=white',
+          new Map([
+            [
+              'pc' as import('../index').BreakpointKey,
+              {
+                component: 'Flex',
+                props: {},
+                children: [{ ...iconChild }],
+                nodeType: 'FRAME',
+                nodeName: 'Root',
+              },
+            ],
+          ]),
+        ],
+      ])
+
+      const result = generator.generateMultiVariantMergedCode(
+        ['size', 'varient'],
+        treesByCompositeAndBreakpoint,
+        0,
+      )
+
+      // Should generate combined AND conditions joined with OR:
+      // (size === "lg" && varient === "primary") || (size === "sm" && varient === "white")
+      expect(result).toContain('size === "lg" && varient === "primary"')
+      expect(result).toContain('size === "sm" && varient === "white"')
+      expect(result).toContain('||')
+    })
+  })
+
+  describe('generateVariantOnlyMergedCode with differing textChildren', () => {
+    it('creates variant-mapped text when texts differ across variants', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'scroll',
+          {
+            component: 'Text',
+            props: { fontSize: '14px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['ScrollLabel'],
+          },
+        ],
+        [
+          'default',
+          {
+            component: 'Text',
+            props: { fontSize: '16px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['DefaultLabel'],
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'status',
+        treesByVariant,
+        0,
+      )
+
+      // Texts differ → variant-mapped text with entries like: scroll: "ScrollLabel"
+      expect(result).toContain('scroll: "ScrollLabel"')
+      expect(result).toContain('default: "DefaultLabel"')
+      expect(result).toContain('[status]')
+    })
+  })
+
+  describe('generateNestedVariantMergedCode with differing textChildren controlled by one key', () => {
+    it('creates variant-mapped text when texts differ and one key controls the text', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      // size=Md → "Medium", size=Sm → "Small", variant doesn't matter
+      // size key consistently controls text
+      const treesByComposite = new Map<string, NodeTree>([
+        [
+          'size=Md|variant=primary',
+          {
+            component: 'Text',
+            props: { fontSize: '14px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Medium'],
+          },
+        ],
+        [
+          'size=Md|variant=white',
+          {
+            component: 'Text',
+            props: { fontSize: '14px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Medium'],
+          },
+        ],
+        [
+          'size=Sm|variant=primary',
+          {
+            component: 'Text',
+            props: { fontSize: '12px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Small'],
+          },
+        ],
+        [
+          'size=Sm|variant=white',
+          {
+            component: 'Text',
+            props: { fontSize: '12px' },
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['Small'],
+          },
+        ],
+      ])
+
+      const result = (
+        generator as unknown as {
+          generateNestedVariantMergedCode: (
+            variantKeys: string[],
+            trees: Map<string, NodeTree>,
+            depth: number,
+          ) => string
+        }
+      ).generateNestedVariantMergedCode(
+        ['size', 'variant'],
+        treesByComposite,
+        0,
+      )
+
+      // size controls text: Md → "Medium", Sm → "Small"
+      expect(result).toContain('Md: "Medium"')
+      expect(result).toContain('Sm: "Small"')
+      expect(result).toContain('[size]')
     })
   })
 })

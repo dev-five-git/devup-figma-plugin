@@ -35,6 +35,7 @@ exports[`Codegen renders svg asset with same color mask 1`] = `
   bg="#F00"
   boxSize="24px"
   maskImage="url(/icons/MaskIcon.svg)"
+  maskPos="center"
   maskRepeat="no-repeat"
   maskSize="contain"
 />"
@@ -45,6 +46,7 @@ exports[`Codegen renders svg asset with children same color 1`] = `
   bg="#F00"
   boxSize="24px"
   maskImage="url(/icons/GroupIcon.svg)"
+  maskPos="center"
   maskRepeat="no-repeat"
   maskSize="contain"
 />"
@@ -61,6 +63,7 @@ exports[`Codegen renders nested svg asset with 3 solid fill boxes in frame 1`] =
   bg="#F00"
   boxSize="24px"
   maskImage="url(/icons/NestedIcon.svg)"
+  maskPos="center"
   maskRepeat="no-repeat"
   maskSize="contain"
 />"
@@ -1658,6 +1661,7 @@ exports[`render real world component real world $ 19`] = `
         bg="#FFF"
         boxSize="20px"
         maskImage="url(/icons/arrow.svg)"
+        maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
       />
@@ -1895,7 +1899,15 @@ exports[`render real world component real world $ 32`] = `
 
 exports[`render real world component real world $ 33`] = `
 "export function Circle() {
-  return <Box bg="#D9D9D9" maskImage="url(/icons/ellipse3621.svg)" maskRepeat="no-repeat" maskSize="contain" />
+  return (
+    <Box
+      bg="#D9D9D9"
+      maskImage="url(/icons/ellipse3621.svg)"
+      maskPos="center"
+      maskRepeat="no-repeat"
+      maskSize="contain"
+    />
+  )
 }"
 `;
 
@@ -1934,6 +1946,7 @@ exports[`render real world component real world $ 36`] = `
       bg="#FFF"
       borderTop="solid 1px #000"
       maskImage="url(/icons/border.svg)"
+      maskPos="center"
       maskRepeat="no-repeat"
       maskSize="contain"
     />
@@ -2144,6 +2157,7 @@ exports[`render real world component real world $ 47`] = `
       aspectRatio="1"
       bg="$caption"
       maskImage="url(/icons/recommend.svg)"
+      maskPos="center"
       maskRepeat="no-repeat"
       maskSize="contain"
       pb="2.96px"
@@ -2161,6 +2175,7 @@ exports[`render real world component real world $ 48`] = `
     <Box
       bg="$caption"
       maskImage="url(/icons/recommend.svg)"
+      maskPos="center"
       maskRepeat="no-repeat"
       maskSize="contain"
       px="3px"
@@ -2176,6 +2191,7 @@ exports[`render real world component real world $ 49`] = `
     <Box
       bg="$caption"
       maskImage="url(/icons/recommend.svg)"
+      maskPos="center"
       maskRepeat="no-repeat"
       maskSize="contain"
       px="3px"
@@ -2697,6 +2713,7 @@ exports[`render real world component real world $ 68`] = `
             bg="$caption"
             boxSize="20px"
             maskImage="url(/icons/recommend.svg)"
+            maskPos="center"
             maskRepeat="no-repeat"
             maskSize="contain"
           />
@@ -2981,6 +2998,7 @@ exports[`render real world component real world $ 78`] = `
             bg="$gray300"
             boxSize="24px"
             maskImage="url(/icons/ic:round-arrow-left.svg)"
+            maskPos="center"
             maskRepeat="no-repeat"
             maskSize="contain"
             transform="rotate(180deg)"
@@ -3009,6 +3027,7 @@ exports[`render real world component real world $ 78`] = `
             bg="$gray300"
             boxSize="24px"
             maskImage="url(/icons/ic:round-arrow-left.svg)"
+            maskPos="center"
             maskRepeat="no-repeat"
             maskSize="contain"
             transform="rotate(180deg)"
@@ -3037,6 +3056,7 @@ exports[`render real world component real world $ 78`] = `
             bg="$gray300"
             boxSize="24px"
             maskImage="url(/icons/ic:round-arrow-left.svg)"
+            maskPos="center"
             maskRepeat="no-repeat"
             maskSize="contain"
             transform="rotate(180deg)"
@@ -3050,19 +3070,43 @@ exports[`render real world component real world $ 78`] = `
 
 exports[`render real world component real world $ 79`] = `
 "export function 다양한도형() {
-  return <Box bg="#D9D9D9" maskImage="url(/icons/Star7.svg)" maskRepeat="no-repeat" maskSize="contain" />
+  return (
+    <Box
+      bg="#D9D9D9"
+      maskImage="url(/icons/Star7.svg)"
+      maskPos="center"
+      maskRepeat="no-repeat"
+      maskSize="contain"
+    />
+  )
 }"
 `;
 
 exports[`render real world component real world $ 80`] = `
 "export function 다양한도형() {
-  return <Box bg="#D9D9D9" maskImage="url(/icons/Polygon1.svg)" maskRepeat="no-repeat" maskSize="contain" />
+  return (
+    <Box
+      bg="#D9D9D9"
+      maskImage="url(/icons/Polygon1.svg)"
+      maskPos="center"
+      maskRepeat="no-repeat"
+      maskSize="contain"
+    />
+  )
 }"
 `;
 
 exports[`render real world component real world $ 81`] = `
 "export function 다양한도형() {
-  return <Box bg="#D9D9D9" maskImage="url(/icons/Polygon1.svg)" maskRepeat="no-repeat" maskSize="contain" />
+  return (
+    <Box
+      bg="#D9D9D9"
+      maskImage="url(/icons/Polygon1.svg)"
+      maskPos="center"
+      maskRepeat="no-repeat"
+      maskSize="contain"
+    />
+  )
 }"
 `;
 
@@ -3129,6 +3173,7 @@ exports[`render real world component real world $ 91`] = `
         bg="$textLight"
         boxSize="24px"
         maskImage="url(/icons/back.svg)"
+        maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
         pb="5px"
@@ -3151,6 +3196,7 @@ exports[`render real world component real world $ 92`] = `
         bg="$primary"
         boxSize="20px"
         maskImage="url(/icons/plus.svg)"
+        maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
         pb="2.29px"
@@ -3182,6 +3228,7 @@ exports[`render real world component real world $ 94`] = `
         bg="#000"
         boxSize="28px"
         maskImage="url(/icons/cog.svg)"
+        maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
         pb="2.33px"
@@ -3213,6 +3260,7 @@ exports[`render real world component real world $ 96`] = `
         bg="#000"
         boxSize="28px"
         maskImage="url(/icons/cog.svg)"
+        maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
         pb="2.33px"
@@ -3495,6 +3543,7 @@ exports[`render real world component real world $ 106`] = `
             bg="#B1874F"
             h="104px"
             maskImage="url(/icons/path1208.svg)"
+            maskPos="center"
             maskRepeat="no-repeat"
             maskSize="contain"
             w="200px"
@@ -3627,6 +3676,7 @@ exports[`render real world component real world $ 107`] = `
             bg="#B1874F"
             h="52px"
             maskImage="url(/icons/path1208.svg)"
+            maskPos="center"
             maskRepeat="no-repeat"
             maskSize="contain"
             w="100px"
@@ -3781,6 +3831,7 @@ exports[`render real world component real world $ 108`] = `
               bg="$gold"
               h="64px"
               maskImage="url('/icons/Group 27.svg')"
+              maskPos="center"
               maskRepeat="no-repeat"
               maskSize="contain"
               w="102.17px"

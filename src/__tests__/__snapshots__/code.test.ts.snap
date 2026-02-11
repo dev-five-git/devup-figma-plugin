@@ -8,41 +8,9 @@ exports[`registerCodegen should register codegen 1`] = `
     "title": "Usage",
   },
   {
-    "code": 
-"export function Test() {
-  return <Box boxSize="100%" />
-}"
-,
+    "code": "<Box boxSize="100%" />",
     "language": "TYPESCRIPT",
-    "title": "Test - Components",
-  },
-  {
-    "code": 
-"mkdir -p src/components
-
-echo 'import { Box } from \\'@devup-ui/react\\'
-
-export function Test() {
-  return <Box boxSize="100%" />
-}' > src/components/Test.tsx"
-,
-    "language": "BASH",
-    "title": "Test - Components CLI (Bash)",
-  },
-  {
-    "code": 
-"New-Item -ItemType Directory -Force -Path src\\components | Out-Null
-
-@'
-import { Box } from '@devup-ui/react'
-
-export function Test() {
-  return <Box boxSize="100%" />
-}
-'@ | Out-File -FilePath src\\components\\Test.tsx -Encoding UTF8"
-,
-    "language": "BASH",
-    "title": "Test - Components CLI (PowerShell)",
+    "title": "Test",
   },
 ]
 `;
