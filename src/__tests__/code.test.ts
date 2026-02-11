@@ -819,3 +819,467 @@ describe('registerCodegen with viewport variant', () => {
     expect(powershellCLI).toBeDefined()
   })
 })
+
+describe('generateComponentUsage', () => {
+  it('should generate usage for COMPONENT without variant props', () => {
+    const node = {
+      type: 'COMPONENT',
+      name: 'MyButton',
+      variantProperties: null,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton />')
+  })
+
+  it('should generate usage for COMPONENT with variant props', () => {
+    const node = {
+      type: 'COMPONENT',
+      name: 'MyButton',
+      variantProperties: { variant: 'primary', size: 'lg' },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary" size="lg" />')
+  })
+
+  it('should filter reserved variant keys for COMPONENT', () => {
+    const node = {
+      type: 'COMPONENT',
+      name: 'MyButton',
+      variantProperties: {
+        variant: 'primary',
+        viewport: 'mobile',
+        effect: 'hover',
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary" />')
+  })
+
+  it('should generate usage for COMPONENT in COMPONENT_SET', () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'ButtonSet',
+    }
+    const node = {
+      type: 'COMPONENT',
+      name: 'variant=primary, size=lg',
+      variantProperties: { variant: 'primary', size: 'lg' },
+      parent: componentSet,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<ButtonSet variant="primary" size="lg" />')
+  })
+
+  it('should generate usage for COMPONENT_SET with defaults', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        variant: {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'secondary'],
+        },
+        size: {
+          type: 'VARIANT',
+          defaultValue: 'md',
+          variantOptions: ['sm', 'md', 'lg'],
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary" size="md" />')
+  })
+
+  it('should filter reserved variant keys for COMPONENT_SET', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        variant: {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'secondary'],
+        },
+        viewport: {
+          type: 'VARIANT',
+          defaultValue: 'desktop',
+          variantOptions: ['mobile', 'desktop'],
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary" />')
+  })
+
+  it('should sanitize COMPONENT_SET property names with hash suffixes', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        'variant#123:456': {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'secondary'],
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary" />')
+  })
+
+  it('should skip non-VARIANT properties for COMPONENT_SET', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        variant: {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'secondary'],
+        },
+        hasIcon: {
+          type: 'BOOLEAN',
+          defaultValue: true,
+        },
+        icon: {
+          type: 'INSTANCE_SWAP',
+          defaultValue: 'some-id',
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary" />')
+  })
+
+  it('should generate usage for COMPONENT_SET without componentPropertyDefinitions', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: undefined,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton />')
+  })
+
+  it('should return null for non-component nodes', () => {
+    const node = {
+      type: 'FRAME',
+      name: 'MyFrame',
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBeNull()
+  })
+
+  it('should generate usage with no props when COMPONENT_SET has only reserved variants', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        viewport: {
+          type: 'VARIANT',
+          defaultValue: 'desktop',
+          variantOptions: ['mobile', 'desktop'],
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton />')
+  })
+})
+
+describe('registerCodegen with usage output', () => {
+  type CodegenHandler = (event: {
+    node: SceneNode
+    language: string
+  }) => Promise<unknown[]>
+
+  it('should generate usage for INSTANCE node', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    const mainComponent = {
+      type: 'COMPONENT',
+      name: 'PrimaryButton',
+      children: [],
+      visible: true,
+    } as unknown as ComponentNode
+
+    const instanceNode = {
+      type: 'INSTANCE',
+      name: 'PrimaryButton',
+      visible: true,
+      componentProperties: {
+        'variant#123:456': { type: 'VARIANT', value: 'primary' },
+        'size#789:012': { type: 'VARIANT', value: 'lg' },
+      },
+      getMainComponentAsync: async () => mainComponent,
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: instanceNode,
+      language: 'devup-ui',
+    })
+
+    const usageResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'Usage',
+    )
+    expect(usageResult).toBeDefined()
+
+    const usageCode = (usageResult as { code: string }).code
+    expect(usageCode).toContain('<PrimaryButton')
+    expect(usageCode).toContain('variant="primary"')
+    expect(usageCode).toContain('size="lg"')
+  })
+
+  it('should generate usage for positioned INSTANCE node (absolute)', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    const mainComponent = {
+      type: 'COMPONENT',
+      name: 'AbsButton',
+      children: [],
+      visible: true,
+    } as unknown as ComponentNode
+
+    const parent = {
+      type: 'FRAME',
+      name: 'Parent',
+      children: [] as unknown[],
+      visible: true,
+      width: 500,
+    }
+
+    const instanceNode = {
+      type: 'INSTANCE',
+      name: 'AbsButton',
+      visible: true,
+      width: 100,
+      height: 50,
+      x: 10,
+      y: 20,
+      layoutPositioning: 'ABSOLUTE',
+      constraints: {
+        horizontal: 'MIN',
+        vertical: 'MIN',
+      },
+      componentProperties: {
+        'variant#1:2': { type: 'VARIANT', value: 'secondary' },
+      },
+      getMainComponentAsync: async () => mainComponent,
+      parent,
+    } as unknown as SceneNode
+
+    parent.children = [instanceNode]
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: instanceNode,
+      language: 'devup-ui',
+    })
+
+    const usageResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'Usage',
+    )
+    expect(usageResult).toBeDefined()
+
+    const usageCode = (usageResult as { code: string }).code
+    // Should show clean component usage without position wrapper
+    expect(usageCode).toContain('<AbsButton')
+    expect(usageCode).toContain('variant="secondary"')
+    expect(usageCode).not.toContain('pos=')
+  })
+
+  it('should generate usage for COMPONENT node', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    const componentSetNode = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {},
+      children: [] as unknown[],
+      defaultVariant: null as unknown,
+    }
+
+    const componentNode = {
+      type: 'COMPONENT',
+      name: 'variant=primary',
+      visible: true,
+      variantProperties: { variant: 'primary' },
+      children: [],
+      width: 100,
+      height: 40,
+      layoutMode: 'NONE',
+      componentPropertyDefinitions: {},
+      parent: componentSetNode,
+      reactions: [],
+    } as unknown as SceneNode
+
+    componentSetNode.children = [componentNode]
+    componentSetNode.defaultVariant = componentNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: componentNode,
+      language: 'devup-ui',
+    })
+
+    const usageResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'Usage',
+    )
+    expect(usageResult).toBeDefined()
+
+    const usageCode = (usageResult as { code: string }).code
+    expect(usageCode).toBe('<MyButton variant="primary" />')
+  })
+
+  it('should generate usage for COMPONENT_SET node', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    const componentSetNode = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      visible: true,
+      componentPropertyDefinitions: {
+        variant: {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'secondary'],
+        },
+        size: {
+          type: 'VARIANT',
+          defaultValue: 'md',
+          variantOptions: ['sm', 'md', 'lg'],
+        },
+      },
+      children: [
+        {
+          type: 'COMPONENT',
+          name: 'variant=primary, size=md',
+          visible: true,
+          variantProperties: { variant: 'primary', size: 'md' },
+          children: [],
+          layoutMode: 'VERTICAL',
+          width: 100,
+          height: 40,
+        },
+      ],
+      defaultVariant: {
+        type: 'COMPONENT',
+        name: 'variant=primary, size=md',
+        visible: true,
+        variantProperties: { variant: 'primary', size: 'md' },
+        children: [],
+      },
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: componentSetNode,
+      language: 'devup-ui',
+    })
+
+    const usageResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'Usage',
+    )
+    expect(usageResult).toBeDefined()
+
+    const usageCode = (usageResult as { code: string }).code
+    expect(usageCode).toBe('<MyButton variant="primary" size="md" />')
+  })
+})

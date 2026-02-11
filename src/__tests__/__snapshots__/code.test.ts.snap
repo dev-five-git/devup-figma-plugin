@@ -3,6 +3,11 @@
 exports[`registerCodegen should register codegen 1`] = `
 [
   {
+    "code": "<Test />",
+    "language": "TYPESCRIPT",
+    "title": "Usage",
+  },
+  {
     "code": 
 "export function Test() {
   return <Box boxSize="100%" />

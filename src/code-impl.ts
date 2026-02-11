@@ -5,8 +5,12 @@ import {
 } from './codegen/Codegen'
 import { resetGetPropsCache } from './codegen/props'
 import { resetChildAnimationCache } from './codegen/props/reaction'
-import { resetSelectorPropsCache } from './codegen/props/selector'
+import {
+  resetSelectorPropsCache,
+  sanitizePropertyName,
+} from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
+import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
 import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
 import { resetVariableCache } from './codegen/utils/variable-cache'
@@ -124,6 +128,44 @@ function generatePowerShellCLI(
   ]
 
   return commands.join('\n')
+}
+
+export function generateComponentUsage(node: SceneNode): string | null {
+  const componentName = getComponentName(node)
+
+  if (node.type === 'COMPONENT') {
+    const variantProps = (node as ComponentNode).variantProperties
+    if (!variantProps) return `<${componentName} />`
+
+    const entries: [string, string][] = []
+    for (const [key, value] of Object.entries(variantProps)) {
+      if (!isReservedVariantKey(key)) {
+        entries.push([key, value])
+      }
+    }
+
+    if (entries.length === 0) return `<${componentName} />`
+    const propsStr = entries.map(([k, v]) => `${k}="${v}"`).join(' ')
+    return `<${componentName} ${propsStr} />`
+  }
+
+  if (node.type === 'COMPONENT_SET') {
+    const defs = (node as ComponentSetNode).componentPropertyDefinitions
+    if (!defs) return `<${componentName} />`
+
+    const entries: [string, string][] = []
+    for (const [key, def] of Object.entries(defs)) {
+      if (def.type === 'VARIANT' && !isReservedVariantKey(key)) {
+        entries.push([sanitizePropertyName(key), String(def.defaultValue)])
+      }
+    }
+
+    if (entries.length === 0) return `<${componentName} />`
+    const propsStr = entries.map(([k, v]) => `${k}="${v}"`).join(' ')
+    return `<${componentName} ${propsStr} />`
+  }
+
+  return null
 }
 
 const debug = true
@@ -273,11 +315,47 @@ export function registerCodegen(ctx: typeof figma) {
             )
           }
 
-          return [
-            ...(node.type === 'COMPONENT' ||
+          // Generate usage snippet for component-type nodes
+          const isComponentType =
+            node.type === 'COMPONENT' ||
             node.type === 'COMPONENT_SET' ||
             node.type === 'INSTANCE'
-              ? []
+          const usageResults: {
+            title: string
+            language: 'TYPESCRIPT'
+            code: string
+          }[] = []
+          if (node.type === 'INSTANCE') {
+            // For INSTANCE: extract clean component usage from the tree
+            // (tree already has the correct component name from getMainComponentAsync)
+            const tree = await codegen.getTree()
+            const componentTree = tree.isComponent
+              ? tree
+              : tree.children.find((c) => c.isComponent)
+            if (componentTree) {
+              usageResults.push({
+                title: 'Usage',
+                language: 'TYPESCRIPT',
+                code: Codegen.renderTree(componentTree, 0),
+              })
+            }
+          } else if (
+            node.type === 'COMPONENT' ||
+            node.type === 'COMPONENT_SET'
+          ) {
+            const usage = generateComponentUsage(node)
+            if (usage) {
+              usageResults.push({
+                title: 'Usage',
+                language: 'TYPESCRIPT',
+                code: usage,
+              })
+            }
+          }
+
+          return [
+            ...(isComponentType
+              ? usageResults
               : [
                   {
                     title: node.name,
