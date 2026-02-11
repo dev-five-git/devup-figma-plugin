@@ -5,8 +5,12 @@ import {
 } from './codegen/Codegen'
 import { resetGetPropsCache } from './codegen/props'
 import { resetChildAnimationCache } from './codegen/props/reaction'
-import { resetSelectorPropsCache } from './codegen/props/selector'
+import {
+  resetSelectorPropsCache,
+  sanitizePropertyName,
+} from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
+import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
 import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
 import { resetVariableCache } from './codegen/utils/variable-cache'
@@ -126,6 +130,44 @@ function generatePowerShellCLI(
   return commands.join('\n')
 }
 
+export function generateComponentUsage(node: SceneNode): string | null {
+  const componentName = getComponentName(node)
+
+  if (node.type === 'COMPONENT') {
+    const variantProps = (node as ComponentNode).variantProperties
+    if (!variantProps) return `<${componentName} />`
+
+    const entries: [string, string][] = []
+    for (const [key, value] of Object.entries(variantProps)) {
+      if (!isReservedVariantKey(key)) {
+        entries.push([key, value])
+      }
+    }
+
+    if (entries.length === 0) return `<${componentName} />`
+    const propsStr = entries.map(([k, v]) => `${k}="${v}"`).join(' ')
+    return `<${componentName} ${propsStr} />`
+  }
+
+  if (node.type === 'COMPONENT_SET') {
+    const defs = (node as ComponentSetNode).componentPropertyDefinitions
+    if (!defs) return `<${componentName} />`
+
+    const entries: [string, string][] = []
+    for (const [key, def] of Object.entries(defs)) {
+      if (def.type === 'VARIANT' && !isReservedVariantKey(key)) {
+        entries.push([sanitizePropertyName(key), String(def.defaultValue)])
+      }
+    }
+
+    if (entries.length === 0) return `<${componentName} />`
+    const propsStr = entries.map(([k, v]) => `${k}="${v}"`).join(' ')
+    return `<${componentName} ${propsStr} />`
+  }
+
+  return null
+}
+
 const debug = true
 
 export function registerCodegen(ctx: typeof figma) {
@@ -161,6 +203,12 @@ export function registerCodegen(ctx: typeof figma) {
           > = []
           if (node.type === 'COMPONENT_SET') {
             const componentName = getComponentName(node)
+            // Reset the global build tree cache so that each variant's Codegen
+            // instance runs doBuildTree fresh — this ensures addComponentTree fires
+            // and BOOLEAN condition fields are populated on children.
+            // Without this, cached trees from codegen.run() above would cause
+            // buildTree to return early, skipping addComponentTree entirely.
+            resetGlobalBuildTreeCache()
             t = perfStart()
             responsiveComponentsCodes =
               await ResponsiveCodegen.generateVariantResponsiveComponents(
@@ -171,10 +219,18 @@ export function registerCodegen(ctx: typeof figma) {
           }
 
           // Generate responsive codes for components extracted from the page
+          // Skip when the selected node itself is a COMPONENT or COMPONENT_SET,
+          // because the self-referencing componentTree would trigger the parent
+          // COMPONENT_SET to be fully expanded — producing ComponentSet-level output
+          // when the user only wants to see their selected variant.
           let componentsResponsiveCodes: ReadonlyArray<
             readonly [string, string]
           > = []
-          if (componentsCodes.length > 0) {
+          if (
+            componentsCodes.length > 0 &&
+            node.type !== 'COMPONENT' &&
+            node.type !== 'COMPONENT_SET'
+          ) {
             const componentNodes = codegen.getComponentNodes()
             const processedComponentSets = new Set<string>()
             const responsiveResults: Array<readonly [string, string]> = []
@@ -190,6 +246,8 @@ export function registerCodegen(ctx: typeof figma) {
               if (parentSet && !processedComponentSets.has(parentSet.id)) {
                 processedComponentSets.add(parentSet.id)
                 const componentName = getComponentName(parentSet)
+                // Reset global cache so addComponentTree fires for BOOLEAN conditions
+                resetGlobalBuildTreeCache()
                 t = perfStart()
                 const responsiveCodes =
                   await ResponsiveCodegen.generateVariantResponsiveComponents(
@@ -273,76 +331,83 @@ export function registerCodegen(ctx: typeof figma) {
             )
           }
 
-          return [
-            ...(node.type === 'COMPONENT' ||
+          // Generate usage snippet for component-type nodes
+          const isComponentType =
+            node.type === 'COMPONENT' ||
             node.type === 'COMPONENT_SET' ||
             node.type === 'INSTANCE'
-              ? []
-              : [
+          const usageResults: {
+            title: string
+            language: 'TYPESCRIPT'
+            code: string
+          }[] = []
+          if (node.type === 'INSTANCE') {
+            // For INSTANCE: extract clean component usage from the tree
+            // (tree already has the correct component name from getMainComponentAsync)
+            const tree = await codegen.getTree()
+            const componentTree = tree.isComponent
+              ? tree
+              : tree.children.find((c) => c.isComponent)
+            if (componentTree) {
+              usageResults.push({
+                title: 'Usage',
+                language: 'TYPESCRIPT',
+                code: Codegen.renderTree(componentTree, 0),
+              })
+            }
+          } else if (
+            node.type === 'COMPONENT' ||
+            node.type === 'COMPONENT_SET'
+          ) {
+            const usage = generateComponentUsage(node)
+            if (usage) {
+              usageResults.push({
+                title: 'Usage',
+                language: 'TYPESCRIPT',
+                code: usage,
+              })
+            }
+          }
+
+          const allComponentsCodes = [
+            ...componentsResponsiveCodes,
+            ...responsiveComponentsCodes,
+          ]
+
+          // For COMPONENT nodes, show both the single-variant code AND Usage.
+          // For COMPONENT_SET and INSTANCE, show only Usage.
+          // For all other types, show the main code.
+          const showMainCode = !isComponentType || node.type === 'COMPONENT'
+
+          return [
+            ...usageResults,
+            ...(showMainCode
+              ? [
                   {
                     title: node.name,
                     language: 'TYPESCRIPT',
                     code: codegen.getCode(),
                   } as const,
-                ]),
-            ...(componentsCodes.length > 0
-              ? ([
+                ]
+              : []),
+            ...(allComponentsCodes.length > 0
+              ? [
                   {
                     title: `${node.name} - Components`,
-                    language: 'TYPESCRIPT',
-                    code: componentsCodes.map((code) => code[1]).join('\n\n'),
+                    language: 'TYPESCRIPT' as const,
+                    code: allComponentsCodes
+                      .map((code) => code[1])
+                      .join('\n\n'),
                   },
                   {
                     title: `${node.name} - Components CLI (Bash)`,
-                    language: 'BASH',
-                    code: generateBashCLI(componentsCodes),
+                    language: 'BASH' as const,
+                    code: generateBashCLI(allComponentsCodes),
                   },
                   {
                     title: `${node.name} - Components CLI (PowerShell)`,
-                    language: 'BASH',
-                    code: generatePowerShellCLI(componentsCodes),
-                  },
-                ] as const)
-              : []),
-            ...(componentsResponsiveCodes.length > 0
-              ? [
-                  {
-                    title: `${node.name} - Components Responsive`,
-                    language: 'TYPESCRIPT' as const,
-                    code: componentsResponsiveCodes
-                      .map((code) => code[1])
-                      .join('\n\n'),
-                  },
-                  {
-                    title: `${node.name} - Components Responsive CLI (Bash)`,
                     language: 'BASH' as const,
-                    code: generateBashCLI(componentsResponsiveCodes),
-                  },
-                  {
-                    title: `${node.name} - Components Responsive CLI (PowerShell)`,
-                    language: 'BASH' as const,
-                    code: generatePowerShellCLI(componentsResponsiveCodes),
-                  },
-                ]
-              : []),
-            ...(responsiveComponentsCodes.length > 0
-              ? [
-                  {
-                    title: `${node.name} - Components Responsive`,
-                    language: 'TYPESCRIPT' as const,
-                    code: responsiveComponentsCodes
-                      .map((code) => code[1])
-                      .join('\n\n'),
-                  },
-                  {
-                    title: `${node.name} - Components Responsive CLI (Bash)`,
-                    language: 'BASH' as const,
-                    code: generateBashCLI(responsiveComponentsCodes),
-                  },
-                  {
-                    title: `${node.name} - Components Responsive CLI (PowerShell)`,
-                    language: 'BASH' as const,
-                    code: generatePowerShellCLI(responsiveComponentsCodes),
+                    code: generatePowerShellCLI(allComponentsCodes),
                   },
                 ]
               : []),

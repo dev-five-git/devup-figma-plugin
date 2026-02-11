@@ -9,7 +9,7 @@ const RESERVED_VARIANT_KEYS = ['effect', 'viewport']
 /**
  * Check if a key is a reserved variant key (case-insensitive).
  */
-function isReservedVariantKey(key: string): boolean {
+export function isReservedVariantKey(key: string): boolean {
   const lowerKey = key.toLowerCase()
   return RESERVED_VARIANT_KEYS.some(
     (reserved) => lowerKey === reserved || lowerKey.startsWith(`${reserved}#`),

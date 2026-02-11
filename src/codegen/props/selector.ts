@@ -163,6 +163,8 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
       result.variants[sanitizedName] = 'React.ReactNode'
     } else if (definition.type === 'BOOLEAN') {
       result.variants[sanitizedName] = 'boolean'
+    } else if (definition.type === 'TEXT') {
+      result.variants[sanitizedName] = 'string'
     }
   }
 

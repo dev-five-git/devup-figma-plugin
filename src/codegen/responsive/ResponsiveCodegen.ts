@@ -35,14 +35,116 @@ function firstMapValue<V>(map: Map<unknown, V>): V {
   throw new Error('empty map')
 }
 
-function firstMapKey<K>(map: Map<K, unknown>): K {
-  for (const k of map.keys()) return k
-  throw new Error('empty map')
-}
-
 function firstMapEntry<K, V>(map: Map<K, V>): [K, V] {
   for (const entry of map.entries()) return entry
   throw new Error('empty map')
+}
+
+/**
+ * Build a stable merged order of child names across multiple variants/breakpoints.
+ * Uses topological sort on a DAG of ordering constraints from all variants,
+ * with average-position tie-breaking for deterministic output.
+ *
+ * Example: variant A has [Icon, TextA, Arrow], variant B has [Icon, TextB, Arrow]
+ * → edges: Icon→TextA, TextA→Arrow, Icon→TextB, TextB→Arrow
+ * → topo sort: [Icon, TextA, TextB, Arrow] (Arrow stays last)
+ */
+function mergeChildNameOrder(
+  childrenMaps: Map<unknown, Map<string, NodeTree[]>>,
+): string[] {
+  // Collect distinct child name sequences from each variant
+  const sequences: string[][] = []
+  for (const childMap of childrenMaps.values()) {
+    const seq: string[] = []
+    for (const name of childMap.keys()) {
+      seq.push(name)
+    }
+    sequences.push(seq)
+  }
+
+  // Collect all unique names
+  const allNames = new Set<string>()
+  for (const seq of sequences) {
+    for (const name of seq) {
+      allNames.add(name)
+    }
+  }
+
+  if (allNames.size === 0) return []
+  if (allNames.size === 1) return [...allNames]
+
+  // Build DAG: for each variant, add edge from consecutive distinct names
+  const edges = new Map<string, Set<string>>()
+  const inDegree = new Map<string, number>()
+  for (const name of allNames) {
+    edges.set(name, new Set())
+    inDegree.set(name, 0)
+  }
+
+  for (const seq of sequences) {
+    for (let i = 0; i < seq.length - 1; i++) {
+      const from = seq[i]
+      const to = seq[i + 1]
+      const fromEdges = edges.get(from)
+      if (fromEdges && !fromEdges.has(to)) {
+        fromEdges.add(to)
+        inDegree.set(to, (inDegree.get(to) || 0) + 1)
+      }
+    }
+  }
+
+  // Compute average normalized position for tie-breaking
+  const avgPosition = new Map<string, number>()
+  for (const name of allNames) {
+    let totalPos = 0
+    let count = 0
+    for (const seq of sequences) {
+      const idx = seq.indexOf(name)
+      if (idx >= 0) {
+        // Normalize to 0..1 range
+        totalPos += seq.length > 1 ? idx / (seq.length - 1) : 0.5
+        count++
+      }
+    }
+    avgPosition.set(name, count > 0 ? totalPos / count : 0.5)
+  }
+
+  // Kahn's algorithm with priority-based tie-breaking
+  const queue: string[] = []
+  for (const [name, deg] of inDegree) {
+    if (deg === 0) queue.push(name)
+  }
+  // Sort initial queue by average position (stable)
+  queue.sort((a, b) => (avgPosition.get(a) || 0) - (avgPosition.get(b) || 0))
+
+  const result: string[] = []
+  while (queue.length > 0) {
+    const node = queue.shift()
+    if (!node) break
+    result.push(node)
+    for (const neighbor of edges.get(node) || []) {
+      const newDeg = (inDegree.get(neighbor) || 1) - 1
+      inDegree.set(neighbor, newDeg)
+      if (newDeg === 0) {
+        queue.push(neighbor)
+        // Re-sort to maintain priority order
+        queue.sort(
+          (a, b) => (avgPosition.get(a) || 0) - (avgPosition.get(b) || 0),
+        )
+      }
+    }
+  }
+
+  // Cycle fallback: append any remaining nodes (shouldn't happen with consistent data)
+  if (result.length < allNames.size) {
+    for (const name of allNames) {
+      if (!result.includes(name)) {
+        result.push(name)
+      }
+    }
+  }
+
+  return result
 }
 
 /**
@@ -212,7 +314,6 @@ export class ResponsiveCodegen {
 
     // Merge children by name
     const childrenCodes: string[] = []
-    const processedChildNames = new Set<string>()
 
     // Convert all trees' children to maps
     const childrenMaps = new Map<BreakpointKey, Map<string, NodeTree[]>>()
@@ -220,27 +321,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(bp, this.treeChildrenToMap(tree))
     }
 
-    // Get all child names in order (first tree's order, then others)
-    const firstBreakpoint = firstMapKey(treesByBreakpoint)
-    const firstChildrenMap = childrenMaps.get(firstBreakpoint)
-    const allChildNames: string[] = []
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    // Add children that exist only in other breakpoints
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all child names in stable merged order across all breakpoints
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     for (const childName of allChildNames) {
       // Find the maximum number of children with this name across all breakpoints
@@ -332,10 +414,20 @@ export class ResponsiveCodegen {
     const variants: Record<string, string> = {}
     for (const name in componentSet.componentPropertyDefinitions) {
       const definition = componentSet.componentPropertyDefinitions[name]
-      if (name.toLowerCase() !== 'viewport' && definition.type === 'VARIANT') {
+      const lowerName = name.toLowerCase()
+      if (lowerName !== 'viewport' && lowerName !== 'effect') {
         const sanitizedName = sanitizePropertyName(name)
-        variants[sanitizedName] =
-          definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') || ''
+        if (definition.type === 'VARIANT') {
+          variants[sanitizedName] =
+            definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
+            ''
+        } else if (definition.type === 'INSTANCE_SWAP') {
+          variants[sanitizedName] = 'React.ReactNode'
+        } else if (definition.type === 'BOOLEAN') {
+          variants[sanitizedName] = 'boolean'
+        } else if (definition.type === 'TEXT') {
+          variants[sanitizedName] = 'string'
+        }
       }
     }
 
@@ -480,6 +572,15 @@ export class ResponsiveCodegen {
             definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
             ''
         }
+      } else if (definition.type === 'INSTANCE_SWAP') {
+        const sanitizedName = sanitizePropertyName(name)
+        variants[sanitizedName] = 'React.ReactNode'
+      } else if (definition.type === 'BOOLEAN') {
+        const sanitizedName = sanitizePropertyName(name)
+        variants[sanitizedName] = 'boolean'
+      } else if (definition.type === 'TEXT') {
+        const sanitizedName = sanitizePropertyName(name)
+        variants[sanitizedName] = 'string'
       }
     }
 
@@ -673,9 +774,22 @@ export class ResponsiveCodegen {
     // Render the tree to JSX
     const code = Codegen.renderTree(tree, 0)
 
-    // No variant props needed since effect is handled via pseudo-selectors
+    // Collect BOOLEAN and INSTANCE_SWAP props for the interface
+    // (effect is handled via pseudo-selectors, VARIANT keys don't exist in effect-only path)
+    const variants: Record<string, string> = {}
+    for (const name in componentSet.componentPropertyDefinitions) {
+      const definition = componentSet.componentPropertyDefinitions[name]
+      if (definition.type === 'INSTANCE_SWAP') {
+        variants[sanitizePropertyName(name)] = 'React.ReactNode'
+      } else if (definition.type === 'BOOLEAN') {
+        variants[sanitizePropertyName(name)] = 'boolean'
+      } else if (definition.type === 'TEXT') {
+        variants[sanitizePropertyName(name)] = 'string'
+      }
+    }
+
     const result: Array<readonly [string, string]> = [
-      [componentName, renderComponent(componentName, code, {})],
+      [componentName, renderComponent(componentName, code, variants)],
     ]
     return result
   }
@@ -693,22 +807,6 @@ export class ResponsiveCodegen {
       return []
     }
 
-    // Group components by variant value
-    const primaryVariantKey = variantKeys[0]
-    const componentsByVariant = new Map<string, ComponentNode>()
-
-    for (const child of componentSet.children) {
-      if (child.type !== 'COMPONENT') continue
-
-      const component = child as ComponentNode
-      const variantProps = component.variantProperties || {}
-      const variantValue = variantProps[primaryVariantKey] || '__default__'
-
-      if (!componentsByVariant.has(variantValue)) {
-        componentsByVariant.set(variantValue, component)
-      }
-    }
-
     // Check if componentSet has effect variant (pseudo-selector)
     let hasEffect = false
     for (const key in componentSet.componentPropertyDefinitions) {
@@ -718,12 +816,170 @@ export class ResponsiveCodegen {
       }
     }
 
-    // Build trees for each variant — all independent, run in parallel.
+    // Map from original name to sanitized name
+    const variantKeyToSanitized: Record<string, string> = {}
+    for (const key of variantKeys) {
+      variantKeyToSanitized[key] = sanitizePropertyName(key)
+    }
+    const sanitizedVariantKeys = variantKeys.map(
+      (key) => variantKeyToSanitized[key],
+    )
+
+    // Single variant key: use simpler single-dimension merge
+    if (variantKeys.length === 1) {
+      return ResponsiveCodegen.generateSingleVariantComponents(
+        componentSet,
+        componentName,
+        variantKeys[0],
+        sanitizedVariantKeys[0],
+        variants,
+        hasEffect,
+      )
+    }
+
+    // Multiple variant keys: build trees for ALL combinations, use multi-dimensional merge
+    // Build composite key for each component (e.g., "size=lg|varient=primary")
+    const buildCompositeKey = (
+      variantProps: Record<string, string>,
+    ): string => {
+      return variantKeys
+        .map((key) => {
+          const sanitizedKey = variantKeyToSanitized[key]
+          return `${sanitizedKey}=${variantProps[key] || '__default__'}`
+        })
+        .join('|')
+    }
+
+    // Reverse mapping from sanitized to original names (for getSelectorPropsForGroup)
+    const sanitizedToOriginal: Record<string, string> = {}
+    for (const [original, sanitized] of Object.entries(variantKeyToSanitized)) {
+      sanitizedToOriginal[sanitized] = original
+    }
+
+    const parseCompositeKeyToOriginal = (
+      compositeKey: string,
+    ): Record<string, string> => {
+      const result: Record<string, string> = {}
+      for (const part of compositeKey.split('|')) {
+        const [sanitizedKey, value] = part.split('=')
+        const originalKey = sanitizedToOriginal[sanitizedKey]
+        if (originalKey) {
+          result[originalKey] = value
+        }
+      }
+      return result
+    }
+
+    // Group components by composite variant key (all variant values combined)
+    const componentsByComposite = new Map<string, ComponentNode>()
+    for (const child of componentSet.children) {
+      if (child.type !== 'COMPONENT') continue
+
+      const component = child as ComponentNode
+      const variantProps = component.variantProperties || {}
+
+      // Skip effect variants (they become pseudo-selectors)
+      if (hasEffect) {
+        const effectValue =
+          variantProps[
+            Object.keys(componentSet.componentPropertyDefinitions).find(
+              (k) => k.toLowerCase() === 'effect',
+            ) || ''
+          ]
+        if (effectValue && effectValue !== 'default') continue
+      }
+
+      const compositeKey = buildCompositeKey(variantProps)
+      if (!componentsByComposite.has(compositeKey)) {
+        componentsByComposite.set(compositeKey, component)
+      }
+    }
+
+    // Build trees for each combination
+    const treesByComposite = new Map<string, NodeTree>()
+    for (const [compositeKey, component] of componentsByComposite) {
+      const variantFilter = parseCompositeKeyToOriginal(compositeKey)
+      let t = perfStart()
+      const selectorProps = hasEffect
+        ? await getSelectorPropsForGroup(componentSet, variantFilter)
+        : null
+      perfEnd('getSelectorPropsForGroup(nonViewport)', t)
+
+      t = perfStart()
+      const codegen = new Codegen(component)
+      const tree = await codegen.getTree()
+      perfEnd('Codegen.getTree(nonViewportVariant)', t)
+
+      // Use the component tree from addComponentTree if available — it includes
+      // ALL children (even invisible BOOLEAN-controlled ones) with condition fields
+      // and INSTANCE_SWAP slot placeholders, which buildTree() skips.
+      const componentTree = codegen.getComponentTree()
+      if (componentTree) {
+        tree.children = componentTree.tree.children
+      }
+
+      if (selectorProps && Object.keys(selectorProps).length > 0) {
+        tree.props = Object.assign({}, tree.props, selectorProps)
+      }
+      treesByComposite.set(compositeKey, tree)
+    }
+
+    // Use multi-dimensional merge (same as viewport+variant path but without viewport)
+    // Wrap each tree in a single-breakpoint map so generateMultiVariantMergedCode works
+    const treesByCompositeAndBreakpoint = new Map<
+      string,
+      Map<BreakpointKey, NodeTree>
+    >()
+    for (const [compositeKey, tree] of treesByComposite) {
+      const singleBreakpointMap = new Map<BreakpointKey, NodeTree>()
+      singleBreakpointMap.set('pc', tree)
+      treesByCompositeAndBreakpoint.set(compositeKey, singleBreakpointMap)
+    }
+
+    const responsiveCodegen = new ResponsiveCodegen(null)
+    const mergedCode = responsiveCodegen.generateMultiVariantMergedCode(
+      sanitizedVariantKeys,
+      treesByCompositeAndBreakpoint,
+      0,
+    )
+
+    const result: Array<readonly [string, string]> = [
+      [componentName, renderComponent(componentName, mergedCode, variants)],
+    ]
+    return result
+  }
+
+  /**
+   * Generate component code for single variant key (original simple path).
+   */
+  private static async generateSingleVariantComponents(
+    componentSet: ComponentSetNode,
+    componentName: string,
+    variantKey: string,
+    sanitizedVariantKey: string,
+    variants: Record<string, string>,
+    hasEffect: boolean,
+  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    // Group components by variant value
+    const componentsByVariant = new Map<string, ComponentNode>()
+
+    for (const child of componentSet.children) {
+      if (child.type !== 'COMPONENT') continue
+
+      const component = child as ComponentNode
+      const variantProps = component.variantProperties || {}
+      const variantValue = variantProps[variantKey] || '__default__'
+
+      if (!componentsByVariant.has(variantValue)) {
+        componentsByVariant.set(variantValue, component)
+      }
+    }
+
+    // Build trees for each variant
     const treesByVariant = new Map<string, NodeTree>()
     for (const [variantValue, component] of componentsByVariant) {
-      // Get pseudo-selector props for this specific variant group
       const variantFilter: Record<string, string> = {
-        [primaryVariantKey]: variantValue,
+        [variantKey]: variantValue,
       }
       let t = perfStart()
       const selectorProps = hasEffect
@@ -735,7 +991,15 @@ export class ResponsiveCodegen {
       const codegen = new Codegen(component)
       const tree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
-      // Add pseudo-selector props to tree — create NEW props to avoid mutating cached tree
+
+      // Use the component tree from addComponentTree if available — it includes
+      // ALL children (even invisible BOOLEAN-controlled ones) with condition fields
+      // and INSTANCE_SWAP slot placeholders, which buildTree() skips.
+      const componentTree = codegen.getComponentTree()
+      if (componentTree) {
+        tree.children = componentTree.tree.children
+      }
+
       if (selectorProps && Object.keys(selectorProps).length > 0) {
         tree.props = Object.assign({}, tree.props, selectorProps)
       }
@@ -744,10 +1008,8 @@ export class ResponsiveCodegen {
 
     // Generate merged code with variant conditionals
     const responsiveCodegen = new ResponsiveCodegen(null)
-    // Use sanitized variant key for code generation (e.g., "속성 1" -> "property1")
-    const sanitizedPrimaryVariantKey = sanitizePropertyName(primaryVariantKey)
     const mergedCode = responsiveCodegen.generateVariantOnlyMergedCode(
-      sanitizedPrimaryVariantKey,
+      sanitizedVariantKey,
       treesByVariant,
       0,
     )
@@ -811,26 +1073,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(bp, this.treeChildrenToMap(tree))
     }
 
-    const processedChildNames = new Set<string>()
-    const allChildNames: string[] = []
-    const firstBreakpoint = firstMapKey(treesByBreakpoint)
-    const firstChildrenMap = childrenMaps.get(firstBreakpoint)
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all child names in stable merged order across all breakpoints
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     const mergedChildren: NodeTree[] = []
 
@@ -912,11 +1156,15 @@ export class ResponsiveCodegen {
 
     // Handle TEXT nodes
     if (firstTree.textChildren && firstTree.textChildren.length > 0) {
+      const mergedTextChildren = this.mergeTextChildrenAcrossVariants(
+        variantKey,
+        treesByVariant,
+      )
       return renderNode(
         firstTree.component,
         mergedProps,
         depth,
-        firstTree.textChildren,
+        mergedTextChildren,
       )
     }
 
@@ -927,26 +1175,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(variant, this.treeChildrenToMap(tree))
     }
 
-    const processedChildNames = new Set<string>()
-    const allChildNames: string[] = []
-    const firstVariant = firstMapKey(treesByVariant)
-    const firstChildrenMap = childrenMaps.get(firstVariant)
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all child names in stable merged order across all variants
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     for (const childName of allChildNames) {
       let maxChildCount = 0
@@ -981,10 +1211,43 @@ export class ResponsiveCodegen {
               childByVariant,
               0,
             )
+
+            // Check if all variants share the same BOOLEAN condition
+            const firstChild = firstMapValue(childByVariant)
+            const condition = firstChild.condition
+            if (condition) {
+              let allSameCondition = true
+              for (const child of childByVariant.values()) {
+                if (child.condition !== condition) {
+                  allSameCondition = false
+                  break
+                }
+              }
+              if (allSameCondition) {
+                if (childCode.includes('\n')) {
+                  childrenCodes.push(
+                    `{${condition} && (\n${paddingLeftMultiline(childCode, 1)}\n)}`,
+                  )
+                } else {
+                  childrenCodes.push(`{${condition} && ${childCode}}`)
+                }
+                continue
+              }
+            }
+
+            // Handle INSTANCE_SWAP slot placeholders
+            if (firstChild.isSlot) {
+              childrenCodes.push(`{${firstChild.component}}`)
+              continue
+            }
+
             childrenCodes.push(childCode)
           } else {
             // Child exists only in some variants - use conditional rendering
             const presentVariantsList = [...presentVariants]
+
+            // Check if present children share a common BOOLEAN condition
+            const sharedCondition = this.getSharedCondition(childByVariant)
 
             if (presentVariantsList.length === 1) {
               // Only one variant has this child: {status === "scroll" && <Node/>}
@@ -992,27 +1255,33 @@ export class ResponsiveCodegen {
               const childTree = childByVariant.get(onlyVariant)
               if (!childTree) continue
               const childCode = Codegen.renderTree(childTree, 0)
+              const variantCondition = `${variantKey} === "${onlyVariant}"`
+              const fullCondition = sharedCondition
+                ? `${sharedCondition} && ${variantCondition}`
+                : variantCondition
               const formattedChildCode = childCode.includes('\n')
                 ? `(\n${paddingLeftMultiline(childCode, 1)}\n)`
                 : childCode
-              childrenCodes.push(
-                `{${variantKey} === "${onlyVariant}" && ${formattedChildCode}}`,
-              )
+              childrenCodes.push(`{${fullCondition} && ${formattedChildCode}}`)
             } else {
               // Multiple (but not all) variants have this child
               // Use conditional rendering with OR
               const conditions = presentVariantsList
                 .map((v) => `${variantKey} === "${v}"`)
                 .join(' || ')
+              const variantCondition = `(${conditions})`
+              const fullCondition = sharedCondition
+                ? `${sharedCondition} && ${variantCondition}`
+                : variantCondition
               const childCode = this.generateVariantOnlyMergedCode(
                 variantKey,
                 childByVariant,
                 0,
               )
               const formattedChildCode = childCode.includes('\n')
-                ? `2(\n${paddingLeftMultiline(childCode, 1)}\n)`
+                ? `(\n${paddingLeftMultiline(childCode, 1)}\n)`
                 : childCode
-              childrenCodes.push(`{(${conditions}) && ${formattedChildCode}}`)
+              childrenCodes.push(`{${fullCondition} && ${formattedChildCode}}`)
             }
           }
         }
@@ -1094,11 +1363,15 @@ export class ResponsiveCodegen {
 
     // Handle TEXT nodes
     if (firstTree.textChildren && firstTree.textChildren.length > 0) {
+      const mergedTextChildren = this.mergeTextChildrenAcrossComposites(
+        variantKeys,
+        treesByComposite,
+      )
       return renderNode(
         firstTree.component,
         mergedProps,
         depth,
-        firstTree.textChildren,
+        mergedTextChildren,
       )
     }
 
@@ -1111,27 +1384,8 @@ export class ResponsiveCodegen {
       childrenMaps.set(compositeKey, this.treeChildrenToMap(tree))
     }
 
-    // Get all unique child names
-    const processedChildNames = new Set<string>()
-    const allChildNames: string[] = []
-    const firstComposite = firstMapKey(treesByComposite)
-    const firstChildrenMap = childrenMaps.get(firstComposite)
-
-    if (firstChildrenMap) {
-      for (const name of firstChildrenMap.keys()) {
-        allChildNames.push(name)
-        processedChildNames.add(name)
-      }
-    }
-
-    for (const childMap of childrenMaps.values()) {
-      for (const name of childMap.keys()) {
-        if (!processedChildNames.has(name)) {
-          allChildNames.push(name)
-          processedChildNames.add(name)
-        }
-      }
-    }
+    // Get all unique child names in stable merged order across all composites
+    const allChildNames = mergeChildNameOrder(childrenMaps)
 
     // Process each child
     for (const childName of allChildNames) {
@@ -1165,19 +1419,190 @@ export class ResponsiveCodegen {
               childByComposite,
               0,
             )
+
+            // Check if all composites share the same BOOLEAN condition
+            const firstChild = firstMapValue(childByComposite)
+            const condition = firstChild.condition
+            if (condition) {
+              // Check all composites have the same condition
+              let allSameCondition = true
+              for (const child of childByComposite.values()) {
+                if (child.condition !== condition) {
+                  allSameCondition = false
+                  break
+                }
+              }
+              if (allSameCondition) {
+                // Wrap with BOOLEAN conditional
+                if (childCode.includes('\n')) {
+                  childrenCodes.push(
+                    `{${condition} && (\n${paddingLeftMultiline(childCode, 1)}\n)}`,
+                  )
+                } else {
+                  childrenCodes.push(`{${condition} && ${childCode}}`)
+                }
+                continue
+              }
+            }
+
+            // Handle INSTANCE_SWAP slot placeholders
+            if (firstChild.isSlot) {
+              childrenCodes.push(`{${firstChild.component}}`)
+              continue
+            }
+
             childrenCodes.push(childCode)
           } else {
-            // Child exists only in some variants - use first one for now
-            // TODO: implement conditional rendering for partial children
-            const firstChildTree = firstMapValue(childByComposite)
-            const childCode = Codegen.renderTree(firstChildTree, 0)
-            childrenCodes.push(childCode)
+            // Child exists only in some variants - conditional rendering
+            // Find which variant key(s) control this child's presence
+            const presentKeys = [...presentComposites]
+            const absentKeys = [...treesByComposite.keys()].filter(
+              (k) => !presentComposites.has(k),
+            )
+
+            // Parse all composite keys to find the controlling variant dimension
+            const parsedPresent = presentKeys.map((k) =>
+              this.parseCompositeKey(k),
+            )
+            const parsedAbsent = absentKeys.map((k) =>
+              this.parseCompositeKey(k),
+            )
+
+            // For each variant key, check if it fully explains presence/absence
+            let controllingKey: string | undefined
+            let presentValues: string[] = []
+
+            for (const vk of variantKeys) {
+              const presentVals = new Set(parsedPresent.map((p) => p[vk]))
+              const absentVals = new Set(parsedAbsent.map((p) => p[vk]))
+
+              // Check if there's no overlap — this key fully explains presence
+              let hasOverlap = false
+              for (const v of presentVals) {
+                if (absentVals.has(v)) {
+                  hasOverlap = true
+                  break
+                }
+              }
+
+              if (!hasOverlap) {
+                controllingKey = vk
+                presentValues = [...presentVals]
+                break
+              }
+            }
+
+            // Check if present children share a common BOOLEAN condition
+            const sharedCondition = this.getSharedCondition(childByComposite)
+
+            if (controllingKey && presentValues.length > 0) {
+              // Single controlling key — generate condition on that key
+              // Recursively merge the child across the present composites
+              const childCode =
+                childByComposite.size === 1
+                  ? Codegen.renderTree(firstMapValue(childByComposite), 0)
+                  : this.generateNestedVariantMergedCode(
+                      variantKeys,
+                      childByComposite,
+                      0,
+                    )
+
+              if (presentValues.length === 1) {
+                // {key === "value" && <Node/>}
+                const variantCondition = `${controllingKey} === "${presentValues[0]}"`
+                const fullCondition = sharedCondition
+                  ? `${sharedCondition} && ${variantCondition}`
+                  : variantCondition
+                const formattedChildCode = childCode.includes('\n')
+                  ? `(\n${paddingLeftMultiline(childCode, 1)}\n)`
+                  : childCode
+                childrenCodes.push(
+                  `{${fullCondition} && ${formattedChildCode}}`,
+                )
+              } else {
+                // {(key === "a" || key === "b") && <Node/>}
+                const conditions = presentValues
+                  .map((v) => `${controllingKey} === "${v}"`)
+                  .join(' || ')
+                const variantCondition = `(${conditions})`
+                const fullCondition = sharedCondition
+                  ? `${sharedCondition} && ${variantCondition}`
+                  : variantCondition
+                const formattedChildCode = childCode.includes('\n')
+                  ? `(\n${paddingLeftMultiline(childCode, 1)}\n)`
+                  : childCode
+                childrenCodes.push(
+                  `{${fullCondition} && ${formattedChildCode}}`,
+                )
+              }
+            } else {
+              // Multiple keys control presence — build combined condition
+              // Collect unique composite value combinations that have this child
+              const conditionParts: string[] = []
+              for (const compositeKey of presentKeys) {
+                const parsed = this.parseCompositeKey(compositeKey)
+                const parts = variantKeys.map(
+                  (vk) => `${vk} === "${parsed[vk]}"`,
+                )
+                conditionParts.push(`(${parts.join(' && ')})`)
+              }
+              const variantCondition = `(${conditionParts.join(' || ')})`
+              const fullCondition = sharedCondition
+                ? `${sharedCondition} && ${variantCondition}`
+                : variantCondition
+              const childCode =
+                childByComposite.size === 1
+                  ? Codegen.renderTree(firstMapValue(childByComposite), 0)
+                  : this.generateNestedVariantMergedCode(
+                      variantKeys,
+                      childByComposite,
+                      0,
+                    )
+              const formattedChildCode = childCode.includes('\n')
+                ? `(\n${paddingLeftMultiline(childCode, 1)}\n)`
+                : childCode
+              childrenCodes.push(`{${fullCondition} && ${formattedChildCode}}`)
+            }
           }
         }
       }
     }
 
     return renderNode(firstTree.component, mergedProps, depth, childrenCodes)
+  }
+
+  /**
+   * Parse a composite key like "size=lg|varient=primary" into { size: "lg", varient: "primary" }.
+   */
+  private parseCompositeKey(compositeKey: string): Record<string, string> {
+    const parsed: Record<string, string> = {}
+    for (const part of compositeKey.split('|')) {
+      const [key, value] = part.split('=')
+      parsed[key] = value
+    }
+    return parsed
+  }
+
+  /**
+   * Check if all children in a map share the same BOOLEAN condition.
+   * Returns the shared condition string, or undefined if not all share one.
+   */
+  private getSharedCondition(
+    childMap: Map<string, NodeTree>,
+  ): string | undefined {
+    let sharedCondition: string | undefined
+    let first = true
+    for (const child of childMap.values()) {
+      if (first) {
+        sharedCondition = child.condition
+        first = false
+        continue
+      }
+      if (child.condition !== sharedCondition) {
+        return undefined
+      }
+    }
+    return sharedCondition
   }
 
   /**
@@ -1225,24 +1650,28 @@ export class ResponsiveCodegen {
           }
         }
         if (hasPseudoSelector) {
-          result[propKey] = this.mergePropsAcrossComposites(
+          const merged = this.mergePropsAcrossComposites(
             variantKeys,
             pseudoPropsMap,
           )
+          // Only include pseudo-selector if it has at least one prop after merging
+          if (Object.keys(merged).length > 0) {
+            result[propKey] = merged
+          }
         }
         continue
       }
 
       // Collect values for this prop across all composites
-      // For composites that don't have this prop, use null
+      // For composites that don't have this prop (or value is undefined), use null
       const valuesByComposite = new Map<string, unknown>()
       let hasValue = false
       for (const [compositeKey, props] of propsMap) {
-        if (propKey in props) {
+        if (propKey in props && props[propKey] !== undefined) {
           valuesByComposite.set(compositeKey, props[propKey])
           hasValue = true
         } else {
-          // Composite doesn't have this prop, use null
+          // Composite doesn't have this prop (or value is undefined), use null
           valuesByComposite.set(compositeKey, null)
         }
       }
@@ -1453,6 +1882,127 @@ export class ResponsiveCodegen {
       return 1 + maxNestedCost
     }
     return 0
+  }
+
+  /**
+   * Merge text children across variant values (single variant key).
+   * If all variants have the same text, return it directly.
+   * If texts differ, create variant-mapped text: {{ lg: "buttonLg", md: "button" }[size]}
+   */
+  private mergeTextChildrenAcrossVariants(
+    variantKey: string,
+    treesByVariant: Map<string, NodeTree>,
+  ): string[] {
+    // Collect joined text from each variant
+    const textByVariant = new Map<string, string>()
+    for (const [variant, tree] of treesByVariant) {
+      if (tree.textChildren && tree.textChildren.length > 0) {
+        textByVariant.set(variant, tree.textChildren.join(''))
+      }
+    }
+
+    // If no text, return first tree's text
+    if (textByVariant.size === 0) {
+      const firstTree = firstMapValue(treesByVariant)
+      return firstTree.textChildren || []
+    }
+
+    // Check if all texts are the same
+    let allSame = true
+    let firstText: string | undefined
+    for (const text of textByVariant.values()) {
+      if (firstText === undefined) {
+        firstText = text
+        continue
+      }
+      if (text !== firstText) {
+        allSame = false
+        break
+      }
+    }
+
+    if (allSame) {
+      return firstMapValue(treesByVariant).textChildren || []
+    }
+
+    // Texts differ — create variant-mapped text
+    const entries = [...textByVariant.entries()]
+      .map(([variant, text]) => `  ${variant}: "${text}"`)
+      .join(',\n')
+    return [`{{\n${entries}\n}[${variantKey}]}`]
+  }
+
+  /**
+   * Merge text children across composite variant keys (multiple variant dimensions).
+   * If all composites have the same text, return it directly.
+   * If texts differ, find the controlling variant key and create variant-mapped text.
+   */
+  private mergeTextChildrenAcrossComposites(
+    variantKeys: string[],
+    treesByComposite: Map<string, NodeTree>,
+  ): string[] {
+    // Collect joined text from each composite
+    const textByComposite = new Map<string, string>()
+    for (const [compositeKey, tree] of treesByComposite) {
+      if (tree.textChildren && tree.textChildren.length > 0) {
+        textByComposite.set(compositeKey, tree.textChildren.join(''))
+      }
+    }
+
+    // If no text, return first tree's text
+    if (textByComposite.size === 0) {
+      const firstTree = firstMapValue(treesByComposite)
+      return firstTree.textChildren || []
+    }
+
+    // Check if all texts are the same
+    let allSame = true
+    let firstText: string | undefined
+    for (const text of textByComposite.values()) {
+      if (firstText === undefined) {
+        firstText = text
+        continue
+      }
+      if (text !== firstText) {
+        allSame = false
+        break
+      }
+    }
+
+    if (allSame) {
+      return firstMapValue(treesByComposite).textChildren || []
+    }
+
+    // Texts differ — find which variant key controls the text difference
+    // Group text values by each variant key to find the simplest mapping
+    for (const vk of variantKeys) {
+      const textByVariantValue = new Map<string, string>()
+      let isConsistent = true
+
+      for (const [compositeKey, text] of textByComposite) {
+        const parsed = this.parseCompositeKey(compositeKey)
+        const variantValue = parsed[vk]
+        const existing = textByVariantValue.get(variantValue)
+
+        if (existing !== undefined && existing !== text) {
+          // Same variant value maps to different texts — this key doesn't fully control
+          isConsistent = false
+          break
+        }
+        textByVariantValue.set(variantValue, text)
+      }
+
+      if (isConsistent) {
+        // This variant key fully controls text — create mapping on this key
+        const entries = [...textByVariantValue.entries()]
+          .map(([variant, text]) => `  ${variant}: "${text}"`)
+          .join(',\n')
+        return [`{{\n${entries}\n}[${vk}]}`]
+      }
+    }
+
+    // No single key controls — use first tree's text as fallback
+    return firstMapValue(treesByComposite).textChildren || []
   }
 
   /**
