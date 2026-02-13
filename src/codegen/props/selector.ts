@@ -62,27 +62,27 @@ function toTransitionPropertyName(key: string): string {
   return toKebabCase(mapped)
 }
 
-// 속성 이름을 유효한 TypeScript 식별자로 변환
+// Convert property names to valid TypeScript identifiers
 const toUpperCase = (_: string, chr: string) => chr.toUpperCase()
 
 export function sanitizePropertyName(name: string): string {
   // 0. Strip Figma's internal "#nodeId:uniqueId" suffix (e.g., "leftIcon#60:123" → "leftIcon")
   const stripped = name.replace(/#\d+:\d+$/, '')
 
-  // 1. 한글 '속성'을 'property'로 변환 (공백 포함 처리: "속성1" → "property1")
-  const normalized = stripped.trim().replace(/속성\s*/g, 'property') // 한글 '속성' + 뒤따르는 공백을 'property'로 변환
+  // 1. Replace Korean word for "property" with English equivalent (e.g., "속성1" → "property1")
+  const normalized = stripped.trim().replace(/속성\s*/g, 'property')
 
-  // 2. 공백과 특수문자를 처리하여 camelCase로 변환
+  // 2. Convert spaces and special characters to camelCase
   const result = normalized
-    // 공백이나 특수문자 뒤의 문자를 대문자로 (camelCase 변환)
+    // Capitalize the character after spaces/hyphens/underscores (camelCase)
     .replace(/[\s\-_]+(.)/g, toUpperCase)
-    // 숫자로 시작하면 앞에 _ 추가
+    // Prefix leading digits with underscore
     .replace(/^(\d)/, '_$1')
 
-  // 3. 유효하지 않은 문자 제거 (한글, 특수문자 등)
+  // 3. Remove invalid characters (Korean, special chars, etc.)
   const cleaned = result.replace(/[^\w$]/g, '')
 
-  // 4. 완전히 비어있거나 숫자로만 구성된 경우 기본값 사용
+  // 4. Fall back to default name if empty or digits-only
   if (!cleaned || /^\d+$/.test(cleaned)) {
     return 'variant'
   }
@@ -143,9 +143,6 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
 }> {
   const hasEffect = !!node.componentPropertyDefinitions.effect
   const tSelector = perfStart()
-  console.info(
-    `[perf] getSelectorProps: processing ${node.children.length} children`,
-  )
   // Pre-filter: only call expensive getProps() on children with non-default effects.
   // The effect/trigger check is a cheap property read — skip children that would be
   // discarded later anyway (effect === undefined or effect === 'default').
@@ -303,9 +300,6 @@ async function computeSelectorPropsForGroup(
   if (!defaultComponent) return {}
 
   const tGroup = perfStart()
-  console.info(
-    `[perf] getSelectorPropsForGroup: processing ${matchingComponents.length} matching components`,
-  )
   const defaultProps = await getProps(defaultComponent)
   const result: Record<string, object | string> = {}
   const diffKeys = new Set<string>()

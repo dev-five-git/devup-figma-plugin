@@ -547,9 +547,6 @@ export class ResponsiveCodegen {
     componentSet: ComponentSetNode,
     componentName: string,
   ): Promise<ReadonlyArray<readonly [string, string]>> {
-    console.info(
-      `[perf] generateVariantResponsiveComponents: ${componentName}, ${componentSet.children.length} children, ${Object.keys(componentSet.componentPropertyDefinitions).length} variant keys`,
-    )
     const tTotal = perfStart()
 
     // Find viewport and effect variant keys

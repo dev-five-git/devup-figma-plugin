@@ -43,7 +43,7 @@ export async function getBorderProps(
   const paintCssList = []
   for (let i = 0; i < node.strokes.length; i++) {
     const paint = node.strokes[node.strokes.length - 1 - i]
-    if (paint.visible && paint.opacity !== 0) {
+    if (paint.visible !== false && paint.opacity !== 0) {
       paintCssList.push(
         paintToCSSSyncIfPossible(paint, node, i === node.strokes.length - 1) ??
           (await paintToCSS(paint, node, i === node.strokes.length - 1)),

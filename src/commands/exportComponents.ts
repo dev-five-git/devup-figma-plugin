@@ -3,6 +3,8 @@ import JSZip from 'jszip'
 import { Codegen } from '../codegen/Codegen'
 import { downloadFile } from '../utils/download-file'
 
+const NOTIFY_TIMEOUT = 3000
+
 export async function exportComponents() {
   try {
     figma.notify('Exporting components...')
@@ -26,7 +28,7 @@ export async function exportComponents() {
     }
 
     figma.notify(`Components exported ${componentCount} components`, {
-      timeout: 3000,
+      timeout: NOTIFY_TIMEOUT,
     })
     const zip = new JSZip()
     for (const component of components) {
@@ -42,12 +44,12 @@ export async function exportComponents() {
       await zip.generateAsync({ type: 'uint8array' }),
     )
     figma.notify('Components exported', {
-      timeout: 3000,
+      timeout: NOTIFY_TIMEOUT,
     })
   } catch (error) {
     console.error(error)
     figma.notify('Error exporting components', {
-      timeout: 3000,
+      timeout: NOTIFY_TIMEOUT,
       error: true,
     })
   }

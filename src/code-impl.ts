@@ -18,59 +18,15 @@ import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
 import { exportComponents } from './commands/exportComponents'
-import { exportPagesAndComponents } from './commands/exportPagesAndComponents'
+import {
+  exportPagesAndComponents,
+  extractCustomComponentImports,
+  extractImports,
+} from './commands/exportPagesAndComponents'
+export { extractCustomComponentImports, extractImports }
+
 import { getComponentName, resetTextStyleCache } from './utils'
 import { toPascal } from './utils/to-pascal'
-
-const DEVUP_COMPONENTS = [
-  'Center',
-  'VStack',
-  'Flex',
-  'Grid',
-  'Box',
-  'Text',
-  'Image',
-]
-
-export function extractImports(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
-): string[] {
-  const allCode = componentsCodes.map(([_, code]) => code).join('\n')
-  const imports = new Set<string>()
-
-  for (const component of DEVUP_COMPONENTS) {
-    const regex = new RegExp(`<${component}[\\s/>]`, 'g')
-    if (regex.test(allCode)) {
-      imports.add(component)
-    }
-  }
-
-  if (/\bkeyframes\s*(\(|`)/.test(allCode)) {
-    imports.add('keyframes')
-  }
-
-  return Array.from(imports).sort()
-}
-
-export function extractCustomComponentImports(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
-): string[] {
-  const allCode = componentsCodes.map(([_, code]) => code).join('\n')
-  const customImports = new Set<string>()
-
-  // Find all component usages in JSX: <ComponentName or <ComponentName>
-  const componentUsageRegex = /<([A-Z][a-zA-Z0-9]*)/g
-  const matches = allCode.matchAll(componentUsageRegex)
-  for (const match of matches) {
-    const componentName = match[1]
-    // Skip devup-ui components and components defined in this code
-    if (!DEVUP_COMPONENTS.includes(componentName)) {
-      customImports.add(componentName)
-    }
-  }
-
-  return Array.from(customImports).sort()
-}
 
 function generateImportStatements(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
@@ -357,9 +313,6 @@ export function registerCodegen(ctx: typeof figma) {
             componentsResponsiveCodes = responsiveResults
           }
 
-          console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
-          console.info(perfReport())
-
           // Check if node itself is SECTION or has a parent SECTION
           const isNodeSection = ResponsiveCodegen.canGenerateResponsive(node)
           const parentSection = ResponsiveCodegen.hasParentSection(node)
@@ -416,6 +369,8 @@ export function registerCodegen(ctx: typeof figma) {
             }
           }
           if (debug) {
+            console.info(`[benchmark] devup-ui end ${Date.now() - time}ms`)
+            console.info(perfReport())
             // Track AFTER codegen — collects all node properties for test case
             // generation without Proxy overhead during the hot codegen path.
             nodeProxyTracker.trackTree(node)
