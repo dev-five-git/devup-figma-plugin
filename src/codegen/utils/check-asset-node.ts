@@ -73,7 +73,13 @@ export function checkAssetNode(
       : nested &&
           'fills' in node &&
           Array.isArray(node.fills) &&
-          node.fills.every((fill) => fill.visible && fill.type === 'SOLID')
+          !node.fills.some(
+            (fill: Paint) =>
+              fill.visible &&
+              (fill.type === 'IMAGE' ||
+                fill.type === 'VIDEO' ||
+                fill.type === 'PATTERN'),
+          )
         ? 'svg'
         : null
   }
