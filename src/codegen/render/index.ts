@@ -43,6 +43,7 @@ export function renderComponent(
   component: string,
   code: string,
   variants: Record<string, string>,
+  comments?: Record<string, string>,
 ) {
   // Single pass: collect variant entries, skipping 'effect' (reserved key)
   const variantEntries: [string, string][] = []
@@ -59,6 +60,9 @@ export function renderComponent(
   const keys: string[] = []
   for (const [key, value] of variantEntries) {
     const optional = value === 'boolean' ? '?' : ''
+    if (comments?.[key]) {
+      interfaceLines.push(`  /** ${comments[key]} */`)
+    }
     interfaceLines.push(`  ${key}${optional}: ${value}`)
     keys.push(key)
   }

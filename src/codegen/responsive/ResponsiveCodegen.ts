@@ -1,5 +1,6 @@
 import { Codegen } from '../Codegen'
 import {
+  applyTextChildrenTransform,
   getSelectorPropsForGroup,
   sanitizePropertyName,
 } from '../props/selector'
@@ -431,6 +432,9 @@ export class ResponsiveCodegen {
       }
     }
 
+    const { variants: finalVariants, variantComments } =
+      applyTextChildrenTransform(variants)
+
     // Group components by non-viewport, non-effect variants
     const groups = new Map<string, Map<BreakpointKey, ComponentNode>>()
 
@@ -519,7 +523,12 @@ export class ResponsiveCodegen {
 
       results.push([
         componentName,
-        renderComponent(componentName, mergedCode, variants),
+        renderComponent(
+          componentName,
+          mergedCode,
+          finalVariants,
+          variantComments,
+        ),
       ] as const)
     }
 
@@ -584,6 +593,9 @@ export class ResponsiveCodegen {
       }
     }
 
+    const { variants: finalVariants, variantComments } =
+      applyTextChildrenTransform(variants)
+
     // If effect variant only, generate code from defaultVariant with pseudo-selectors
     if (effectKey && !viewportKey && otherVariantKeys.length === 0) {
       const r = await ResponsiveCodegen.generateEffectOnlyComponents(
@@ -600,7 +612,7 @@ export class ResponsiveCodegen {
         componentSet,
         componentName,
         otherVariantKeys,
-        variants,
+        finalVariants,
       )
       perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return r
@@ -742,7 +754,15 @@ export class ResponsiveCodegen {
     )
 
     const result: Array<readonly [string, string]> = [
-      [componentName, renderComponent(componentName, mergedCode, variants)],
+      [
+        componentName,
+        renderComponent(
+          componentName,
+          mergedCode,
+          finalVariants,
+          variantComments,
+        ),
+      ],
     ]
     return result
   }
@@ -788,8 +808,14 @@ export class ResponsiveCodegen {
       }
     }
 
+    const { variants: finalVariants, variantComments } =
+      applyTextChildrenTransform(variants)
+
     const result: Array<readonly [string, string]> = [
-      [componentName, renderComponent(componentName, code, variants)],
+      [
+        componentName,
+        renderComponent(componentName, code, finalVariants, variantComments),
+      ],
     ]
     return result
   }

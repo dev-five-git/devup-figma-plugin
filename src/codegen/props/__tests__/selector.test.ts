@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { getSelectorProps } from '../selector'
+import { applyTextChildrenTransform, getSelectorProps } from '../selector'
 
 // Mock figma global
 ;(globalThis as { figma?: unknown }).figma = {
@@ -146,7 +146,7 @@ describe('getSelectorProps', () => {
     expect(result?.variants.showIcon).toBe('boolean')
   })
 
-  test('includes TEXT properties as string in variants', async () => {
+  test('includes single TEXT property as children: React.ReactNode in variants', async () => {
     const defaultVariant = {
       type: 'COMPONENT',
       name: 'size=Default',
@@ -178,7 +178,9 @@ describe('getSelectorProps', () => {
 
     expect(result).toBeDefined()
     expect(result?.variants.size).toBe("'Default' | 'Small'")
-    expect(result?.variants.label).toBe('string')
+    expect(result?.variants.label).toBeUndefined()
+    expect(result?.variants.children).toBe('React.ReactNode')
+    expect(result?.variantComments).toEqual({ children: 'label' })
   })
 
   test('includes INSTANCE_SWAP properties as React.ReactNode in variants', async () => {
@@ -414,6 +416,36 @@ describe('getSelectorProps', () => {
       expect(result?.variants).toBeDefined()
       // Property name starting with digit should be prefixed with _
       expect(result?.variants._1abc).toBe("'Default' | 'Active'")
+    })
+  })
+
+  describe('applyTextChildrenTransform', () => {
+    test('returns unchanged variants when no TEXT props', () => {
+      const variants = { size: "'sm' | 'lg'", icon: 'React.ReactNode' }
+      const result = applyTextChildrenTransform(variants)
+      expect(result.variants).toEqual(variants)
+      expect(result.variantComments).toEqual({})
+    })
+
+    test('transforms single TEXT prop to children', () => {
+      const variants = { size: "'sm' | 'lg'", label: 'string' }
+      const result = applyTextChildrenTransform(variants)
+      expect(result.variants).toEqual({
+        size: "'sm' | 'lg'",
+        children: 'React.ReactNode',
+      })
+      expect(result.variantComments).toEqual({ children: 'label' })
+    })
+
+    test('returns unchanged variants when 2+ TEXT props', () => {
+      const variants = {
+        title: 'string',
+        description: 'string',
+        size: "'sm' | 'lg'",
+      }
+      const result = applyTextChildrenTransform(variants)
+      expect(result.variants).toEqual(variants)
+      expect(result.variantComments).toEqual({})
     })
   })
 

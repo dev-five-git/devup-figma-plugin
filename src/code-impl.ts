@@ -135,17 +135,72 @@ export function generateComponentUsage(node: SceneNode): string | null {
 
   if (node.type === 'COMPONENT') {
     const variantProps = (node as ComponentNode).variantProperties
-    if (!variantProps) return `<${componentName} />`
 
-    const entries: [string, string][] = []
-    for (const [key, value] of Object.entries(variantProps)) {
-      if (!isReservedVariantKey(key)) {
-        entries.push([key, value])
+    const entries: { key: string; value: string; type: string }[] = []
+    if (variantProps) {
+      for (const [key, value] of Object.entries(variantProps)) {
+        if (!isReservedVariantKey(key)) {
+          entries.push({
+            key: sanitizePropertyName(key),
+            value,
+            type: 'VARIANT',
+          })
+        }
       }
     }
 
+    // Also include BOOLEAN/TEXT properties from parent COMPONENT_SET
+    const parentSet =
+      (node as ComponentNode).parent?.type === 'COMPONENT_SET'
+        ? ((node as ComponentNode).parent as ComponentSetNode)
+        : null
+    const defs = parentSet?.componentPropertyDefinitions
+    let textEntry: { key: string; value: string } | null = null
+    let textCount = 0
+    if (defs) {
+      for (const [key, def] of Object.entries(defs)) {
+        if (isReservedVariantKey(key)) continue
+        if (def.type === 'BOOLEAN' && def.defaultValue) {
+          entries.push({
+            key: sanitizePropertyName(key),
+            value: 'true',
+            type: 'BOOLEAN',
+          })
+        } else if (def.type === 'TEXT') {
+          textCount++
+          textEntry = {
+            key: sanitizePropertyName(key),
+            value: String(def.defaultValue),
+          }
+          entries.push({
+            key: sanitizePropertyName(key),
+            value: String(def.defaultValue),
+            type: 'TEXT',
+          })
+        }
+      }
+    }
+
+    if (textCount === 1 && textEntry) {
+      const filteredEntries = entries.filter((e) => e.type !== 'TEXT')
+      if (filteredEntries.length === 0)
+        return `<${componentName}>${textEntry.value}</${componentName}>`
+      const propsStr = filteredEntries
+        .map((e) => {
+          if (e.type === 'BOOLEAN') return e.key
+          return `${e.key}="${e.value}"`
+        })
+        .join(' ')
+      return `<${componentName} ${propsStr}>${textEntry.value}</${componentName}>`
+    }
+
     if (entries.length === 0) return `<${componentName} />`
-    const propsStr = entries.map(([k, v]) => `${k}="${v}"`).join(' ')
+    const propsStr = entries
+      .map((e) => {
+        if (e.type === 'BOOLEAN') return e.key
+        return `${e.key}="${e.value}"`
+      })
+      .join(' ')
     return `<${componentName} ${propsStr} />`
   }
 
@@ -153,15 +208,53 @@ export function generateComponentUsage(node: SceneNode): string | null {
     const defs = (node as ComponentSetNode).componentPropertyDefinitions
     if (!defs) return `<${componentName} />`
 
-    const entries: [string, string][] = []
+    const entries: { key: string; value: string; type: string }[] = []
+    let textEntry: { key: string; value: string } | null = null
+    let textCount = 0
     for (const [key, def] of Object.entries(defs)) {
-      if (def.type === 'VARIANT' && !isReservedVariantKey(key)) {
-        entries.push([sanitizePropertyName(key), String(def.defaultValue)])
+      if (isReservedVariantKey(key)) continue
+      const sanitizedKey = sanitizePropertyName(key)
+      if (def.type === 'VARIANT') {
+        entries.push({
+          key: sanitizedKey,
+          value: String(def.defaultValue),
+          type: 'VARIANT',
+        })
+      } else if (def.type === 'BOOLEAN') {
+        if (def.defaultValue) {
+          entries.push({ key: sanitizedKey, value: 'true', type: 'BOOLEAN' })
+        }
+      } else if (def.type === 'TEXT') {
+        textCount++
+        textEntry = { key: sanitizedKey, value: String(def.defaultValue) }
+        entries.push({
+          key: sanitizedKey,
+          value: String(def.defaultValue),
+          type: 'TEXT',
+        })
       }
     }
 
+    if (textCount === 1 && textEntry) {
+      const filteredEntries = entries.filter((e) => e.type !== 'TEXT')
+      if (filteredEntries.length === 0)
+        return `<${componentName}>${textEntry.value}</${componentName}>`
+      const propsStr = filteredEntries
+        .map((e) => {
+          if (e.type === 'BOOLEAN') return e.key
+          return `${e.key}="${e.value}"`
+        })
+        .join(' ')
+      return `<${componentName} ${propsStr}>${textEntry.value}</${componentName}>`
+    }
+
     if (entries.length === 0) return `<${componentName} />`
-    const propsStr = entries.map(([k, v]) => `${k}="${v}"`).join(' ')
+    const propsStr = entries
+      .map((e) => {
+        if (e.type === 'BOOLEAN') return e.key
+        return `${e.key}="${e.value}"`
+      })
+      .join(' ')
     return `<${componentName} ${propsStr} />`
   }
 

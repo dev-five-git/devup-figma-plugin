@@ -9,6 +9,7 @@ const selectorPropsCache = new Map<
   Promise<{
     props: Record<string, object | string>
     variants: Record<string, string>
+    variantComments: Record<string, string>
   }>
 >()
 
@@ -89,12 +90,31 @@ export function sanitizePropertyName(name: string): string {
   return cleaned
 }
 
+/**
+ * If exactly 1 TEXT-type variant (type === 'string'), rename it to 'children'
+ * with 'React.ReactNode' type. Returns variantComments mapping 'children' to original name.
+ */
+export function applyTextChildrenTransform(variants: Record<string, string>): {
+  variants: Record<string, string>
+  variantComments: Record<string, string>
+} {
+  const textEntries = Object.entries(variants).filter(([, v]) => v === 'string')
+  if (textEntries.length !== 1) return { variants, variantComments: {} }
+
+  const [originalKey] = textEntries[0]
+  const newVariants = { ...variants }
+  delete newVariants[originalKey]
+  newVariants.children = 'React.ReactNode'
+  return { variants: newVariants, variantComments: { children: originalKey } }
+}
+
 export async function getSelectorProps(
   node: ComponentSetNode | ComponentNode,
 ): Promise<
   | {
       props: Record<string, object | string>
       variants: Record<string, string>
+      variantComments: Record<string, string>
     }
   | undefined
 > {
@@ -119,6 +139,7 @@ export async function getSelectorProps(
 async function computeSelectorProps(node: ComponentSetNode): Promise<{
   props: Record<string, object | string>
   variants: Record<string, string>
+  variantComments: Record<string, string>
 }> {
   const hasEffect = !!node.componentPropertyDefinitions.effect
   const tSelector = perfStart()
@@ -149,7 +170,8 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
   const result: {
     props: Record<string, object | string>
     variants: Record<string, string>
-  } = { props: {}, variants: {} }
+    variantComments: Record<string, string>
+  } = { props: {}, variants: {}, variantComments: {} }
   const defs = node.componentPropertyDefinitions
   for (const name in defs) {
     if (name === 'effect' || name === 'viewport') continue
@@ -167,6 +189,11 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
       result.variants[sanitizedName] = 'string'
     }
   }
+
+  const { variants: transformedVariants, variantComments } =
+    applyTextChildrenTransform(result.variants)
+  result.variants = transformedVariants
+  result.variantComments = variantComments
 
   if (components.length > 0) {
     const findNodeAction = (action: Action) => action.type === 'NODE'

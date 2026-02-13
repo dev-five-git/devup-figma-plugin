@@ -3824,6 +3824,89 @@ describe('Codegen Tree Methods', () => {
       const rendered = Codegen.renderTree(slotChild as NodeTree)
       expect(rendered).toBe('{showIcon && leftIcon}')
     })
+
+    test('detects TEXT property binding via componentPropertyReferences', async () => {
+      const styledSegments = [
+        {
+          characters: 'Click me',
+          start: 0,
+          end: 8,
+          fontSize: 14,
+          fontName: { family: 'Inter', style: 'Regular' },
+          fontWeight: 400,
+          textDecoration: 'NONE',
+          textCase: 'ORIGINAL',
+          lineHeight: { unit: 'AUTO' },
+          letterSpacing: { unit: 'PIXELS', value: 0 },
+          fills: [
+            {
+              type: 'SOLID',
+              color: { r: 0, g: 0, b: 0 },
+              opacity: 1,
+              visible: true,
+            },
+          ],
+          listOptions: { type: 'NONE' },
+          indentation: 0,
+          hyperlink: null,
+        },
+      ]
+
+      const textChild = {
+        type: 'TEXT',
+        name: 'Label',
+        visible: true,
+        characters: 'Click me',
+        componentPropertyReferences: { characters: 'label#80:456' },
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+        textAlignHorizontal: 'LEFT',
+        textAlignVertical: 'TOP',
+        getStyledTextSegments: () => styledSegments,
+        styledTextSegments: styledSegments,
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as TextNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [textChild],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'ButtonWithText',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          'label#80:456': {
+            type: 'TEXT',
+            defaultValue: 'Click me',
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      const compTree = [...componentTrees.values()].find(
+        (ct) => ct.name === 'ButtonWithText',
+      )
+      expect(compTree).toBeDefined()
+
+      // The text child should have its textChildren replaced with interpolated prop name
+      const textTree = compTree?.tree.children.find(
+        (c) => c.nodeType === 'TEXT',
+      )
+      expect(textTree).toBeDefined()
+      expect(textTree?.textChildren).toEqual(['{children}'])
+    })
   })
 
   describe('renderTree (static)', () => {
