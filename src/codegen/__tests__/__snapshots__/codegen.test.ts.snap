@@ -3184,10 +3184,9 @@ exports[`render real world component real world $ 91`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        pb="5px"
         pl="9px"
         pr="7px"
-        pt="5px"
+        py="5px"
         transform="rotate(180deg)"
       />
     </Center>
@@ -3207,10 +3206,7 @@ exports[`render real world component real world $ 92`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        pb="2.29px"
-        pl="2.29px"
-        pr="2.29px"
-        pt="2.29px"
+        p="2.29px"
       />
     </Center>
   )
@@ -3239,10 +3235,8 @@ exports[`render real world component real world $ 94`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        pb="2.33px"
-        pl="2.65px"
-        pr="2.65px"
-        pt="2.33px"
+        px="2.65px"
+        py="2.33px"
       />
     </Center>
   )
@@ -3271,10 +3265,8 @@ exports[`render real world component real world $ 96`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        pb="2.33px"
-        pl="2.65px"
-        pr="2.65px"
-        pt="2.33px"
+        px="2.65px"
+        py="2.33px"
       />
     </Center>
   )
