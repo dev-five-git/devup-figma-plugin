@@ -45,7 +45,7 @@ export function checkAssetNode(
       // if node has tile, it is not an Image, it just has a tile background
       node.fills.find(
         (fill: Paint) =>
-          fill.visible &&
+          fill.visible !== false &&
           (fill.type === 'PATTERN' ||
             (fill.type === 'IMAGE' && fill.scaleMode === 'TILE')),
       )
@@ -55,7 +55,7 @@ export function checkAssetNode(
       ? 'fills' in node && Array.isArray(node.fills)
         ? node.fills.some(
             (fill: Paint) =>
-              fill.visible &&
+              fill.visible !== false &&
               fill.type === 'IMAGE' &&
               fill.scaleMode !== 'TILE',
           )
@@ -73,7 +73,13 @@ export function checkAssetNode(
       : nested &&
           'fills' in node &&
           Array.isArray(node.fills) &&
-          node.fills.every((fill) => fill.visible && fill.type === 'SOLID')
+          !node.fills.some(
+            (fill: Paint) =>
+              fill.visible !== false &&
+              (fill.type === 'IMAGE' ||
+                fill.type === 'VIDEO' ||
+                fill.type === 'PATTERN'),
+          )
         ? 'svg'
         : null
   }
@@ -87,18 +93,15 @@ export function checkAssetNode(
           node.paddingBottom > 0)) ||
       ('fills' in node &&
         (Array.isArray(node.fills)
-          ? node.fills.find((fill) => fill.visible)
+          ? node.fills.find((fill) => fill.visible !== false)
           : true))
     )
       return null
     return checkAssetNode(children[0], true)
   }
-  const fillterdChildren = children.filter((child) => child.visible)
+  const filteredChildren = children.filter((child) => child.visible)
 
-  // return children.every((child) => child.visible && checkAssetNode(child))
-  //   ? 'svg'
-  //   : null
-  return fillterdChildren.every((child) => {
+  return filteredChildren.every((child) => {
     const result = checkAssetNode(child, true)
     if (result === null) return false
     return result === 'svg'

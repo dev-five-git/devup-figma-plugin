@@ -7,6 +7,8 @@ import { getComponentName } from '../utils'
 import { downloadFile } from '../utils/download-file'
 import { toPascal } from '../utils/to-pascal'
 
+const NOTIFY_TIMEOUT = 3000
+
 export const DEVUP_COMPONENTS = [
   'Center',
   'VStack',
@@ -251,13 +253,13 @@ export async function exportPagesAndComponents() {
     notificationHandler.cancel()
     figma.notify(
       `Exported ${componentCount} components and ${pageCount} pages`,
-      { timeout: 3000 },
+      { timeout: NOTIFY_TIMEOUT },
     )
   } catch (error) {
     console.error(error)
     notificationHandler.cancel()
     figma.notify('Error exporting pages and components', {
-      timeout: 3000,
+      timeout: NOTIFY_TIMEOUT,
       error: true,
     })
   }

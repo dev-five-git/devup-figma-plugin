@@ -5,7 +5,7 @@ export async function getTextStrokeProps(
 ): Promise<Record<string, string> | undefined> {
   if (node.type !== 'TEXT') return
 
-  const strokes = node.strokes.filter((stroke) => stroke.visible)
+  const strokes = node.strokes.filter((stroke) => stroke.visible !== false)
   if (strokes.length === 0) return
   const solidStrokes = strokes.filter((stroke) => stroke.type === 'SOLID')
   // @todo support gradient stroke

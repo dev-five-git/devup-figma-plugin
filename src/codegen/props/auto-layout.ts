@@ -59,7 +59,10 @@ function getAlignItems(node: SceneNode & BaseFrameMixin): string | undefined {
 function getGridProps(
   node: GridLayoutMixin,
 ): Record<string, boolean | undefined | string | number | null> {
-  const sameGap = node.gridRowGap === node.gridColumnGap
+  // Round to 2 decimal places to handle Figma floating-point imprecision
+  const sameGap =
+    Math.round(node.gridRowGap * 100) / 100 ===
+    Math.round(node.gridColumnGap * 100) / 100
   return {
     display: 'grid',
     gridTemplateColumns: `repeat(${node.gridColumnCount}, 1fr)`,

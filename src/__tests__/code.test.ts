@@ -1068,6 +1068,59 @@ describe('generateComponentUsage', () => {
     expect(result).toBe('<ButtonSet variant="primary" size="lg" />')
   })
 
+  it('should include BOOLEAN and TEXT from parent COMPONENT_SET for COMPONENT', () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'Menu',
+      componentPropertyDefinitions: {
+        effect: {
+          type: 'VARIANT',
+          defaultValue: 'default',
+          variantOptions: ['default', 'hover'],
+        },
+        'link#70:456': {
+          type: 'BOOLEAN',
+          defaultValue: true,
+        },
+        'text#80:456': {
+          type: 'TEXT',
+          defaultValue: '텍스트',
+        },
+      },
+    }
+    const node = {
+      type: 'COMPONENT',
+      name: 'effect=default',
+      variantProperties: { effect: 'default' },
+      parent: componentSet,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Menu link>텍스트</Menu>')
+  })
+
+  it('should skip BOOLEAN with false default from parent COMPONENT_SET for COMPONENT', () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'Menu',
+      componentPropertyDefinitions: {
+        'link#70:456': {
+          type: 'BOOLEAN',
+          defaultValue: false,
+        },
+      },
+    }
+    const node = {
+      type: 'COMPONENT',
+      name: 'effect=default',
+      variantProperties: { effect: 'default' },
+      parent: componentSet,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Menu />')
+  })
+
   it('should generate usage for COMPONENT_SET with defaults', () => {
     const node = {
       type: 'COMPONENT_SET',
@@ -1129,7 +1182,7 @@ describe('generateComponentUsage', () => {
     expect(result).toBe('<MyButton variant="primary" />')
   })
 
-  it('should skip non-VARIANT properties for COMPONENT_SET', () => {
+  it('should include BOOLEAN and TEXT properties for COMPONENT_SET', () => {
     const node = {
       type: 'COMPONENT_SET',
       name: 'MyButton',
@@ -1151,7 +1204,196 @@ describe('generateComponentUsage', () => {
     } as unknown as SceneNode
 
     const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary" hasIcon />')
+  })
+
+  it('should skip BOOLEAN with false defaultValue for COMPONENT_SET', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        variant: {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'secondary'],
+        },
+        hasIcon: {
+          type: 'BOOLEAN',
+          defaultValue: false,
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
     expect(result).toBe('<MyButton variant="primary" />')
+  })
+
+  it('should include TEXT properties for COMPONENT_SET', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        variant: {
+          type: 'VARIANT',
+          defaultValue: 'primary',
+          variantOptions: ['primary', 'secondary'],
+        },
+        'label#80:456': {
+          type: 'TEXT',
+          defaultValue: 'Click me',
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton variant="primary">Click me</MyButton>')
+  })
+
+  it('should use children syntax for COMPONENT with VARIANT and single TEXT', () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'Menu',
+      componentPropertyDefinitions: {
+        size: {
+          type: 'VARIANT',
+          defaultValue: 'md',
+          variantOptions: ['sm', 'md'],
+        },
+        'text#80:456': {
+          type: 'TEXT',
+          defaultValue: '텍스트',
+        },
+      },
+    }
+    const node = {
+      type: 'COMPONENT',
+      name: 'size=md',
+      variantProperties: { size: 'md' },
+      parent: componentSet,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Menu size="md">텍스트</Menu>')
+  })
+
+  it('should use children syntax for COMPONENT with single TEXT-only prop (no other props)', () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'Label',
+      componentPropertyDefinitions: {
+        'text#80:456': {
+          type: 'TEXT',
+          defaultValue: 'Hello',
+        },
+      },
+    }
+    const node = {
+      type: 'COMPONENT',
+      name: 'default',
+      variantProperties: {},
+      parent: componentSet,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Label>Hello</Label>')
+  })
+
+  it('should use children syntax for COMPONENT_SET with BOOLEAN and single TEXT', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'Menu',
+      componentPropertyDefinitions: {
+        'link#70:456': {
+          type: 'BOOLEAN',
+          defaultValue: true,
+        },
+        'text#80:456': {
+          type: 'TEXT',
+          defaultValue: '텍스트',
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Menu link>텍스트</Menu>')
+  })
+
+  it('should use children syntax for COMPONENT_SET with single TEXT-only prop (no other props)', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'Label',
+      componentPropertyDefinitions: {
+        'text#80:456': {
+          type: 'TEXT',
+          defaultValue: 'Hello',
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Label>Hello</Label>')
+  })
+
+  it('should keep prop syntax for COMPONENT_SET with 2+ TEXT properties', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'Card',
+      componentPropertyDefinitions: {
+        'title#80:111': {
+          type: 'TEXT',
+          defaultValue: 'Hello',
+        },
+        'description#80:222': {
+          type: 'TEXT',
+          defaultValue: 'World',
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Card title="Hello" description="World" />')
+  })
+
+  it('should keep prop syntax for COMPONENT with 2+ TEXT properties from parent', () => {
+    const componentSet = {
+      type: 'COMPONENT_SET',
+      name: 'Card',
+      componentPropertyDefinitions: {
+        'title#80:111': {
+          type: 'TEXT',
+          defaultValue: 'Hello',
+        },
+        'description#80:222': {
+          type: 'TEXT',
+          defaultValue: 'World',
+        },
+      },
+    }
+    const node = {
+      type: 'COMPONENT',
+      name: 'default',
+      variantProperties: {},
+      parent: componentSet,
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<Card title="Hello" description="World" />')
+  })
+
+  it('should skip INSTANCE_SWAP properties for COMPONENT_SET', () => {
+    const node = {
+      type: 'COMPONENT_SET',
+      name: 'MyButton',
+      componentPropertyDefinitions: {
+        icon: {
+          type: 'INSTANCE_SWAP',
+          defaultValue: 'some-id',
+        },
+      },
+    } as unknown as SceneNode
+
+    const result = codeModule.generateComponentUsage(node)
+    expect(result).toBe('<MyButton />')
   })
 
   it('should generate usage for COMPONENT_SET without componentPropertyDefinitions', () => {

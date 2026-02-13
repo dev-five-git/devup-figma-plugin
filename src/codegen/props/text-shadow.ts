@@ -7,7 +7,7 @@ export function getTextShadowProps(
 ): Record<string, string> | undefined {
   if (node.type !== 'TEXT') return
 
-  const effects = node.effects.filter((effect) => effect.visible)
+  const effects = node.effects.filter((effect) => effect.visible !== false)
   if (effects.length === 0) return
   const dropShadows = effects.filter((effect) => effect.type === 'DROP_SHADOW')
   if (dropShadows.length === 0) return

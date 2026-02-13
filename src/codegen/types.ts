@@ -24,4 +24,5 @@ export interface ComponentTree {
   node: SceneNode
   tree: NodeTree
   variants: Record<string, string>
+  variantComments?: Record<string, string>
 }

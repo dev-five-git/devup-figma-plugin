@@ -100,6 +100,22 @@ function getBooleanConditionName(
 }
 
 /**
+ * Check if a child node's text characters are bound to a TEXT component property.
+ * Returns the sanitized text prop name if it is, undefined otherwise.
+ */
+function getTextPropName(
+  node: SceneNode,
+  textSlots: Map<string, string>,
+): string | undefined {
+  if (textSlots.size === 0) return undefined
+  const refs = getPropertyRefs(node)
+  if (refs?.characters && textSlots.has(refs.characters)) {
+    return textSlots.get(refs.characters)
+  }
+  return undefined
+}
+
+/**
  * Shallow-clone a NodeTree — creates a new object so that per-instance
  * property reassignment (e.g., `tree.props = { ...tree.props, ...selectorProps }`)
  * doesn't leak across Codegen instances. Props object itself is shared by
@@ -122,7 +138,12 @@ function cloneTree(tree: NodeTree): NodeTree {
 export class Codegen {
   components: Map<
     string,
-    { node: SceneNode; code: string; variants: Record<string, string> }
+    {
+      node: SceneNode
+      code: string
+      variants: Record<string, string>
+      variantComments?: Record<string, string>
+    }
   > = new Map()
   code: string = ''
 
@@ -168,9 +189,17 @@ export class Codegen {
 
   getComponentsCodes() {
     const result: Array<readonly [string, string]> = []
-    for (const { node, code, variants } of this.components.values()) {
+    for (const {
+      node,
+      code,
+      variants,
+      variantComments,
+    } of this.components.values()) {
       const name = getComponentName(node)
-      result.push([name, renderComponent(name, code, variants)])
+      result.push([
+        name,
+        renderComponent(name, code, variants, variantComments),
+      ])
     }
     return result
   }
@@ -213,6 +242,7 @@ export class Codegen {
           node: compTree.node,
           code: Codegen.renderTree(compTree.tree, 0),
           variants: compTree.variants,
+          variantComments: compTree.variantComments,
         })
       }
     }
@@ -468,12 +498,19 @@ export class Codegen {
       {}
     const instanceSwapSlots = new Map<string, string>()
     const booleanSlots = new Map<string, string>()
+    const textSlots = new Map<string, string>()
     for (const [key, def] of Object.entries(propDefs)) {
       if (def.type === 'INSTANCE_SWAP') {
         instanceSwapSlots.set(key, sanitizePropertyName(key))
       } else if (def.type === 'BOOLEAN') {
         booleanSlots.set(key, sanitizePropertyName(key))
+      } else if (def.type === 'TEXT') {
+        textSlots.set(key, sanitizePropertyName(key))
       }
+    }
+    if (textSlots.size === 1) {
+      const [key] = [...textSlots.entries()][0]
+      textSlots.set(key, 'children')
     }
 
     // Build children sequentially, replacing INSTANCE_SWAP targets with slot placeholders
@@ -499,6 +536,10 @@ export class Codegen {
           if (conditionName) {
             tree.condition = conditionName
           }
+          const textPropName = getTextPropName(child, textSlots)
+          if (textPropName && tree.textChildren) {
+            tree.textChildren = [`{${textPropName}}`]
+          }
           childrenTrees.push(tree)
         }
       }
@@ -521,6 +562,7 @@ export class Codegen {
     if (selectorProps) {
       Object.assign(variants, selectorProps.variants)
     }
+    const variantComments = selectorProps?.variantComments || {}
 
     this.componentTrees.set(nodeId, {
       name: getComponentName(node),
@@ -533,6 +575,7 @@ export class Codegen {
         nodeName: node.name,
       },
       variants,
+      variantComments,
     })
     perfEnd('addComponentTree()', tAdd)
   }

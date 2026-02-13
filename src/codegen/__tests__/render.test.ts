@@ -179,6 +179,55 @@ export function Button({ leftIcon, size, rightIcon }: ButtonProps) {
   })
 })
 
+describe('renderComponent with comments', () => {
+  test('prepends JSDoc comment for variant with comment', () => {
+    const result = renderComponent(
+      'Button',
+      '<Center />',
+      { children: 'React.ReactNode', size: '"sm" | "lg"' },
+      { children: 'label' },
+    )
+    expect(result).toBe(`export interface ButtonProps {
+  /** label */
+  children: React.ReactNode
+  size: "sm" | "lg"
+}
+
+export function Button({ children, size }: ButtonProps) {
+  return <Center />
+}`)
+  })
+
+  test('does not add comment when comments map is empty', () => {
+    const result = renderComponent(
+      'Button',
+      '<Center />',
+      { children: 'React.ReactNode' },
+      {},
+    )
+    expect(result).toBe(`export interface ButtonProps {
+  children: React.ReactNode
+}
+
+export function Button({ children }: ButtonProps) {
+  return <Center />
+}`)
+  })
+
+  test('does not add comment when comments is undefined', () => {
+    const result = renderComponent('Button', '<Center />', {
+      children: 'React.ReactNode',
+    })
+    expect(result).toBe(`export interface ButtonProps {
+  children: React.ReactNode
+}
+
+export function Button({ children }: ButtonProps) {
+  return <Center />
+}`)
+  })
+})
+
 describe('renderComponent interface snapshot', () => {
   test('VARIANT + BOOLEAN + INSTANCE_SWAP mixed interface', () => {
     const code = `<Center gap="10px" px="24px">
