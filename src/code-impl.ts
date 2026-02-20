@@ -422,6 +422,41 @@ export function registerCodegen(ctx: typeof figma) {
             ...responsiveComponentsCodes,
           ]
 
+          // For INSTANCE nodes, include the referenced component definition(s)
+          // alongside Usage so developers see both how to use AND the implementation.
+          const componentDefinitionResults: {
+            title: string
+            language: 'TYPESCRIPT' | 'BASH'
+            code: string
+          }[] = []
+          if (node.type === 'INSTANCE' && componentsCodes.length > 0) {
+            const importStatement = generateImportStatements(componentsCodes)
+            const combinedCode = componentsCodes
+              .map(([, code]) => code)
+              .join('\n\n')
+            const label =
+              componentsCodes.length === 1
+                ? componentsCodes[0][0]
+                : `${node.name} - Components`
+            componentDefinitionResults.push(
+              {
+                title: label,
+                language: 'TYPESCRIPT',
+                code: importStatement + combinedCode,
+              },
+              {
+                title: `${label} - CLI (Bash)`,
+                language: 'BASH',
+                code: generateBashCLI(componentsCodes),
+              },
+              {
+                title: `${label} - CLI (PowerShell)`,
+                language: 'BASH',
+                code: generatePowerShellCLI(componentsCodes),
+              },
+            )
+          }
+
           // For COMPONENT nodes, show both the single-variant code AND Usage.
           // For COMPONENT_SET and INSTANCE, show only Usage.
           // For all other types, show the main code.
@@ -429,6 +464,7 @@ export function registerCodegen(ctx: typeof figma) {
 
           return [
             ...usageResults,
+            ...componentDefinitionResults,
             ...(showMainCode
               ? [
                   {
