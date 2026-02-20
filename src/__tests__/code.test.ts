@@ -1498,6 +1498,18 @@ describe('registerCodegen with usage output', () => {
     expect(usageCode).toContain('<PrimaryButton')
     expect(usageCode).toContain('variant="primary"')
     expect(usageCode).toContain('size="lg"')
+
+    // Should also include the component definition
+    const definitionResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'PrimaryButton',
+    )
+    expect(definitionResult).toBeDefined()
+    const definitionCode = (definitionResult as { code: string }).code
+    expect(definitionCode).toContain('export function PrimaryButton')
   })
 
   it('should generate usage for positioned INSTANCE node (absolute)', async () => {
