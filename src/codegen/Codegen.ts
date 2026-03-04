@@ -116,6 +116,49 @@ function getTextPropName(
 }
 
 /**
+ * Recursively apply BOOLEAN conditions and TEXT bindings to nested descendants.
+ * buildTree produces the tree structure but doesn't check BOOLEAN/TEXT bindings —
+ * those are only available via componentPropertyReferences on the original Figma nodes.
+ * This walks the tree and Figma node tree in parallel, applying conditions at every level.
+ */
+function applyNestedConditions(
+  tree: NodeTree,
+  node: SceneNode,
+  booleanSlots: Map<string, string>,
+  textSlots: Map<string, string>,
+): void {
+  // Skip component references and wrappers — their children aren't expanded in the tree
+  if (tree.isComponent || tree.nodeType === 'WRAPPER') return
+  if (!('children' in node) || tree.children.length === 0) return
+
+  const figmaChildren = (node as SceneNode & ChildrenMixin).children
+  const len = Math.min(figmaChildren.length, tree.children.length)
+
+  for (let i = 0; i < len; i++) {
+    const childTree = tree.children[i]
+    const childNode = figmaChildren[i]
+
+    if (!childTree.condition) {
+      const conditionName = getBooleanConditionName(childNode, booleanSlots)
+      if (conditionName) {
+        childTree.condition = conditionName
+      }
+    }
+
+    const textPropName = getTextPropName(childNode, textSlots)
+    if (
+      textPropName &&
+      childTree.textChildren &&
+      !childTree.textChildren[0]?.startsWith('{')
+    ) {
+      childTree.textChildren = [`{${textPropName}}`]
+    }
+
+    applyNestedConditions(childTree, childNode, booleanSlots, textSlots)
+  }
+}
+
+/**
  * Shallow-clone a NodeTree — creates a new object so that per-instance
  * property reassignment (e.g., `tree.props = { ...tree.props, ...selectorProps }`)
  * doesn't leak across Codegen instances. Props object itself is shared by
@@ -485,6 +528,22 @@ export class Codegen {
   ): Promise<void> {
     const tAdd = perfStart()
 
+    // Reserve position in componentTrees so parent components appear
+    // before their children in Map iteration order.
+    // Map.set() with the same key later updates the value without changing position.
+    this.componentTrees.set(nodeId, {
+      name: getComponentName(node),
+      node,
+      tree: {
+        component: '',
+        props: {},
+        children: [],
+        nodeType: node.type,
+        nodeName: node.name,
+      },
+      variants: {},
+    })
+
     // Fire getProps + getSelectorProps early (2 independent API calls)
     const propsPromise = getProps(node)
     const t = perfStart()
@@ -540,6 +599,8 @@ export class Codegen {
           if (textPropName && tree.textChildren) {
             tree.textChildren = [`{${textPropName}}`]
           }
+          // Apply conditions to nested descendants (grandchildren and deeper)
+          applyNestedConditions(tree, child, booleanSlots, textSlots)
           childrenTrees.push(tree)
         }
       }

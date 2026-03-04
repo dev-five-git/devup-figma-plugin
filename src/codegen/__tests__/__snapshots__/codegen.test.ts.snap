@@ -1250,12 +1250,6 @@ exports[`Codegen renders component with parent component set name: component: Ho
 }
 `;
 
-exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP slot: INSTANCE_SWAP slot: Icon 1`] = `
-"export function Icon() {
-  return <Box boxSize="100%" />
-}"
-`;
-
 exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP slot: INSTANCE_SWAP slot: IconButton 1`] = `
 "export interface IconButtonProps {
   size: 'sm' | 'md' | 'lg'
@@ -1281,6 +1275,12 @@ export function IconButton({ size, leftIcon }: IconButtonProps) {
       </Text>
     </Box>
   )
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP slot: INSTANCE_SWAP slot: Icon 1`] = `
+"export function Icon() {
+  return <Box boxSize="100%" />
 }"
 `;
 
@@ -1312,8 +1312,26 @@ export function AlertCard({ State, showBadge }: AlertCardProps) {
 }"
 `;
 
-exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP + BOOLEAN combined: INSTANCE_SWAP+BOOLEAN: Icon 1`] = `
-"export function Icon() {
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with nested BOOLEAN conditionals (grandchildren): nested BOOLEAN conditional: CurriculumCard 1`] = `
+"export interface CurriculumCardProps {
+  _1st?: boolean
+  _2nd?: boolean
+}
+
+export function CurriculumCard({ _1st, _2nd }: CurriculumCardProps) {
+  return (
+    <Box>
+      <Box boxSize="100%">
+        {_1st && <CurriculumSubTitle />}
+        {_2nd && <CurriculumSubTitle />}
+      </Box>
+    </Box>
+  )
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with nested BOOLEAN conditionals (grandchildren): nested BOOLEAN conditional: CurriculumSubTitle 1`] = `
+"export function CurriculumSubTitle() {
   return <Box boxSize="100%" />
 }"
 `;
@@ -1347,6 +1365,12 @@ export function Button({ size, leftIcon, showLeftIcon, rightIcon, showRightIcon 
       {showRightIcon && rightIcon}
     </Box>
   )
+}"
+`;
+
+exports[`Codegen Tree Methods INSTANCE_SWAP / BOOLEAN snapshot renders component with INSTANCE_SWAP + BOOLEAN combined: INSTANCE_SWAP+BOOLEAN: Icon 1`] = `
+"export function Icon() {
+  return <Box boxSize="100%" />
 }"
 `;
 

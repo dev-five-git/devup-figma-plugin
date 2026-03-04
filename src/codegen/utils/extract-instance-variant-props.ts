@@ -27,17 +27,20 @@ export function isReservedVariantKey(key: string): boolean {
  */
 export function extractInstanceVariantProps(
   node: InstanceNode,
-): Record<string, string> {
-  const variantProps: Record<string, string> = {}
+): Record<string, unknown> {
+  const variantProps: Record<string, unknown> = {}
 
   if (!node.componentProperties) {
     return variantProps
   }
 
   for (const [key, prop] of Object.entries(node.componentProperties)) {
-    if (prop.type === 'VARIANT' && !isReservedVariantKey(key)) {
-      const sanitizedKey = sanitizePropertyName(key)
+    if (isReservedVariantKey(key)) continue
+    const sanitizedKey = sanitizePropertyName(key)
+    if (prop.type === 'VARIANT') {
       variantProps[sanitizedKey] = String(prop.value)
+    } else if (prop.type === 'BOOLEAN' && prop.value === true) {
+      variantProps[sanitizedKey] = true
     }
   }
 

@@ -20,12 +20,29 @@ describe('extractInstanceVariantProps', () => {
     })
   })
 
-  test('ignores non-VARIANT type props', () => {
+  test('extracts BOOLEAN type props when value is true', () => {
     const node = {
       componentProperties: {
         'status#123:456': { type: 'VARIANT', value: 'active' },
         'label#789:012': { type: 'TEXT', value: 'Click me' },
         'visible#345:678': { type: 'BOOLEAN', value: true },
+      },
+    } as unknown as InstanceNode
+
+    const result = extractInstanceVariantProps(node)
+
+    expect(result).toEqual({
+      status: 'active',
+      visible: true,
+    })
+  })
+
+  test('ignores BOOLEAN type props when value is false', () => {
+    const node = {
+      componentProperties: {
+        'status#123:456': { type: 'VARIANT', value: 'active' },
+        'hidden#345:678': { type: 'BOOLEAN', value: false },
+        'label#789:012': { type: 'TEXT', value: 'Click me' },
       },
     } as unknown as InstanceNode
 

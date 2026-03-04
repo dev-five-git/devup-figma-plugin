@@ -3759,6 +3759,96 @@ describe('Codegen Tree Methods', () => {
       expect(condChild?.condition).toBe('showIcon')
     })
 
+    test('detects BOOLEAN conditions on nested grandchildren (not just direct children)', async () => {
+      // Grandchild INSTANCE nodes with componentPropertyReferences.visible
+      // These are inside a FRAME wrapper, not direct children of the COMPONENT
+      const subTitle1 = {
+        type: 'INSTANCE',
+        name: 'CurriculumSubTitle1',
+        visible: true,
+        componentPropertyReferences: { visible: '_1st#80:1' },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'CurriculumSubTitle',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const subTitle2 = {
+        type: 'INSTANCE',
+        name: 'CurriculumSubTitle2',
+        visible: true,
+        componentPropertyReferences: { visible: '_2nd#80:2' },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'CurriculumSubTitle',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      // Intermediate wrapper frame — this is the direct child of the COMPONENT
+      const contentWrapper = {
+        type: 'FRAME',
+        name: 'ContentWrapper',
+        children: [subTitle1, subTitle2],
+        visible: true,
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as FrameNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [contentWrapper],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'CurriculumCard',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          '_1st#80:1': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+          '_2nd#80:2': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      const compTree = [...componentTrees.values()].find(
+        (ct) => ct.name === 'CurriculumCard',
+      )
+      expect(compTree).toBeDefined()
+
+      // The direct child (ContentWrapper) should NOT have a condition
+      const wrapper = compTree?.tree.children[0]
+      expect(wrapper?.condition).toBeUndefined()
+
+      // The grandchildren (inside ContentWrapper) SHOULD have conditions
+      const grandchildren = wrapper?.children ?? []
+      const cond1 = grandchildren.find((c) => c.condition === '_1st')
+      const cond2 = grandchildren.find((c) => c.condition === '_2nd')
+      expect(cond1).toBeDefined()
+      expect(cond2).toBeDefined()
+    })
+
     test('detects combined INSTANCE_SWAP + BOOLEAN slot with condition', async () => {
       const iconChild = {
         type: 'INSTANCE',
@@ -4193,6 +4283,80 @@ describe('Codegen Tree Methods', () => {
 
       for (const [name, code] of codegen.getComponentsCodes()) {
         expect(code).toMatchSnapshot(`BOOLEAN conditional: ${name}`)
+      }
+    })
+
+    test('renders component with nested BOOLEAN conditionals (grandchildren)', async () => {
+      const subTitle1 = {
+        type: 'INSTANCE',
+        name: 'CurriculumSubTitle1',
+        visible: true,
+        componentPropertyReferences: { visible: '_1st#80:1' },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'CurriculumSubTitle',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const subTitle2 = {
+        type: 'INSTANCE',
+        name: 'CurriculumSubTitle2',
+        visible: true,
+        componentPropertyReferences: { visible: '_2nd#80:2' },
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'CurriculumSubTitle',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+
+      const contentWrapper = {
+        type: 'FRAME',
+        name: 'ContentWrapper',
+        children: [subTitle1, subTitle2],
+        visible: true,
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as FrameNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [contentWrapper],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'CurriculumCard',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          '_1st#80:1': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+          '_2nd#80:2': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.run()
+
+      for (const [name, code] of codegen.getComponentsCodes()) {
+        expect(code).toMatchSnapshot(`nested BOOLEAN conditional: ${name}`)
       }
     })
 
