@@ -480,4 +480,32 @@ describe('propsToString', () => {
     expect(res).not.toContain('as const')
     expect(res).toContain('[property1]')
   })
+
+  test('renders __jsxSlot values as unquoted JSX expressions', () => {
+    const res = propsToString({
+      header: { __jsxSlot: true, jsx: '<Title />' },
+    })
+    expect(res).toBe('header={<Title />}')
+  })
+
+  test('renders __jsxSlot values with multiline JSX', () => {
+    const res = propsToString({
+      content: {
+        __jsxSlot: true,
+        jsx: '<ContentBody>\n  <Paragraph />\n</ContentBody>',
+      },
+    })
+    expect(res).toContain('content={<ContentBody>')
+    expect(res).toContain('<Paragraph />')
+    expect(res).not.toContain('content="')
+  })
+
+  test('renders mixed __jsxSlot and regular props', () => {
+    const res = propsToString({
+      header: { __jsxSlot: true, jsx: '<Title />' },
+      status: 'default',
+    })
+    expect(res).toContain('header={<Title />}')
+    expect(res).toContain('status="default"')
+  })
 })
