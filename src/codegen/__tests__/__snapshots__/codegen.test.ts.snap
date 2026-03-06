@@ -580,10 +580,10 @@ exports[`Codegen renders frame with solid fill and blend mode 1`] = `"<Box bg="#
 
 exports[`Codegen renders text node with gradient fill 1`] = `
 "<Text
+  WebkitTextFillColor="transparent"
   bg="linear-gradient(90deg, #F00 0%, #00F 100%)"
   bgClip="text"
   boxSize="100%"
-  color="linear-gradient(90deg, #F00 0%, #00F 100%)"
   fontFamily="Arial"
   fontSize="16px"
   fontWeight="400"
@@ -3311,9 +3311,9 @@ exports[`render real world component real world $ 98`] = `
 "export function DecorativeText() {
   return (
     <Text
+      WebkitTextFillColor="transparent"
       bg="linear-gradient(-90deg, #6BB1F2 0%, #8235CA 100%)"
       bgClip="text"
-      color="linear-gradient(-90deg, #6BB1F2 0%, #8235CA 100%)"
       fontFamily="Pretendard"
       fontSize="36px"
       fontWeight="700"
@@ -3373,9 +3373,9 @@ exports[`render real world component real world $ 101`] = `
 "export function DecorativeText() {
   return (
     <Text
+      WebkitTextFillColor="transparent"
       bg="url(/icons/image.png) center/cover no-repeat"
       bgClip="text"
-      color="url(/icons/image.png) center/cover no-repeat"
       fontFamily="Jalnan Gothic TTF"
       fontSize="64px"
       fontWeight="400"

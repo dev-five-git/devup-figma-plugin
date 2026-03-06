@@ -41,7 +41,7 @@ export async function getBackgroundProps(
       return {
         bg: node.type !== 'TEXT' || gradientText ? combinedBg : null,
         bgBlendMode: BLEND_MODE_MAP[backgroundBlend],
-        color: gradientText ? 'transparent' : undefined,
+        WebkitTextFillColor: gradientText ? 'transparent' : undefined,
         bgClip: gradientText ? 'text' : undefined,
       }
     }
