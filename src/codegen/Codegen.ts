@@ -1,4 +1,5 @@
 import { getComponentName } from '../utils'
+import { toCamel } from '../utils/to-camel'
 import { getProps } from './props'
 import { getPositionProps } from './props/position'
 import { getSelectorProps, sanitizePropertyName } from './props/selector'
@@ -354,12 +355,13 @@ export class Codegen {
       )
     }
 
-    // Handle native Figma SLOT nodes — render as {children} in the component.
+    // Handle native Figma SLOT nodes — render as {slotName} in the component.
     // SLOT is a newer Figma node type not yet in @figma/plugin-typings.
+    // The slot name is sanitized here; addComponentTree renames single slots to 'children'.
     if ((node.type as string) === 'SLOT') {
       perfEnd('buildTree()', tBuild)
       return {
-        component: 'children',
+        component: toCamel(sanitizePropertyName(node.name)),
         props: {},
         children: [],
         nodeType: 'SLOT',
@@ -409,15 +411,42 @@ export class Codegen {
 
       // Check for native SLOT children and build their overridden content.
       // SLOT children contain the content placed into the component's slot.
-      const slotChildren: NodeTree[] = []
+      // Group by slot name to distinguish single-slot (children) vs multi-slot (named props).
+      const slotsByName = new Map<string, NodeTree[]>()
       if ('children' in node) {
         for (const child of node.children) {
           if ((child.type as string) === 'SLOT' && 'children' in child) {
+            const slotName = toCamel(sanitizePropertyName(child.name))
+            const content: NodeTree[] = []
             for (const slotContent of (child as SceneNode & ChildrenMixin)
               .children) {
-              slotChildren.push(await this.buildTree(slotContent))
+              content.push(await this.buildTree(slotContent))
+            }
+            if (content.length > 0) {
+              slotsByName.set(slotName, content)
             }
           }
+        }
+      }
+
+      // Single SLOT → pass content as children (renders as <Comp>content</Comp>)
+      // Multiple SLOTs → render each as a named JSX prop (renders as <Comp header={<X/>} content={<Y/>} />)
+      let slotChildren: NodeTree[] = []
+      if (slotsByName.size === 1) {
+        slotChildren = [...slotsByName.values()][0]
+      } else if (slotsByName.size > 1) {
+        for (const [slotName, content] of slotsByName) {
+          let jsx: string
+          if (content.length === 1) {
+            jsx = Codegen.renderTree(content[0], 0)
+          } else {
+            const children = content.map((c) => Codegen.renderTree(c, 0))
+            const childrenStr = children
+              .map((c) => paddingLeftMultiline(c, 1))
+              .join('\n')
+            jsx = `<>\n${childrenStr}\n</>`
+          }
+          variantProps[slotName] = { __jsxSlot: true, jsx }
         }
       }
 
@@ -653,14 +682,28 @@ export class Codegen {
     }
     const variantComments = selectorProps?.variantComments || {}
 
-    // Detect native SLOT children — add children: React.ReactNode to variants
-    if (
-      !variants.children &&
-      childrenTrees.some(
-        (child) => child.nodeType === 'SLOT' && child.component === 'children',
-      )
-    ) {
-      variants.children = 'React.ReactNode'
+    // Detect native SLOT children — single slot becomes 'children', multiple keep names.
+    // Exclude INSTANCE_SWAP-created slots (they're already handled by selectorProps.variants).
+    const instanceSwapNames = new Set(instanceSwapSlots.values())
+    const nativeSlots = childrenTrees.filter(
+      (child) =>
+        child.nodeType === 'SLOT' &&
+        child.isSlot &&
+        !instanceSwapNames.has(child.component),
+    )
+    if (nativeSlots.length === 1) {
+      // Single SLOT → rename to 'children' for idiomatic React
+      nativeSlots[0].component = 'children'
+      if (!variants.children) {
+        variants.children = 'React.ReactNode'
+      }
+    } else if (nativeSlots.length > 1) {
+      // Multiple SLOTs → keep sanitized names as individual React.ReactNode props
+      for (const slot of nativeSlots) {
+        if (!variants[slot.component]) {
+          variants[slot.component] = 'React.ReactNode'
+        }
+      }
     }
 
     this.componentTrees.set(nodeId, {

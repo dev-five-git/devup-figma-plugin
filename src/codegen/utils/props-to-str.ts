@@ -210,6 +210,10 @@ export function propsToString(props: Record<string, unknown>) {
 
   const parts = sorted.map(([key, value]) => {
     if (typeof value === 'boolean') return `${key}${value ? '' : `={${value}}`}`
+    // Handle JSX slot values — render as key={<Component />} without quoting
+    if (typeof value === 'object' && value !== null && '__jsxSlot' in value) {
+      return `${key}={${(value as unknown as { jsx: string }).jsx}}`
+    }
     // Handle VariantPropValue
     if (isVariantPropValue(value)) {
       const asConst = key === 'typography'
