@@ -354,6 +354,20 @@ export class Codegen {
       )
     }
 
+    // Handle native Figma SLOT nodes — render as {children} in the component.
+    // SLOT is a newer Figma node type not yet in @figma/plugin-typings.
+    if ((node.type as string) === 'SLOT') {
+      perfEnd('buildTree()', tBuild)
+      return {
+        component: 'children',
+        props: {},
+        children: [],
+        nodeType: 'SLOT',
+        nodeName: node.name,
+        isSlot: true,
+      }
+    }
+
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
@@ -393,6 +407,20 @@ export class Codegen {
       const componentName = getComponentName(mainComponent || node)
       const variantProps = extractInstanceVariantProps(node)
 
+      // Check for native SLOT children and build their overridden content.
+      // SLOT children contain the content placed into the component's slot.
+      const slotChildren: NodeTree[] = []
+      if ('children' in node) {
+        for (const child of node.children) {
+          if ((child.type as string) === 'SLOT' && 'children' in child) {
+            for (const slotContent of (child as SceneNode & ChildrenMixin)
+              .children) {
+              slotChildren.push(await this.buildTree(slotContent))
+            }
+          }
+        }
+      }
+
       // Only compute position + transform (sync, no Figma API calls)
       const posProps = getPositionProps(node)
       if (posProps?.pos) {
@@ -417,7 +445,7 @@ export class Codegen {
             {
               component: componentName,
               props: variantProps,
-              children: [],
+              children: slotChildren,
               nodeType: node.type,
               nodeName: node.name,
               isComponent: true,
@@ -432,7 +460,7 @@ export class Codegen {
       return {
         component: componentName,
         props: variantProps,
-        children: [],
+        children: slotChildren,
         nodeType: node.type,
         nodeName: node.name,
         isComponent: true,
@@ -624,6 +652,16 @@ export class Codegen {
       Object.assign(variants, selectorProps.variants)
     }
     const variantComments = selectorProps?.variantComments || {}
+
+    // Detect native SLOT children — add children: React.ReactNode to variants
+    if (
+      !variants.children &&
+      childrenTrees.some(
+        (child) => child.nodeType === 'SLOT' && child.component === 'children',
+      )
+    ) {
+      variants.children = 'React.ReactNode'
+    }
 
     this.componentTrees.set(nodeId, {
       name: getComponentName(node),

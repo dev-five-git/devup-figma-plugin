@@ -3456,6 +3456,84 @@ describe('Codegen Tree Methods', () => {
       expect(tree.children.length).toBe(1)
       expect(tree.children[0].isComponent).toBe(true)
     })
+
+    test('builds tree for native SLOT node', async () => {
+      const slotContent = {
+        type: 'FRAME',
+        name: 'DefaultContent',
+        children: [],
+        visible: true,
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as FrameNode
+
+      const node = {
+        type: 'SLOT',
+        name: 'ContentSlot',
+        children: [slotContent],
+        visible: true,
+        strokes: [],
+        effects: [],
+        fills: [],
+      } as unknown as SceneNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('children')
+      expect(tree.nodeType).toBe('SLOT')
+      expect(tree.isSlot).toBe(true)
+      expect(tree.children).toEqual([])
+    })
+
+    test('builds INSTANCE tree with native SLOT children content', async () => {
+      const slotContent = {
+        type: 'FRAME',
+        name: 'UserContent',
+        children: [],
+        visible: true,
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as FrameNode
+
+      const slotNode = {
+        type: 'SLOT',
+        name: 'ContentSlot',
+        children: [slotContent],
+        visible: true,
+        strokes: [],
+        effects: [],
+        fills: [],
+      } as unknown as SceneNode
+
+      const node = {
+        type: 'INSTANCE',
+        name: 'BottomSheet',
+        children: [slotNode],
+        visible: true,
+        componentProperties: {},
+        getMainComponentAsync: async () =>
+          ({
+            type: 'COMPONENT',
+            name: 'BottomSheet',
+            children: [],
+            visible: true,
+          }) as unknown as ComponentNode,
+      } as unknown as InstanceNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toBe('BottomSheet')
+      expect(tree.isComponent).toBe(true)
+      // SLOT content should be extracted as children
+      expect(tree.children.length).toBe(1)
+      expect(tree.children[0].nodeName).toBe('UserContent')
+    })
   })
 
   describe('getTree', () => {
@@ -3997,6 +4075,67 @@ describe('Codegen Tree Methods', () => {
       expect(textTree).toBeDefined()
       expect(textTree?.textChildren).toEqual(['{children}'])
     })
+
+    test('detects native SLOT children and adds children: React.ReactNode to variants', async () => {
+      const textChild = {
+        type: 'TEXT',
+        name: 'Title',
+        visible: true,
+        characters: 'Hello',
+        getStyledTextSegments: () => [createTextSegment('Hello')],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+      } as unknown as TextNode
+
+      const slotChild = {
+        type: 'SLOT',
+        name: 'ContentSlot',
+        children: [],
+        visible: true,
+        strokes: [],
+        effects: [],
+        fills: [],
+      } as unknown as SceneNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'State=Default',
+        children: [textChild, slotChild],
+        visible: true,
+        reactions: [],
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'BottomSheet',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {},
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node)
+      await codegen.buildTree()
+
+      const componentTrees = codegen.getComponentTrees()
+      const compTree = [...componentTrees.values()].find(
+        (ct) => ct.name === 'BottomSheet',
+      )
+      expect(compTree).toBeDefined()
+
+      // Should have native SLOT as {children} placeholder
+      const slotTree = compTree?.tree.children.find(
+        (c) => c.isSlot && c.component === 'children',
+      )
+      expect(slotTree).toBeDefined()
+      expect(slotTree?.nodeType).toBe('SLOT')
+
+      // Should add children: React.ReactNode to variants
+      expect(compTree?.variants.children).toBe('React.ReactNode')
+    })
   })
 
   describe('renderTree (static)', () => {
@@ -4141,6 +4280,28 @@ describe('Codegen Tree Methods', () => {
 
       const result = Codegen.renderTree(tree)
       expect(result).toBe('{showBox && <Box />}')
+    })
+
+    test('renders native SLOT as {children}', () => {
+      const tree = {
+        component: 'Flex',
+        props: {},
+        children: [
+          {
+            component: 'children',
+            props: {},
+            children: [],
+            nodeType: 'SLOT',
+            nodeName: 'ContentSlot',
+            isSlot: true,
+          },
+        ],
+        nodeType: 'FRAME',
+        nodeName: 'Parent',
+      }
+
+      const result = Codegen.renderTree(tree)
+      expect(result).toContain('{children}')
     })
   })
 
