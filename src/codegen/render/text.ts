@@ -44,6 +44,9 @@ export async function renderText(node: TextNode): Promise<{
     const colorParts: string[] = []
     for (let idx = 0; idx < seg.fills.length; idx++) {
       const fill = seg.fills[idx]
+      // Skip gradient/image fills — these are handled as bg + bgClip:"text"
+      // by getBackgroundProps(), not as text color
+      if (fill.type === 'IMAGE' || fill.type.includes('GRADIENT')) continue
       const last = idx === seg.fills.length - 1
       const color =
         paintToCSSSyncIfPossible(fill, node, last) ??
