@@ -278,7 +278,7 @@ describe('devup commands', () => {
     )
   })
 
-  test('exportDevup treeshake true stops early once a typography key is found', async () => {
+  test('exportDevup treeshake true stops within current page subtree and skips later pages', async () => {
     getColorCollectionSpy = spyOn(
       getColorCollectionModule,
       'getDevupColorCollection',
@@ -301,29 +301,36 @@ describe('devup commands', () => {
       textStyleId: 'style1',
       getStyledTextSegments: () => [{ textStyleId: 'style1' }],
     } as unknown as TextNode
-    const currentPageFindAllWithCriteria = mock(() => [currentTextNode])
-    const otherPageFindAllWithCriteria = mock(() => [])
-    const rootFindAllWithCriteria = mock(() => [])
+    const firstSectionFindAllWithCriteria = mock(() => [currentTextNode])
+    const secondSectionFindAllWithCriteria = mock(() => [])
+    const otherPageLoadAsync = mock(async () => {})
+    const firstSection = {
+      type: 'SECTION',
+      findAllWithCriteria: firstSectionFindAllWithCriteria,
+    } as unknown as SectionNode
+    const secondSection = {
+      type: 'SECTION',
+      findAllWithCriteria: secondSectionFindAllWithCriteria,
+    } as unknown as SectionNode
     const currentPage = {
       id: 'page-current',
-      findAllWithCriteria: currentPageFindAllWithCriteria,
+      children: [firstSection, secondSection],
     } as unknown as PageNode
     const otherPage = {
       id: 'page-other',
-      findAllWithCriteria: otherPageFindAllWithCriteria,
+      children: [],
+      loadAsync: otherPageLoadAsync,
     } as unknown as PageNode
 
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
       currentPage,
-      loadAllPagesAsync: async () => {},
       getLocalTextStylesAsync: async () => [
         { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
         { id: 'style2', name: 'heading/2' } as unknown as TextStyle,
       ],
       root: {
         children: [otherPage, currentPage],
-        findAllWithCriteria: rootFindAllWithCriteria,
       },
       mixed: Symbol('mixed'),
       variables: { getVariableByIdAsync: async () => null },
@@ -331,13 +338,148 @@ describe('devup commands', () => {
 
     await exportDevup('json', true)
 
-    expect(currentPageFindAllWithCriteria).toHaveBeenCalledTimes(1)
-    expect(otherPageFindAllWithCriteria).not.toHaveBeenCalled()
-    expect(rootFindAllWithCriteria).not.toHaveBeenCalled()
+    expect(firstSectionFindAllWithCriteria).toHaveBeenCalledTimes(1)
+    expect(secondSectionFindAllWithCriteria).not.toHaveBeenCalled()
+    expect(otherPageLoadAsync).not.toHaveBeenCalled()
     expect(downloadFileMock).toHaveBeenCalledWith(
       'devup.json',
       expect.stringContaining('"typography"'),
     )
+  })
+
+  test('exportDevup treeshake true lazily loads later pages when needed', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockImplementation((name: string) =>
+      name.includes('2')
+        ? ({ level: 1, name: 'body' } as const)
+        : ({ level: 0, name: 'heading' } as const),
+    )
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockReturnValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
+
+    const currentSectionFindAllWithCriteria = mock(() => [])
+    const otherTextNode = {
+      type: 'TEXT',
+      textStyleId: 'style2',
+      getStyledTextSegments: () => [{ textStyleId: 'style2' }],
+    } as unknown as TextNode
+    const otherSectionFindAllWithCriteria = mock(() => [otherTextNode])
+    const otherPageLoadAsync = mock(async () => {})
+    const currentPage = {
+      id: 'page-current',
+      children: [
+        {
+          type: 'SECTION',
+          findAllWithCriteria: currentSectionFindAllWithCriteria,
+        } as unknown as SectionNode,
+      ],
+    } as unknown as PageNode
+    const otherPage = {
+      id: 'page-other',
+      children: [
+        {
+          type: 'SECTION',
+          findAllWithCriteria: otherSectionFindAllWithCriteria,
+        } as unknown as SectionNode,
+      ],
+      loadAsync: otherPageLoadAsync,
+    } as unknown as PageNode
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      currentPage,
+      getLocalTextStylesAsync: async () => [
+        { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
+        { id: 'style2', name: 'body/2' } as unknown as TextStyle,
+      ],
+      root: {
+        children: [currentPage, otherPage],
+      },
+      mixed: Symbol('mixed'),
+      variables: { getVariableByIdAsync: async () => null },
+    } as unknown as typeof figma
+
+    await exportDevup('json', true)
+
+    expect(currentSectionFindAllWithCriteria).toHaveBeenCalledTimes(1)
+    expect(otherPageLoadAsync).toHaveBeenCalledTimes(1)
+    expect(otherSectionFindAllWithCriteria).toHaveBeenCalledTimes(1)
+    expect(downloadFileMock).toHaveBeenCalledWith(
+      'devup.json',
+      expect.stringContaining('"typography"'),
+    )
+  })
+
+  test('exportDevup treeshake true handles direct text children and recursive fallback nodes', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockImplementation((name: string) =>
+      name.includes('2')
+        ? ({ level: 1, name: 'body' } as const)
+        : ({ level: 0, name: 'heading' } as const),
+    )
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockImplementation(
+      (style: TextStyle) => ({ id: style.id }) as unknown as DevupTypography,
+    )
+
+    const directTextNode = {
+      type: 'TEXT',
+      textStyleId: 'style1',
+      getStyledTextSegments: () => [{ textStyleId: 'style1' }],
+    } as unknown as TextNode
+    const nestedTextNode = {
+      type: 'TEXT',
+      textStyleId: 'style2',
+      getStyledTextSegments: () => [{ textStyleId: 'style2' }],
+    } as unknown as TextNode
+    const recursiveNode = {
+      type: 'GROUP',
+      children: [nestedTextNode],
+    } as unknown as GroupNode
+    const currentPage = {
+      id: 'page-current',
+      children: [directTextNode, recursiveNode],
+    } as unknown as PageNode
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      currentPage,
+      getLocalTextStylesAsync: async () => [
+        { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
+        { id: 'style2', name: 'body/2' } as unknown as TextStyle,
+      ],
+      root: {
+        children: [currentPage],
+      },
+      mixed: Symbol('mixed'),
+      variables: { getVariableByIdAsync: async () => null },
+    } as unknown as typeof figma
+
+    await exportDevup('json', true)
+
+    const firstCall = downloadFileMock.mock.calls[0] as unknown[] | undefined
+    const data = (firstCall?.[1] as string) ?? '{}'
+    const parsed = JSON.parse(data) as {
+      theme?: { typography?: Record<string, unknown> }
+    }
+    expect(parsed.theme?.typography?.heading).toBeDefined()
+    expect(parsed.theme?.typography?.body).toBeDefined()
   })
 
   test('exportDevup fills missing typography levels from styles map', async () => {

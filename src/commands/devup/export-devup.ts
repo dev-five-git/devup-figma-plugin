@@ -16,6 +16,14 @@ import type { Devup, DevupTypography } from './types'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
 
+type TextSearchNode = SceneNode & {
+  findAllWithCriteria(criteria: { types: ['TEXT'] }): TextNode[]
+}
+
+function isTextSearchNode(node: SceneNode): node is TextSearchNode {
+  return 'findAllWithCriteria' in node
+}
+
 export async function exportDevup(
   output: 'json' | 'excel',
   treeshaking: boolean = true,
@@ -71,25 +79,26 @@ export async function exportDevup(
   }
   perfEnd('exportDevup.colors', tColors)
 
-  // Parallel: load pages (only if treeshaking) + fetch text styles
   const tLoad = perfStart()
-  const [, textStyles] = await Promise.all([
-    treeshaking ? figma.loadAllPagesAsync() : Promise.resolve(),
-    figma.getLocalTextStylesAsync(),
-  ])
+  const textStyles = await figma.getLocalTextStylesAsync()
   perfEnd('exportDevup.load', tLoad)
 
-  // Build both ID-keyed and name-keyed maps from a single fetch
-  const stylesById = new Map<string, TextStyle>()
-  const styles: Record<string, TextStyle> = {}
-  const styleMetaById = new Map<string, { level: number; name: string }>()
-  const allTypographyKeys = new Set<string>()
+  const typographyByKey: Record<string, (null | DevupTypography)[]> = {}
+  const styleMetaById: Record<string, { level: number; name: string }> =
+    Object.create(null) as Record<string, { level: number; name: string }>
+  let allTypographyKeyCount = 0
   for (const style of textStyles) {
     const meta = styleNameToTypography(style.name)
-    stylesById.set(style.id, style)
-    styleMetaById.set(style.id, meta)
-    allTypographyKeys.add(meta.name)
-    styles[style.name] = style
+    let typographyValues = typographyByKey[meta.name]
+    if (!typographyValues) {
+      typographyValues = [null, null, null, null, null, null]
+      typographyByKey[meta.name] = typographyValues
+      allTypographyKeyCount += 1
+    }
+    if (!typographyValues[meta.level]) {
+      typographyValues[meta.level] = textStyleToTypography(style)
+    }
+    styleMetaById[style.id] = meta
   }
 
   const tTypo = perfStart()
@@ -99,63 +108,79 @@ export async function exportDevup(
     const prevSkip = figma.skipInvisibleInstanceChildren
     figma.skipInvisibleInstanceChildren = true
 
-    const usedTypographyKeys = new Set<string>()
+    const usedTypographyKeys: Record<string, true> = Object.create(
+      null,
+    ) as Record<string, true>
+    let usedTypographyKeyCount = 0
+    const markTypographyKeyUsed = (meta?: { level: number; name: string }) => {
+      if (!meta || usedTypographyKeys[meta.name]) return false
+      usedTypographyKeys[meta.name] = true
+      usedTypographyKeyCount += 1
+      return true
+    }
+    const mixedTextStyleId = figma.mixed
     const processText = (text: TextNode) => {
-      if (usedTypographyKeys.size >= allTypographyKeys.size) return
-      if (
-        !(typeof text.textStyleId === 'string' && text.textStyleId) &&
-        text.textStyleId !== figma.mixed
-      )
-        return
-
-      if (typeof text.textStyleId === 'string') {
-        const style = stylesById.get(text.textStyleId)
-        const meta = styleMetaById.get(text.textStyleId)
-        if (!style || !meta || usedTypographyKeys.has(meta.name)) return
-        usedTypographyKeys.add(meta.name)
-        const { level, name } = meta
-        if (!typography[name]?.[level]) {
-          typography[name] ??= [null, null, null, null, null, null]
-          typography[name][level] = textStyleToTypography(style)
-        }
+      if (usedTypographyKeyCount >= allTypographyKeyCount) return
+      const { textStyleId } = text
+      if (typeof textStyleId === 'string' && textStyleId) {
+        markTypographyKeyUsed(styleMetaById[textStyleId])
         return
       }
+      if (textStyleId !== mixedTextStyleId) return
 
       for (const seg of text.getStyledTextSegments(['textStyleId'])) {
-        if (usedTypographyKeys.size >= allTypographyKeys.size) return
-        if (!seg?.textStyleId) continue
-        const style = stylesById.get(seg.textStyleId)
-        const meta = styleMetaById.get(seg.textStyleId)
-        if (!style || !meta || usedTypographyKeys.has(meta.name)) continue
-        usedTypographyKeys.add(meta.name)
-        const { level, name } = meta
-        if (typography[name]?.[level]) continue
-        typography[name] ??= [null, null, null, null, null, null]
-        typography[name][level] = textStyleToTypography(style)
+        if (usedTypographyKeyCount >= allTypographyKeyCount) return
+        const segTextStyleId = seg?.textStyleId
+        if (!segTextStyleId) continue
+        markTypographyKeyUsed(styleMetaById[segTextStyleId])
+      }
+    }
+    const processSubtree = (node: SceneNode) => {
+      if (usedTypographyKeyCount >= allTypographyKeyCount) return
+      if (node.type === 'TEXT') {
+        processText(node)
+        return
+      }
+      if (isTextSearchNode(node)) {
+        const tFind = perfStart()
+        const texts = node.findAllWithCriteria({ types: ['TEXT'] })
+        perfEnd('exportDevup.typography.find', tFind)
+
+        const tScan = perfStart()
+        for (const text of texts) {
+          processText(text)
+          if (usedTypographyKeyCount >= allTypographyKeyCount) break
+        }
+        perfEnd('exportDevup.typography.scan', tScan)
+        return
+      }
+      if (!('children' in node)) return
+      for (const child of node.children) {
+        processSubtree(child)
+        if (usedTypographyKeyCount >= allTypographyKeyCount) break
       }
     }
 
     const rootPages = Array.isArray(figma.root.children)
       ? figma.root.children
       : []
-    if (rootPages.length > 1) {
+    if (rootPages.length > 0) {
       const currentPageId = figma.currentPage.id
-      const orderedPages = [
+      const orderedPages: PageNode[] = [
         figma.currentPage,
         ...rootPages.filter((page) => page.id !== currentPageId),
       ]
       for (const page of orderedPages) {
-        if (usedTypographyKeys.size >= allTypographyKeys.size) break
-        const tFind = perfStart()
-        const texts = page.findAllWithCriteria({ types: ['TEXT'] })
-        perfEnd('exportDevup.typography.find', tFind)
-
-        const tScan = perfStart()
-        for (const text of texts) {
-          processText(text)
-          if (usedTypographyKeys.size >= allTypographyKeys.size) break
+        if (usedTypographyKeyCount >= allTypographyKeyCount) break
+        if (page.id !== currentPageId) {
+          const tPageLoad = perfStart()
+          await page.loadAsync()
+          perfEnd('exportDevup.load', tPageLoad)
         }
-        perfEnd('exportDevup.typography.scan', tScan)
+        for (const child of page.children) {
+          processSubtree(child)
+          if (usedTypographyKeyCount >= allTypographyKeyCount) break
+        }
       }
     } else {
       const tFind = perfStart()
@@ -165,29 +190,22 @@ export async function exportDevup(
       const tScan = perfStart()
       for (const text of texts) {
         processText(text)
-        if (usedTypographyKeys.size >= allTypographyKeys.size) break
+        if (usedTypographyKeyCount >= allTypographyKeyCount) break
       }
       perfEnd('exportDevup.typography.scan', tScan)
     }
 
     figma.skipInvisibleInstanceChildren = prevSkip
+
+    for (const key of Object.keys(usedTypographyKeys)) {
+      typography[key] = [...(typographyByKey[key] ?? [])]
+    }
   } else {
-    for (const [styleName, style] of Object.entries(styles)) {
-      const { level, name } = styleNameToTypography(styleName)
-      const typo = textStyleToTypography(style)
-      if (typography[name]?.[level]) continue
-      typography[name] ??= [null, null, null, null, null, null]
-      typography[name][level] = typo
+    for (const [key, values] of Object.entries(typographyByKey)) {
+      typography[key] = [...values]
     }
   }
   perfEnd('exportDevup.typography', tTypo)
-
-  for (const [name, style] of Object.entries(styles)) {
-    const { level, name: styleName } = styleNameToTypography(name)
-    if (typography[styleName] && !typography[styleName][level]) {
-      typography[styleName][level] = textStyleToTypography(style)
-    }
-  }
 
   if (Object.keys(typography).length > 0) {
     devup.theme ??= {}
