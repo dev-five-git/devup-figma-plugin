@@ -42,5 +42,12 @@ function getFontWeight(weight: string): number {
   }
 
   const weightNumber = Number.parseInt(weight, 10)
+  if (
+    Number.isInteger(weightNumber) &&
+    weightNumber >= 1 &&
+    weightNumber <= 9
+  ) {
+    return weightNumber * 100
+  }
   return Number.isNaN(weightNumber) ? 400 : weightNumber
 }

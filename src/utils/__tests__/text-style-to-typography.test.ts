@@ -27,6 +27,8 @@ describe('textStyleToTypography', () => {
     ['Thin', 100],
     ['Extra Light', 200],
     ['Light', 300],
+    ['4', 400],
+    ['4 Normal', 400],
     ['Regular', 400],
     ['normal', 400],
     ['Medium', 500],
