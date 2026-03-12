@@ -9,7 +9,6 @@ import { isVariableAlias } from '../../utils/is-variable-alias'
 import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { styleNameToTypography } from '../../utils/style-name-to-typography'
-import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
 import { textStyleToTypography } from '../../utils/text-style-to-typography'
 import { toCamel } from '../../utils/to-camel'
 import { variableAliasToValue } from '../../utils/variable-alias-to-value'
@@ -34,32 +33,41 @@ export async function exportDevup(
         figma.variables.getVariableByIdAsync(varId),
       ),
     )
+    // Pre-compute camelCase names once (not per variable per mode)
+    const camelNames = variables.map((v) => (v ? toCamel(v.name) : ''))
     devup.theme ??= {}
     devup.theme.colors ??= {}
-    for (const mode of collection.modes) {
-      const colors: Record<string, string> = {}
-      devup.theme.colors[mode.name.toLowerCase()] = colors
-      await Promise.all(
-        variables.map(async (variable) => {
-          if (variable === null) return
-          const value = variable.valuesByMode[mode.modeId]
-          if (typeof value === 'boolean' || typeof value === 'number') return
-          if (isVariableAlias(value)) {
-            const nextValue = await variableAliasToValue(value, mode.modeId)
-            if (nextValue === null) return
-            if (typeof nextValue === 'boolean' || typeof nextValue === 'number')
-              return
-            colors[toCamel(variable.name)] = optimizeHex(
-              rgbaToHex(figma.util.rgba(nextValue)),
-            )
-          } else {
-            colors[toCamel(variable.name)] = optimizeHex(
-              rgbaToHex(figma.util.rgba(value)),
-            )
-          }
-        }),
-      )
-    }
+    const themeColors = devup.theme.colors
+    // Process all modes in parallel
+    await Promise.all(
+      collection.modes.map(async (mode) => {
+        const colors: Record<string, string> = {}
+        themeColors[mode.name.toLowerCase()] = colors
+        await Promise.all(
+          variables.map(async (variable, i) => {
+            if (variable === null) return
+            const value = variable.valuesByMode[mode.modeId]
+            if (typeof value === 'boolean' || typeof value === 'number') return
+            if (isVariableAlias(value)) {
+              const nextValue = await variableAliasToValue(value, mode.modeId)
+              if (nextValue === null) return
+              if (
+                typeof nextValue === 'boolean' ||
+                typeof nextValue === 'number'
+              )
+                return
+              colors[camelNames[i]] = optimizeHex(
+                rgbaToHex(figma.util.rgba(nextValue)),
+              )
+            } else {
+              colors[camelNames[i]] = optimizeHex(
+                rgbaToHex(figma.util.rgba(value)),
+              )
+            }
+          }),
+        )
+      }),
+    )
   }
   perfEnd('exportDevup.colors', tColors)
 
@@ -100,40 +108,30 @@ export async function exportDevup(
         text.textStyleId !== figma.mixed
       )
         continue
-      // Short-circuit: single-style nodes whose style is not local
-      if (
-        typeof text.textStyleId === 'string' &&
-        !stylesById.has(text.textStyleId)
-      )
-        continue
-      // Skip single-style nodes whose style is already found
-      if (
-        typeof text.textStyleId === 'string' &&
-        foundStyleIds.has(text.textStyleId)
-      )
-        continue
-      for (const seg of text.getStyledTextSegments([
-        'fontName',
-        'fontWeight',
-        'fontSize',
-        'textDecoration',
-        'textCase',
-        'lineHeight',
-        'letterSpacing',
-        'textStyleId',
-      ])) {
-        if (seg?.textStyleId) {
-          if (foundStyleIds.has(seg.textStyleId)) continue
-          // Sync lookup — no async IPC per segment
-          const style = stylesById.get(seg.textStyleId)
-          if (!style) continue
-          foundStyleIds.add(seg.textStyleId)
-          const { level, name } = styleNameToTypography(style.name)
-          const typo = textSegmentToTypography(seg)
-          if (typography[name]?.[level]) continue
+
+      if (typeof text.textStyleId === 'string') {
+        // Single-style node — skip getStyledTextSegments entirely
+        const style = stylesById.get(text.textStyleId)
+        if (!style || foundStyleIds.has(text.textStyleId)) continue
+        foundStyleIds.add(text.textStyleId)
+        const { level, name } = styleNameToTypography(style.name)
+        if (!typography[name]?.[level]) {
           typography[name] ??= [null, null, null, null, null, null]
-          typography[name][level] = typo
+          typography[name][level] = textStyleToTypography(style)
         }
+        continue
+      }
+
+      // Mixed-style node — only request textStyleId (1 field vs 8)
+      for (const seg of text.getStyledTextSegments(['textStyleId'])) {
+        if (!seg?.textStyleId || foundStyleIds.has(seg.textStyleId)) continue
+        const style = stylesById.get(seg.textStyleId)
+        if (!style) continue
+        foundStyleIds.add(seg.textStyleId)
+        const { level, name } = styleNameToTypography(style.name)
+        if (typography[name]?.[level]) continue
+        typography[name] ??= [null, null, null, null, null, null]
+        typography[name][level] = textStyleToTypography(style)
       }
     }
     perfEnd('exportDevup.typography.scan', tScan)

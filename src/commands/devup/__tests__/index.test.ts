@@ -235,6 +235,49 @@ describe('devup commands', () => {
     )
   })
 
+  test('exportDevup treeshake true handles mixed-style text nodes', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockReturnValue({ level: 0, name: 'heading' })
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockReturnValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
+
+    const mixedSymbol = Symbol('mixed')
+    const mixedTextNode = {
+      type: 'TEXT',
+      textStyleId: mixedSymbol,
+      getStyledTextSegments: () => [
+        { textStyleId: 'style1' },
+        { textStyleId: 'style2' },
+      ],
+    } as unknown as TextNode
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () => [
+        { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
+      ],
+      root: { findAllWithCriteria: () => [mixedTextNode] },
+      mixed: mixedSymbol,
+      variables: { getVariableByIdAsync: async () => null },
+    } as unknown as typeof figma
+
+    await exportDevup('json', true)
+
+    expect(downloadFileMock).toHaveBeenCalledWith(
+      'devup.json',
+      expect.stringContaining('"typography"'),
+    )
+  })
+
   test('exportDevup fills missing typography levels from styles map', async () => {
     getColorCollectionSpy = spyOn(
       getColorCollectionModule,
