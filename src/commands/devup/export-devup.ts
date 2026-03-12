@@ -82,8 +82,19 @@ export async function exportDevup(
   const tTypo = perfStart()
   const typography: Record<string, (null | DevupTypography)[]> = {}
   if (treeshaking) {
+    // Skip hidden instance children — can make findAllWithCriteria dramatically faster
+    const prevSkip = figma.skipInvisibleInstanceChildren
+    figma.skipInvisibleInstanceChildren = true
+
+    const tFind = perfStart()
     const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
+    perfEnd('exportDevup.typography.find', tFind)
+
+    const tScan = perfStart()
+    const foundStyleIds = new Set<string>()
     for (const text of texts) {
+      // Early exit: all local styles discovered
+      if (foundStyleIds.size >= stylesById.size) break
       if (
         !(typeof text.textStyleId === 'string' && text.textStyleId) &&
         text.textStyleId !== figma.mixed
@@ -93,6 +104,12 @@ export async function exportDevup(
       if (
         typeof text.textStyleId === 'string' &&
         !stylesById.has(text.textStyleId)
+      )
+        continue
+      // Skip single-style nodes whose style is already found
+      if (
+        typeof text.textStyleId === 'string' &&
+        foundStyleIds.has(text.textStyleId)
       )
         continue
       for (const seg of text.getStyledTextSegments([
@@ -106,9 +123,11 @@ export async function exportDevup(
         'textStyleId',
       ])) {
         if (seg?.textStyleId) {
+          if (foundStyleIds.has(seg.textStyleId)) continue
           // Sync lookup — no async IPC per segment
           const style = stylesById.get(seg.textStyleId)
           if (!style) continue
+          foundStyleIds.add(seg.textStyleId)
           const { level, name } = styleNameToTypography(style.name)
           const typo = textSegmentToTypography(seg)
           if (typography[name]?.[level]) continue
@@ -117,6 +136,9 @@ export async function exportDevup(
         }
       }
     }
+    perfEnd('exportDevup.typography.scan', tScan)
+
+    figma.skipInvisibleInstanceChildren = prevSkip
   } else {
     for (const [styleName, style] of Object.entries(styles)) {
       const { level, name } = styleNameToTypography(styleName)
