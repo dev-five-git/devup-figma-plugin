@@ -1,9 +1,14 @@
+import {
+  perfEnd,
+  perfReport,
+  perfReset,
+  perfStart,
+} from '../../codegen/utils/perf'
 import { downloadFile } from '../../utils/download-file'
 import { isVariableAlias } from '../../utils/is-variable-alias'
 import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { styleNameToTypography } from '../../utils/style-name-to-typography'
-import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
 import { textStyleToTypography } from '../../utils/text-style-to-typography'
 import { toCamel } from '../../utils/to-camel'
 import { variableAliasToValue } from '../../utils/variable-alias-to-value'
@@ -11,108 +16,196 @@ import type { Devup, DevupTypography } from './types'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
 import { getDevupColorCollection } from './utils/get-devup-color-collection'
 
+type TextSearchNode = SceneNode & {
+  findAllWithCriteria(criteria: { types: ['TEXT'] }): TextNode[]
+}
+
+function isTextSearchNode(node: SceneNode): node is TextSearchNode {
+  return 'findAllWithCriteria' in node
+}
+
 export async function exportDevup(
   output: 'json' | 'excel',
   treeshaking: boolean = true,
 ) {
+  perfReset()
+  const t = perfStart()
   const devup: Devup = {}
 
+  const tColors = perfStart()
   const collection = await getDevupColorCollection()
   if (collection) {
-    for (const mode of collection.modes) {
-      devup.theme ??= {}
-      devup.theme.colors ??= {}
-      const colors: Record<string, string> = {}
-      devup.theme.colors[mode.name.toLowerCase()] = colors
-      await Promise.all(
-        collection.variableIds.map(async (varId) => {
-          const variable = await figma.variables.getVariableByIdAsync(varId)
-          if (variable === null) return
-          const value = variable.valuesByMode[mode.modeId]
-          if (typeof value === 'boolean' || typeof value === 'number') return
-          if (isVariableAlias(value)) {
-            const nextValue = await variableAliasToValue(value, mode.modeId)
-            if (nextValue === null) return
-            if (typeof nextValue === 'boolean' || typeof nextValue === 'number')
-              return
-            colors[toCamel(variable.name)] = optimizeHex(
-              rgbaToHex(figma.util.rgba(nextValue)),
-            )
-          } else {
-            colors[toCamel(variable.name)] = optimizeHex(
-              rgbaToHex(figma.util.rgba(value)),
-            )
-          }
-        }),
-      )
-    }
+    // Pre-fetch all variables once — reuse across modes
+    const variables = await Promise.all(
+      collection.variableIds.map((varId) =>
+        figma.variables.getVariableByIdAsync(varId),
+      ),
+    )
+    // Pre-compute camelCase names once (not per variable per mode)
+    const camelNames = variables.map((v) => (v ? toCamel(v.name) : ''))
+    devup.theme ??= {}
+    devup.theme.colors ??= {}
+    const themeColors = devup.theme.colors
+    // Process all modes in parallel
+    await Promise.all(
+      collection.modes.map(async (mode) => {
+        const colors: Record<string, string> = {}
+        themeColors[mode.name.toLowerCase()] = colors
+        await Promise.all(
+          variables.map(async (variable, i) => {
+            if (variable === null) return
+            const value = variable.valuesByMode[mode.modeId]
+            if (typeof value === 'boolean' || typeof value === 'number') return
+            if (isVariableAlias(value)) {
+              const nextValue = await variableAliasToValue(value, mode.modeId)
+              if (nextValue === null) return
+              if (
+                typeof nextValue === 'boolean' ||
+                typeof nextValue === 'number'
+              )
+                return
+              colors[camelNames[i]] = optimizeHex(
+                rgbaToHex(figma.util.rgba(nextValue)),
+              )
+            } else {
+              colors[camelNames[i]] = optimizeHex(
+                rgbaToHex(figma.util.rgba(value)),
+              )
+            }
+          }),
+        )
+      }),
+    )
   }
+  perfEnd('exportDevup.colors', tColors)
 
-  await figma.loadAllPagesAsync()
-
+  const tLoad = perfStart()
   const textStyles = await figma.getLocalTextStylesAsync()
-  const ids = new Set()
-  const styles: Record<string, TextStyle> = {}
+  perfEnd('exportDevup.load', tLoad)
+
+  const typographyByKey: Record<string, (null | DevupTypography)[]> = {}
+  const styleMetaById: Record<string, { level: number; name: string }> =
+    Object.create(null) as Record<string, { level: number; name: string }>
+  let allTypographyKeyCount = 0
   for (const style of textStyles) {
-    ids.add(style.id)
-    styles[style.name] = style
+    const meta = styleNameToTypography(style.name)
+    let typographyValues = typographyByKey[meta.name]
+    if (!typographyValues) {
+      typographyValues = [null, null, null, null, null, null]
+      typographyByKey[meta.name] = typographyValues
+      allTypographyKeyCount += 1
+    }
+    if (!typographyValues[meta.level]) {
+      typographyValues[meta.level] = textStyleToTypography(style)
+    }
+    styleMetaById[style.id] = meta
   }
 
+  const tTypo = perfStart()
   const typography: Record<string, (null | DevupTypography)[]> = {}
   if (treeshaking) {
-    const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
-    await Promise.all(
-      texts
-        .filter(
-          (text) =>
-            (typeof text.textStyleId === 'string' && text.textStyleId) ||
-            text.textStyleId === figma.mixed,
-        )
-        .map(async (text) => {
-          for (const seg of text.getStyledTextSegments([
-            'fontName',
-            'fontWeight',
-            'fontSize',
-            'textDecoration',
-            'textCase',
-            'lineHeight',
-            'letterSpacing',
-            'fills',
-            'textStyleId',
-            'fillStyleId',
-            'listOptions',
-            'indentation',
-            'hyperlink',
-          ])) {
-            if (seg?.textStyleId) {
-              const style = await figma.getStyleByIdAsync(seg.textStyleId)
+    // Skip hidden instance children — can make findAllWithCriteria dramatically faster
+    const prevSkip = figma.skipInvisibleInstanceChildren
+    figma.skipInvisibleInstanceChildren = true
 
-              if (!(style && ids.has(style.id))) continue
-              const { level, name } = styleNameToTypography(style.name)
-              const typo = textSegmentToTypography(seg)
-              if (typography[name]?.[level]) continue
-              typography[name] ??= [null, null, null, null, null, null]
-              typography[name][level] = typo
-            }
-          }
-        }),
-    )
+    const usedTypographyKeys: Record<string, true> = Object.create(
+      null,
+    ) as Record<string, true>
+    let usedTypographyKeyCount = 0
+    const markTypographyKeyUsed = (meta?: { level: number; name: string }) => {
+      if (!meta || usedTypographyKeys[meta.name]) return false
+      usedTypographyKeys[meta.name] = true
+      usedTypographyKeyCount += 1
+      return true
+    }
+    const mixedTextStyleId = figma.mixed
+    const processText = (text: TextNode) => {
+      if (usedTypographyKeyCount >= allTypographyKeyCount) return
+      const { textStyleId } = text
+      if (typeof textStyleId === 'string' && textStyleId) {
+        markTypographyKeyUsed(styleMetaById[textStyleId])
+        return
+      }
+      if (textStyleId !== mixedTextStyleId) return
+
+      for (const seg of text.getStyledTextSegments(['textStyleId'])) {
+        if (usedTypographyKeyCount >= allTypographyKeyCount) return
+        const segTextStyleId = seg?.textStyleId
+        if (!segTextStyleId) continue
+        markTypographyKeyUsed(styleMetaById[segTextStyleId])
+      }
+    }
+    const processSubtree = (node: SceneNode) => {
+      if (usedTypographyKeyCount >= allTypographyKeyCount) return
+      if (node.type === 'TEXT') {
+        processText(node)
+        return
+      }
+      if (isTextSearchNode(node)) {
+        const tFind = perfStart()
+        const texts = node.findAllWithCriteria({ types: ['TEXT'] })
+        perfEnd('exportDevup.typography.find', tFind)
+
+        const tScan = perfStart()
+        for (const text of texts) {
+          processText(text)
+          if (usedTypographyKeyCount >= allTypographyKeyCount) break
+        }
+        perfEnd('exportDevup.typography.scan', tScan)
+        return
+      }
+      if (!('children' in node)) return
+      for (const child of node.children) {
+        processSubtree(child)
+        if (usedTypographyKeyCount >= allTypographyKeyCount) break
+      }
+    }
+
+    const rootPages = Array.isArray(figma.root.children)
+      ? figma.root.children
+      : []
+    if (rootPages.length > 0) {
+      const currentPageId = figma.currentPage.id
+      const orderedPages: PageNode[] = [
+        figma.currentPage,
+        ...rootPages.filter((page) => page.id !== currentPageId),
+      ]
+      for (const page of orderedPages) {
+        if (usedTypographyKeyCount >= allTypographyKeyCount) break
+        if (page.id !== currentPageId) {
+          const tPageLoad = perfStart()
+          await page.loadAsync()
+          perfEnd('exportDevup.load', tPageLoad)
+        }
+        for (const child of page.children) {
+          processSubtree(child)
+          if (usedTypographyKeyCount >= allTypographyKeyCount) break
+        }
+      }
+    } else {
+      const tFind = perfStart()
+      const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
+      perfEnd('exportDevup.typography.find', tFind)
+
+      const tScan = perfStart()
+      for (const text of texts) {
+        processText(text)
+        if (usedTypographyKeyCount >= allTypographyKeyCount) break
+      }
+      perfEnd('exportDevup.typography.scan', tScan)
+    }
+
+    figma.skipInvisibleInstanceChildren = prevSkip
+
+    for (const key of Object.keys(usedTypographyKeys)) {
+      typography[key] = [...(typographyByKey[key] ?? [])]
+    }
   } else {
-    for (const [styleName, style] of Object.entries(styles)) {
-      const { level, name } = styleNameToTypography(styleName)
-      const typo = textStyleToTypography(style)
-      if (typography[name]?.[level]) continue
-      typography[name] ??= [null, null, null, null, null, null]
-      typography[name][level] = typo
+    for (const [key, values] of Object.entries(typographyByKey)) {
+      typography[key] = [...values]
     }
   }
-
-  for (const [name, style] of Object.entries(styles)) {
-    const { level, name: styleName } = styleNameToTypography(name)
-    if (typography[styleName] && !typography[styleName][level]) {
-      typography[styleName][level] = textStyleToTypography(style)
-    }
-  }
+  perfEnd('exportDevup.typography', tTypo)
 
   if (Object.keys(typography).length > 0) {
     devup.theme ??= {}
@@ -142,6 +235,9 @@ export async function exportDevup(
       {} as Record<string, DevupTypography | (null | DevupTypography)[]>,
     )
   }
+
+  perfEnd('exportDevup()', t)
+  console.info(perfReport())
 
   switch (output) {
     case 'json':
