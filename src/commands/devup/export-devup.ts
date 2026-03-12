@@ -1,3 +1,9 @@
+import {
+  perfEnd,
+  perfReport,
+  perfReset,
+  perfStart,
+} from '../../codegen/utils/perf'
 import { downloadFile } from '../../utils/download-file'
 import { isVariableAlias } from '../../utils/is-variable-alias'
 import { optimizeHex } from '../../utils/optimize-hex'
@@ -15,18 +21,26 @@ export async function exportDevup(
   output: 'json' | 'excel',
   treeshaking: boolean = true,
 ) {
+  perfReset()
+  const t = perfStart()
   const devup: Devup = {}
 
+  const tColors = perfStart()
   const collection = await getDevupColorCollection()
   if (collection) {
+    // Pre-fetch all variables once — reuse across modes
+    const variables = await Promise.all(
+      collection.variableIds.map((varId) =>
+        figma.variables.getVariableByIdAsync(varId),
+      ),
+    )
+    devup.theme ??= {}
+    devup.theme.colors ??= {}
     for (const mode of collection.modes) {
-      devup.theme ??= {}
-      devup.theme.colors ??= {}
       const colors: Record<string, string> = {}
       devup.theme.colors[mode.name.toLowerCase()] = colors
       await Promise.all(
-        collection.variableIds.map(async (varId) => {
-          const variable = await figma.variables.getVariableByIdAsync(varId)
+        variables.map(async (variable) => {
           if (variable === null) return
           const value = variable.valuesByMode[mode.modeId]
           if (typeof value === 'boolean' || typeof value === 'number') return
@@ -47,56 +61,62 @@ export async function exportDevup(
       )
     }
   }
+  perfEnd('exportDevup.colors', tColors)
 
-  await figma.loadAllPagesAsync()
+  // Parallel: load pages (only if treeshaking) + fetch text styles
+  const tLoad = perfStart()
+  const [, textStyles] = await Promise.all([
+    treeshaking ? figma.loadAllPagesAsync() : Promise.resolve(),
+    figma.getLocalTextStylesAsync(),
+  ])
+  perfEnd('exportDevup.load', tLoad)
 
-  const textStyles = await figma.getLocalTextStylesAsync()
-  const ids = new Set()
+  // Build both ID-keyed and name-keyed maps from a single fetch
+  const stylesById = new Map<string, TextStyle>()
   const styles: Record<string, TextStyle> = {}
   for (const style of textStyles) {
-    ids.add(style.id)
+    stylesById.set(style.id, style)
     styles[style.name] = style
   }
 
+  const tTypo = perfStart()
   const typography: Record<string, (null | DevupTypography)[]> = {}
   if (treeshaking) {
     const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
-    await Promise.all(
-      texts
-        .filter(
-          (text) =>
-            (typeof text.textStyleId === 'string' && text.textStyleId) ||
-            text.textStyleId === figma.mixed,
-        )
-        .map(async (text) => {
-          for (const seg of text.getStyledTextSegments([
-            'fontName',
-            'fontWeight',
-            'fontSize',
-            'textDecoration',
-            'textCase',
-            'lineHeight',
-            'letterSpacing',
-            'fills',
-            'textStyleId',
-            'fillStyleId',
-            'listOptions',
-            'indentation',
-            'hyperlink',
-          ])) {
-            if (seg?.textStyleId) {
-              const style = await figma.getStyleByIdAsync(seg.textStyleId)
-
-              if (!(style && ids.has(style.id))) continue
-              const { level, name } = styleNameToTypography(style.name)
-              const typo = textSegmentToTypography(seg)
-              if (typography[name]?.[level]) continue
-              typography[name] ??= [null, null, null, null, null, null]
-              typography[name][level] = typo
-            }
-          }
-        }),
-    )
+    for (const text of texts) {
+      if (
+        !(typeof text.textStyleId === 'string' && text.textStyleId) &&
+        text.textStyleId !== figma.mixed
+      )
+        continue
+      // Short-circuit: single-style nodes whose style is not local
+      if (
+        typeof text.textStyleId === 'string' &&
+        !stylesById.has(text.textStyleId)
+      )
+        continue
+      for (const seg of text.getStyledTextSegments([
+        'fontName',
+        'fontWeight',
+        'fontSize',
+        'textDecoration',
+        'textCase',
+        'lineHeight',
+        'letterSpacing',
+        'textStyleId',
+      ])) {
+        if (seg?.textStyleId) {
+          // Sync lookup — no async IPC per segment
+          const style = stylesById.get(seg.textStyleId)
+          if (!style) continue
+          const { level, name } = styleNameToTypography(style.name)
+          const typo = textSegmentToTypography(seg)
+          if (typography[name]?.[level]) continue
+          typography[name] ??= [null, null, null, null, null, null]
+          typography[name][level] = typo
+        }
+      }
+    }
   } else {
     for (const [styleName, style] of Object.entries(styles)) {
       const { level, name } = styleNameToTypography(styleName)
@@ -106,6 +126,7 @@ export async function exportDevup(
       typography[name][level] = typo
     }
   }
+  perfEnd('exportDevup.typography', tTypo)
 
   for (const [name, style] of Object.entries(styles)) {
     const { level, name: styleName } = styleNameToTypography(name)
@@ -142,6 +163,9 @@ export async function exportDevup(
       {} as Record<string, DevupTypography | (null | DevupTypography)[]>,
     )
   }
+
+  perfEnd('exportDevup()', t)
+  console.info(perfReport())
 
   switch (output) {
     case 'json':
