@@ -82,8 +82,13 @@ export async function exportDevup(
   // Build both ID-keyed and name-keyed maps from a single fetch
   const stylesById = new Map<string, TextStyle>()
   const styles: Record<string, TextStyle> = {}
+  const styleMetaById = new Map<string, { level: number; name: string }>()
+  const allTypographyKeys = new Set<string>()
   for (const style of textStyles) {
+    const meta = styleNameToTypography(style.name)
     stylesById.set(style.id, style)
+    styleMetaById.set(style.id, meta)
+    allTypographyKeys.add(meta.name)
     styles[style.name] = style
   }
 
@@ -94,47 +99,76 @@ export async function exportDevup(
     const prevSkip = figma.skipInvisibleInstanceChildren
     figma.skipInvisibleInstanceChildren = true
 
-    const tFind = perfStart()
-    const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
-    perfEnd('exportDevup.typography.find', tFind)
-
-    const tScan = perfStart()
-    const foundStyleIds = new Set<string>()
-    for (const text of texts) {
-      // Early exit: all local styles discovered
-      if (foundStyleIds.size >= stylesById.size) break
+    const usedTypographyKeys = new Set<string>()
+    const processText = (text: TextNode) => {
+      if (usedTypographyKeys.size >= allTypographyKeys.size) return
       if (
         !(typeof text.textStyleId === 'string' && text.textStyleId) &&
         text.textStyleId !== figma.mixed
       )
-        continue
+        return
 
       if (typeof text.textStyleId === 'string') {
-        // Single-style node — skip getStyledTextSegments entirely
         const style = stylesById.get(text.textStyleId)
-        if (!style || foundStyleIds.has(text.textStyleId)) continue
-        foundStyleIds.add(text.textStyleId)
-        const { level, name } = styleNameToTypography(style.name)
+        const meta = styleMetaById.get(text.textStyleId)
+        if (!style || !meta || usedTypographyKeys.has(meta.name)) return
+        usedTypographyKeys.add(meta.name)
+        const { level, name } = meta
         if (!typography[name]?.[level]) {
           typography[name] ??= [null, null, null, null, null, null]
           typography[name][level] = textStyleToTypography(style)
         }
-        continue
+        return
       }
 
-      // Mixed-style node — only request textStyleId (1 field vs 8)
       for (const seg of text.getStyledTextSegments(['textStyleId'])) {
-        if (!seg?.textStyleId || foundStyleIds.has(seg.textStyleId)) continue
+        if (usedTypographyKeys.size >= allTypographyKeys.size) return
+        if (!seg?.textStyleId) continue
         const style = stylesById.get(seg.textStyleId)
-        if (!style) continue
-        foundStyleIds.add(seg.textStyleId)
-        const { level, name } = styleNameToTypography(style.name)
+        const meta = styleMetaById.get(seg.textStyleId)
+        if (!style || !meta || usedTypographyKeys.has(meta.name)) continue
+        usedTypographyKeys.add(meta.name)
+        const { level, name } = meta
         if (typography[name]?.[level]) continue
         typography[name] ??= [null, null, null, null, null, null]
         typography[name][level] = textStyleToTypography(style)
       }
     }
-    perfEnd('exportDevup.typography.scan', tScan)
+
+    const rootPages = Array.isArray(figma.root.children)
+      ? figma.root.children
+      : []
+    if (rootPages.length > 1) {
+      const currentPageId = figma.currentPage.id
+      const orderedPages = [
+        figma.currentPage,
+        ...rootPages.filter((page) => page.id !== currentPageId),
+      ]
+      for (const page of orderedPages) {
+        if (usedTypographyKeys.size >= allTypographyKeys.size) break
+        const tFind = perfStart()
+        const texts = page.findAllWithCriteria({ types: ['TEXT'] })
+        perfEnd('exportDevup.typography.find', tFind)
+
+        const tScan = perfStart()
+        for (const text of texts) {
+          processText(text)
+          if (usedTypographyKeys.size >= allTypographyKeys.size) break
+        }
+        perfEnd('exportDevup.typography.scan', tScan)
+      }
+    } else {
+      const tFind = perfStart()
+      const texts = figma.root.findAllWithCriteria({ types: ['TEXT'] })
+      perfEnd('exportDevup.typography.find', tFind)
+
+      const tScan = perfStart()
+      for (const text of texts) {
+        processText(text)
+        if (usedTypographyKeys.size >= allTypographyKeys.size) break
+      }
+      perfEnd('exportDevup.typography.scan', tScan)
+    }
 
     figma.skipInvisibleInstanceChildren = prevSkip
   } else {
