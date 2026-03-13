@@ -392,7 +392,6 @@ exports[`Codegen renders text node with ellipsis props 1`] = `
 
 exports[`Codegen renders text node with single drop shadow 1`] = `
 "<Text
-  boxShadow="2px 4px 6px 0 #00000080"
   boxSize="100%"
   color="#F00"
   fontFamily="Arial"
@@ -408,7 +407,6 @@ exports[`Codegen renders text node with single drop shadow 1`] = `
 
 exports[`Codegen renders text node with multiple drop shadows 1`] = `
 "<Text
-  boxShadow="1px 2px 3px 0 #F00, 4px 5px 6px 0 #0F0C"
   boxSize="100%"
   color="#F00"
   fontFamily="Arial"
@@ -3331,7 +3329,6 @@ exports[`render real world component real world $ 99`] = `
   return (
     <Text
       WebkitTextStroke="3px #FFF"
-      boxShadow="0 0 12px 0 #7C70FF"
       color="#4C05FF"
       fontFamily="Jalnan 2 TTF"
       fontSize="38px"
@@ -3394,7 +3391,6 @@ exports[`render real world component real world $ 102`] = `
   return (
     <Text
       WebkitTextStroke="2px #FFF"
-      boxShadow="0 0 12px 0 #7C70FF, 0 10px 24px 0 #FFC9FE66"
       color="transparent"
       fontFamily="Jalnan Gothic TTF"
       fontSize="64px"

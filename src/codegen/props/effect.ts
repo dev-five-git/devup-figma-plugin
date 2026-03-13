@@ -6,7 +6,13 @@ export function getEffectProps(
   node: SceneNode,
 ): Record<string, string> | undefined {
   if ('effects' in node && node.effects.length > 0) {
-    return node.effects.reduce(
+    // TEXT nodes use textShadow for DROP_SHADOW (handled by text-shadow.ts)
+    const effects =
+      node.type === 'TEXT'
+        ? node.effects.filter((e) => e.type !== 'DROP_SHADOW')
+        : node.effects
+    if (effects.length === 0) return
+    return effects.reduce(
       (acc, effect) => {
         const props = _getEffectPropsFromEffect(effect)
         for (const [key, value] of Object.entries(props)) {
