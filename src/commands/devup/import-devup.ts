@@ -25,9 +25,13 @@ async function importColors(devup: Devup) {
     (await getDevupColorCollection()) ??
     (await figma.variables.createVariableCollection('Devup Colors'))
   const variables = await figma.variables.getLocalVariablesAsync()
+  const collectionVariableIds = new Set(collection.variableIds)
   const variablesByName = new Map<string, Variable>()
   for (const variable of variables) {
-    if (!variablesByName.has(variable.name)) {
+    if (
+      collectionVariableIds.has(variable.id) &&
+      !variablesByName.has(variable.name)
+    ) {
       variablesByName.set(variable.name, variable)
     }
   }
@@ -51,6 +55,7 @@ async function importColors(devup: Devup) {
         variable = figma.variables.createVariable(colorKey, collection, 'COLOR')
         variablesByName.set(colorKey, variable)
         variables.push(variable)
+        collectionVariableIds.add(variable.id)
       }
 
       variable.setValueForMode(modeId, figma.util.rgba(colorValue))
@@ -66,7 +71,12 @@ async function importColors(devup: Devup) {
   }
 
   for (const variable of variables) {
-    if (colorNames.has(variable.name)) continue
+    if (
+      !collectionVariableIds.has(variable.id) ||
+      colorNames.has(variable.name)
+    ) {
+      continue
+    }
     variable.remove()
   }
 }
