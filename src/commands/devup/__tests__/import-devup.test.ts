@@ -42,6 +42,7 @@ describe('import-devup (standalone file)', () => {
         }) as unknown as Variable,
     )
     const addMode = mock((name: string) => `${name}-id`)
+    const getLocalVariablesAsync = mock(() => Promise.resolve([] as Variable[]))
     const collection = {
       modes: [] as { modeId: string; name: string }[],
       addMode,
@@ -60,7 +61,7 @@ describe('import-devup (standalone file)', () => {
       util: { rgba: (v: unknown) => v },
       variables: {
         getLocalVariableCollectionsAsync: async () => [],
-        getLocalVariablesAsync: async () => [],
+        getLocalVariablesAsync,
         createVariableCollection: () => collection,
         createVariable,
       },
@@ -72,6 +73,7 @@ describe('import-devup (standalone file)', () => {
     await importDevup('excel')
 
     expect(addMode).toHaveBeenCalledWith('Light')
+    expect(getLocalVariablesAsync).toHaveBeenCalledTimes(1)
     expect(setValueForMode).toHaveBeenCalledWith('Light-id', '#111111')
     expect(createTextStyle).toHaveBeenCalled()
     expect(loadFontAsync).toHaveBeenCalled()

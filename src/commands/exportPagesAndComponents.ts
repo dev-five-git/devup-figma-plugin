@@ -23,6 +23,14 @@ const NOTIFY_TIMEOUT = 3000
 // SVG/asset exports are lightweight and scale better with higher concurrency.
 const SCREENSHOT_BATCH_SIZE = 4
 const ASSET_BATCH_SIZE = 8
+const ZIP_TEXT_FILE_OPTIONS = { compression: 'DEFLATE' as const }
+const ZIP_BINARY_FILE_OPTIONS = { binary: true, compression: 'STORE' as const }
+const ZIP_GENERATE_OPTIONS = {
+  type: 'uint8array' as const,
+  compression: 'DEFLATE' as const,
+  compressionOptions: { level: 1 },
+  streamFiles: true,
+}
 
 export const DEVUP_COMPONENTS = [
   'Center',
@@ -33,15 +41,30 @@ export const DEVUP_COMPONENTS = [
   'Text',
   'Image',
 ]
+const DEVUP_COMPONENT_SET = new Set(DEVUP_COMPONENTS)
+const DEVUP_COMPONENT_PATTERNS = DEVUP_COMPONENTS.map(
+  (component) => [component, new RegExp(`<${component}[\\s/>]`)] as const,
+)
+const CUSTOM_COMPONENT_USAGE_REGEX = /<([A-Z][a-zA-Z0-9]*)/g
+
+function getCombinedCode(
+  componentsCodes: ReadonlyArray<readonly [string, string]>,
+): string {
+  let allCode = ''
+  for (let i = 0; i < componentsCodes.length; i++) {
+    if (i > 0) allCode += '\n'
+    allCode += componentsCodes[i][1]
+  }
+  return allCode
+}
 
 export function extractImports(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
 ): string[] {
-  const allCode = componentsCodes.map(([_, code]) => code).join('\n')
+  const allCode = getCombinedCode(componentsCodes)
   const imports = new Set<string>()
 
-  for (const component of DEVUP_COMPONENTS) {
-    const regex = new RegExp(`<${component}[\\s/>]`, 'g')
+  for (const [component, regex] of DEVUP_COMPONENT_PATTERNS) {
     if (regex.test(allCode)) {
       imports.add(component)
     }
@@ -57,14 +80,13 @@ export function extractImports(
 export function extractCustomComponentImports(
   componentsCodes: ReadonlyArray<readonly [string, string]>,
 ): string[] {
-  const allCode = componentsCodes.map(([_, code]) => code).join('\n')
+  const allCode = getCombinedCode(componentsCodes)
   const customImports = new Set<string>()
 
-  const componentUsageRegex = /<([A-Z][a-zA-Z0-9]*)/g
-  const matches = allCode.matchAll(componentUsageRegex)
-  for (const match of matches) {
+  CUSTOM_COMPONENT_USAGE_REGEX.lastIndex = 0
+  for (const match of allCode.matchAll(CUSTOM_COMPONENT_USAGE_REGEX)) {
     const componentName = match[1]
-    if (!DEVUP_COMPONENTS.includes(componentName)) {
+    if (!DEVUP_COMPONENT_SET.has(componentName)) {
       customImports.add(componentName)
     }
   }
@@ -207,7 +229,7 @@ export async function exportPagesAndComponents() {
       for (const [name, code] of responsiveCodes) {
         const importStatement = generateImportStatements([[name, code]])
         const fullCode = importStatement + code
-        componentsFolder?.file(`${name}.tsx`, fullCode)
+        componentsFolder?.file(`${name}.tsx`, fullCode, ZIP_TEXT_FILE_OPTIONS)
         componentCount++
       }
       perfEnd('writeComponentFiles', t)
@@ -255,7 +277,7 @@ export async function exportPagesAndComponents() {
       for (const [name, code] of componentsCodes) {
         const importStatement = generateImportStatements([[name, code]])
         const fullCode = importStatement + code
-        componentsFolder?.file(`${name}.tsx`, fullCode)
+        componentsFolder?.file(`${name}.tsx`, fullCode, ZIP_TEXT_FILE_OPTIONS)
         componentCount++
       }
       perfEnd('writeComponentFiles', t)
@@ -295,7 +317,7 @@ export async function exportPagesAndComponents() {
         const importStatement = generateImportStatements(pageCodeEntry)
         const fullCode = importStatement + wrappedCode
 
-        pagesFolder?.file(`${pageName}.tsx`, fullCode)
+        pagesFolder?.file(`${pageName}.tsx`, fullCode, ZIP_TEXT_FILE_OPTIONS)
         perfEnd(`responsivePage(${pageName})`, t)
 
         // Defer screenshot capture
@@ -352,7 +374,7 @@ export async function exportPagesAndComponents() {
               format: 'PNG',
               constraint: { type: 'SCALE', value: 1 },
             })
-            folder.file(fileName, imageData)
+            folder.file(fileName, imageData, ZIP_BINARY_FILE_OPTIONS)
             perfEnd('exportAsync(screenshot)', t)
             completedExports++
           } catch (e) {
@@ -378,13 +400,13 @@ export async function exportPagesAndComponents() {
             const t = perfStart()
             if (type === 'svg') {
               const svgData = await node.exportAsync({ format: 'SVG' })
-              iconsFolder?.file(fileName, svgData)
+              iconsFolder?.file(fileName, svgData, ZIP_BINARY_FILE_OPTIONS)
             } else {
               const pngData = await node.exportAsync({
                 format: 'PNG',
                 constraint: { type: 'SCALE', value: 2 },
               })
-              imagesFolder?.file(fileName, pngData)
+              imagesFolder?.file(fileName, pngData, ZIP_BINARY_FILE_OPTIONS)
             }
             perfEnd(`exportAsync(${type})`, t)
             assetCount++
@@ -407,11 +429,7 @@ export async function exportPagesAndComponents() {
     const tZip = perfStart()
     await downloadFile(
       `${figma.currentPage.name}-export.zip`,
-      await zip.generateAsync({
-        type: 'uint8array',
-        compression: 'DEFLATE',
-        compressionOptions: { level: 1 },
-      }),
+      await zip.generateAsync(ZIP_GENERATE_OPTIONS),
     )
     perfEnd('phase3.zip', tZip)
 

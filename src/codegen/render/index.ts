@@ -31,9 +31,11 @@ export function renderNode(
     (hasChildren ? '>' : '/>')
   }`
   if (hasChildren) {
-    const children = childrenCodes
-      .map((child) => paddingLeftMultiline(child, deps + 1))
-      .join('\n')
+    let children = ''
+    for (let i = 0; i < childrenCodes.length; i++) {
+      if (i > 0) children += '\n'
+      children += paddingLeftMultiline(childrenCodes[i], deps + 1)
+    }
     result += `\n${children}\n${space(deps)}</${component}>`
   }
   return result

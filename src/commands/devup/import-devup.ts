@@ -24,20 +24,34 @@ async function importColors(devup: Devup) {
   const collection =
     (await getDevupColorCollection()) ??
     (await figma.variables.createVariableCollection('Devup Colors'))
+  const variables = await figma.variables.getLocalVariablesAsync()
+  const variablesByName = new Map<string, Variable>()
+  for (const variable of variables) {
+    if (!variablesByName.has(variable.name)) {
+      variablesByName.set(variable.name, variable)
+    }
+  }
+  const modeIdsByName = new Map(
+    collection.modes.map((mode) => [mode.name, mode.modeId] as const),
+  )
 
   const themes = new Set<string>()
   const colorNames = new Set<string>()
 
   for (const [theme, value] of Object.entries(colors)) {
-    const modeId =
-      collection.modes.find((mode) => mode.name === theme)?.modeId ??
-      collection.addMode(theme)
+    let modeId = modeIdsByName.get(theme)
+    if (!modeId) {
+      modeId = collection.addMode(theme)
+      modeIdsByName.set(theme, modeId)
+    }
 
-    const variables = await figma.variables.getLocalVariablesAsync()
     for (const [colorKey, colorValue] of Object.entries(value)) {
-      const variable =
-        variables.find((variable) => variable.name === colorKey) ??
-        figma.variables.createVariable(colorKey, collection, 'COLOR')
+      let variable = variablesByName.get(colorKey)
+      if (!variable) {
+        variable = figma.variables.createVariable(colorKey, collection, 'COLOR')
+        variablesByName.set(colorKey, variable)
+        variables.push(variable)
+      }
 
       variable.setValueForMode(modeId, figma.util.rgba(colorValue))
       colorNames.add(colorKey)
@@ -51,8 +65,8 @@ async function importColors(devup: Devup) {
     collection.removeMode(theme.modeId)
   }
 
-  const variables = await figma.variables.getLocalVariablesAsync()
-  for (const variable of variables.filter((v) => !colorNames.has(v.name))) {
+  for (const variable of variables) {
+    if (colorNames.has(variable.name)) continue
     variable.remove()
   }
 }
