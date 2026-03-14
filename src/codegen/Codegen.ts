@@ -457,17 +457,24 @@ export class Codegen {
       // Multiple SLOTs → render each as a named JSX prop (renders as <Comp header={<X/>} content={<Y/>} />)
       let slotChildren: NodeTree[] = []
       if (slotsByName.size === 1) {
-        slotChildren = [...slotsByName.values()][0]
+        const firstSlot = slotsByName.values().next().value
+        if (firstSlot) {
+          slotChildren = firstSlot
+        }
       } else if (slotsByName.size > 1) {
         for (const [slotName, content] of slotsByName) {
           let jsx: string
           if (content.length === 1) {
             jsx = Codegen.renderTree(content[0], 0)
           } else {
-            const children = content.map((c) => Codegen.renderTree(c, 0))
-            const childrenStr = children
-              .map((c) => paddingLeftMultiline(c, 1))
-              .join('\n')
+            let childrenStr = ''
+            for (let i = 0; i < content.length; i++) {
+              if (i > 0) childrenStr += '\n'
+              childrenStr += paddingLeftMultiline(
+                Codegen.renderTree(content[i], 0),
+                1,
+              )
+            }
             jsx = `<>\n${childrenStr}\n</>`
           }
           variantProps[slotName] = { __jsxSlot: true, jsx }
@@ -776,9 +783,10 @@ export class Codegen {
     if (tree.textChildren && tree.textChildren.length > 0) {
       result = renderNode(tree.component, tree.props, depth, tree.textChildren)
     } else {
-      const childrenCodes = tree.children.map((child) =>
-        Codegen.renderTree(child, 0),
-      )
+      const childrenCodes: string[] = []
+      for (const child of tree.children) {
+        childrenCodes.push(Codegen.renderTree(child, 0))
+      }
       result = renderNode(tree.component, tree.props, depth, childrenCodes)
     }
 

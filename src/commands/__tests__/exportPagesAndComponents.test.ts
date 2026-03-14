@@ -347,4 +347,14 @@ describe('generateImportStatements', () => {
     const result = generateImportStatements([['Test', '<Box />']])
     expect(result.endsWith('\n\n')).toBe(true)
   })
+
+  test('should return the same imports across repeated calls', () => {
+    const components = [
+      ['Test', '<Box><CustomButton /><Flex /></Box>'],
+    ] as const
+    const first = generateImportStatements(components)
+    const second = generateImportStatements(components)
+
+    expect(second).toBe(first)
+  })
 })

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test'
 import {
   type BreakpointKey,
+  groupChildrenByBreakpoint,
+  groupNodesByName,
   mergePropsToResponsive,
   type Props,
 } from '../index'
@@ -231,5 +233,38 @@ describe('mergePropsToResponsive', () => {
         mergePropsToResponsive(input as unknown as Map<BreakpointKey, Props>),
       ).toEqual(expected as unknown as Props)
     })
+  })
+})
+
+describe('responsive grouping helpers', () => {
+  it('groups children by breakpoint without reallocating existing buckets', () => {
+    const children = [
+      { width: 320, name: 'mobile-a' },
+      { width: 360, name: 'mobile-b' },
+      { width: 1200, name: 'desktop-a' },
+    ] as unknown as SceneNode[]
+
+    const groups = groupChildrenByBreakpoint(children)
+
+    expect(groups.get('mobile')?.map((child) => child.name)).toEqual([
+      'mobile-a',
+      'mobile-b',
+    ])
+    expect(groups.get('lg')?.map((child) => child.name)).toEqual(['desktop-a'])
+  })
+
+  it('groups nodes by name across breakpoints', () => {
+    const breakpointNodes = new Map<BreakpointKey, SceneNode[]>([
+      [
+        'mobile',
+        [{ name: 'Card' } as SceneNode, { name: 'Badge' } as SceneNode],
+      ],
+      ['pc', [{ name: 'Card' } as SceneNode]],
+    ])
+
+    const groups = groupNodesByName(breakpointNodes)
+
+    expect(groups.get('Card')).toHaveLength(2)
+    expect(groups.get('Badge')).toHaveLength(1)
   })
 })

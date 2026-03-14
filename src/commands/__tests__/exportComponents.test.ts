@@ -11,21 +11,31 @@ import {
 import * as downloadFileModule from '../../utils/download-file'
 import { exportComponents } from '../exportComponents'
 
+const zipFileMock = mock(
+  (_name: string, _data: unknown, _options?: unknown) => {},
+)
+const zipGenerateAsyncMock = mock((_options?: unknown) =>
+  Promise.resolve(new Uint8Array([1, 2, 3])),
+)
+
 // mock jszip
 mock.module('jszip', () => ({
   default: class JSZipMock {
     files: Record<string, unknown> = {}
-    file(name: string, data: unknown) {
+    file(name: string, data: unknown, options?: unknown) {
+      zipFileMock(name, data, options)
       this.files[name] = data
     }
-    async generateAsync() {
-      return new Uint8Array([1, 2, 3])
+    async generateAsync(options?: unknown) {
+      return zipGenerateAsyncMock(options)
     }
   },
 }))
 
 const runMock = mock(() => Promise.resolve())
-const getComponentsCodesMock = mock(() => ({}))
+const getComponentsCodesMock = mock(
+  (): ReadonlyArray<readonly [string, string]> => [],
+)
 
 mock.module('../codegen/Codegen', () => ({
   Codegen: class {
@@ -127,6 +137,8 @@ describe('exportComponents', () => {
     downloadFileMock.mockClear()
     runMock.mockClear()
     getComponentsCodesMock.mockClear()
+    zipFileMock.mockClear()
+    zipGenerateAsyncMock.mockClear()
   })
 
   test('should notify and return if no components found', async () => {
@@ -137,7 +149,7 @@ describe('exportComponents', () => {
       (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
         .figma?.currentPage as { selection: SceneNode[] }
     ).selection = [node]
-    getComponentsCodesMock.mockReturnValueOnce({})
+    getComponentsCodesMock.mockReturnValueOnce([])
     await exportComponents()
     expect(notifyMock).toHaveBeenCalledWith('No components found')
   })
@@ -156,7 +168,7 @@ describe('exportComponents', () => {
       (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
         .figma?.currentPage as { selection: SceneNode[] }
     ).selection = [node]
-    getComponentsCodesMock.mockReturnValueOnce({})
+    getComponentsCodesMock.mockReturnValueOnce([])
     await exportComponents()
     expect(downloadFileMock).not.toHaveBeenCalled()
   })
@@ -192,14 +204,25 @@ describe('exportComponents', () => {
       (globalThis as { figma?: { currentPage?: { selection?: SceneNode[] } } })
         .figma?.currentPage as { selection: SceneNode[] }
     ).selection = [node]
-    getComponentsCodesMock.mockReturnValueOnce({
-      Component: [['Component.tsx', '<Component />']],
-    })
+    getComponentsCodesMock.mockReturnValueOnce([
+      ['Component.tsx', '<Component />'],
+    ])
     await exportComponents()
     expect(downloadFileMock).toHaveBeenCalledWith(
       'TestPage.zip',
       expect.any(Uint8Array),
     )
+    expect(zipFileMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      { compression: 'DEFLATE' },
+    )
+    expect(zipGenerateAsyncMock).toHaveBeenCalledWith({
+      type: 'uint8array',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 1 },
+      streamFiles: true,
+    })
     expect(notifyMock).toHaveBeenCalledWith(
       'Components exported',
       expect.any(Object),

@@ -54,9 +54,12 @@ export function groupChildrenByBreakpoint(
   for (const child of children) {
     if ('width' in child) {
       const breakpoint = getBreakpointByWidth(child.width)
-      const group = groups.get(breakpoint) || []
-      group.push(child)
-      groups.set(breakpoint, group)
+      const group = groups.get(breakpoint)
+      if (group) {
+        group.push(child)
+      } else {
+        groups.set(breakpoint, [child])
+      }
     }
   }
 
@@ -368,9 +371,12 @@ export function groupNodesByName(
   for (const [breakpoint, nodes] of breakpointNodes) {
     for (const node of nodes) {
       const name = node.name
-      const group = result.get(name) || []
-      group.push({ breakpoint, node, props: {} })
-      result.set(name, group)
+      const group = result.get(name)
+      if (group) {
+        group.push({ breakpoint, node, props: {} })
+      } else {
+        result.set(name, [{ breakpoint, node, props: {} }])
+      }
     }
   }
 
@@ -525,13 +531,15 @@ export function mergePropsToVariant(
     } else {
       // Filter out null values from the variant object
       const filteredValues: Record<string, PropValue> = {}
+      let filteredCount = 0
       for (const variant in valuesByVariant) {
         const value = valuesByVariant[variant]
         if (value !== null) {
           filteredValues[variant] = value
+          filteredCount++
         }
       }
-      if (Object.keys(filteredValues).length > 0) {
+      if (filteredCount > 0) {
         result[key] = createVariantPropValue(variantKey, filteredValues)
       }
     }
