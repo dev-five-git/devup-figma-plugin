@@ -1,6 +1,11 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
 import { resetTextStyleCache } from '../../utils'
-import { Codegen, resetGlobalBuildTreeCache } from '../Codegen'
+import {
+  Codegen,
+  getGlobalAssetNodes,
+  resetGlobalAssetNodes,
+  resetGlobalBuildTreeCache,
+} from '../Codegen'
 import { resetGetPropsCache } from '../props'
 import { resetSelectorPropsCache } from '../props/selector'
 import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
@@ -47,6 +52,7 @@ import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
 
 beforeEach(() => {
   resetGlobalBuildTreeCache()
+  resetGlobalAssetNodes()
   resetGetPropsCache()
   resetSelectorPropsCache()
   resetTextStyleCache()
@@ -54,10 +60,26 @@ beforeEach(() => {
 
 afterAll(() => {
   resetGlobalBuildTreeCache()
+  resetGlobalAssetNodes()
   resetGetPropsCache()
   resetSelectorPropsCache()
   resetTextStyleCache()
   ;(globalThis as { figma?: unknown }).figma = undefined
+})
+
+describe('globalAssetNodes', () => {
+  test('resetGlobalAssetNodes clears and getGlobalAssetNodes returns empty map', () => {
+    resetGlobalAssetNodes()
+    const assets = getGlobalAssetNodes()
+    expect(assets.size).toBe(0)
+  })
+
+  test('getGlobalAssetNodes returns readonly map', () => {
+    const assets = getGlobalAssetNodes()
+    expect(typeof assets.get).toBe('function')
+    expect(typeof assets.has).toBe('function')
+    expect(typeof assets.size).toBe('number')
+  })
 })
 
 function createComponentNode(

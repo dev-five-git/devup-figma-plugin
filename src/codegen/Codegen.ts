@@ -55,6 +55,25 @@ export function resetGlobalBuildTreeCache(): void {
   globalBuildTreeCache.clear()
 }
 
+// Global asset node registry populated during buildTree().
+// Tracks nodes classified as SVG/PNG assets so callers (e.g. export commands)
+// can collect them without re-walking the Figma node tree via IPC.
+const globalAssetNodes = new Map<
+  string,
+  { node: SceneNode; type: 'svg' | 'png' }
+>()
+
+export function resetGlobalAssetNodes(): void {
+  globalAssetNodes.clear()
+}
+
+export function getGlobalAssetNodes(): ReadonlyMap<
+  string,
+  { node: SceneNode; type: 'svg' | 'png' }
+> {
+  return globalAssetNodes
+}
+
 /**
  * Get componentPropertyReferences from a node (if available).
  */
@@ -373,6 +392,11 @@ export class Codegen {
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
+      // Register in global asset registry for export commands
+      const assetKey = `${assetNode}/${node.name}`
+      if (!globalAssetNodes.has(assetKey)) {
+        globalAssetNodes.set(assetKey, { node, type: assetNode })
+      }
       const props = await getProps(node)
       props.src = `/${assetNode === 'svg' ? 'icons' : 'images'}/${node.name}.${assetNode}`
       if (assetNode === 'svg') {

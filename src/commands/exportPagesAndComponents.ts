@@ -1,13 +1,28 @@
 import JSZip from 'jszip'
 
-import { Codegen } from '../codegen/Codegen'
+import {
+  Codegen,
+  getGlobalAssetNodes,
+  resetGlobalAssetNodes,
+} from '../codegen/Codegen'
 import { ResponsiveCodegen } from '../codegen/responsive/ResponsiveCodegen'
+import { checkAssetNode } from '../codegen/utils/check-asset-node'
+import {
+  perfEnd,
+  perfReport,
+  perfReset,
+  perfStart,
+} from '../codegen/utils/perf'
 import { wrapComponent } from '../codegen/utils/wrap-component'
 import { getComponentName } from '../utils'
 import { downloadFile } from '../utils/download-file'
 import { toPascal } from '../utils/to-pascal'
 
 const NOTIFY_TIMEOUT = 3000
+// Figma throttles >4 concurrent exportAsync calls for large PNGs (screenshots).
+// SVG/asset exports are lightweight and scale better with higher concurrency.
+const SCREENSHOT_BATCH_SIZE = 4
+const ASSET_BATCH_SIZE = 8
 
 export const DEVUP_COMPONENTS = [
   'Center',
@@ -80,18 +95,71 @@ export function generateImportStatements(
   return statements.length > 0 ? `${statements.join('\n')}\n\n` : ''
 }
 
+interface ScreenshotTarget {
+  node: SceneNode
+  folder: JSZip
+  fileName: string
+}
+
+/**
+ * Recursively collect asset nodes (SVGs and PNGs) from a Figma node tree.
+ * Uses checkAssetNode to identify assets. Deduplicates by type + name.
+ * Does not descend into children of asset nodes (they are leaf nodes in codegen).
+ *
+ * Pass a `visited` set to skip already-walked subtrees when collecting
+ * from multiple overlapping roots (e.g. top-level nodes + external component sets).
+ */
+export function collectAssetNodes(
+  node: SceneNode,
+  assets: Map<string, { node: SceneNode; type: 'svg' | 'png' }>,
+  visited?: Set<string>,
+): void {
+  if (!node.visible) return
+  if (visited) {
+    const id = (node as SceneNode & { id?: string }).id
+    if (id) {
+      if (visited.has(id)) return
+      visited.add(id)
+    }
+  }
+  const assetType = checkAssetNode(node)
+  if (assetType) {
+    const key = `${assetType}/${node.name}`
+    if (!assets.has(key)) {
+      assets.set(key, { node, type: assetType })
+    }
+    return
+  }
+  if ('children' in node) {
+    for (const child of (node as SceneNode & ChildrenMixin).children) {
+      collectAssetNodes(child, assets, visited)
+    }
+  }
+}
+
 export async function exportPagesAndComponents() {
   let notificationHandler = figma.notify('Preparing export...', {
     timeout: Infinity,
   })
 
   try {
+    perfReset()
+    const tTotal = perfStart()
+
     const zip = new JSZip()
     const componentsFolder = zip.folder('components')
     const pagesFolder = zip.folder('pages')
+    const iconsFolder = zip.folder('icons')
+    const imagesFolder = zip.folder('images')
 
     let componentCount = 0
     let pageCount = 0
+
+    // Deferred work collectors
+    const screenshotTargets: ScreenshotTarget[] = []
+
+    // Reset global asset registry so buildTree() populates it fresh
+    resetGlobalAssetNodes()
 
     // Track processed COMPONENT_SETs to avoid duplicates
     const processedComponentSets = new Set<string>()
@@ -105,8 +173,12 @@ export async function exportPagesAndComponents() {
     const totalNodes = nodes.length
     let processedNodes = 0
 
-    // Helper to update progress
-    function updateProgress(message: string) {
+    // Throttled notification — avoids cancel/recreate churn on rapid progress
+    let lastNotifyTime = 0
+    function updateProgress(message: string, force = false) {
+      const now = Date.now()
+      if (!force && now - lastNotifyTime < 200) return
+      lastNotifyTime = now
       const percent = Math.round((processedNodes / totalNodes) * 100)
       notificationHandler.cancel()
       notificationHandler = figma.notify(`[${percent}%] ${message}`, {
@@ -123,32 +195,35 @@ export async function exportPagesAndComponents() {
 
       updateProgress(`Processing component: ${componentName}`)
 
+      let t = perfStart()
       const responsiveCodes =
         await ResponsiveCodegen.generateVariantResponsiveComponents(
           componentSet,
           componentName,
         )
+      perfEnd(`responsiveCodegen(${componentName})`, t)
 
+      t = perfStart()
       for (const [name, code] of responsiveCodes) {
         const importStatement = generateImportStatements([[name, code]])
         const fullCode = importStatement + code
         componentsFolder?.file(`${name}.tsx`, fullCode)
         componentCount++
       }
+      perfEnd('writeComponentFiles', t)
 
-      // Capture screenshot of the component set
-      try {
-        const imageData = await componentSet.exportAsync({
-          format: 'PNG',
-          constraint: { type: 'SCALE', value: 1 },
+      // Defer screenshot capture
+      if (componentsFolder) {
+        screenshotTargets.push({
+          node: componentSet,
+          folder: componentsFolder,
+          fileName: `${componentName}.png`,
         })
-        componentsFolder?.file(`${componentName}.png`, imageData)
-      } catch (e) {
-        console.error(`Failed to capture screenshot for ${componentName}:`, e)
       }
     }
 
     // Process each node
+    const tCodegen = perfStart()
     for (const node of nodes) {
       processedNodes++
 
@@ -167,9 +242,12 @@ export async function exportPagesAndComponents() {
       updateProgress(`Processing: ${node.name}`)
 
       // 3. Extract components using Codegen for other node types
+      let t = perfStart()
       const codegen = new Codegen(node)
       await codegen.run()
+      perfEnd(`codegen(${node.name})`, t)
 
+      t = perfStart()
       const componentsCodes = codegen.getComponentsCodes()
       const componentNodes = codegen.getComponentNodes()
 
@@ -180,6 +258,7 @@ export async function exportPagesAndComponents() {
         componentsFolder?.file(`${name}.tsx`, fullCode)
         componentCount++
       }
+      perfEnd('writeComponentFiles', t)
 
       // 4. Generate responsive codes for COMPONENT_SET components found inside
       for (const componentNode of componentNodes) {
@@ -201,6 +280,7 @@ export async function exportPagesAndComponents() {
 
         updateProgress(`Generating page: ${sectionNode.name}`)
 
+        t = perfStart()
         const responsiveCodegen = new ResponsiveCodegen(sectionNode)
         const responsiveCode = await responsiveCodegen.generateResponsiveCode()
         const baseName = toPascal(sectionNode.name)
@@ -216,22 +296,21 @@ export async function exportPagesAndComponents() {
         const fullCode = importStatement + wrappedCode
 
         pagesFolder?.file(`${pageName}.tsx`, fullCode)
+        perfEnd(`responsivePage(${pageName})`, t)
 
-        // Capture screenshot of the section
-        updateProgress(`Capturing screenshot: ${pageName}`)
-        try {
-          const imageData = await sectionNode.exportAsync({
-            format: 'PNG',
-            constraint: { type: 'SCALE', value: 1 },
+        // Defer screenshot capture
+        if (pagesFolder) {
+          screenshotTargets.push({
+            node: sectionNode,
+            folder: pagesFolder,
+            fileName: `${pageName}.png`,
           })
-          pagesFolder?.file(`${pageName}.png`, imageData)
-        } catch (e) {
-          console.error(`Failed to capture screenshot for ${pageName}:`, e)
         }
 
         pageCount++
       }
     }
+    perfEnd('phase1.codegen', tCodegen)
 
     // Check if we have anything to export
     if (componentCount === 0 && pageCount === 0) {
@@ -240,21 +319,112 @@ export async function exportPagesAndComponents() {
       return
     }
 
+    // Asset nodes were already collected by Codegen's buildTree() into the
+    // global registry — no need to re-walk the Figma node tree via IPC.
+    const assetNodes = getGlobalAssetNodes()
+
+    // Phase 2: Batch export screenshots and assets in parallel
+    const tExport = perfStart()
+    const totalExports = screenshotTargets.length + assetNodes.size
+    let completedExports = 0
+
+    function updateExportProgress(label: string) {
+      const now = Date.now()
+      if (now - lastNotifyTime < 200) return
+      lastNotifyTime = now
+      const percent = Math.round((completedExports / totalExports) * 100)
+      notificationHandler.cancel()
+      notificationHandler = figma.notify(`Exporting [${percent}%] ${label}`, {
+        timeout: Infinity,
+      })
+    }
+
+    // Export screenshots in parallel batches
+    const tScreenshots = perfStart()
+    for (let i = 0; i < screenshotTargets.length; i += SCREENSHOT_BATCH_SIZE) {
+      const batch = screenshotTargets.slice(i, i + SCREENSHOT_BATCH_SIZE)
+      updateExportProgress(`screenshots (${i + 1}/${screenshotTargets.length})`)
+      await Promise.all(
+        batch.map(async ({ node, folder, fileName }) => {
+          try {
+            const t = perfStart()
+            const imageData = await node.exportAsync({
+              format: 'PNG',
+              constraint: { type: 'SCALE', value: 1 },
+            })
+            folder.file(fileName, imageData)
+            perfEnd('exportAsync(screenshot)', t)
+            completedExports++
+          } catch (e) {
+            console.error(`Failed to capture screenshot for ${fileName}:`, e)
+            completedExports++
+          }
+        }),
+      )
+    }
+    perfEnd('phase2.screenshots', tScreenshots)
+
+    // Export asset files in parallel batches (SVGs → icons/, PNGs → images/)
+    const tAssets = perfStart()
+    const assetEntries = [...assetNodes.values()]
+    let assetCount = 0
+    for (let i = 0; i < assetEntries.length; i += ASSET_BATCH_SIZE) {
+      const batch = assetEntries.slice(i, i + ASSET_BATCH_SIZE)
+      updateExportProgress(`assets (${i + 1}/${assetEntries.length})`)
+      await Promise.all(
+        batch.map(async ({ node, type }) => {
+          try {
+            const fileName = `${node.name}.${type}`
+            const t = perfStart()
+            if (type === 'svg') {
+              const svgData = await node.exportAsync({ format: 'SVG' })
+              iconsFolder?.file(fileName, svgData)
+            } else {
+              const pngData = await node.exportAsync({
+                format: 'PNG',
+                constraint: { type: 'SCALE', value: 2 },
+              })
+              imagesFolder?.file(fileName, pngData)
+            }
+            perfEnd(`exportAsync(${type})`, t)
+            assetCount++
+            completedExports++
+          } catch (e) {
+            console.error(`Failed to export asset ${node.name}:`, e)
+            completedExports++
+          }
+        }),
+      )
+    }
+    perfEnd('phase2.assets', tAssets)
+    perfEnd('phase2.export', tExport)
+
     notificationHandler.cancel()
     notificationHandler = figma.notify('[100%] Creating zip file...', {
       timeout: Infinity,
     })
 
+    const tZip = perfStart()
     await downloadFile(
       `${figma.currentPage.name}-export.zip`,
-      await zip.generateAsync({ type: 'uint8array' }),
+      await zip.generateAsync({
+        type: 'uint8array',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 1 },
+      }),
     )
+    perfEnd('phase3.zip', tZip)
+
+    perfEnd('exportPagesAndComponents()', tTotal)
+    console.info(perfReport())
 
     notificationHandler.cancel()
-    figma.notify(
-      `Exported ${componentCount} components and ${pageCount} pages`,
-      { timeout: NOTIFY_TIMEOUT },
-    )
+
+    const parts = [`${componentCount} components`, `${pageCount} pages`]
+    if (assetCount > 0) {
+      parts.push(`${assetCount} assets`)
+    }
+    figma.notify(`Exported ${parts.join(', ')}`, { timeout: NOTIFY_TIMEOUT })
   } catch (error) {
     console.error(error)
     notificationHandler.cancel()
