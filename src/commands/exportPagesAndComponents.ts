@@ -346,12 +346,12 @@ export async function exportPagesAndComponents() {
         const responsiveCode = await responsiveCodegen.generateResponsiveCode()
         const baseName = toPascal(sectionNode.name)
         const pageName = isParentSection ? `${baseName}Page` : baseName
-        const wrappedCode = wrapComponent(pageName, responsiveCode, {
-          exportDefault: isParentSection,
+        const wrappedCode = wrapComponent('Page', responsiveCode, {
+          exportDefault: true,
         })
 
         const pageCodeEntry: ReadonlyArray<readonly [string, string]> = [
-          [pageName, wrappedCode],
+          ['Page', wrappedCode],
         ]
         const importStatement = generateImportStatements(pageCodeEntry)
         const fullCode = importStatement + wrappedCode
