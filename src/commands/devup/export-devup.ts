@@ -24,12 +24,14 @@ function isTextSearchNode(node: SceneNode): node is TextSearchNode {
   return 'findAllWithCriteria' in node
 }
 
-export async function exportDevup(
-  output: 'json' | 'excel',
+/**
+ * Build the Devup config object from the current Figma file.
+ * Extracts colors from Devup variable collection and typography from text styles.
+ * When treeshaking is enabled, only typography used in the document is included.
+ */
+export async function buildDevupConfig(
   treeshaking: boolean = true,
-) {
-  perfReset()
-  const t = perfStart()
+): Promise<Devup> {
   const devup: Devup = {}
 
   const tColors = perfStart()
@@ -236,6 +238,16 @@ export async function exportDevup(
     )
   }
 
+  return devup
+}
+
+export async function exportDevup(
+  output: 'json' | 'excel',
+  treeshaking: boolean = true,
+) {
+  perfReset()
+  const t = perfStart()
+  const devup = await buildDevupConfig(treeshaking)
   perfEnd('exportDevup()', t)
   console.info(perfReport())
 
