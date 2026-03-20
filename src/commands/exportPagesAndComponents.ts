@@ -118,6 +118,41 @@ export function generateImportStatements(
   return statements.length > 0 ? `${statements.join('\n')}\n\n` : ''
 }
 
+type AnnotatedNode = SceneNode & {
+  annotations: ReadonlyArray<{ label?: string; labelMarkdown?: string }>
+}
+
+/**
+ * Collect notes from a section: standalone TEXT children (annotations by convention)
+ * and Figma dev-mode annotations on descendant nodes.
+ * Returns the combined text, or empty string if none found.
+ */
+export function collectSectionNotes(section: SectionNode): string {
+  const lines: string[] = []
+
+  // 1. Direct TEXT children are treated as page annotations
+  for (const child of section.children) {
+    if (child.type === 'TEXT') {
+      const text = (child as TextNode).characters.trim()
+      if (text) lines.push(text)
+    }
+  }
+
+  // 2. Figma dev-mode annotations on any descendant node
+  const annotatedNodes = section.findAll(
+    (node) =>
+      'annotations' in node && (node as AnnotatedNode).annotations.length > 0,
+  )
+  for (const node of annotatedNodes) {
+    for (const annotation of (node as AnnotatedNode).annotations) {
+      const text = (annotation.label ?? annotation.labelMarkdown ?? '').trim()
+      if (text) lines.push(`[${node.name}] ${text}`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
 interface ScreenshotTarget {
   node: SceneNode
   folder: JSZip
@@ -323,6 +358,12 @@ export async function exportPagesAndComponents() {
 
         pagesFolder?.file(`${pageName}.tsx`, fullCode, ZIP_TEXT_FILE_OPTIONS)
         perfEnd(`responsivePage(${pageName})`, t)
+
+        // Collect section notes (standalone TEXT children + annotations)
+        const notes = collectSectionNotes(sectionNode)
+        if (notes && pagesFolder) {
+          pagesFolder.file(`${pageName}.txt`, notes, ZIP_TEXT_FILE_OPTIONS)
+        }
 
         // Defer screenshot capture
         if (pagesFolder) {
