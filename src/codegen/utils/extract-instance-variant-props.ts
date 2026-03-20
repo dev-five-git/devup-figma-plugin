@@ -30,11 +30,20 @@ export function extractInstanceVariantProps(
 ): Record<string, unknown> {
   const variantProps: Record<string, unknown> = {}
 
-  if (!node.componentProperties) {
+  let componentProperties: InstanceNode['componentProperties']
+  try {
+    componentProperties = node.componentProperties
+  } catch {
+    // Figma throws when the component set has validation errors
+    // (e.g. duplicate variant names, missing properties).
     return variantProps
   }
 
-  for (const [key, prop] of Object.entries(node.componentProperties)) {
+  if (!componentProperties) {
+    return variantProps
+  }
+
+  for (const [key, prop] of Object.entries(componentProperties)) {
     if (isReservedVariantKey(key)) continue
     const sanitizedKey = sanitizePropertyName(key)
     if (prop.type === 'VARIANT') {

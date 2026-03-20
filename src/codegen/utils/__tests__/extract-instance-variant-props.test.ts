@@ -151,6 +151,20 @@ describe('extractInstanceVariantProps', () => {
     expect(result.Viewport).toBeUndefined()
   })
 
+  test('returns empty object when componentProperties getter throws', () => {
+    const node = {
+      get componentProperties(): never {
+        throw new Error(
+          'in get_componentProperties: Component set for node has existing errors',
+        )
+      },
+    } as unknown as InstanceNode
+
+    const result = extractInstanceVariantProps(node)
+
+    expect(result).toEqual({})
+  })
+
   test('filters out both effect and viewport but keeps other variants', () => {
     const node = {
       componentProperties: {

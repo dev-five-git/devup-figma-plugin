@@ -10,6 +10,7 @@ import type { ComponentTree, NodeTree } from './types'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
 import { extractInstanceVariantProps } from './utils/extract-instance-variant-props'
+import { getComponentPropertyDefinitions } from './utils/get-component-property-definitions'
 import {
   getDevupComponentByNode,
   getDevupComponentByProps,
@@ -639,10 +640,9 @@ export class Codegen {
 
     // Collect INSTANCE_SWAP and BOOLEAN property definitions for slot/condition detection.
     const parentSet = node.parent?.type === 'COMPONENT_SET' ? node.parent : null
-    const propDefs =
-      parentSet?.componentPropertyDefinitions ||
-      node.componentPropertyDefinitions ||
-      {}
+    const propDefs = parentSet
+      ? getComponentPropertyDefinitions(parentSet)
+      : getComponentPropertyDefinitions(node)
     const instanceSwapSlots = new Map<string, string>()
     const booleanSlots = new Map<string, string>()
     const textSlots = new Map<string, string>()
@@ -758,8 +758,9 @@ export class Codegen {
    */
   hasViewportVariant(): boolean {
     if (this.node.type !== 'COMPONENT_SET') return false
-    for (const key in (this.node as ComponentSetNode)
-      .componentPropertyDefinitions) {
+    for (const key in getComponentPropertyDefinitions(
+      this.node as ComponentSetNode,
+    )) {
       if (key.toLowerCase() === 'viewport') return true
     }
     return false
