@@ -6,6 +6,7 @@ import {
 } from '../props/selector'
 import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
+import { getComponentPropertyDefinitions } from '../utils/get-component-property-definitions'
 import { paddingLeftMultiline } from '../utils/padding-left-multiline'
 import { perfEnd, perfStart } from '../utils/perf'
 import {
@@ -399,9 +400,10 @@ export class ResponsiveCodegen {
     componentName: string,
   ): Promise<ReadonlyArray<readonly [string, string]>> {
     // Find viewport and effect variant keys
+    const viewportDefs = getComponentPropertyDefinitions(componentSet)
     let viewportKey: string | undefined
     let effectKey: string | undefined
-    for (const key in componentSet.componentPropertyDefinitions) {
+    for (const key in viewportDefs) {
       const lower = key.toLowerCase()
       if (lower === 'viewport') viewportKey = key
       else if (lower === 'effect') effectKey = key
@@ -413,8 +415,8 @@ export class ResponsiveCodegen {
 
     // Get variants excluding viewport
     const variants: Record<string, string> = {}
-    for (const name in componentSet.componentPropertyDefinitions) {
-      const definition = componentSet.componentPropertyDefinitions[name]
+    for (const name in viewportDefs) {
+      const definition = viewportDefs[name]
       const lowerName = name.toLowerCase()
       if (lowerName !== 'viewport' && lowerName !== 'effect') {
         const sanitizedName = sanitizePropertyName(name)
@@ -550,9 +552,10 @@ export class ResponsiveCodegen {
     const tTotal = perfStart()
 
     // Find viewport and effect variant keys
+    const variantDefs = getComponentPropertyDefinitions(componentSet)
     let viewportKey: string | undefined
     let effectKey: string | undefined
-    for (const key in componentSet.componentPropertyDefinitions) {
+    for (const key in variantDefs) {
       const lower = key.toLowerCase()
       if (lower === 'viewport') viewportKey = key
       else if (lower === 'effect') effectKey = key
@@ -563,8 +566,8 @@ export class ResponsiveCodegen {
     const variants: Record<string, string> = {}
     // Map from original name to sanitized name
     const variantKeyToSanitized: Record<string, string> = {}
-    for (const name in componentSet.componentPropertyDefinitions) {
-      const definition = componentSet.componentPropertyDefinitions[name]
+    for (const name in variantDefs) {
+      const definition = variantDefs[name]
       if (definition.type === 'VARIANT') {
         const lowerName = name.toLowerCase()
         // Exclude both viewport and effect from variant keys
@@ -794,8 +797,9 @@ export class ResponsiveCodegen {
     // Collect BOOLEAN and INSTANCE_SWAP props for the interface
     // (effect is handled via pseudo-selectors, VARIANT keys don't exist in effect-only path)
     const variants: Record<string, string> = {}
-    for (const name in componentSet.componentPropertyDefinitions) {
-      const definition = componentSet.componentPropertyDefinitions[name]
+    const effectDefs = getComponentPropertyDefinitions(componentSet)
+    for (const name in effectDefs) {
+      const definition = effectDefs[name]
       if (definition.type === 'INSTANCE_SWAP') {
         variants[sanitizePropertyName(name)] = 'React.ReactNode'
       } else if (definition.type === 'BOOLEAN') {
@@ -831,8 +835,9 @@ export class ResponsiveCodegen {
     }
 
     // Check if componentSet has effect variant (pseudo-selector)
+    const groupVariantDefs = getComponentPropertyDefinitions(componentSet)
     let hasEffect = false
-    for (const key in componentSet.componentPropertyDefinitions) {
+    for (const key in groupVariantDefs) {
       if (key.toLowerCase() === 'effect') {
         hasEffect = true
         break
@@ -905,7 +910,7 @@ export class ResponsiveCodegen {
       if (hasEffect) {
         const effectValue =
           variantProps[
-            Object.keys(componentSet.componentPropertyDefinitions).find(
+            Object.keys(groupVariantDefs).find(
               (k) => k.toLowerCase() === 'effect',
             ) || ''
           ]

@@ -1,4 +1,5 @@
 import { fmtPct } from '../utils/fmtPct'
+import { getComponentPropertyDefinitions } from '../utils/get-component-property-definitions'
 import { perfEnd, perfStart } from '../utils/perf'
 import { getProps } from '.'
 
@@ -141,7 +142,8 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
   variants: Record<string, string>
   variantComments: Record<string, string>
 }> {
-  const hasEffect = !!node.componentPropertyDefinitions.effect
+  const propDefs = getComponentPropertyDefinitions(node)
+  const hasEffect = !!propDefs.effect
   const tSelector = perfStart()
   // Pre-filter: only call expensive getProps() on children with non-default effects.
   // The effect/trigger check is a cheap property read — skip children that would be
@@ -169,7 +171,7 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
     variants: Record<string, string>
     variantComments: Record<string, string>
   } = { props: {}, variants: {}, variantComments: {} }
-  const defs = node.componentPropertyDefinitions
+  const defs = propDefs
   for (const name in defs) {
     if (name === 'effect' || name === 'viewport') continue
     const definition = defs[name]
@@ -233,7 +235,8 @@ export async function getSelectorPropsForGroup(
   variantFilter: Record<string, string>,
   viewportValue?: string,
 ): Promise<Record<string, object | string>> {
-  const hasEffect = !!componentSet.componentPropertyDefinitions.effect
+  const setDefs = getComponentPropertyDefinitions(componentSet)
+  const hasEffect = !!setDefs.effect
   if (!hasEffect) return {}
 
   // Build cache key from componentSet.id + filter + viewport
@@ -269,9 +272,10 @@ async function computeSelectorPropsForGroup(
   viewportValue?: string,
 ): Promise<Record<string, object | string>> {
   // Find viewport key if needed
-  const viewportKey = Object.keys(
-    componentSet.componentPropertyDefinitions,
-  ).find((key) => key.toLowerCase() === 'viewport')
+  const groupDefs = getComponentPropertyDefinitions(componentSet)
+  const viewportKey = Object.keys(groupDefs).find(
+    (key) => key.toLowerCase() === 'viewport',
+  )
 
   // Filter components matching the variant filter (and viewport if specified)
   const matchingComponents = componentSet.children.filter((child) => {

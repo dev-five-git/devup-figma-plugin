@@ -11,6 +11,7 @@ import {
 } from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
+import { getComponentPropertyDefinitions } from './codegen/utils/get-component-property-definitions'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
 import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
 import { resetVariableCache } from './codegen/utils/variable-cache'
@@ -111,7 +112,7 @@ export function generateComponentUsage(node: SceneNode): string | null {
       (node as ComponentNode).parent?.type === 'COMPONENT_SET'
         ? ((node as ComponentNode).parent as ComponentSetNode)
         : null
-    const defs = parentSet?.componentPropertyDefinitions
+    const defs = getComponentPropertyDefinitions(parentSet)
     let textEntry: { key: string; value: string } | null = null
     let textCount = 0
     if (defs) {
@@ -162,8 +163,7 @@ export function generateComponentUsage(node: SceneNode): string | null {
   }
 
   if (node.type === 'COMPONENT_SET') {
-    const defs = (node as ComponentSetNode).componentPropertyDefinitions
-    if (!defs) return `<${componentName} />`
+    const defs = getComponentPropertyDefinitions(node as ComponentSetNode)
 
     const entries: { key: string; value: string; type: string }[] = []
     let textEntry: { key: string; value: string } | null = null
