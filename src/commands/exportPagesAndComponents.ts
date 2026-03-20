@@ -17,6 +17,7 @@ import { wrapComponent } from '../codegen/utils/wrap-component'
 import { getComponentName } from '../utils'
 import { downloadFile } from '../utils/download-file'
 import { toPascal } from '../utils/to-pascal'
+import { buildDevupConfig } from './devup'
 
 const NOTIFY_TIMEOUT = 3000
 // Figma throttles >4 concurrent exportAsync calls for large PNGs (screenshots).
@@ -180,6 +181,9 @@ export async function exportPagesAndComponents() {
     // Deferred work collectors
     const screenshotTargets: ScreenshotTarget[] = []
 
+    // Fire devup config build early — runs in parallel with codegen
+    const devupConfigPromise = buildDevupConfig()
+
     // Reset global asset registry so buildTree() populates it fresh
     resetGlobalAssetNodes()
 
@@ -340,6 +344,10 @@ export async function exportPagesAndComponents() {
       figma.notify('No components or pages found')
       return
     }
+
+    // Await devup config (started in parallel with codegen) and add to ZIP
+    const devupConfig = await devupConfigPromise
+    zip.file('devup.json', JSON.stringify(devupConfig), ZIP_TEXT_FILE_OPTIONS)
 
     // Asset nodes were already collected by Codegen's buildTree() into the
     // global registry — no need to re-walk the Figma node tree via IPC.
