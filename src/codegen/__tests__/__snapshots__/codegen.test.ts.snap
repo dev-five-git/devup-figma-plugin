@@ -1971,16 +1971,7 @@ exports[`render real world component real world $ 35`] = `
 
 exports[`render real world component real world $ 36`] = `
 "export function Border() {
-  return (
-    <Box
-      bg="#FFF"
-      borderTop="solid 1px #000"
-      maskImage="url(/icons/border.svg)"
-      maskPos="center"
-      maskRepeat="no-repeat"
-      maskSize="contain"
-    />
-  )
+  return <Image borderTop="solid 1px #000" src="/icons/border.svg" />
 }"
 `;
 
@@ -2190,10 +2181,6 @@ exports[`render real world component real world $ 47`] = `
       maskPos="center"
       maskRepeat="no-repeat"
       maskSize="contain"
-      pb="2.96px"
-      pl="3.49px"
-      pr="2.89px"
-      pt="2.02px"
     />
   )
 }"
@@ -2208,8 +2195,6 @@ exports[`render real world component real world $ 48`] = `
       maskPos="center"
       maskRepeat="no-repeat"
       maskSize="contain"
-      px="3px"
-      py="2px"
     />
   )
 }"
@@ -2224,8 +2209,6 @@ exports[`render real world component real world $ 49`] = `
       maskPos="center"
       maskRepeat="no-repeat"
       maskSize="contain"
-      px="3px"
-      py="2px"
     />
   )
 }"
@@ -2233,7 +2216,7 @@ exports[`render real world component real world $ 49`] = `
 
 exports[`render real world component real world $ 50`] = `
 "export function Svg() {
-  return <Image px="3px" py="2px" src="/icons/recommend.svg" />
+  return <Image src="/icons/recommend.svg" />
 }"
 `;
 
@@ -3178,7 +3161,15 @@ exports[`render real world component real world $ 87`] = `
 
 exports[`render real world component real world $ 88`] = `
 "export function 다양한도형() {
-  return <Image src="/icons/Vector4.svg" />
+  return (
+    <Box
+      bg="#000"
+      maskImage="url(/icons/Vector4.svg)"
+      maskPos="center"
+      maskRepeat="no-repeat"
+      maskSize="contain"
+    />
+  )
 }"
 `;
 
@@ -3206,9 +3197,6 @@ exports[`render real world component real world $ 91`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        pl="9px"
-        pr="7px"
-        py="5px"
         transform="rotate(180deg)"
       />
     </Center>
@@ -3228,7 +3216,6 @@ exports[`render real world component real world $ 92`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        p="2.29px"
       />
     </Center>
   )
@@ -3257,8 +3244,6 @@ exports[`render real world component real world $ 94`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        px="2.65px"
-        py="2.33px"
       />
     </Center>
   )
@@ -3287,8 +3272,6 @@ exports[`render real world component real world $ 96`] = `
         maskPos="center"
         maskRepeat="no-repeat"
         maskSize="contain"
-        px="2.65px"
-        py="2.33px"
       />
     </Center>
   )
@@ -3546,11 +3529,15 @@ exports[`render real world component real world $ 106`] = `
 "export function UnderConstruction() {
   return (
     <Center bg="$background" overflow="hidden" px="40px" py="120px">
-      <Image
+      <Box
+        bg="#C8A46B"
         left="-196.23px"
+        maskImage="url(/icons/backgroundImage.svg)"
+        maskPos="center"
+        maskRepeat="no-repeat"
+        maskSize="contain"
         opacity="0.2"
         pos="absolute"
-        src="/icons/backgroundImage.svg"
         top="-908px"
         transform="rotate(11.24deg)"
         transformOrigin="top left"
@@ -3679,11 +3666,15 @@ exports[`render real world component real world $ 107`] = `
       px="20px"
       py="60px"
     >
-      <Image
+      <Box
+        bg="#C8A46B"
         left="-183.93px"
+        maskImage="url(/icons/backgroundImage.svg)"
+        maskPos="center"
+        maskRepeat="no-repeat"
+        maskSize="contain"
         opacity="0.2"
         pos="absolute"
-        src="/icons/backgroundImage.svg"
         top="-255px"
         transform="rotate(11.24deg)"
         transformOrigin="top left"

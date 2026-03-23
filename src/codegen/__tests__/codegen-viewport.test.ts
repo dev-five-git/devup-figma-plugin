@@ -942,6 +942,7 @@ describe('Codegen effect-only COMPONENT_SET', () => {
         isAsset: true,
         width: 20,
         height: 20,
+        getMainComponentAsync: () => Promise.resolve(null),
         ...overrides,
       } as unknown as SceneNode
     }
@@ -1174,6 +1175,7 @@ describe('Codegen effect-only COMPONENT_SET', () => {
         isAsset: true,
         width: 20,
         height: 20,
+        getMainComponentAsync: () => Promise.resolve(null),
         ...overrides,
       } as unknown as SceneNode
     }
@@ -1382,6 +1384,7 @@ describe('Codegen effect-only COMPONENT_SET', () => {
         isAsset: true,
         width: 20,
         height: 20,
+        getMainComponentAsync: () => Promise.resolve(null),
         ...overrides,
       } as unknown as SceneNode
     }

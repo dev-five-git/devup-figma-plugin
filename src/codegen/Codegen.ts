@@ -7,6 +7,7 @@ import { getTransformProps } from './props/transform'
 import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
+import { addPx } from './utils/add-px'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
 import { extractInstanceVariantProps } from './utils/extract-instance-variant-props'
@@ -73,6 +74,68 @@ export function getGlobalAssetNodes(): ReadonlyMap<
   { node: SceneNode; type: 'svg' | 'png' }
 > {
   return globalAssetNodes
+}
+
+/** Props that are purely layout/padding — safe to discard when collapsing a single-asset wrapper. */
+const LAYOUT_ONLY_PROPS = new Set([
+  'display',
+  'flexDir',
+  'gap',
+  'justifyContent',
+  'alignItems',
+  'p',
+  'px',
+  'py',
+  'pt',
+  'pr',
+  'pb',
+  'pl',
+  'w',
+  'h',
+  'boxSize',
+  'overflow',
+  'maxW',
+  'maxH',
+  'minW',
+  'minH',
+  'aspectRatio',
+  'flex',
+])
+
+/** Returns true if props contain visual styles (bg, border, position, etc.) beyond layout. */
+function hasVisualProps(props: Record<string, unknown>): boolean {
+  for (const key of Object.keys(props)) {
+    if (props[key] != null && !LAYOUT_ONLY_PROPS.has(key)) return true
+  }
+  return false
+}
+
+/**
+ * Recursively traverse a single-child chain to find a lone SVG asset leaf.
+ * Matches both <Image src="...svg"> and mask-based <Box maskImage="url(...)">.
+ * Returns the leaf NodeTree if every node in the chain has no visual props,
+ * or null if the chain contains visual styling, branches, or is not an SVG.
+ */
+function findSingleSvgImageLeaf(tree: NodeTree): NodeTree | null {
+  if (tree.children.length === 0) {
+    // Match <Image src="*.svg">
+    if (
+      tree.component === 'Image' &&
+      typeof tree.props.src === 'string' &&
+      tree.props.src.endsWith('.svg')
+    ) {
+      return tree
+    }
+    // Match mask-based <Box maskImage="url('*.svg')">
+    if (tree.component === 'Box' && typeof tree.props.maskImage === 'string') {
+      return tree
+    }
+    return null
+  }
+  if (tree.children.length === 1 && !hasVisualProps(tree.props)) {
+    return findSingleSvgImageLeaf(tree.children[0])
+  }
+  return null
 }
 
 /**
@@ -390,39 +453,10 @@ export class Codegen {
       }
     }
 
-    // Handle asset nodes (images/SVGs)
-    const assetNode = checkAssetNode(node)
-    if (assetNode) {
-      // Register in global asset registry for export commands
-      const assetKey = `${assetNode}/${node.name}`
-      if (!globalAssetNodes.has(assetKey)) {
-        globalAssetNodes.set(assetKey, { node, type: assetNode })
-      }
-      const props = await getProps(node)
-      props.src = `/${assetNode === 'svg' ? 'icons' : 'images'}/${node.name}.${assetNode}`
-      if (assetNode === 'svg') {
-        const maskColor = await checkSameColor(node)
-        if (maskColor) {
-          props.maskImage = buildCssUrl(props.src as string)
-          props.maskRepeat = 'no-repeat'
-          props.maskSize = 'contain'
-          props.maskPos = 'center'
-          props.bg = maskColor
-          delete props.src
-        }
-      }
-      perfEnd('buildTree()', tBuild)
-      return {
-        component: 'src' in props ? 'Image' : 'Box',
-        props,
-        children: [],
-        nodeType: node.type,
-        nodeName: node.name,
-      }
-    }
-
     // Handle INSTANCE nodes first — they only need position props (all sync),
     // skipping the expensive full getProps() with 6 async Figma API calls.
+    // INSTANCE nodes must be checked before asset detection because icon-like
+    // instances (containing only vectors) would otherwise be misclassified as SVG assets.
     if (node.type === 'INSTANCE') {
       const mainComponent = await getMainComponentCached(node)
       // Fire addComponentTree without awaiting — it runs in the background.
@@ -528,6 +562,53 @@ export class Codegen {
       }
     }
 
+    // Handle asset nodes (images/SVGs)
+    const assetNode = checkAssetNode(node)
+    if (assetNode) {
+      // Register in global asset registry for export commands
+      const assetKey = `${assetNode}/${node.name}`
+      if (!globalAssetNodes.has(assetKey)) {
+        globalAssetNodes.set(assetKey, { node, type: assetNode })
+      }
+      const props = await getProps(node)
+      props.src = `/${assetNode === 'svg' ? 'icons' : 'images'}/${node.name}.${assetNode}`
+      if (assetNode === 'svg') {
+        const maskColor = await checkSameColor(node)
+        if (maskColor) {
+          props.maskImage = buildCssUrl(props.src as string)
+          props.maskRepeat = 'no-repeat'
+          props.maskSize = 'contain'
+          props.maskPos = 'center'
+          props.bg = maskColor
+          delete props.src
+        }
+      }
+      // Strip padding props from asset nodes — padding from inferredAutoLayout
+      // is meaningless on asset elements (Image or mask-based Box).
+      for (const key of Object.keys(props)) {
+        if (
+          key === 'p' ||
+          key === 'px' ||
+          key === 'py' ||
+          key === 'pt' ||
+          key === 'pr' ||
+          key === 'pb' ||
+          key === 'pl'
+        ) {
+          delete props[key]
+        }
+      }
+      const assetComponent = 'src' in props ? 'Image' : 'Box'
+      perfEnd('buildTree()', tBuild)
+      return {
+        component: assetComponent,
+        props,
+        children: [],
+        nodeType: node.type,
+        nodeName: node.name,
+      }
+    }
+
     // Fire getProps early for non-INSTANCE nodes — it runs while we process children.
     const propsPromise = getProps(node)
 
@@ -553,6 +634,29 @@ export class Codegen {
       props = { ...baseProps, ...textProps }
     } else {
       props = baseProps
+    }
+
+    // When an icon-like node (isAsset) wraps a chain of single-child
+    // layout-only wrappers ending in a single Image, collapse into
+    // a direct Image using the node's outer dimensions.
+    if (children.length === 1 && !hasVisualProps(baseProps)) {
+      const imageLeaf = findSingleSvgImageLeaf(children[0])
+      if (imageLeaf) {
+        if (node.width === node.height) {
+          imageLeaf.props.boxSize = addPx(node.width)
+          delete imageLeaf.props.w
+          delete imageLeaf.props.h
+        } else {
+          imageLeaf.props.w = addPx(node.width)
+          imageLeaf.props.h = addPx(node.height)
+        }
+        perfEnd('buildTree()', tBuild)
+        return {
+          ...imageLeaf,
+          nodeType: node.type,
+          nodeName: node.name,
+        }
+      }
     }
 
     const component = getDevupComponentByNode(node, props)
@@ -734,6 +838,36 @@ export class Codegen {
         if (!variants[slot.component]) {
           variants[slot.component] = 'React.ReactNode'
         }
+      }
+    }
+
+    // When an icon-like component (isAsset) wraps a chain of single-child
+    // layout-only wrappers ending in a single Image, collapse everything
+    // into a direct Image using the component's outer dimensions.
+    if (childrenTrees.length === 1 && !hasVisualProps(props)) {
+      const imageLeaf = findSingleSvgImageLeaf(childrenTrees[0])
+      if (imageLeaf) {
+        if (node.width === node.height) {
+          imageLeaf.props.boxSize = addPx(node.width)
+          delete imageLeaf.props.w
+          delete imageLeaf.props.h
+        } else {
+          imageLeaf.props.w = addPx(node.width)
+          imageLeaf.props.h = addPx(node.height)
+        }
+        this.componentTrees.set(nodeId, {
+          name: getComponentName(node),
+          node,
+          tree: {
+            ...imageLeaf,
+            nodeType: node.type,
+            nodeName: node.name,
+          },
+          variants,
+          variantComments,
+        })
+        perfEnd('addComponentTree()', tAdd)
+        return
       }
     }
 
