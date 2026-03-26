@@ -1,22 +1,6 @@
 import { toCamel } from './utils/to-camel'
 import { toPascal } from './utils/to-pascal'
 
-// Cache for figma.getLocalTextStylesAsync() — called once per codegen run
-let localTextStyleIdsCache: Promise<Set<string>> | null = null
-let localTextStyleIdsResolved: Set<string> | null = null
-
-function getLocalTextStyleIds(): Promise<Set<string>> {
-  if (localTextStyleIdsCache) return localTextStyleIdsCache
-  localTextStyleIdsCache = Promise.resolve(
-    figma.getLocalTextStylesAsync(),
-  ).then((styles) => {
-    const set = new Set(styles.map((s) => s.id))
-    localTextStyleIdsResolved = set
-    return set
-  })
-  return localTextStyleIdsCache
-}
-
 // Cache for figma.getStyleByIdAsync() — keyed by style ID
 const styleByIdCache = new Map<string, Promise<BaseStyle | null>>()
 const styleByIdResolved = new Map<string, BaseStyle | null>()
@@ -35,8 +19,6 @@ function getStyleByIdCached(styleId: string): Promise<BaseStyle | null> {
 }
 
 export function resetTextStyleCache(): void {
-  localTextStyleIdsCache = null
-  localTextStyleIdsResolved = null
   styleByIdCache.clear()
   styleByIdResolved.clear()
 }
@@ -63,26 +45,18 @@ export async function propsToPropsWithTypography(
   delete ret.w
   delete ret.h
 
-  // Sync fast path: if both caches are resolved, skip await entirely
-  if (localTextStyleIdsResolved !== null) {
-    if (textStyleId && localTextStyleIdsResolved.has(textStyleId)) {
-      const style = styleByIdResolved.get(textStyleId)
-      if (style !== undefined) {
-        if (style) applyTypographyStyle(ret, style)
-        return ret
-      }
-      // Style not yet resolved — fall through to async
-    } else {
-      return ret
-    }
+  if (!textStyleId) return ret
+
+  // Sync fast path: if style already resolved, skip await entirely
+  const resolvedStyle = styleByIdResolved.get(textStyleId)
+  if (resolvedStyle !== undefined) {
+    if (resolvedStyle) applyTypographyStyle(ret, resolvedStyle)
+    return ret
   }
 
-  // Async fallback (first call or style not yet in resolved cache)
-  const localStyleIds = await getLocalTextStyleIds()
-  if (textStyleId && localStyleIds.has(textStyleId)) {
-    const style = await getStyleByIdCached(textStyleId)
-    if (style) applyTypographyStyle(ret, style)
-  }
+  // Async fallback: resolve style by ID (works for both local and library styles)
+  const style = await getStyleByIdCached(textStyleId)
+  if (style) applyTypographyStyle(ret, style)
   return ret
 }
 
