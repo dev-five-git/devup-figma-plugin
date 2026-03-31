@@ -1,3 +1,4 @@
+import { addPx } from '../../codegen/utils/add-px'
 import {
   perfEnd,
   perfReport,
@@ -14,7 +15,63 @@ import { toCamel } from '../../utils/to-camel'
 import { variableAliasToValue } from '../../utils/variable-alias-to-value'
 import type { Devup, DevupTypography } from './types'
 import { downloadDevupXlsx } from './utils/download-devup-xlsx'
-import { getDevupColorCollection } from './utils/get-devup-color-collection'
+
+/**
+ * Map mode name to responsive breakpoint index.
+ * mobile=0, sm=1, tablet=2, lg=3, desktop/pc=4.
+ * Numeric mode names are used directly.
+ * Unknown names default to 0.
+ */
+function modeNameToBreakpointLevel(name: string): number {
+  const lower = name.toLowerCase()
+  if (lower === 'mobile') return 0
+  if (lower === 'sm') return 1
+  if (lower === 'tablet') return 2
+  if (lower === 'lg') return 3
+  if (lower === 'desktop' || lower === 'pc') return 4
+  const num = Number.parseInt(lower, 10)
+  if (!Number.isNaN(num) && num >= 0 && num <= 5) return num
+  return 0
+}
+
+/**
+ * Get theme name from colors (first mode name), or "default".
+ */
+function resolveThemeName(devup: Devup): string {
+  const colors = devup.theme?.colors
+  if (colors) {
+    const firstKey = Object.keys(colors)[0]
+    if (firstKey) return firstKey
+  }
+  return 'default'
+}
+
+/**
+ * Optimize a responsive array: single value → plain string, trim trailing nulls.
+ */
+function optimizeResponsiveArray(
+  values: (null | string)[],
+): string | (null | string)[] {
+  const filtered = values.filter((v) => v !== null)
+  if (filtered.length === 0) return filtered[0]
+  if (filtered.length === 1) return filtered[0]
+  // Trim trailing nulls
+  while (values.length > 0 && values[values.length - 1] === null) {
+    values.pop()
+  }
+  // If first element is null, shift to start from first non-null
+  if (values[0] === null) {
+    const arr: (null | string)[] = [filtered[0]]
+    for (let i = 1; i < values.length; i++) {
+      arr.push(values[i])
+    }
+    while (arr.length > 0 && arr[arr.length - 1] === null) {
+      arr.pop()
+    }
+    return arr
+  }
+  return values
+}
 
 type TextSearchNode = SceneNode & {
   findAllWithCriteria(criteria: { types: ['TEXT'] }): TextNode[]
@@ -35,8 +92,10 @@ export async function buildDevupConfig(
   const devup: Devup = {}
 
   const tColors = perfStart()
-  const collection = await getDevupColorCollection()
-  if (collection) {
+  // Scan ALL variable collections — not just "Devup Colors"
+  const allCollections =
+    await figma.variables.getLocalVariableCollectionsAsync()
+  for (const collection of allCollections) {
     // Pre-fetch all variables once — reuse across modes
     const variables = await Promise.all(
       collection.variableIds.map((varId) =>
@@ -45,39 +104,97 @@ export async function buildDevupConfig(
     )
     // Pre-compute camelCase names once (not per variable per mode)
     const camelNames = variables.map((v) => (v ? toCamel(v.name) : ''))
-    devup.theme ??= {}
-    devup.theme.colors ??= {}
-    const themeColors = devup.theme.colors
-    // Process all modes in parallel
-    await Promise.all(
-      collection.modes.map(async (mode) => {
-        const colors: Record<string, string> = {}
-        themeColors[mode.name.toLowerCase()] = colors
-        await Promise.all(
-          variables.map(async (variable, i) => {
-            if (variable === null) return
-            const value = variable.valuesByMode[mode.modeId]
-            if (typeof value === 'boolean' || typeof value === 'number') return
-            if (isVariableAlias(value)) {
-              const nextValue = await variableAliasToValue(value, mode.modeId)
-              if (nextValue === null) return
-              if (
-                typeof nextValue === 'boolean' ||
-                typeof nextValue === 'number'
-              )
-                return
-              colors[camelNames[i]] = optimizeHex(
-                rgbaToHex(figma.util.rgba(nextValue)),
-              )
-            } else {
-              colors[camelNames[i]] = optimizeHex(
-                rgbaToHex(figma.util.rgba(value)),
-              )
-            }
-          }),
-        )
-      }),
+
+    // Export COLOR variables
+    const hasColors = variables.some(
+      (v) => v !== null && v.resolvedType === 'COLOR',
     )
+    if (hasColors) {
+      devup.theme ??= {}
+      devup.theme.colors ??= {}
+      const themeColors = devup.theme.colors
+      await Promise.all(
+        collection.modes.map(async (mode) => {
+          const modeName = mode.name.toLowerCase()
+          const colors = themeColors[modeName] ?? {}
+          themeColors[modeName] = colors
+          await Promise.all(
+            variables.map(async (variable, i) => {
+              if (variable === null || variable.resolvedType !== 'COLOR') return
+              const value = variable.valuesByMode[mode.modeId]
+              if (typeof value === 'boolean' || typeof value === 'number')
+                return
+              if (isVariableAlias(value)) {
+                const nextValue = await variableAliasToValue(value, mode.modeId)
+                if (nextValue === null) return
+                if (
+                  typeof nextValue === 'boolean' ||
+                  typeof nextValue === 'number'
+                )
+                  return
+                colors[camelNames[i]] = optimizeHex(
+                  rgbaToHex(figma.util.rgba(nextValue)),
+                )
+              } else {
+                colors[camelNames[i]] = optimizeHex(
+                  rgbaToHex(figma.util.rgba(value)),
+                )
+              }
+            }),
+          )
+        }),
+      )
+    }
+
+    // Export FLOAT variables as length values with responsive arrays
+    const hasFloats = variables.some(
+      (v) => v !== null && v.resolvedType === 'FLOAT',
+    )
+    if (hasFloats) {
+      devup.theme ??= {}
+      devup.theme.length ??= {}
+
+      // Determine theme name from colors, or "default"
+      const themeName = resolveThemeName(devup)
+
+      const lengthForTheme = devup.theme.length[themeName] ?? {}
+      devup.theme.length[themeName] = lengthForTheme
+
+      // Build responsive arrays from mode values
+      for (const variable of variables) {
+        if (variable === null || variable.resolvedType !== 'FLOAT') continue
+        const name = toCamel(variable.name)
+        const values: (null | string)[] = [null, null, null, null, null, null]
+        let hasAny = false
+
+        for (const mode of collection.modes) {
+          const level = modeNameToBreakpointLevel(mode.name)
+          const raw = variable.valuesByMode[mode.modeId]
+          let resolved = raw
+          if (isVariableAlias(raw)) {
+            const aliasResult = await variableAliasToValue(raw, mode.modeId)
+            resolved = aliasResult ?? raw
+          }
+          if (typeof resolved !== 'number') continue
+          const px = addPx(resolved)
+          if (!px) continue
+          values[level] = px
+          hasAny = true
+        }
+
+        if (hasAny) {
+          lengthForTheme[name] = optimizeResponsiveArray(values)
+        }
+      }
+
+      // Remove empty
+      if (Object.keys(lengthForTheme).length === 0) {
+        delete devup.theme.length[themeName]
+      }
+      if (Object.keys(devup.theme.length).length === 0) {
+        delete devup.theme.length
+      }
+    }
   }
   perfEnd('exportDevup.colors', tColors)
 
@@ -238,7 +355,60 @@ export async function buildDevupConfig(
     )
   }
 
+  // Export effect styles as shadow values with theme wrapper
+  const tShadow = perfStart()
+  const effectStyles = await figma.getLocalEffectStylesAsync()
+  if (effectStyles.length > 0) {
+    const shadowByKey: Record<string, (null | string)[]> = {}
+    for (const style of effectStyles) {
+      const meta = styleNameToTypography(style.name)
+      let shadowValues = shadowByKey[meta.name]
+      if (!shadowValues) {
+        shadowValues = [null, null, null, null, null, null]
+        shadowByKey[meta.name] = shadowValues
+      }
+      if (!shadowValues[meta.level]) {
+        shadowValues[meta.level] = effectStyleToCssShadow(style)
+      }
+    }
+    if (Object.keys(shadowByKey).length > 0) {
+      devup.theme ??= {}
+      devup.theme.shadow ??= {}
+      const themeName = resolveThemeName(devup)
+      const shadowForTheme: Record<string, string | (null | string)[]> = {}
+      devup.theme.shadow[themeName] = shadowForTheme
+
+      for (const [key, values] of Object.entries(shadowByKey)) {
+        const optimized = optimizeResponsiveArray(values)
+        if (optimized !== undefined) {
+          shadowForTheme[key] = optimized
+        }
+      }
+    }
+  }
+  perfEnd('exportDevup.shadow', tShadow)
+
   return devup
+}
+
+/**
+ * Convert a Figma effect style to a CSS shadow string.
+ */
+function effectStyleToCssShadow(style: EffectStyle): string | null {
+  const parts: string[] = []
+  for (const effect of style.effects) {
+    if (!effect.visible) continue
+    if (effect.type === 'DROP_SHADOW' || effect.type === 'INNER_SHADOW') {
+      const { offset, radius, color } = effect
+      const spread = 'spread' in effect ? (effect.spread ?? 0) : 0
+      const prefix = effect.type === 'INNER_SHADOW' ? 'inset ' : ''
+      const cssColor = optimizeHex(rgbaToHex(color))
+      parts.push(
+        `${prefix}${addPx(offset.x, '0')} ${addPx(offset.y, '0')} ${addPx(radius, '0')} ${addPx(spread, '0')} ${cssColor}`,
+      )
+    }
+  }
+  return parts.length > 0 ? parts.join(', ') : null
 }
 
 export async function exportDevup(

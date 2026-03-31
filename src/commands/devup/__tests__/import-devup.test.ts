@@ -66,7 +66,9 @@ describe('import-devup (standalone file)', () => {
         createVariable,
       },
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       createTextStyle,
+      createEffectStyle: () => ({ name: '', effects: [] }),
       loadFontAsync,
     } as unknown as typeof figma
 
@@ -129,12 +131,14 @@ describe('import-devup (standalone file)', () => {
         createVariable,
       },
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       createTextStyle: mock(
         () =>
           ({
             name: '',
           }) as unknown as TextStyle,
       ),
+      createEffectStyle: () => ({ name: '', effects: [] }),
       loadFontAsync: mock(() => Promise.resolve()),
     } as unknown as typeof figma
 
@@ -194,7 +198,9 @@ describe('import-devup (standalone file)', () => {
         ),
       },
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       createTextStyle,
+      createEffectStyle: () => ({ name: '', effects: [] }),
       loadFontAsync,
     } as unknown as typeof figma
 

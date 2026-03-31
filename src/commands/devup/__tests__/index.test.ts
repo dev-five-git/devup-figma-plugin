@@ -106,19 +106,26 @@ describe('devup commands', () => {
       util: { rgba: (v: unknown) => v },
       loadAllPagesAsync: async () => {},
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       root: { findAllWithCriteria: () => [] },
       variables: {
         getVariableByIdAsync: async () =>
           ({
             name: 'Primary',
+            resolvedType: 'COLOR',
             valuesByMode: { m1: { r: 1, g: 0, b: 0, a: 1 } },
           }) as unknown as Variable,
+        getLocalVariableCollectionsAsync: async () => [
+          {
+            modes: [{ modeId: 'm1', name: 'Light' }],
+            variableIds: ['v1'],
+          },
+        ],
       },
     } as unknown as typeof figma
 
     await exportDevup('json')
 
-    expect(getColorCollectionSpy).toHaveBeenCalled()
     expect(downloadFileMock).toHaveBeenCalledWith(
       'devup.json',
       expect.stringContaining('"primary":"#ff0000"'),
@@ -152,9 +159,11 @@ describe('devup commands', () => {
           { id: '1', name: 'heading/1' },
           { id: '2', name: 'heading/2' },
         ] as unknown as TextStyle[],
+      getLocalEffectStylesAsync: async () => [],
       root: { findAllWithCriteria: () => [] },
       variables: {
         getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
       },
     } as unknown as typeof figma
 
@@ -210,6 +219,7 @@ describe('devup commands', () => {
       getLocalTextStylesAsync: async () => [
         { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
       ],
+      getLocalEffectStylesAsync: async () => [],
       root: {
         findAllWithCriteria: () => [textNode],
         children: [],
@@ -224,6 +234,12 @@ describe('devup commands', () => {
             name: 'Primary',
             valuesByMode: { m1: { type: 'VARIABLE_ALIAS', id: 'var1' } },
           }) as unknown as Variable,
+        getLocalVariableCollectionsAsync: async () => [
+          {
+            modes: [{ modeId: 'm1', name: 'Light' }],
+            variableIds: ['var1'],
+          },
+        ],
       },
     } as unknown as typeof figma
 
@@ -265,9 +281,13 @@ describe('devup commands', () => {
       getLocalTextStylesAsync: async () => [
         { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
       ],
+      getLocalEffectStylesAsync: async () => [],
       root: { findAllWithCriteria: () => [mixedTextNode] },
       mixed: mixedSymbol,
-      variables: { getVariableByIdAsync: async () => null },
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
     } as unknown as typeof figma
 
     await exportDevup('json', true)
@@ -329,11 +349,15 @@ describe('devup commands', () => {
         { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
         { id: 'style2', name: 'heading/2' } as unknown as TextStyle,
       ],
+      getLocalEffectStylesAsync: async () => [],
       root: {
         children: [otherPage, currentPage],
       },
       mixed: Symbol('mixed'),
-      variables: { getVariableByIdAsync: async () => null },
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
     } as unknown as typeof figma
 
     await exportDevup('json', true)
@@ -400,11 +424,15 @@ describe('devup commands', () => {
         { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
         { id: 'style2', name: 'body/2' } as unknown as TextStyle,
       ],
+      getLocalEffectStylesAsync: async () => [],
       root: {
         children: [currentPage, otherPage],
       },
       mixed: Symbol('mixed'),
-      variables: { getVariableByIdAsync: async () => null },
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
     } as unknown as typeof figma
 
     await exportDevup('json', true)
@@ -464,11 +492,15 @@ describe('devup commands', () => {
         { id: 'style1', name: 'heading/1' } as unknown as TextStyle,
         { id: 'style2', name: 'body/2' } as unknown as TextStyle,
       ],
+      getLocalEffectStylesAsync: async () => [],
       root: {
         children: [currentPage],
       },
       mixed: Symbol('mixed'),
-      variables: { getVariableByIdAsync: async () => null },
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
     } as unknown as typeof figma
 
     await exportDevup('json', true)
@@ -519,13 +551,17 @@ describe('devup commands', () => {
           { id: 'style1', name: 'heading/1' },
           { id: 'style2', name: 'heading/2' },
         ] as unknown as TextStyle[],
+      getLocalEffectStylesAsync: async () => [],
       root: { findAllWithCriteria: () => [textNode], children: [] },
       getStyleByIdAsync: async (id: string) =>
         id === 'style1'
           ? ({ id: 'style1', name: 'heading/1' } as unknown as TextStyle)
           : ({ id: 'style2', name: 'heading/2' } as unknown as TextStyle),
       mixed: Symbol('mixed'),
-      variables: { getVariableByIdAsync: async () => null },
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
     } as unknown as typeof figma
 
     await exportDevup('json', true)
@@ -566,8 +602,12 @@ describe('devup commands', () => {
           { id: 'style1', name: 'heading/1' },
           { id: 'style3', name: 'heading/3' },
         ] as unknown as TextStyle[],
+      getLocalEffectStylesAsync: async () => [],
       root: { findAllWithCriteria: () => [], children: [] },
-      variables: { getVariableByIdAsync: async () => null },
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
     } as unknown as typeof figma
 
     await exportDevup('json', false)
@@ -608,8 +648,12 @@ describe('devup commands', () => {
           { id: 'style0', name: 'heading/0' },
           { id: 'style1', name: 'heading/2' },
         ] as unknown as TextStyle[],
+      getLocalEffectStylesAsync: async () => [],
       root: { findAllWithCriteria: () => [], children: [] },
-      variables: { getVariableByIdAsync: async () => null },
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
     } as unknown as typeof figma
 
     await exportDevup('json', false)
@@ -638,7 +682,10 @@ describe('devup commands', () => {
 
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
-      variables: {},
+      variables: {
+        getVariableByIdAsync: async () => null,
+        getLocalVariableCollectionsAsync: async () => [],
+      },
       loadAllPagesAsync: async () => {},
       getLocalTextStylesAsync: async () => [
         {
@@ -647,6 +694,7 @@ describe('devup commands', () => {
           fontName: { family: 'Inter', style: 'Regular' },
         } as unknown as TextStyle,
       ],
+      getLocalEffectStylesAsync: async () => [],
       root: {
         findAllWithCriteria: () => [
           {
@@ -734,6 +782,7 @@ describe('devup commands', () => {
         createVariable,
       },
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       createTextStyle: createTextStyleMock,
       loadFontAsync,
     } as unknown as typeof figma
@@ -823,6 +872,7 @@ describe('devup commands', () => {
         createVariable,
       },
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       createTextStyle: createTextStyleMock,
       loadFontAsync,
     } as unknown as typeof figma
@@ -881,6 +931,7 @@ describe('devup commands', () => {
           }) as unknown as Variable,
       },
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       createTextStyle: createTextStyleMock,
       loadFontAsync,
       notify: notifyMock,
@@ -949,6 +1000,7 @@ describe('devup commands', () => {
           }) as unknown as Variable,
       },
       getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
       createTextStyle: () => styleObj,
       loadFontAsync,
       notify: mock(() => {}),
