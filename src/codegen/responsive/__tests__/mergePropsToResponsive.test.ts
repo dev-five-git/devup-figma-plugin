@@ -253,6 +253,110 @@ describe('responsive grouping helpers', () => {
     expect(groups.get('lg')?.map((child) => child.name)).toEqual(['desktop-a'])
   })
 
+  it('replaces boxShadow with __boxShadowToken when single breakpoint', () => {
+    const result = mergePropsToResponsive(
+      new Map([
+        [
+          'pc' as BreakpointKey,
+          {
+            boxShadow: '0 16px 24px 0 $shadow',
+            __boxShadowToken: '$testShadow',
+          },
+        ],
+      ]),
+    )
+    expect(result.boxShadow).toBe('$testShadow')
+    expect(result.__boxShadowToken).toBeUndefined()
+  })
+
+  it('replaces boxShadow with __boxShadowToken when all breakpoints collapse', () => {
+    const result = mergePropsToResponsive(
+      new Map([
+        [
+          'mobile' as BreakpointKey,
+          {
+            boxShadow: '0 16px 24px 0 $shadow',
+            __boxShadowToken: '$testShadow',
+          },
+        ],
+        [
+          'pc' as BreakpointKey,
+          {
+            boxShadow: '0 16px 24px 0 $shadow',
+            __boxShadowToken: '$testShadow',
+          },
+        ],
+      ]),
+    )
+    expect(result.boxShadow).toBe('$testShadow')
+    expect(result.__boxShadowToken).toBeUndefined()
+  })
+
+  it('replaces per-element token in responsive array', () => {
+    const result = mergePropsToResponsive(
+      new Map([
+        ['mobile' as BreakpointKey, { boxShadow: '0 8px 16px 0 $shadow' }],
+        [
+          'pc' as BreakpointKey,
+          {
+            boxShadow: '0 16px 24px 0 $shadow',
+            __boxShadowToken: '$testShadow',
+          },
+        ],
+      ]),
+    )
+    // PC element replaced with token, mobile stays raw
+    expect(result.boxShadow).toEqual([
+      '0 8px 16px 0 $shadow',
+      null,
+      null,
+      null,
+      '$testShadow',
+    ])
+    expect(result.__boxShadowToken).toBeUndefined()
+  })
+
+  it('replaces textShadow with __textShadowToken when single breakpoint', () => {
+    const result = mergePropsToResponsive(
+      new Map([
+        [
+          'pc' as BreakpointKey,
+          {
+            textShadow: '0 4px 8px $shadow',
+            __textShadowToken: '$titleShadow',
+          },
+        ],
+      ]),
+    )
+
+    expect(result.textShadow).toBe('$titleShadow')
+    expect(result.__textShadowToken).toBeUndefined()
+  })
+
+  it('replaces per-element textShadow token in responsive array', () => {
+    const result = mergePropsToResponsive(
+      new Map([
+        ['mobile' as BreakpointKey, { textShadow: '0 2px 4px $shadow' }],
+        [
+          'pc' as BreakpointKey,
+          {
+            textShadow: '0 6px 12px $shadow',
+            __textShadowToken: '$titleShadow',
+          },
+        ],
+      ]),
+    )
+
+    expect(result.textShadow).toEqual([
+      '0 2px 4px $shadow',
+      null,
+      null,
+      null,
+      '$titleShadow',
+    ])
+    expect(result.__textShadowToken).toBeUndefined()
+  })
+
   it('groups nodes by name across breakpoints', () => {
     const breakpointNodes = new Map<BreakpointKey, SceneNode[]>([
       [

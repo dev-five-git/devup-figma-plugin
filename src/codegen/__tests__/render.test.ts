@@ -35,6 +35,74 @@ describe('renderNode', () => {
     const result = renderNode(component, props, deps, children)
     expect(result).toBe(expected)
   })
+
+  test('replaces boxShadow with __boxShadowToken when boxShadow is string', () => {
+    const result = renderNode(
+      'Box',
+      {
+        boxShadow: '0 8px 16px 0 $shadow',
+        __boxShadowToken: '$testShadow',
+      },
+      0,
+      [],
+    )
+
+    expect(result).toBe('<Box boxShadow="$testShadow" />')
+  })
+
+  test('does not replace boxShadow with __boxShadowToken when boxShadow is array', () => {
+    const result = renderNode(
+      'Box',
+      {
+        boxShadow: ['0 8px 16px 0 $shadow', null, '$testShadow'],
+        __boxShadowToken: '$testShadow',
+      },
+      0,
+      [],
+    )
+
+    expect(result).toBe(`<Box
+  boxShadow={[
+    "0 8px 16px 0 $shadow",
+    null,
+    "$testShadow"
+  ]}
+/>`)
+  })
+
+  test('replaces textShadow with __textShadowToken when textShadow is string', () => {
+    const result = renderNode(
+      'Text',
+      {
+        textShadow: '0 4px 8px $shadow',
+        __textShadowToken: '$titleShadow',
+      },
+      0,
+      [],
+    )
+
+    expect(result).toBe('<Text textShadow="$titleShadow" />')
+  })
+
+  test('does not replace textShadow with __textShadowToken when textShadow is array', () => {
+    const result = renderNode(
+      'Text',
+      {
+        textShadow: ['0 2px 4px $shadow', null, '$titleShadow'],
+        __textShadowToken: '$titleShadow',
+      },
+      0,
+      [],
+    )
+
+    expect(result).toBe(`<Text
+  textShadow={[
+    "0 2px 4px $shadow",
+    null,
+    "$titleShadow"
+  ]}
+/>`)
+  })
 })
 
 /**

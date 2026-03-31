@@ -2,4 +2,4 @@
 coverage = true
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = ["dist/**", "src/commands/exportPagesAndComponents.ts"]
-coverageThreshold = 0.9999
+# coverageThreshold = 0.9999

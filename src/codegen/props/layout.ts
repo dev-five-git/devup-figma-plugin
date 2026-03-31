@@ -3,24 +3,42 @@ import { addPx } from '../utils/add-px'
 import { checkAssetNode } from '../utils/check-asset-node'
 import { getPageNode } from '../utils/get-page-node'
 import { isChildWidthShrinker } from '../utils/is-child-width-shrinker'
+import { resolveBoundVariable } from '../utils/resolve-bound-variable'
 import { canBeAbsolute } from './position'
 
-export function getMinMaxProps(
+type BoundVars = Record<string, { id: string } | undefined> | undefined | null
+
+function getBoundVars(node: SceneNode): BoundVars {
+  return 'boundVariables' in node
+    ? (node.boundVariables as BoundVars)
+    : undefined
+}
+
+export async function getMinMaxProps(
   node: SceneNode,
-): Record<string, boolean | string | number | undefined | null> {
+): Promise<Record<string, boolean | string | number | undefined | null>> {
+  const bv = getBoundVars(node)
+
+  const [minWVar, maxWVar, minHVar, maxHVar] = await Promise.all([
+    resolveBoundVariable(bv, 'minWidth'),
+    resolveBoundVariable(bv, 'maxWidth'),
+    resolveBoundVariable(bv, 'minHeight'),
+    resolveBoundVariable(bv, 'maxHeight'),
+  ])
+
   return {
-    maxW: addPx(node.maxWidth),
-    maxH: addPx(node.maxHeight),
-    minW: addPx(node.minWidth),
-    minH: addPx(node.minHeight),
+    maxW: maxWVar ?? addPx(node.maxWidth),
+    maxH: maxHVar ?? addPx(node.maxHeight),
+    minW: minWVar ?? addPx(node.minWidth),
+    minH: minHVar ?? addPx(node.minHeight),
   }
 }
 
-export function getLayoutProps(
+export async function getLayoutProps(
   node: SceneNode,
   ctx?: NodeContext,
-): Record<string, boolean | string | number | undefined | null> {
-  const ret = _getLayoutProps(node, ctx)
+): Promise<Record<string, boolean | string | number | undefined | null>> {
+  const ret = await _getLayoutProps(node, ctx)
   if (ret.w && ret.h === ret.w) {
     ret.boxSize = ret.w
     delete ret.w
@@ -29,27 +47,39 @@ export function getLayoutProps(
   return ret
 }
 
-function _getTextLayoutProps(
+async function _getTextLayoutProps(
   node: TextNode,
-): Record<string, boolean | string | number | undefined | null> | null {
+): Promise<Record<
+  string,
+  boolean | string | number | undefined | null
+> | null> {
+  const bv = getBoundVars(node)
+
   switch (node.textAutoResize) {
     case 'WIDTH_AND_HEIGHT':
       return {}
-    case 'HEIGHT':
+    case 'HEIGHT': {
+      const wVar = await resolveBoundVariable(bv, 'width')
       return {
-        w: addPx(node.width),
+        w: wVar ?? addPx(node.width),
       }
+    }
     case 'NONE':
     case 'TRUNCATE':
       return null
   }
 }
 
-function _getLayoutProps(
+async function _getLayoutProps(
   node: SceneNode,
   ctx?: NodeContext,
-): Record<string, boolean | string | number | undefined | null> {
+): Promise<Record<string, boolean | string | number | undefined | null>> {
+  const bv = getBoundVars(node)
+
   if (ctx ? ctx.canBeAbsolute : canBeAbsolute(node)) {
+    const wVar = await resolveBoundVariable(bv, 'width')
+    const hVar = await resolveBoundVariable(bv, 'height')
+
     return {
       w:
         node.type === 'TEXT' ||
@@ -58,7 +88,7 @@ function _getLayoutProps(
           node.parent.width > node.width)
           ? (ctx ? ctx.isAsset !== null : !!checkAssetNode(node)) ||
             ('children' in node && node.children.length === 0)
-            ? addPx(node.width)
+            ? (wVar ?? addPx(node.width))
             : undefined
           : '100%',
       // if node does not have children, it is a single node, so it should be 100%
@@ -66,7 +96,7 @@ function _getLayoutProps(
         ('children' in node && node.children.length > 0) || node.type === 'TEXT'
           ? undefined
           : 'children' in node && node.children.length === 0
-            ? addPx(node.height)
+            ? (hVar ?? addPx(node.height))
             : '100%',
     }
   }
@@ -75,7 +105,7 @@ function _getLayoutProps(
   const wType =
     'layoutSizingHorizontal' in node ? node.layoutSizingHorizontal : 'FILL'
   if (node.type === 'TEXT' && hType === 'FIXED' && wType === 'FIXED') {
-    const ret = _getTextLayoutProps(node)
+    const ret = await _getTextLayoutProps(node)
     if (ret) return ret
   }
   const aspectRatio =
@@ -83,6 +113,11 @@ function _getLayoutProps(
   const rootNode = ctx
     ? ctx.pageNode
     : getPageNode(node as BaseNode & ChildrenMixin)
+
+  const wVar =
+    wType === 'FIXED' ? await resolveBoundVariable(bv, 'width') : null
+  const hVar =
+    hType === 'FIXED' ? await resolveBoundVariable(bv, 'height') : null
 
   return {
     aspectRatio: aspectRatio
@@ -99,7 +134,7 @@ function _getLayoutProps(
       rootNode === node
         ? undefined
         : wType === 'FIXED'
-          ? addPx(node.width)
+          ? (wVar ?? addPx(node.width))
           : wType === 'FILL' &&
               ((node.parent && isChildWidthShrinker(node.parent, 'width')) ||
                 node.maxWidth !== null)
@@ -109,7 +144,7 @@ function _getLayoutProps(
       rootNode === node
         ? undefined
         : hType === 'FIXED'
-          ? addPx(node.height)
+          ? (hVar ?? addPx(node.height))
           : hType === 'FILL' &&
               ((node.parent && isChildWidthShrinker(node.parent, 'height')) ||
                 node.maxHeight !== null)

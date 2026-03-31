@@ -88,6 +88,22 @@ function filterAndTransformProps(
     if (value === null || value === undefined) {
       continue
     }
+    // Replace shadow with effect style token when not a responsive array.
+    // __boxShadowToken / __textShadowToken carry the effectStyleId-derived token.
+    if (key === '__boxShadowToken') {
+      if (typeof value === 'string' && typeof props.boxShadow === 'string') {
+        newProps.boxShadow = value
+      }
+      continue
+    }
+    if (key === '__textShadowToken') {
+      if (typeof value === 'string' && typeof props.textShadow === 'string') {
+        newProps.textShadow = value
+      }
+      continue
+    }
+    // Strip any other internal metadata keys
+    if (key.startsWith('__')) continue
     const newValue = typeof value === 'number' ? String(value) : value
     if (isDefaultProp(key, newValue)) {
       continue

@@ -1,19 +1,58 @@
 import { addPx } from '../utils/add-px'
 import { fourValueShortcut } from '../utils/four-value-shortcut'
 import { paintToCSS, paintToCSSSyncIfPossible } from '../utils/paint-to-css'
+import { resolveBoundVariable } from '../utils/resolve-bound-variable'
 
-export function getBorderRadiusProps(
+type BoundVars = Record<string, { id: string } | undefined> | undefined | null
+
+export async function getBorderRadiusProps(
   node: SceneNode,
-): Record<string, boolean | string | number | undefined | null> | undefined {
+): Promise<
+  Record<string, boolean | string | number | undefined | null> | undefined
+> {
+  const bv =
+    'boundVariables' in node ? (node.boundVariables as BoundVars) : undefined
+
   if (
     'cornerRadius' in node &&
     typeof node.cornerRadius === 'number' &&
     node.cornerRadius !== 0
-  )
-    return {
-      borderRadius: addPx(node.cornerRadius),
+  ) {
+    const variable = await resolveBoundVariable(bv, 'cornerRadius')
+    if (variable) return { borderRadius: variable }
+    // No cornerRadius variable — check individual corners for variables.
+    // Figma binds variables to topLeftRadius etc, not the cornerRadius shorthand.
+    // If individual corners aren't set, use the raw cornerRadius value.
+    if (!('topLeftRadius' in node)) {
+      return { borderRadius: addPx(node.cornerRadius) }
     }
+  }
   if ('topLeftRadius' in node) {
+    const [vtl, vtr, vbr, vbl] = await Promise.all([
+      resolveBoundVariable(bv, 'topLeftRadius'),
+      resolveBoundVariable(bv, 'topRightRadius'),
+      resolveBoundVariable(bv, 'bottomRightRadius'),
+      resolveBoundVariable(bv, 'bottomLeftRadius'),
+    ])
+
+    if (vtl || vtr || vbr || vbl) {
+      // At least one corner has a variable — resolve all with fallback
+      const tl = vtl ?? addPx(node.topLeftRadius, '0')
+      const tr = vtr ?? addPx(node.topRightRadius, '0')
+      const br = vbr ?? addPx(node.bottomRightRadius, '0')
+      const bl = vbl ?? addPx(node.bottomLeftRadius, '0')
+
+      // Apply same CSS shorthand optimization as fourValueShortcut
+      if (tl === tr && tr === br && br === bl) {
+        if (tl === '0') return
+        return { borderRadius: tl }
+      }
+      if (tl === br && tr === bl) return { borderRadius: `${tl} ${tr}` }
+      if (tr === bl) return { borderRadius: `${tl} ${tr} ${br}` }
+      return { borderRadius: `${tl} ${tr} ${br} ${bl}` }
+    }
+
+    // No variables — use existing sync path
     const value = fourValueShortcut(
       node.topLeftRadius,
       node.topRightRadius,
