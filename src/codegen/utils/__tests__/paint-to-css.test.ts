@@ -1,14 +1,24 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from 'bun:test'
+import * as checkAssetNodeModule from '../check-asset-node'
 import { paintToCSS } from '../paint-to-css'
 import { resetVariableCache } from '../variable-cache'
 
 // mock asset checker to avoid real node handling
-mock.module('../check-asset-node', () => ({
-  checkAssetNode: () => 'png',
-}))
+const checkAssetNodeSpy = spyOn(
+  checkAssetNodeModule,
+  'checkAssetNode',
+).mockReturnValue('png' as const)
 
 afterAll(() => {
-  mock.restore()
+  checkAssetNodeSpy.mockRestore()
 })
 
 describe('paintToCSS', () => {

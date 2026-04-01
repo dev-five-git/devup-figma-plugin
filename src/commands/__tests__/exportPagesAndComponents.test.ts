@@ -1,4 +1,5 @@
-import { afterAll, describe, expect, mock, test } from 'bun:test'
+import { afterAll, describe, expect, spyOn, test } from 'bun:test'
+import * as checkAssetNodeModule from '../../codegen/utils/check-asset-node'
 import {
   collectAssetNodes,
   DEVUP_COMPONENTS,
@@ -7,21 +8,21 @@ import {
   generateImportStatements,
 } from '../exportPagesAndComponents'
 
-mock.module('../../codegen/utils/check-asset-node', () => ({
-  checkAssetNode: (node: {
-    type: string
-    isAsset?: boolean
-  }): string | null => {
+const checkAssetNodeSpy = spyOn(
+  checkAssetNodeModule,
+  'checkAssetNode',
+).mockImplementation(
+  (node: { type: string; isAsset?: boolean }): 'svg' | 'png' | null => {
     if (node.type === 'VECTOR') return 'svg'
     if (node.type === 'STAR') return 'svg'
     if (node.type === 'POLYGON') return 'svg'
     if (node.isAsset && node.type === 'RECTANGLE') return 'png'
     return null
   },
-}))
+)
 
 afterAll(() => {
-  mock.restore()
+  checkAssetNodeSpy.mockRestore()
 })
 
 describe('DEVUP_COMPONENTS', () => {

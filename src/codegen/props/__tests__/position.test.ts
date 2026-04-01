@@ -1,16 +1,20 @@
-import { afterAll, describe, expect, it, mock } from 'bun:test'
+import { afterAll, describe, expect, it, spyOn } from 'bun:test'
+import * as checkAssetNodeModule from '../../utils/check-asset-node'
+import * as isPageRootModule from '../../utils/is-page-root'
 import { canBeAbsolute, getPositionProps } from '../position'
 
-mock.module('../../utils/check-asset-node', () => ({
-  checkAssetNode: () => null,
-}))
+const checkAssetNodeSpy = spyOn(
+  checkAssetNodeModule,
+  'checkAssetNode',
+).mockReturnValue(null)
 
-mock.module('../../utils/is-page-root', () => ({
-  isPageRoot: () => false,
-}))
+const isPageRootSpy = spyOn(isPageRootModule, 'isPageRoot').mockReturnValue(
+  false,
+)
 
 afterAll(() => {
-  mock.restore()
+  checkAssetNodeSpy.mockRestore()
+  isPageRootSpy.mockRestore()
 })
 
 describe('position', () => {
