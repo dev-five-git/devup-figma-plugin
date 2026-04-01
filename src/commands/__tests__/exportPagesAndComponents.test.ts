@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from 'bun:test'
+import { describe, expect, test, vi } from 'bun:test'
 import {
   collectAssetNodes,
   DEVUP_COMPONENTS,
@@ -7,7 +7,7 @@ import {
   generateImportStatements,
 } from '../exportPagesAndComponents'
 
-mock.module('../../codegen/utils/check-asset-node', () => ({
+vi.mock('../../codegen/utils/check-asset-node', () => ({
   checkAssetNode: (node: {
     type: string
     isAsset?: boolean
