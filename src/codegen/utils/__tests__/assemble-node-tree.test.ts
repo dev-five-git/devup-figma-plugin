@@ -294,6 +294,91 @@ describe('assembleNodeTree', () => {
     // Should fallback to the first node from nodeMap
     expect(rootNode.id).toBe('node-1')
   })
+
+  test('should convert node-level boundVariables arrays from string ids', () => {
+    const nodes = [
+      {
+        id: 'frame-1',
+        name: 'FrameNode',
+        type: 'FRAME',
+        boundVariables: {
+          effects: [
+            '[NodeId: VariableID:effect-a]',
+            'VariableID:effect-b',
+            { id: 'VariableID:effect-c' },
+          ],
+        },
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes) as unknown as {
+      boundVariables?: {
+        effects?: Array<{ id: string }>
+      }
+    }
+
+    expect(rootNode.boundVariables?.effects).toEqual([
+      { id: 'VariableID:effect-a' },
+      { id: 'VariableID:effect-b' },
+      { id: 'VariableID:effect-c' },
+    ])
+  })
+
+  test('should convert node-level boundVariables scalar string ids', () => {
+    const nodes = [
+      {
+        id: 'frame-1',
+        name: 'FrameNode',
+        type: 'FRAME',
+        boundVariables: {
+          paddingLeft: '[NodeId: VariableID:padding-left]',
+        },
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes) as unknown as {
+      boundVariables?: {
+        paddingLeft?: { id: string }
+      }
+    }
+
+    expect(rootNode.boundVariables?.paddingLeft).toEqual({
+      id: 'VariableID:padding-left',
+    })
+  })
+
+  test('should convert effect-level boundVariables from string ids', () => {
+    const nodes = [
+      {
+        id: 'frame-1',
+        name: 'FrameNode',
+        type: 'FRAME',
+        effects: [
+          {
+            type: 'DROP_SHADOW',
+            boundVariables: {
+              color: '[NodeId: VariableID:shadow-color]',
+              offsetX: 'VariableID:shadow-x',
+            },
+          },
+        ],
+      },
+    ]
+
+    const rootNode = assembleNodeTree(nodes) as unknown as {
+      effects?: Array<{
+        boundVariables?: {
+          color?: { id: string }
+          offsetX?: { id: string }
+        }
+      }>
+    }
+
+    expect(rootNode.effects?.[0]?.boundVariables).toEqual({
+      color: { id: 'VariableID:shadow-color' },
+      offsetX: { id: 'VariableID:shadow-x' },
+    })
+  })
 })
 
 describe('setupVariableMocks', () => {

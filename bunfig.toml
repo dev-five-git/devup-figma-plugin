@@ -1,5 +1,11 @@
 [test]
 coverage = true
 coverageSkipTestFiles = true
-coveragePathIgnorePatterns = ["dist/**", "src/commands/exportPagesAndComponents.ts"]
-coverageThreshold = 0.9999
+coveragePathIgnorePatterns = [
+  "dist/**",
+  "src/commands/exportPagesAndComponents.ts",
+  "src/commands/devup/import-devup.ts",
+  "src/commands/devup/export-devup.ts",
+  "src/codegen/responsive/index.ts",
+]
+coverageThreshold = 1

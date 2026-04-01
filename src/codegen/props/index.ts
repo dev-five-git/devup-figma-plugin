@@ -77,8 +77,11 @@ export async function getProps(
     // Compute cross-cutting node context ONCE for all sync getters that need it.
     const ctx = computeNodeContext(node)
 
-    // PHASE 1: Fire all async prop getters — initiates Figma IPC calls immediately.
+    // PHASE 1: Fire ALL async prop getters — initiates Figma IPC calls immediately.
     // These return Promises that resolve when IPC completes.
+    // Includes: border, background, text-stroke, reaction (original async)
+    //           + padding, auto-layout, layout, min-max, border-radius,
+    //             effect, text-shadow (newly async for variable support)
     const tBorder = perfStart()
     const borderP = getBorderProps(node)
     const tBg = perfStart()
@@ -87,51 +90,61 @@ export async function getProps(
     const textStrokeP = isText ? getTextStrokeProps(node) : undefined
     const tReaction = perfStart()
     const reactionP = getReactionProps(node)
+    const tAutoLayout = perfStart()
+    const autoLayoutP = getAutoLayoutProps(node, ctx)
+    const tMinMax = perfStart()
+    const minMaxP = getMinMaxProps(node)
+    const tLayout = perfStart()
+    const layoutP = getLayoutProps(node, ctx)
+    const tBorderRadius = perfStart()
+    const borderRadiusP = getBorderRadiusProps(node)
+    const tPadding = perfStart()
+    const paddingP = getPaddingProps(node)
+    const tEffect = perfStart()
+    const effectP = getEffectProps(node)
+    const tTextShadow = perfStart()
+    const textShadowP = isText ? getTextShadowProps(node) : undefined
 
     // PHASE 2: Run sync prop getters while async IPC is pending in background.
-    // This overlaps ~129ms of sync work with ~17ms of async IPC wait.
-    // Compute sync results eagerly; they'll be interleaved in the original merge
-    // order below to preserve "last-key-wins" semantics.
     const tSync = perfStart()
-    const autoLayoutProps = getAutoLayoutProps(node, ctx)
-    const minMaxProps = getMinMaxProps(node)
-    const layoutProps = getLayoutProps(node, ctx)
-    const borderRadiusProps = getBorderRadiusProps(node)
     const blendProps = getBlendProps(node)
-    const paddingProps = getPaddingProps(node)
     const textAlignProps = isText ? getTextAlignProps(node) : undefined
     const objectFitProps = getObjectFitProps(node)
     const maxLineProps = isText ? getMaxLineProps(node) : undefined
     const ellipsisProps = isText ? getEllipsisProps(node) : undefined
-    const tEffect = perfStart()
-    const effectProps = getEffectProps(node)
-    perfEnd('getProps.effect', tEffect)
     const positionProps = getPositionProps(node, ctx)
     const gridChildProps = getGridChildProps(node)
     const transformProps = getTransformProps(node, ctx)
     const overflowProps = getOverflowProps(node)
-    const tTextShadow = perfStart()
-    const textShadowProps = isText ? getTextShadowProps(node) : undefined
-    perfEnd('getProps.textShadow', tTextShadow)
     const cursorProps = getCursorProps(node)
     const visibilityProps = getVisibilityProps(node)
     perfEnd('getProps.sync', tSync)
 
     // PHASE 3: Await async results — likely already resolved during sync phase.
-    // Sequential await: all 4 promises are already in-flight, so this just
-    // picks up resolved values in order without Promise.all + .then() overhead.
+    const autoLayoutProps = await autoLayoutP
+    perfEnd('getProps.autoLayout', tAutoLayout)
+    const minMaxProps = await minMaxP
+    perfEnd('getProps.minMax', tMinMax)
+    const layoutProps = await layoutP
+    perfEnd('getProps.layout', tLayout)
+    const borderRadiusProps = await borderRadiusP
+    perfEnd('getProps.borderRadius', tBorderRadius)
     const borderProps = await borderP
     perfEnd('getProps.border', tBorder)
     const backgroundProps = await bgP
     perfEnd('getProps.background', tBg)
+    const paddingProps = await paddingP
+    perfEnd('getProps.padding', tPadding)
+    const effectProps = await effectP
+    perfEnd('getProps.effect', tEffect)
     const textStrokeProps = textStrokeP ? await textStrokeP : undefined
     if (textStrokeP) perfEnd('getProps.textStroke', tTextStroke)
+    const textShadowProps = textShadowP ? await textShadowP : undefined
+    if (textShadowP) perfEnd('getProps.textShadow', tTextShadow)
     const reactionProps = await reactionP
     perfEnd('getProps.reaction', tReaction)
 
-    // PHASE 4: Merge in the ORIGINAL interleaved order to preserve last-key-wins.
-    // async results (border, background, effect, textStroke, textShadow, reaction)
-    // are placed at their original positions relative to sync getters.
+    // PHASE 4: Merge in order to preserve last-key-wins semantics.
     const result: Record<string, unknown> = {}
     Object.assign(
       result,

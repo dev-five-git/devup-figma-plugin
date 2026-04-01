@@ -87,6 +87,57 @@ export function assembleNodeTree(
       }
     }
 
+    // Node-level boundVariables 처리 (padding, spacing, sizing, radius, effects, fills 등)
+    // 문자열 ID('[NodeId: VariableID:...]')를 { id: '...' } 객체로 변환
+    // Handles both scalar fields (paddingLeft: "...") and array fields (effects: ["..."])
+    if (node.boundVariables && typeof node.boundVariables === 'object') {
+      const bv = node.boundVariables as Record<string, unknown>
+      for (const [key, val] of Object.entries(bv)) {
+        if (typeof val === 'string') {
+          let varId = val
+          const match = varId.match(/\[NodeId: ([^\]]+)\]/)
+          if (match) {
+            varId = match[1]
+          }
+          bv[key] = { id: varId }
+        } else if (Array.isArray(val)) {
+          bv[key] = val.map((item) => {
+            if (typeof item === 'string') {
+              let varId = item
+              const match = varId.match(/\[NodeId: ([^\]]+)\]/)
+              if (match) {
+                varId = match[1]
+              }
+              return { id: varId }
+            }
+            return item
+          })
+        }
+      }
+    }
+
+    // Effect-level boundVariables 처리 (shadow offset, radius, spread, color)
+    if (Array.isArray(node.effects)) {
+      for (const effect of node.effects as Record<string, unknown>[]) {
+        if (
+          effect?.boundVariables &&
+          typeof effect.boundVariables === 'object'
+        ) {
+          const bv = effect.boundVariables as Record<string, unknown>
+          for (const [key, val] of Object.entries(bv)) {
+            if (typeof val === 'string') {
+              let varId = val
+              const match = varId.match(/\[NodeId: ([^\]]+)\]/)
+              if (match) {
+                varId = match[1]
+              }
+              bv[key] = { id: varId }
+            }
+          }
+        }
+      }
+    }
+
     // fills/strokes의 boundVariables 처리
     // boundVariables.color가 문자열 ID인 경우 { id: '...' } 객체로 변환
     const processBoundVariables = (paints: unknown[]) => {

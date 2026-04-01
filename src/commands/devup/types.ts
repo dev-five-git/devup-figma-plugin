@@ -12,6 +12,8 @@ type Theme = string
 export interface DevupTheme {
   colors?: Record<Theme, Record<string, string>>
   typography?: Record<string, DevupTypography | (null | DevupTypography)[]>
+  length?: Record<Theme, Record<string, string | (null | string)[]>>
+  shadows?: Record<Theme, Record<string, string | (null | string)[]>>
 }
 export interface Devup {
   theme?: DevupTheme

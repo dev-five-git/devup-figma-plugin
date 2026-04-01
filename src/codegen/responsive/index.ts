@@ -244,10 +244,19 @@ export function mergePropsToResponsive(
 ): Record<string, unknown> {
   const result: Props = {}
 
-  // If only one breakpoint, return props as-is.
+  // If only one breakpoint, return props as-is with token replacement.
   if (breakpointProps.size === 1) {
     const onlyProps = breakpointProps.values().next().value
-    return onlyProps ? { ...onlyProps } : {}
+    if (!onlyProps) return {}
+    const ret = { ...onlyProps }
+    // Replace shadow with token for non-responsive output
+    if (typeof ret.__boxShadowToken === 'string' && ret.boxShadow)
+      ret.boxShadow = ret.__boxShadowToken
+    if (typeof ret.__textShadowToken === 'string' && ret.textShadow)
+      ret.textShadow = ret.__textShadowToken
+    delete ret.__boxShadowToken
+    delete ret.__textShadowToken
+    return ret
   }
 
   // Collect all prop keys.
@@ -257,6 +266,10 @@ export function mergePropsToResponsive(
       allKeys.add(key)
     }
   }
+
+  // Skip metadata keys (prefixed with __) during merge — handled in post-processing.
+  allKeys.delete('__boxShadowToken')
+  allKeys.delete('__textShadowToken')
 
   for (const key of allKeys) {
     // Pseudo-selector props (e.g., _hover, _active, _disabled) need special handling:
@@ -351,6 +364,45 @@ export function mergePropsToResponsive(
       result[key] = optimized
     }
   }
+
+  // Post-merge: replace shadow values with effectStyleId tokens where available.
+  // - Collapsed string: replace entire value with the token.
+  // - Responsive array: replace individual elements whose breakpoint has a token.
+  //   e.g. ["0 8px 16px 0 $shadow", null, null, null, "0 16px 24px 0 $shadow"]
+  //     → ["0 8px 16px 0 $shadow", null, null, null, "$testShadow"]
+  for (const [shadowKey, tokenKey] of [
+    ['boxShadow', '__boxShadowToken'],
+    ['textShadow', '__textShadowToken'],
+  ] as const) {
+    const shadowValue = result[shadowKey]
+    if (!shadowValue) continue
+
+    if (Array.isArray(shadowValue)) {
+      // Responsive array — replace per-element where the breakpoint has a token
+      for (
+        let i = 0;
+        i < BREAKPOINT_ORDER.length && i < shadowValue.length;
+        i++
+      ) {
+        if (shadowValue[i] === null || shadowValue[i] === undefined) continue
+        const bp = BREAKPOINT_ORDER[i]
+        const props = breakpointProps.get(bp)
+        if (props && typeof props[tokenKey] === 'string') {
+          shadowValue[i] = props[tokenKey]
+        }
+      }
+    } else if (typeof shadowValue === 'string') {
+      // Collapsed single value — replace with token from any breakpoint
+      for (const props of breakpointProps.values()) {
+        const token = props[tokenKey]
+        if (typeof token === 'string') {
+          result[shadowKey] = token
+          break
+        }
+      }
+    }
+  }
+
   return result
 }
 

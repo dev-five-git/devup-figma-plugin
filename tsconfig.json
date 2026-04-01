@@ -7,7 +7,6 @@
     "module": "ESNext",
     "outDir": "./dist",
     "isolatedModules": true,
-    "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true
   },
