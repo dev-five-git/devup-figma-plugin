@@ -168,7 +168,7 @@ async function importTypography(devup: Devup) {
 const SHADOW_PREFIX = ['mobile', '1', 'tablet', '3', 'desktop', '5'] as const
 
 async function importShadow(devup: Devup) {
-  const shadow = devup.theme?.shadow
+  const shadow = devup.theme?.shadows
   if (!shadow) return
 
   const styles = await figma.getLocalEffectStylesAsync()

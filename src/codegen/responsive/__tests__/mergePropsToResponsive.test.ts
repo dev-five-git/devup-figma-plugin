@@ -357,6 +357,29 @@ describe('responsive grouping helpers', () => {
     expect(result.__textShadowToken).toBeUndefined()
   })
 
+  it('replaces collapsed textShadow string with token after multi-breakpoint merge', () => {
+    const result = mergePropsToResponsive(
+      new Map([
+        [
+          'mobile' as BreakpointKey,
+          {
+            textShadow: '0 4px 8px $shadow',
+            __textShadowToken: '$titleShadow',
+          },
+        ],
+        [
+          'pc' as BreakpointKey,
+          {
+            textShadow: '0 4px 8px $shadow',
+          },
+        ],
+      ]),
+    )
+
+    expect(result.textShadow).toBe('$titleShadow')
+    expect(result.__textShadowToken).toBeUndefined()
+  })
+
   it('groups nodes by name across breakpoints', () => {
     const breakpointNodes = new Map<BreakpointKey, SceneNode[]>([
       [

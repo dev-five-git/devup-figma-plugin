@@ -231,6 +231,77 @@ describe('length bound variables (padding / gap / size / radius)', () => {
       borderRadius: '$radiusTl $radiusRl 12px',
     })
   })
+
+  test('getBorderRadiusProps uses two-value shorthand when tl===br and tr===bl', async () => {
+    setupFigmaMocks({
+      variableNamesById: {
+        'var-a': 'radiusA',
+        'var-b': 'radiusB',
+      },
+    })
+
+    const node = {
+      type: 'RECTANGLE',
+      cornerRadius: 8,
+      topLeftRadius: 8,
+      topRightRadius: 4,
+      bottomRightRadius: 8,
+      bottomLeftRadius: 4,
+      boundVariables: {
+        topLeftRadius: { id: 'var-a' },
+        topRightRadius: { id: 'var-b' },
+        bottomRightRadius: { id: 'var-a' },
+        bottomLeftRadius: { id: 'var-b' },
+      },
+    } as unknown as SceneNode
+
+    expect(await getBorderRadiusProps(node)).toEqual({
+      borderRadius: '$radiusA $radiusB',
+    })
+  })
+
+  test('getBorderRadiusProps uses four-value when all corners differ', async () => {
+    setupFigmaMocks({
+      variableNamesById: {
+        'var-a': 'a',
+        'var-b': 'b',
+        'var-c': 'c',
+        'var-d': 'd',
+      },
+    })
+
+    const node = {
+      type: 'RECTANGLE',
+      cornerRadius: 8,
+      topLeftRadius: 1,
+      topRightRadius: 2,
+      bottomRightRadius: 3,
+      bottomLeftRadius: 4,
+      boundVariables: {
+        topLeftRadius: { id: 'var-a' },
+        topRightRadius: { id: 'var-b' },
+        bottomRightRadius: { id: 'var-c' },
+        bottomLeftRadius: { id: 'var-d' },
+      },
+    } as unknown as SceneNode
+
+    expect(await getBorderRadiusProps(node)).toEqual({
+      borderRadius: '$a $b $c $d',
+    })
+  })
+
+  test('getBorderRadiusProps falls back to cornerRadius when corner fields are unavailable', async () => {
+    setupFigmaMocks()
+
+    const node = {
+      type: 'VECTOR',
+      cornerRadius: 10,
+    } as unknown as SceneNode
+
+    expect(await getBorderRadiusProps(node)).toEqual({
+      borderRadius: '10px',
+    })
+  })
 })
 
 describe('effect/text-shadow bound variables and style tokens', () => {
@@ -281,6 +352,31 @@ describe('effect/text-shadow bound variables and style tokens', () => {
     })
   })
 
+  test('getEffectProps does not set __boxShadowToken when style has no name', async () => {
+    setupFigmaMocks({
+      styleNamesById: {}, // style lookup returns null
+    })
+
+    const node = {
+      type: 'FRAME',
+      effectStyleId: 'style-no-name',
+      effects: [
+        {
+          type: 'DROP_SHADOW',
+          visible: true,
+          offset: { x: 0, y: 4 },
+          radius: 8,
+          spread: 0,
+          color: { r: 0, g: 0, b: 0, a: 1 },
+        },
+      ],
+    } as unknown as SceneNode
+
+    const result = await getEffectProps(node)
+    expect(result?.boxShadow).toBe('0 4px 8px 0 #000')
+    expect(result?.__boxShadowToken).toBeUndefined()
+  })
+
   test('getEffectProps does not set __boxShadowToken when effectStyleId is empty', async () => {
     setupFigmaMocks({
       styleNamesById: {
@@ -306,6 +402,35 @@ describe('effect/text-shadow bound variables and style tokens', () => {
     const result = await getEffectProps(node)
     expect(result?.boxShadow).toBe('1px 2px 3px 4px #000')
     expect(result?.__boxShadowToken).toBeUndefined()
+  })
+
+  test('getEffectProps falls back to raw values when bound variable ids are unresolved', async () => {
+    setupFigmaMocks()
+
+    const node = {
+      type: 'FRAME',
+      effects: [
+        {
+          type: 'DROP_SHADOW',
+          visible: true,
+          offset: { x: 5, y: 7 },
+          radius: 9,
+          spread: 11,
+          color: { r: 0.1, g: 0.2, b: 0.3, a: 1 },
+          boundVariables: {
+            offsetX: { id: 'unknown-x' },
+            offsetY: { id: 'unknown-y' },
+            radius: { id: 'unknown-r' },
+            spread: { id: 'unknown-s' },
+            color: { id: 'unknown-c' },
+          },
+        },
+      ],
+    } as unknown as SceneNode
+
+    expect(await getEffectProps(node)).toEqual({
+      boxShadow: '5px 7px 9px 11px #1A334D',
+    })
   })
 
   test('getTextShadowProps resolves effect style token and bound variables', async () => {
@@ -348,6 +473,30 @@ describe('effect/text-shadow bound variables and style tokens', () => {
     })
   })
 
+  test('getTextShadowProps does not set __textShadowToken when style has no name', async () => {
+    setupFigmaMocks({
+      styleNamesById: {},
+    })
+
+    const node = {
+      type: 'TEXT',
+      effectStyleId: 'style-no-name',
+      effects: [
+        {
+          type: 'DROP_SHADOW',
+          visible: true,
+          offset: { x: 1, y: 2 },
+          radius: 3,
+          color: { r: 0, g: 0, b: 0, a: 1 },
+        },
+      ],
+    } as unknown as TextNode
+
+    const result = await getTextShadowProps(node)
+    expect(result?.textShadow).toBe('1px 2px 3px #000')
+    expect(result?.__textShadowToken).toBeUndefined()
+  })
+
   test('getTextShadowProps does not set __textShadowToken when effectStyleId is empty', async () => {
     setupFigmaMocks()
 
@@ -368,5 +517,32 @@ describe('effect/text-shadow bound variables and style tokens', () => {
     const result = await getTextShadowProps(node)
     expect(result?.textShadow).toBe('2px 4px 6px #000')
     expect(result?.__textShadowToken).toBeUndefined()
+  })
+
+  test('getTextShadowProps falls back to raw values when bound variable ids are unresolved', async () => {
+    setupFigmaMocks()
+
+    const node = {
+      type: 'TEXT',
+      effects: [
+        {
+          type: 'DROP_SHADOW',
+          visible: true,
+          offset: { x: 3, y: 6 },
+          radius: 9,
+          color: { r: 0.5, g: 0.25, b: 0.75, a: 1 },
+          boundVariables: {
+            offsetX: { id: 'unknown-x' },
+            offsetY: { id: 'unknown-y' },
+            radius: { id: 'unknown-r' },
+            color: { id: 'unknown-c' },
+          },
+        },
+      ],
+    } as unknown as TextNode
+
+    expect(await getTextShadowProps(node)).toEqual({
+      textShadow: '3px 6px 9px #8040BF',
+    })
   })
 })

@@ -373,10 +373,10 @@ export async function buildDevupConfig(
     }
     if (Object.keys(shadowByKey).length > 0) {
       devup.theme ??= {}
-      devup.theme.shadow ??= {}
+      devup.theme.shadows ??= {}
       const themeName = resolveThemeName(devup)
       const shadowForTheme: Record<string, string | (null | string)[]> = {}
-      devup.theme.shadow[themeName] = shadowForTheme
+      devup.theme.shadows[themeName] = shadowForTheme
 
       for (const [key, values] of Object.entries(shadowByKey)) {
         const optimized = optimizeResponsiveArray(values)

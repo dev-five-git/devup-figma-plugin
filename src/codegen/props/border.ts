@@ -44,7 +44,6 @@ export async function getBorderRadiusProps(
 
       // Apply same CSS shorthand optimization as fourValueShortcut
       if (tl === tr && tr === br && br === bl) {
-        if (tl === '0') return
         return { borderRadius: tl }
       }
       if (tl === br && tr === bl) return { borderRadius: `${tl} ${tr}` }
