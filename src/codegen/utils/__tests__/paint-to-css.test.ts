@@ -1,11 +1,15 @@
-import { beforeEach, describe, expect, mock, test, vi } from 'bun:test'
+import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { paintToCSS } from '../paint-to-css'
 import { resetVariableCache } from '../variable-cache'
 
 // mock asset checker to avoid real node handling
-vi.mock('../check-asset-node', () => ({
+mock.module('../check-asset-node', () => ({
   checkAssetNode: () => 'png',
 }))
+
+afterAll(() => {
+  mock.restore()
+})
 
 describe('paintToCSS', () => {
   beforeEach(() => {

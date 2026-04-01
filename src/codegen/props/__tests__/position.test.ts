@@ -1,13 +1,17 @@
-import { describe, expect, it, vi } from 'bun:test'
+import { afterAll, describe, expect, it, mock } from 'bun:test'
 import { canBeAbsolute, getPositionProps } from '../position'
 
-vi.mock('../../utils/check-asset-node', () => ({
+mock.module('../../utils/check-asset-node', () => ({
   checkAssetNode: () => null,
 }))
 
-vi.mock('../../utils/is-page-root', () => ({
+mock.module('../../utils/is-page-root', () => ({
   isPageRoot: () => false,
 }))
+
+afterAll(() => {
+  mock.restore()
+})
 
 describe('position', () => {
   describe('canBeAbsolute', () => {
