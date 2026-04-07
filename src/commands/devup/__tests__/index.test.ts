@@ -147,7 +147,7 @@ describe('devup commands', () => {
     textStyleToTypographySpy = spyOn(
       textStyleToTypographyModule,
       'textStyleToTypography',
-    ).mockReturnValue({
+    ).mockResolvedValue({
       fontFamily: 'Inter',
     } as unknown as DevupTypography)
 
@@ -201,7 +201,7 @@ describe('devup commands', () => {
     textStyleToTypographySpy = spyOn(
       textStyleToTypographyModule,
       'textStyleToTypography',
-    ).mockReturnValue(typoSeg as unknown as DevupTypography)
+    ).mockResolvedValue(typoSeg as unknown as DevupTypography)
     textSegmentToTypographySpy = spyOn(
       textSegmentToTypographyModule,
       'textSegmentToTypography',
@@ -263,7 +263,7 @@ describe('devup commands', () => {
     textStyleToTypographySpy = spyOn(
       textStyleToTypographyModule,
       'textStyleToTypography',
-    ).mockReturnValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
+    ).mockResolvedValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
 
     const mixedSymbol = Symbol('mixed')
     const mixedTextNode = {
@@ -314,7 +314,7 @@ describe('devup commands', () => {
     textStyleToTypographySpy = spyOn(
       textStyleToTypographyModule,
       'textStyleToTypography',
-    ).mockReturnValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
+    ).mockResolvedValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
 
     const currentTextNode = {
       type: 'TEXT',
@@ -387,7 +387,7 @@ describe('devup commands', () => {
     textStyleToTypographySpy = spyOn(
       textStyleToTypographyModule,
       'textStyleToTypography',
-    ).mockReturnValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
+    ).mockResolvedValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
 
     const currentSectionFindAllWithCriteria = mock(() => [])
     const otherTextNode = {
@@ -463,7 +463,8 @@ describe('devup commands', () => {
       textStyleToTypographyModule,
       'textStyleToTypography',
     ).mockImplementation(
-      (style: TextStyle) => ({ id: style.id }) as unknown as DevupTypography,
+      async (style: TextStyle) =>
+        ({ id: style.id }) as unknown as DevupTypography,
     )
 
     const directTextNode = {
@@ -535,7 +536,7 @@ describe('devup commands', () => {
     textStyleToTypographySpy = spyOn(
       textStyleToTypographyModule,
       'textStyleToTypography',
-    ).mockReturnValue(typoSeg as unknown as DevupTypography)
+    ).mockResolvedValue(typoSeg as unknown as DevupTypography)
 
     const textNode = {
       type: 'TEXT',
@@ -591,7 +592,8 @@ describe('devup commands', () => {
       textStyleToTypographyModule,
       'textStyleToTypography',
     ).mockImplementation(
-      (style: TextStyle) => ({ id: style.id }) as unknown as DevupTypography,
+      async (style: TextStyle) =>
+        ({ id: style.id }) as unknown as DevupTypography,
     )
 
     ;(globalThis as { figma?: unknown }).figma = {
@@ -637,7 +639,8 @@ describe('devup commands', () => {
       textStyleToTypographyModule,
       'textStyleToTypography',
     ).mockImplementation(
-      (style: TextStyle) => ({ id: style.id }) as unknown as DevupTypography,
+      async (style: TextStyle) =>
+        ({ id: style.id }) as unknown as DevupTypography,
     )
 
     ;(globalThis as { figma?: unknown }).figma = {
