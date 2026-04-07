@@ -215,7 +215,7 @@ export async function buildDevupConfig(
       allTypographyKeyCount += 1
     }
     if (!typographyValues[meta.level]) {
-      typographyValues[meta.level] = textStyleToTypography(style)
+      typographyValues[meta.level] = await textStyleToTypography(style)
     }
     styleMetaById[style.id] = meta
   }
