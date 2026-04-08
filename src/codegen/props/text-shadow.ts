@@ -1,11 +1,19 @@
 import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
+import { styleNameToTypography } from '../../utils/style-name-to-typography'
 import { toCamel } from '../../utils/to-camel'
 import { addPx } from '../utils/add-px'
 import { getVariableByIdCached } from '../utils/variable-cache'
 
 type BoundVars = Record<string, { id: string } | undefined> | undefined
 
+/**
+ * Resolve effectStyleId to a `$token` for the text shadow value.
+ *
+ * Must match the key written by export-devup.ts via styleNameToTypography,
+ * so only breakpoint prefixes are stripped. Scoped prefixes (e.g. "cms/xyz")
+ * stay part of the token name.
+ */
 async function _resolveEffectStyleToken(
   node: SceneNode,
 ): Promise<string | null> {
@@ -14,8 +22,7 @@ async function _resolveEffectStyleToken(
   if (!styleId || typeof styleId !== 'string') return null
   const style = await figma.getStyleByIdAsync(styleId)
   if (style?.name) {
-    const parts = style.name.split('/')
-    return `$${toCamel(parts[parts.length - 1])}`
+    return `$${styleNameToTypography(style.name).name}`
   }
   return null
 }

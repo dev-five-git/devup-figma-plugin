@@ -37,7 +37,7 @@ describe('propsToPropsWithTypography', () => {
     figma.getStyleByIdAsync = (id: string) =>
       Promise.resolve(
         id === 'ts-1'
-          ? ({ id: 'ts-1', name: 'Typography/Body' } as unknown as BaseStyle)
+          ? ({ id: 'ts-1', name: 'mobile/Body' } as unknown as BaseStyle)
           : null,
       ) as ReturnType<typeof figma.getStyleByIdAsync>
 
@@ -58,6 +58,45 @@ describe('propsToPropsWithTypography', () => {
     expect(r2.typography).toBe('body')
     expect(r2.fontFamily).toBeUndefined()
     expect(r2.w).toBeUndefined()
+
+    figma.getLocalTextStylesAsync = origGetLocal
+    figma.getStyleByIdAsync = origGetStyle
+  })
+
+  it('should preserve scoped (non-breakpoint) prefix in typography key', async () => {
+    const origGetLocal = figma.getLocalTextStylesAsync
+    const origGetStyle = figma.getStyleByIdAsync
+    figma.getLocalTextStylesAsync = () =>
+      Promise.resolve([{ id: 'ts-cms' } as unknown as TextStyle]) as ReturnType<
+        typeof figma.getLocalTextStylesAsync
+      >
+    figma.getStyleByIdAsync = (id: string) =>
+      Promise.resolve(
+        id === 'ts-cms'
+          ? ({
+              id: 'ts-cms',
+              name: 'cms/bodyLgBold',
+            } as unknown as BaseStyle)
+          : null,
+      ) as ReturnType<typeof figma.getStyleByIdAsync>
+
+    // Async path — "cms/" is not a breakpoint, so the full name must be
+    // converted to camelCase to match the devup.json export key.
+    const r1 = await propsToPropsWithTypography(
+      { fontFamily: 'Arial', fontSize: 18 },
+      'ts-cms',
+    )
+    expect(r1.typography).toBe('cmsBodyLgBold')
+    expect(r1.fontFamily).toBeUndefined()
+    expect(r1.fontSize).toBeUndefined()
+
+    // Sync fast path — same assertion via the resolved cache branch.
+    const r2 = await propsToPropsWithTypography(
+      { fontFamily: 'Inter', fontSize: 20 },
+      'ts-cms',
+    )
+    expect(r2.typography).toBe('cmsBodyLgBold')
+    expect(r2.fontFamily).toBeUndefined()
 
     figma.getLocalTextStylesAsync = origGetLocal
     figma.getStyleByIdAsync = origGetStyle
