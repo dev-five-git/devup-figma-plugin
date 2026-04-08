@@ -1,4 +1,4 @@
-import { toCamel } from './utils/to-camel'
+import { styleNameToTypography } from './utils/style-name-to-typography'
 import { toPascal } from './utils/to-pascal'
 
 // Cache for figma.getStyleByIdAsync() — keyed by style ID
@@ -27,8 +27,11 @@ function applyTypographyStyle(
   ret: Record<string, unknown>,
   style: BaseStyle,
 ): void {
-  const split = style.name.split('/')
-  ret.typography = toCamel(split[split.length - 1])
+  // Must match the key that export-devup.ts writes via styleNameToTypography,
+  // otherwise `typography="..."` references miss the exported devup.json key.
+  // Only breakpoint prefixes (mobile/tablet/desktop/{number}) are stripped;
+  // scoped prefixes like `cms/bodyLgBold` stay intact → `cmsBodyLgBold`.
+  ret.typography = styleNameToTypography(style.name).name
   delete ret.fontFamily
   delete ret.fontSize
   delete ret.fontWeight

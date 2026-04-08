@@ -637,7 +637,7 @@ exports[`Codegen renders text node with TRUNCATE auto resize and fixed sizing 1`
 `;
 
 exports[`Codegen renders text node with textStyleId and typography 1`] = `
-"<Text boxSize="100%" color="#F00" typography="heading">
+"<Text boxSize="100%" color="#F00" typography="typographyHeading">
   Heading
 </Text>"
 `;
