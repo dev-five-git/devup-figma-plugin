@@ -5,11 +5,13 @@ import type { Devup } from '../types'
  * @param fileName
  * @param data
  */
-export async function uploadDevupXlsx(): Promise<Devup> {
-  figma.showUI(uploadFileUi('.xlsx'))
+export async function uploadDevupXlsx(
+  ctx: typeof figma = figma,
+): Promise<Devup> {
+  ctx.showUI(uploadFileUi('.xlsx'))
   return new Promise((resolve) => {
-    figma.ui.onmessage = (message) => {
-      figma.ui.close()
+    ctx.ui.onmessage = (message) => {
+      ctx.ui.close()
       resolve(JSON.parse(message))
     }
   })

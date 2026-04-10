@@ -1,16 +1,12 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { describe, expect, mock, test } from 'bun:test'
 import type { Devup } from '../../types'
 import { uploadDevupXlsx } from '../upload-devup-xlsx'
 
 describe('uploadDevupXlsx', () => {
-  let showUIMock: ReturnType<typeof mock>
-  let closeMock: ReturnType<typeof mock>
-  let onmessageHandler: ((message: string) => void) | null = null
-
-  beforeEach(() => {
-    showUIMock = mock(() => {})
-    closeMock = mock(() => {})
-    onmessageHandler = null
+  function createMockFigma() {
+    const showUIMock = mock(() => {})
+    const closeMock = mock(() => {})
+    let onmessageHandler: ((message: string) => void) | null = null
 
     const uiObj: {
       onmessage?: (message: string) => void
@@ -27,18 +23,17 @@ describe('uploadDevupXlsx', () => {
 
     uiObj.close = closeMock
 
-    ;(globalThis as { figma?: unknown }).figma = {
+    const ctx = {
       showUI: showUIMock,
       ui: uiObj,
     } as unknown as typeof figma
-  })
 
-  afterEach(() => {
-    ;(globalThis as { figma?: unknown }).figma = undefined
-  })
+    return { ctx, showUIMock, closeMock, getHandler: () => onmessageHandler }
+  }
 
   test('should call showUI with correct HTML string', () => {
-    uploadDevupXlsx()
+    const { ctx, showUIMock } = createMockFigma()
+    uploadDevupXlsx(ctx)
     expect(showUIMock).toHaveBeenCalledWith(
       expect.stringContaining('accept=".xlsx"'),
     )
@@ -48,12 +43,14 @@ describe('uploadDevupXlsx', () => {
   })
 
   test('should resolve with parsed JSON when message is received', async () => {
+    const { ctx, closeMock, getHandler } = createMockFigma()
     const testData = { theme: { colors: {}, typography: {} } }
-    const promise = uploadDevupXlsx()
+    const promise = uploadDevupXlsx(ctx)
 
     // Simulate message from UI
-    if (onmessageHandler) {
-      onmessageHandler(JSON.stringify(testData))
+    const handler = getHandler()
+    if (handler) {
+      handler(JSON.stringify(testData))
     }
 
     const result = await promise
@@ -62,6 +59,7 @@ describe('uploadDevupXlsx', () => {
   })
 
   test('should handle message with colors and typography', async () => {
+    const { ctx, getHandler } = createMockFigma()
     const testData = {
       theme: {
         colors: {
@@ -77,10 +75,11 @@ describe('uploadDevupXlsx', () => {
         },
       },
     }
-    const promise = uploadDevupXlsx()
+    const promise = uploadDevupXlsx(ctx)
 
-    if (onmessageHandler) {
-      onmessageHandler(JSON.stringify(testData))
+    const handler = getHandler()
+    if (handler) {
+      handler(JSON.stringify(testData))
     }
 
     const result = await promise
