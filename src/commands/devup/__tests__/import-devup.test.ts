@@ -1,12 +1,20 @@
-import { describe, expect, mock, spyOn, test } from 'bun:test'
+import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import * as uploadFileModule from '../../../utils/upload-file'
 import { importDevup } from '../import-devup'
 import * as uploadXlsxModule from '../utils/upload-devup-xlsx'
 
 describe('import-devup (standalone file)', () => {
+  const spies: ReturnType<typeof spyOn>[] = []
+  afterEach(() => {
+    for (const s of spies) s.mockRestore()
+    spies.length = 0
+    ;(globalThis as { figma?: unknown }).figma = undefined
+  })
   test('returns early when theme is missing', async () => {
     const uploadFile = mock(() => Promise.resolve('{}'))
-    spyOn(uploadFileModule, 'uploadFile').mockImplementation(uploadFile)
+    spies.push(
+      spyOn(uploadFileModule, 'uploadFile').mockImplementation(uploadFile),
+    )
     await importDevup('json')
     expect(uploadFile).toHaveBeenCalledWith('.json')
   })
@@ -30,7 +38,9 @@ describe('import-devup (standalone file)', () => {
         },
       }),
     )
-    spyOn(uploadXlsxModule, 'uploadDevupXlsx').mockImplementation(uploadXlsx)
+    spies.push(
+      spyOn(uploadXlsxModule, 'uploadDevupXlsx').mockImplementation(uploadXlsx),
+    )
 
     const setValueForMode = mock(() => {})
     const createVariable = mock(
@@ -89,7 +99,9 @@ describe('import-devup (standalone file)', () => {
         },
       }),
     )
-    spyOn(uploadXlsxModule, 'uploadDevupXlsx').mockImplementation(uploadXlsx)
+    spies.push(
+      spyOn(uploadXlsxModule, 'uploadDevupXlsx').mockImplementation(uploadXlsx),
+    )
 
     const removeDevupVariable = mock(() => {})
     const removeOtherVariable = mock(() => {})
@@ -167,7 +179,9 @@ describe('import-devup (standalone file)', () => {
         },
       }),
     )
-    spyOn(uploadXlsxModule, 'uploadDevupXlsx').mockImplementation(uploadXlsx)
+    spies.push(
+      spyOn(uploadXlsxModule, 'uploadDevupXlsx').mockImplementation(uploadXlsx),
+    )
 
     const createTextStyle = mock(
       () =>
