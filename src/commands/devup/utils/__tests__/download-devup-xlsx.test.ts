@@ -1,15 +1,11 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { describe, expect, mock, test } from 'bun:test'
 import { downloadDevupXlsx } from '../download-devup-xlsx'
 
 describe('downloadDevupXlsx', () => {
-  let showUIMock: ReturnType<typeof mock>
-  let postMessageMock: ReturnType<typeof mock>
-  let onmessageHandler: ((message: unknown) => void) | null = null
-
-  beforeEach(() => {
-    showUIMock = mock(() => {})
-    postMessageMock = mock(() => {})
-    onmessageHandler = null
+  function createMockFigma() {
+    const showUIMock = mock(() => {})
+    const postMessageMock = mock(() => {})
+    let onmessageHandler: ((message: unknown) => void) | null = null
 
     const uiObj: {
       onmessage?: (message: unknown) => void
@@ -26,18 +22,26 @@ describe('downloadDevupXlsx', () => {
 
     uiObj.postMessage = postMessageMock
 
-    ;(globalThis as { figma?: unknown }).figma = {
+    const ctx = {
       showUI: showUIMock,
       ui: uiObj,
     } as unknown as typeof figma
-  })
 
-  afterEach(() => {
-    ;(globalThis as { figma?: unknown }).figma = undefined
-  })
+    return {
+      ctx,
+      showUIMock,
+      postMessageMock,
+      getHandler: () => onmessageHandler,
+    }
+  }
 
   test('should call showUI with correct HTML string and visible false', () => {
-    downloadDevupXlsx('test.xlsx', '{"theme":{"colors":{},"typography":{}}}')
+    const { ctx, showUIMock } = createMockFigma()
+    downloadDevupXlsx(
+      'test.xlsx',
+      '{"theme":{"colors":{},"typography":{}}}',
+      ctx,
+    )
     expect(showUIMock).toHaveBeenCalledWith(
       expect.stringContaining('xlsx-0.20.3'),
       { visible: false },
@@ -49,8 +53,13 @@ describe('downloadDevupXlsx', () => {
   })
 
   test('should set onmessage handler and post message', () => {
-    downloadDevupXlsx('test.xlsx', '{"theme":{"colors":{},"typography":{}}}')
-    expect(onmessageHandler).not.toBeNull()
+    const { ctx, getHandler, postMessageMock } = createMockFigma()
+    downloadDevupXlsx(
+      'test.xlsx',
+      '{"theme":{"colors":{},"typography":{}}}',
+      ctx,
+    )
+    expect(getHandler()).not.toBeNull()
     expect(postMessageMock).toHaveBeenCalledWith({
       type: 'download',
       fileName: 'test.xlsx',
@@ -59,14 +68,17 @@ describe('downloadDevupXlsx', () => {
   })
 
   test('should return a promise that resolves when onmessage is called', async () => {
+    const { ctx, getHandler, postMessageMock } = createMockFigma()
     const promise = downloadDevupXlsx(
       'test.xlsx',
       '{"theme":{"colors":{},"typography":{}}}',
+      ctx,
     )
 
     // Simulate message from UI
-    if (onmessageHandler) {
-      onmessageHandler(undefined)
+    const handler = getHandler()
+    if (handler) {
+      handler(undefined)
     }
 
     await promise
@@ -74,11 +86,13 @@ describe('downloadDevupXlsx', () => {
   })
 
   test('should handle different file names and data', () => {
+    const { ctx, postMessageMock } = createMockFigma()
     downloadDevupXlsx(
       'devup.xlsx',
       JSON.stringify({
         theme: { colors: { light: { primary: '#000' } }, typography: {} },
       }),
+      ctx,
     )
     expect(postMessageMock).toHaveBeenCalledWith({
       type: 'download',

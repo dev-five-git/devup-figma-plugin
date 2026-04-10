@@ -1,16 +1,12 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { describe, expect, mock, test } from 'bun:test'
 import type { Devup } from '../../types'
 import { uploadDevupXlsx } from '../upload-devup-xlsx'
 
 describe('uploadDevupXlsx', () => {
-  let showUIMock: ReturnType<typeof mock>
-  let closeMock: ReturnType<typeof mock>
-  let onmessageHandler: ((message: string) => void) | null = null
-
-  beforeEach(() => {
-    showUIMock = mock(() => {})
-    closeMock = mock(() => {})
-    onmessageHandler = null
+  function setupMockFigma() {
+    const showUIMock = mock(() => {})
+    const closeMock = mock(() => {})
+    let onmessageHandler: ((message: string) => void) | null = null
 
     const uiObj: {
       onmessage?: (message: string) => void
@@ -27,63 +23,85 @@ describe('uploadDevupXlsx', () => {
 
     uiObj.close = closeMock
 
-    ;(globalThis as { figma?: unknown }).figma = {
+    const ctx = {
       showUI: showUIMock,
       ui: uiObj,
     } as unknown as typeof figma
-  })
 
-  afterEach(() => {
+    // Also set globalThis.figma as fallback — guards against Bun's parallel
+    // test runner potentially resolving a cached module without the ctx param.
+    ;(globalThis as { figma?: unknown }).figma = ctx
+
+    return { ctx, showUIMock, closeMock, getHandler: () => onmessageHandler }
+  }
+
+  function teardown() {
     ;(globalThis as { figma?: unknown }).figma = undefined
-  })
+  }
 
   test('should call showUI with correct HTML string', () => {
-    uploadDevupXlsx()
-    expect(showUIMock).toHaveBeenCalledWith(
-      expect.stringContaining('accept=".xlsx"'),
-    )
-    expect(showUIMock).toHaveBeenCalledWith(
-      expect.stringContaining('xlsx-0.20.3'),
-    )
+    const { ctx, showUIMock } = setupMockFigma()
+    try {
+      uploadDevupXlsx(ctx)
+      expect(showUIMock).toHaveBeenCalledWith(
+        expect.stringContaining('accept=".xlsx"'),
+      )
+      expect(showUIMock).toHaveBeenCalledWith(
+        expect.stringContaining('xlsx-0.20.3'),
+      )
+    } finally {
+      teardown()
+    }
   })
 
   test('should resolve with parsed JSON when message is received', async () => {
-    const testData = { theme: { colors: {}, typography: {} } }
-    const promise = uploadDevupXlsx()
+    const { ctx, closeMock, getHandler } = setupMockFigma()
+    try {
+      const testData = { theme: { colors: {}, typography: {} } }
+      const promise = uploadDevupXlsx(ctx)
 
-    // Simulate message from UI
-    if (onmessageHandler) {
-      onmessageHandler(JSON.stringify(testData))
+      const handler = getHandler()
+      if (handler) {
+        handler(JSON.stringify(testData))
+      }
+
+      const result = await promise
+      expect(closeMock).toHaveBeenCalled()
+      expect(result).toEqual(testData)
+    } finally {
+      teardown()
     }
-
-    const result = await promise
-    expect(closeMock).toHaveBeenCalled()
-    expect(result).toEqual(testData)
   })
 
   test('should handle message with colors and typography', async () => {
-    const testData = {
-      theme: {
-        colors: {
-          light: {
-            primary: '#000000',
+    const { ctx, getHandler } = setupMockFigma()
+    try {
+      const testData = {
+        theme: {
+          colors: {
+            light: {
+              primary: '#000000',
+            },
+          },
+          typography: {
+            heading: {
+              fontFamily: 'Arial',
+              fontSize: 24,
+            },
           },
         },
-        typography: {
-          heading: {
-            fontFamily: 'Arial',
-            fontSize: 24,
-          },
-        },
-      },
-    }
-    const promise = uploadDevupXlsx()
+      }
+      const promise = uploadDevupXlsx(ctx)
 
-    if (onmessageHandler) {
-      onmessageHandler(JSON.stringify(testData))
-    }
+      const handler = getHandler()
+      if (handler) {
+        handler(JSON.stringify(testData))
+      }
 
-    const result = await promise
-    expect(result).toEqual(testData as unknown as Devup)
+      const result = await promise
+      expect(result).toEqual(testData as unknown as Devup)
+    } finally {
+      teardown()
+    }
   })
 })

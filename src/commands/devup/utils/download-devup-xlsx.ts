@@ -3,16 +3,20 @@
  * @param fileName
  * @param data
  */
-export async function downloadDevupXlsx(fileName: string, data: string) {
-  figma.showUI(downloadFileUi(), {
+export async function downloadDevupXlsx(
+  fileName: string,
+  data: string,
+  ctx: typeof figma = figma,
+) {
+  ctx.showUI(downloadFileUi(), {
     visible: false,
   })
 
   const pro = new Promise((resolve) => {
-    figma.ui.onmessage = resolve
+    ctx.ui.onmessage = resolve
   })
 
-  figma.ui.postMessage({
+  ctx.ui.postMessage({
     type: 'download',
     fileName,
     data,
