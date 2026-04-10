@@ -3,7 +3,7 @@ import type { Devup } from '../../types'
 import { uploadDevupXlsx } from '../upload-devup-xlsx'
 
 describe('uploadDevupXlsx', () => {
-  function createMockFigma() {
+  function setupMockFigma() {
     const showUIMock = mock(() => {})
     const closeMock = mock(() => {})
     let onmessageHandler: ((message: string) => void) | null = null
@@ -28,61 +28,80 @@ describe('uploadDevupXlsx', () => {
       ui: uiObj,
     } as unknown as typeof figma
 
+    // Also set globalThis.figma as fallback — guards against Bun's parallel
+    // test runner potentially resolving a cached module without the ctx param.
+    ;(globalThis as { figma?: unknown }).figma = ctx
+
     return { ctx, showUIMock, closeMock, getHandler: () => onmessageHandler }
   }
 
+  function teardown() {
+    ;(globalThis as { figma?: unknown }).figma = undefined
+  }
+
   test('should call showUI with correct HTML string', () => {
-    const { ctx, showUIMock } = createMockFigma()
-    uploadDevupXlsx(ctx)
-    expect(showUIMock).toHaveBeenCalledWith(
-      expect.stringContaining('accept=".xlsx"'),
-    )
-    expect(showUIMock).toHaveBeenCalledWith(
-      expect.stringContaining('xlsx-0.20.3'),
-    )
+    const { ctx, showUIMock } = setupMockFigma()
+    try {
+      uploadDevupXlsx(ctx)
+      expect(showUIMock).toHaveBeenCalledWith(
+        expect.stringContaining('accept=".xlsx"'),
+      )
+      expect(showUIMock).toHaveBeenCalledWith(
+        expect.stringContaining('xlsx-0.20.3'),
+      )
+    } finally {
+      teardown()
+    }
   })
 
   test('should resolve with parsed JSON when message is received', async () => {
-    const { ctx, closeMock, getHandler } = createMockFigma()
-    const testData = { theme: { colors: {}, typography: {} } }
-    const promise = uploadDevupXlsx(ctx)
+    const { ctx, closeMock, getHandler } = setupMockFigma()
+    try {
+      const testData = { theme: { colors: {}, typography: {} } }
+      const promise = uploadDevupXlsx(ctx)
 
-    // Simulate message from UI
-    const handler = getHandler()
-    if (handler) {
-      handler(JSON.stringify(testData))
+      const handler = getHandler()
+      if (handler) {
+        handler(JSON.stringify(testData))
+      }
+
+      const result = await promise
+      expect(closeMock).toHaveBeenCalled()
+      expect(result).toEqual(testData)
+    } finally {
+      teardown()
     }
-
-    const result = await promise
-    expect(closeMock).toHaveBeenCalled()
-    expect(result).toEqual(testData)
   })
 
   test('should handle message with colors and typography', async () => {
-    const { ctx, getHandler } = createMockFigma()
-    const testData = {
-      theme: {
-        colors: {
-          light: {
-            primary: '#000000',
+    const { ctx, getHandler } = setupMockFigma()
+    try {
+      const testData = {
+        theme: {
+          colors: {
+            light: {
+              primary: '#000000',
+            },
+          },
+          typography: {
+            heading: {
+              fontFamily: 'Arial',
+              fontSize: 24,
+            },
           },
         },
-        typography: {
-          heading: {
-            fontFamily: 'Arial',
-            fontSize: 24,
-          },
-        },
-      },
-    }
-    const promise = uploadDevupXlsx(ctx)
+      }
+      const promise = uploadDevupXlsx(ctx)
 
-    const handler = getHandler()
-    if (handler) {
-      handler(JSON.stringify(testData))
-    }
+      const handler = getHandler()
+      if (handler) {
+        handler(JSON.stringify(testData))
+      }
 
-    const result = await promise
-    expect(result).toEqual(testData as unknown as Devup)
+      const result = await promise
+      expect(result).toEqual(testData as unknown as Devup)
+    } finally {
+      teardown()
+    }
   })
 })
