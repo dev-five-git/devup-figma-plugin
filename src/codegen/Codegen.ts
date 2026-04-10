@@ -282,7 +282,6 @@ export class Codegen {
   private buildTreeCache: Map<string, Promise<NodeTree>> = new Map()
   // Collect fire-and-forget addComponentTree promises so we can await them
   // before rendering component codes (decouples INSTANCE buildTree from addComponentTree)
-  private pendingComponentTrees: Promise<void>[] = []
 
   constructor(private node: SceneNode) {
     this.node = node
@@ -356,10 +355,12 @@ export class Codegen {
       this.tree = tree
     }
 
-    // Await all fire-and-forget addComponentTree calls before rendering
-    if (this.pendingComponentTrees.length > 0) {
-      await Promise.all(this.pendingComponentTrees)
-      this.pendingComponentTrees = []
+    // Drain all addComponentTree promises, including nested ones added during execution.
+    // Uses addComponentTreePromises Map which stably tracks every fired promise.
+    let _prevSize = 0
+    while (this.addComponentTreePromises.size > _prevSize) {
+      _prevSize = this.addComponentTreePromises.size
+      await Promise.all(this.addComponentTreePromises.values())
     }
 
     // Sync componentTrees to components
@@ -409,13 +410,6 @@ export class Codegen {
       globalBuildTreeCache.set(cacheKey, promise)
     }
     const result = await promise
-    // When called as the root-level buildTree (node === this.node),
-    // drain any fire-and-forget addComponentTree promises so that
-    // getComponentTrees() is populated before the caller inspects it.
-    if (node === this.node && this.pendingComponentTrees.length > 0) {
-      await Promise.all(this.pendingComponentTrees)
-      this.pendingComponentTrees = []
-    }
     return result
   }
 
@@ -431,10 +425,9 @@ export class Codegen {
         node === this.node.defaultVariant) ||
         this.node.type === 'COMPONENT')
     ) {
-      this.pendingComponentTrees.push(
-        this.addComponentTree(
-          node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-        ),
+      // Fire-and-forget — errors collected via addComponentTreePromises in run().
+      this.addComponentTree(
+        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
       )
     }
 
@@ -462,7 +455,7 @@ export class Codegen {
       // Fire addComponentTree without awaiting — it runs in the background.
       // All pending promises are collected and awaited in run() before rendering.
       if (mainComponent) {
-        this.pendingComponentTrees.push(this.addComponentTree(mainComponent))
+        this.addComponentTree(mainComponent)
       }
 
       const componentName = getComponentName(mainComponent || node)
@@ -570,7 +563,10 @@ export class Codegen {
       if (!globalAssetNodes.has(assetKey)) {
         globalAssetNodes.set(assetKey, { node, type: assetNode })
       }
-      const props = await getProps(node)
+      const baseProps = await getProps(node)
+      // Clone to avoid mutating the shared getProps cache — subsequent
+      // codegen runs (e.g. ResponsiveCodegen) reuse the cached reference.
+      const props: Record<string, unknown> = { ...baseProps }
       props.src = `/${assetNode === 'svg' ? 'icons' : 'images'}/${node.name}.${assetNode}`
       if (assetNode === 'svg') {
         const maskColor = await checkSameColor(node)
@@ -679,10 +675,11 @@ export class Codegen {
   async getTree(): Promise<NodeTree> {
     if (!this.tree) {
       this.tree = await this.buildTree(this.node)
-      // Await any fire-and-forget addComponentTree calls launched during buildTree
-      if (this.pendingComponentTrees.length > 0) {
-        await Promise.all(this.pendingComponentTrees)
-        this.pendingComponentTrees = []
+      // Drain all addComponentTree promises (including nested ones)
+      let _prevSize = 0
+      while (this.addComponentTreePromises.size > _prevSize) {
+        _prevSize = this.addComponentTreePromises.size
+        await Promise.all(this.addComponentTreePromises.values())
       }
     }
     return this.tree
@@ -702,15 +699,19 @@ export class Codegen {
   // when multiple INSTANCE nodes reference the same component
   private addComponentTreePromises: Map<string, Promise<void>> = new Map()
 
-  private async addComponentTree(node: ComponentNode): Promise<void> {
+  private addComponentTree(node: ComponentNode): Promise<void> {
     const nodeId = node.id || node.name
-    if (this.componentTrees.has(nodeId)) return
+    if (this.componentTrees.has(nodeId)) return Promise.resolve()
 
-    // If already in-flight, await the same promise
+    // If already in-flight, return the same promise
     const inflight = this.addComponentTreePromises.get(nodeId)
     if (inflight) return inflight
 
+    // Store the raw promise (may reject) for drain in run().
+    // Attach a no-op .catch so fire-and-forget callers don't
+    // trigger unhandled rejection warnings.
     const promise = this.doAddComponentTree(node, nodeId)
+    promise.catch(() => {})
     this.addComponentTreePromises.set(nodeId, promise)
     return promise
   }

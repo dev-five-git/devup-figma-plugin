@@ -418,10 +418,25 @@ export function registerCodegen(ctx: typeof figma) {
             }
           }
 
-          const allComponentsCodes = [
-            ...componentsResponsiveCodes,
-            ...responsiveComponentsCodes,
-          ]
+          // Merge component codes: responsive/variant versions override simple ones.
+          const responsiveOverrides = new Map<
+            string,
+            readonly [string, string]
+          >()
+          for (const entry of componentsResponsiveCodes)
+            responsiveOverrides.set(entry[0], entry)
+          for (const entry of responsiveComponentsCodes)
+            responsiveOverrides.set(entry[0], entry)
+
+          const mergedComponentsCodes: ReadonlyArray<
+            readonly [string, string]
+          > =
+            componentsCodes.length > 0 && responsiveOverrides.size > 0
+              ? componentsCodes.map(
+                  ([name, code]) =>
+                    responsiveOverrides.get(name) ?? ([name, code] as const),
+                )
+              : componentsCodes
 
           // For INSTANCE nodes, include the referenced component definition(s)
           // alongside Usage so developers see both how to use AND the implementation.
@@ -430,14 +445,16 @@ export function registerCodegen(ctx: typeof figma) {
             language: 'TYPESCRIPT' | 'BASH'
             code: string
           }[] = []
-          if (node.type === 'INSTANCE' && componentsCodes.length > 0) {
-            const importStatement = generateImportStatements(componentsCodes)
-            const combinedCode = componentsCodes
+          if (node.type === 'INSTANCE' && mergedComponentsCodes.length > 0) {
+            const importStatement = generateImportStatements(
+              mergedComponentsCodes,
+            )
+            const combinedCode = mergedComponentsCodes
               .map(([, code]) => code)
               .join('\n\n')
             const label =
-              componentsCodes.length === 1
-                ? componentsCodes[0][0]
+              mergedComponentsCodes.length === 1
+                ? mergedComponentsCodes[0][0]
                 : `${node.name} - Components`
             componentDefinitionResults.push(
               {
@@ -448,15 +465,30 @@ export function registerCodegen(ctx: typeof figma) {
               {
                 title: `${label} - CLI (Bash)`,
                 language: 'BASH',
-                code: generateBashCLI(componentsCodes),
+                code: generateBashCLI(mergedComponentsCodes),
               },
               {
                 title: `${label} - CLI (PowerShell)`,
                 language: 'BASH',
-                code: generatePowerShellCLI(componentsCodes),
+                code: generatePowerShellCLI(mergedComponentsCodes),
               },
             )
           }
+
+          // Collect remaining responsive codes NOT already merged into component definitions.
+          // Only filter for INSTANCE nodes — other node types don't produce componentDefinitionResults.
+          const mergedNames =
+            node.type === 'INSTANCE'
+              ? new Set(mergedComponentsCodes.map(([name]) => name))
+              : new Set<string>()
+          const allComponentsCodes = [
+            ...componentsResponsiveCodes.filter(
+              ([name]) => !mergedNames.has(name),
+            ),
+            ...responsiveComponentsCodes.filter(
+              ([name]) => !mergedNames.has(name),
+            ),
+          ]
 
           // For COMPONENT nodes, show both the single-variant code AND Usage.
           // For COMPONENT_SET and INSTANCE, show only Usage.
