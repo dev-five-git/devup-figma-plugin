@@ -222,6 +222,34 @@ export async function buildDevupConfig(
     styleMetaById[style.id] = meta
   }
 
+  // Collect bound variable IDs from document (includes library vars)
+  const usedVarIds = new Set<string>()
+  const collectBoundVarsFromNode = (node: SceneNode) => {
+    const bv =
+      'boundVariables' in node
+        ? (node.boundVariables as
+            | Record<string, { id: string } | { id: string }[]>
+            | undefined)
+        : undefined
+    if (!bv) return
+    for (const val of Object.values(bv)) {
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          if (item?.id) usedVarIds.add(item.id)
+        }
+      } else if (val?.id) {
+        usedVarIds.add(val.id)
+      }
+    }
+  }
+  const walkBoundVars = (node: SceneNode) => {
+    collectBoundVarsFromNode(node)
+    if (!('children' in node)) return
+    for (const child of node.children) {
+      walkBoundVars(child)
+    }
+  }
+
   const tTypo = perfStart()
   const typography: Record<string, (null | DevupTypography)[]> = {}
   if (treeshaking) {
@@ -254,34 +282,6 @@ export async function buildDevupConfig(
         const segTextStyleId = seg?.textStyleId
         if (!segTextStyleId) continue
         markTypographyKeyUsed(styleMetaById[segTextStyleId])
-      }
-    }
-
-    // Collect bound variable IDs for length treeshaking (includes library vars)
-    const usedVarIds = new Set<string>()
-    const collectBoundVarsFromNode = (node: SceneNode) => {
-      const bv =
-        'boundVariables' in node
-          ? (node.boundVariables as
-              | Record<string, { id: string } | { id: string }[]>
-              | undefined)
-          : undefined
-      if (!bv) return
-      for (const val of Object.values(bv)) {
-        if (Array.isArray(val)) {
-          for (const item of val) {
-            if (item?.id) usedVarIds.add(item.id)
-          }
-        } else if (val?.id) {
-          usedVarIds.add(val.id)
-        }
-      }
-    }
-    const walkBoundVars = (node: SceneNode) => {
-      collectBoundVarsFromNode(node)
-      if (!('children' in node)) return
-      for (const child of node.children) {
-        walkBoundVars(child)
       }
     }
 
@@ -355,9 +355,43 @@ export async function buildDevupConfig(
     for (const key of Object.keys(usedTypographyKeys)) {
       typography[key] = [...(typographyByKey[key] ?? [])]
     }
+  } else {
+    for (const [key, values] of Object.entries(typographyByKey)) {
+      typography[key] = [...values]
+    }
 
-    // Build length values from used FLOAT bound variables
-    const tLength = perfStart()
+    // Scan document for bound variables (picks up library vars)
+    const prevSkip = figma.skipInvisibleInstanceChildren
+    figma.skipInvisibleInstanceChildren = true
+
+    const rootPages = Array.isArray(figma.root.children)
+      ? figma.root.children
+      : []
+    if (rootPages.length > 0) {
+      const currentPageId = figma.currentPage.id
+      const orderedPages: PageNode[] = [
+        figma.currentPage,
+        ...rootPages.filter((page) => page.id !== currentPageId),
+      ]
+      for (const page of orderedPages) {
+        if (page.id !== currentPageId) {
+          const tPageLoad = perfStart()
+          await page.loadAsync()
+          perfEnd('exportDevup.load', tPageLoad)
+        }
+        for (const child of page.children) {
+          walkBoundVars(child)
+        }
+      }
+    }
+
+    figma.skipInvisibleInstanceChildren = prevSkip
+  }
+  perfEnd('exportDevup.typography', tTypo)
+
+  // Build length values from used FLOAT bound variables
+  const tLength = perfStart()
+  if (usedVarIds.size > 0) {
     const collectionCache = new Map<string, VariableCollection | null>()
     const lengthThemeName = resolveThemeName(devup)
 
@@ -410,13 +444,8 @@ export async function buildDevupConfig(
     if (Object.keys(devup.theme.length).length === 0) {
       delete devup.theme.length
     }
-    perfEnd('exportDevup.length', tLength)
-  } else {
-    for (const [key, values] of Object.entries(typographyByKey)) {
-      typography[key] = [...values]
-    }
   }
-  perfEnd('exportDevup.typography', tTypo)
+  perfEnd('exportDevup.length', tLength)
 
   if (Object.keys(typography).length > 0) {
     devup.theme ??= {}
