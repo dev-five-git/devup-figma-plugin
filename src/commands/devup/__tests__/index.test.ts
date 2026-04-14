@@ -298,7 +298,7 @@ describe('devup commands', () => {
     )
   })
 
-  test('exportDevup treeshake true stops within current page subtree and skips later pages', async () => {
+  test('exportDevup treeshake true stops typography within current page subtree but loads all pages for bound vars', async () => {
     getColorCollectionSpy = spyOn(
       getColorCollectionModule,
       'getDevupColorCollection',
@@ -364,7 +364,7 @@ describe('devup commands', () => {
 
     expect(firstSectionFindAllWithCriteria).toHaveBeenCalledTimes(1)
     expect(secondSectionFindAllWithCriteria).not.toHaveBeenCalled()
-    expect(otherPageLoadAsync).not.toHaveBeenCalled()
+    expect(otherPageLoadAsync).toHaveBeenCalledTimes(1)
     expect(downloadFileMock).toHaveBeenCalledWith(
       'devup.json',
       expect.stringContaining('"typography"'),

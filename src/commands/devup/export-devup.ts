@@ -146,53 +146,55 @@ export async function buildDevupConfig(
       )
     }
 
-    // Export FLOAT variables as length values with responsive arrays
-    const hasFloats = variables.some(
-      (v) => v !== null && v.resolvedType === 'FLOAT',
-    )
-    if (hasFloats) {
-      devup.theme ??= {}
-      devup.theme.length ??= {}
+    // Export FLOAT variables (only when not treeshaking — treeshaking scans document instead)
+    if (!treeshaking) {
+      const hasFloats = variables.some(
+        (v) => v !== null && v.resolvedType === 'FLOAT',
+      )
+      if (hasFloats) {
+        devup.theme ??= {}
+        devup.theme.length ??= {}
 
-      // Determine theme name from colors, or "default"
-      const themeName = resolveThemeName(devup)
+        // Determine theme name from colors, or "default"
+        const themeName = resolveThemeName(devup)
 
-      const lengthForTheme = devup.theme.length[themeName] ?? {}
-      devup.theme.length[themeName] = lengthForTheme
+        const lengthForTheme = devup.theme.length[themeName] ?? {}
+        devup.theme.length[themeName] = lengthForTheme
 
-      // Build responsive arrays from mode values
-      for (const variable of variables) {
-        if (variable === null || variable.resolvedType !== 'FLOAT') continue
-        const name = toCamel(variable.name)
-        const values: (null | string)[] = [null, null, null, null, null, null]
-        let hasAny = false
+        // Build responsive arrays from mode values
+        for (const variable of variables) {
+          if (variable === null || variable.resolvedType !== 'FLOAT') continue
+          const name = toCamel(variable.name)
+          const values: (null | string)[] = [null, null, null, null, null, null]
+          let hasAny = false
 
-        for (const mode of collection.modes) {
-          const level = modeNameToBreakpointLevel(mode.name)
-          const raw = variable.valuesByMode[mode.modeId]
-          let resolved = raw
-          if (isVariableAlias(raw)) {
-            const aliasResult = await variableAliasToValue(raw, mode.modeId)
-            resolved = aliasResult ?? raw
+          for (const mode of collection.modes) {
+            const level = modeNameToBreakpointLevel(mode.name)
+            const raw = variable.valuesByMode[mode.modeId]
+            let resolved = raw
+            if (isVariableAlias(raw)) {
+              const aliasResult = await variableAliasToValue(raw, mode.modeId)
+              resolved = aliasResult ?? raw
+            }
+            if (typeof resolved !== 'number') continue
+            const px = addPx(resolved)
+            if (!px) continue
+            values[level] = px
+            hasAny = true
           }
-          if (typeof resolved !== 'number') continue
-          const px = addPx(resolved)
-          if (!px) continue
-          values[level] = px
-          hasAny = true
+
+          if (hasAny) {
+            lengthForTheme[name] = optimizeResponsiveArray(values)
+          }
         }
 
-        if (hasAny) {
-          lengthForTheme[name] = optimizeResponsiveArray(values)
+        // Remove empty
+        if (Object.keys(lengthForTheme).length === 0) {
+          delete devup.theme.length[themeName]
         }
-      }
-
-      // Remove empty
-      if (Object.keys(lengthForTheme).length === 0) {
-        delete devup.theme.length[themeName]
-      }
-      if (Object.keys(devup.theme.length).length === 0) {
-        delete devup.theme.length
+        if (Object.keys(devup.theme.length).length === 0) {
+          delete devup.theme.length
+        }
       }
     }
   }
@@ -254,29 +256,65 @@ export async function buildDevupConfig(
         markTypographyKeyUsed(styleMetaById[segTextStyleId])
       }
     }
+
+    // Collect bound variable IDs for length treeshaking (includes library vars)
+    const usedVarIds = new Set<string>()
+    const collectBoundVarsFromNode = (node: SceneNode) => {
+      const bv =
+        'boundVariables' in node
+          ? (node.boundVariables as
+              | Record<string, { id: string } | { id: string }[]>
+              | undefined)
+          : undefined
+      if (!bv) return
+      for (const val of Object.values(bv)) {
+        if (Array.isArray(val)) {
+          for (const item of val) {
+            if (item?.id) usedVarIds.add(item.id)
+          }
+        } else if (val?.id) {
+          usedVarIds.add(val.id)
+        }
+      }
+    }
+    const walkBoundVars = (node: SceneNode) => {
+      collectBoundVarsFromNode(node)
+      if (!('children' in node)) return
+      for (const child of node.children) {
+        walkBoundVars(child)
+      }
+    }
+
     const processSubtree = (node: SceneNode) => {
-      if (usedTypographyKeyCount >= allTypographyKeyCount) return
+      collectBoundVarsFromNode(node)
       if (node.type === 'TEXT') {
-        processText(node)
+        if (usedTypographyKeyCount < allTypographyKeyCount) processText(node)
         return
       }
       if (isTextSearchNode(node)) {
-        const tFind = perfStart()
-        const texts = node.findAllWithCriteria({ types: ['TEXT'] })
-        perfEnd('exportDevup.typography.find', tFind)
+        if (usedTypographyKeyCount < allTypographyKeyCount) {
+          const tFind = perfStart()
+          const texts = node.findAllWithCriteria({ types: ['TEXT'] })
+          perfEnd('exportDevup.typography.find', tFind)
 
-        const tScan = perfStart()
-        for (const text of texts) {
-          processText(text)
-          if (usedTypographyKeyCount >= allTypographyKeyCount) break
+          const tScan = perfStart()
+          for (const text of texts) {
+            processText(text)
+            if (usedTypographyKeyCount >= allTypographyKeyCount) break
+          }
+          perfEnd('exportDevup.typography.scan', tScan)
         }
-        perfEnd('exportDevup.typography.scan', tScan)
+        // findAllWithCriteria only returns TEXT nodes — walk children for bound vars
+        if ('children' in node) {
+          for (const child of node.children) {
+            walkBoundVars(child)
+          }
+        }
         return
       }
       if (!('children' in node)) return
       for (const child of node.children) {
         processSubtree(child)
-        if (usedTypographyKeyCount >= allTypographyKeyCount) break
       }
     }
 
@@ -290,7 +328,6 @@ export async function buildDevupConfig(
         ...rootPages.filter((page) => page.id !== currentPageId),
       ]
       for (const page of orderedPages) {
-        if (usedTypographyKeyCount >= allTypographyKeyCount) break
         if (page.id !== currentPageId) {
           const tPageLoad = perfStart()
           await page.loadAsync()
@@ -298,7 +335,6 @@ export async function buildDevupConfig(
         }
         for (const child of page.children) {
           processSubtree(child)
-          if (usedTypographyKeyCount >= allTypographyKeyCount) break
         }
       }
     } else {
@@ -319,6 +355,62 @@ export async function buildDevupConfig(
     for (const key of Object.keys(usedTypographyKeys)) {
       typography[key] = [...(typographyByKey[key] ?? [])]
     }
+
+    // Build length values from used FLOAT bound variables
+    const tLength = perfStart()
+    const collectionCache = new Map<string, VariableCollection | null>()
+    const lengthThemeName = resolveThemeName(devup)
+
+    devup.theme ??= {}
+    devup.theme.length ??= {}
+    const lengthForTheme = devup.theme.length[lengthThemeName] ?? {}
+    devup.theme.length[lengthThemeName] = lengthForTheme
+
+    for (const varId of usedVarIds) {
+      const variable = await figma.variables.getVariableByIdAsync(varId)
+      if (!variable || variable.resolvedType !== 'FLOAT') continue
+
+      const collId = variable.variableCollectionId
+      let collection = collectionCache.get(collId)
+      if (collection === undefined) {
+        collection =
+          (await figma.variables.getVariableCollectionByIdAsync(collId)) ?? null
+        collectionCache.set(collId, collection)
+      }
+      if (!collection) continue
+
+      const name = toCamel(variable.name)
+      const values: (null | string)[] = [null, null, null, null, null, null]
+      let hasAny = false
+
+      for (const mode of collection.modes) {
+        const level = modeNameToBreakpointLevel(mode.name)
+        const raw = variable.valuesByMode[mode.modeId]
+        let resolved = raw
+        if (isVariableAlias(raw)) {
+          const aliasResult = await variableAliasToValue(raw, mode.modeId)
+          resolved = aliasResult ?? raw
+        }
+        if (typeof resolved !== 'number') continue
+        const px = addPx(resolved)
+        if (!px) continue
+        values[level] = px
+        hasAny = true
+      }
+
+      if (hasAny) {
+        lengthForTheme[name] = optimizeResponsiveArray(values)
+      }
+    }
+
+    // Remove empty
+    if (Object.keys(lengthForTheme).length === 0) {
+      delete devup.theme.length[lengthThemeName]
+    }
+    if (Object.keys(devup.theme.length).length === 0) {
+      delete devup.theme.length
+    }
+    perfEnd('exportDevup.length', tLength)
   } else {
     for (const [key, values] of Object.entries(typographyByKey)) {
       typography[key] = [...values]
@@ -387,6 +479,34 @@ export async function buildDevupConfig(
     }
   }
   perfEnd('exportDevup.shadow', tShadow)
+
+  // Replicate length and shadow values for all color themes
+  // (dimensions/shadows are theme-independent but the config is keyed by theme)
+  const colorThemes = devup.theme?.colors ? Object.keys(devup.theme.colors) : []
+  if (colorThemes.length > 1) {
+    if (devup.theme?.length) {
+      const sourceKey = Object.keys(devup.theme.length)[0]
+      if (sourceKey) {
+        const values = devup.theme.length[sourceKey]
+        for (const theme of colorThemes) {
+          if (!(theme in devup.theme.length)) {
+            devup.theme.length[theme] = values
+          }
+        }
+      }
+    }
+    if (devup.theme?.shadows) {
+      const sourceKey = Object.keys(devup.theme.shadows)[0]
+      if (sourceKey) {
+        const values = devup.theme.shadows[sourceKey]
+        for (const theme of colorThemes) {
+          if (!(theme in devup.theme.shadows)) {
+            devup.theme.shadows[theme] = values
+          }
+        }
+      }
+    }
+  }
 
   return devup
 }

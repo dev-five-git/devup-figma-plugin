@@ -152,6 +152,115 @@ describe('export-devup length and shadow coverage', () => {
     ])
   })
 
+  test('treeshaking scans bound variables and includes library FLOAT vars', async () => {
+    const variablesById: Record<string, Variable | null> = {
+      c1: {
+        id: 'c1',
+        name: 'Primary',
+        resolvedType: 'COLOR',
+        valuesByMode: { mLight: { r: 1, g: 0, b: 0, a: 1 } },
+      } as unknown as Variable,
+      localFloat: {
+        id: 'localFloat',
+        name: 'spacing/sm',
+        resolvedType: 'FLOAT',
+        valuesByMode: { mMob: 8, mDesk: 16 },
+        variableCollectionId: 'dimColl',
+      } as unknown as Variable,
+      libFloat: {
+        id: 'libFloat',
+        name: 'spacing/spacing08',
+        resolvedType: 'FLOAT',
+        valuesByMode: { lMob: 4, lDesk: 12 },
+        variableCollectionId: 'libColl',
+      } as unknown as Variable,
+      colorVar: {
+        id: 'colorVar',
+        name: 'accent',
+        resolvedType: 'COLOR',
+        valuesByMode: { mLight: { r: 0, g: 0, b: 1, a: 1 } },
+        variableCollectionId: 'colorColl',
+      } as unknown as Variable,
+    }
+
+    const collectionsById: Record<string, VariableCollection | null> = {
+      dimColl: {
+        id: 'dimColl',
+        name: 'Dimensions',
+        modes: [
+          { modeId: 'mMob', name: 'mobile' },
+          { modeId: 'mDesk', name: 'desktop' },
+        ],
+      } as unknown as VariableCollection,
+      libColl: {
+        id: 'libColl',
+        name: 'Library Dimensions',
+        modes: [
+          { modeId: 'lMob', name: 'mobile' },
+          { modeId: 'lDesk', name: 'desktop' },
+        ],
+      } as unknown as VariableCollection,
+    }
+
+    const frameNode = {
+      type: 'FRAME',
+      boundVariables: {
+        paddingLeft: { id: 'localFloat' },
+        paddingRight: { id: 'libFloat' },
+        fills: [{ id: 'colorVar' }],
+      },
+      findAllWithCriteria: () => [],
+      children: [],
+    }
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      skipInvisibleInstanceChildren: false,
+      currentPage: {
+        id: 'page1',
+        children: [frameNode],
+      },
+      variables: {
+        getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
+        getVariableCollectionByIdAsync: async (id: string) =>
+          collectionsById[id] ?? null,
+        getLocalVariableCollectionsAsync: async () => [
+          {
+            variableIds: ['c1'],
+            modes: [{ modeId: 'mLight', name: 'Light' }],
+          },
+        ],
+      },
+      getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
+      root: {
+        children: [{ id: 'page1', children: [frameNode] }],
+      },
+      mixed: Symbol('mixed'),
+    } as unknown as typeof figma
+
+    const devup = await buildDevupConfig(true)
+
+    // Local FLOAT from bound variable
+    expect(devup.theme?.length?.light?.spacingSm).toEqual([
+      '8px',
+      null,
+      null,
+      null,
+      '16px',
+    ])
+    // Library FLOAT from bound variable — previously not exported
+    expect(devup.theme?.length?.light?.spacingSpacing08).toEqual([
+      '4px',
+      null,
+      null,
+      null,
+      '12px',
+    ])
+    // COLOR bound variables should NOT be in length
+    expect(devup.theme?.length?.light?.accent).toBeUndefined()
+  })
+
   test('exports FLOAT variables to default theme when colors are missing', async () => {
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
@@ -368,6 +477,79 @@ describe('export-devup length and shadow coverage', () => {
     expect(devup.theme?.colors?.tablet?.skipNumber).toBeUndefined()
     expect(devup.theme?.colors?.desktop?.skipBoolean).toBeUndefined()
     expect(devup.theme?.length).toBeUndefined()
+  })
+
+  test('replicates length and shadow values for all color themes', async () => {
+    const variablesById: Record<string, Variable | null> = {
+      c1: {
+        id: 'c1',
+        name: 'Primary',
+        resolvedType: 'COLOR',
+        valuesByMode: {
+          mLight: { r: 1, g: 0, b: 0, a: 1 },
+          mDark: { r: 0, g: 0, b: 1, a: 1 },
+        },
+      } as unknown as Variable,
+      f1: {
+        id: 'f1',
+        name: 'spacingSm',
+        resolvedType: 'FLOAT',
+        valuesByMode: { mMobile: 8 },
+      } as unknown as Variable,
+    }
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
+        getLocalVariableCollectionsAsync: async () => [
+          {
+            variableIds: ['c1'],
+            modes: [
+              { modeId: 'mLight', name: 'light' },
+              { modeId: 'mDark', name: 'dark' },
+            ],
+          },
+          {
+            variableIds: ['f1'],
+            modes: [{ modeId: 'mMobile', name: 'mobile' }],
+          },
+        ],
+      },
+      getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () =>
+        [
+          {
+            id: 's1',
+            name: 'mobile/focus',
+            effects: [
+              {
+                type: 'DROP_SHADOW',
+                visible: true,
+                radius: 6,
+                spread: 0,
+                color: { r: 0, g: 0, b: 0, a: 0.2 },
+                offset: { x: 0, y: 2 },
+                blendMode: 'NORMAL',
+                showShadowBehindNode: false,
+              },
+            ],
+          },
+        ] as unknown as EffectStyle[],
+      root: { findAllWithCriteria: () => [], children: [] },
+    } as unknown as typeof figma
+
+    const devup = await buildDevupConfig(false)
+
+    // Length should exist for both light and dark themes
+    expect(devup.theme?.length?.light?.spacingSm).toBe('8px')
+    expect(devup.theme?.length?.dark?.spacingSm).toBe('8px')
+
+    // Shadow should exist for both light and dark themes
+    expect(devup.theme?.shadows?.light?.focus).toBeDefined()
+    expect(devup.theme?.shadows?.dark?.focus).toBe(
+      devup.theme?.shadows?.light?.focus,
+    )
   })
 
   test('exportDevup sends excel output to xlsx downloader', async () => {
