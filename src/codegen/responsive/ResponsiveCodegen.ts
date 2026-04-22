@@ -328,12 +328,41 @@ export class ResponsiveCodegen {
   /**
    * Convert NodeTree children array to Map by nodeName.
    */
+  private getChildStructureSignature(tree: NodeTree): string {
+    const propKeys = Object.keys(tree.props).sort().join(',')
+    const childSignatures = tree.children
+      .map((child) => this.getChildStructureSignature(child))
+      .join('|')
+
+    return [
+      tree.component,
+      tree.isComponent ? 'component' : 'node',
+      tree.isSlot ? 'slot' : 'regular',
+      tree.condition ? 'conditional' : 'plain',
+      tree.textChildren?.length ? 'text' : 'notext',
+      propKeys,
+      childSignatures,
+    ].join('::')
+  }
+
   private treeChildrenToMap(tree: NodeTree): Map<string, NodeTree[]> {
     const result = new Map<string, NodeTree[]>()
+    const signatureCounts = new Map<string, number>()
+
     for (const child of tree.children) {
-      const existing = result.get(child.nodeName) || []
+      const signature = this.getChildStructureSignature(child)
+      signatureCounts.set(signature, (signatureCounts.get(signature) || 0) + 1)
+    }
+
+    for (const child of tree.children) {
+      const signature = this.getChildStructureSignature(child)
+      const childKey =
+        signatureCounts.get(signature) === 1
+          ? `sig:${signature}`
+          : child.nodeName
+      const existing = result.get(childKey) || []
       existing.push(child)
-      result.set(child.nodeName, existing)
+      result.set(childKey, existing)
     }
     return result
   }

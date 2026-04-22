@@ -1065,6 +1065,71 @@ describe('Codegen effect-only COMPONENT_SET', () => {
     expect(codes[0]?.[1]).toMatchSnapshot()
   })
 
+  test('generates boolean prop for on/off variant component sets', async () => {
+    function createToggleComponent(value: 'on' | 'off', assetName: string) {
+      return createComponentNode(
+        `state=${value}`,
+        { state: value },
+        {
+          id: `toggle-${value}`,
+          children: [
+            {
+              type: 'VECTOR',
+              id: `${assetName}-vector`,
+              name: 'Vector',
+              visible: true,
+              isAsset: true,
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  color: { r: 0.42, g: 0.44, b: 0.5 },
+                  opacity: 1,
+                },
+              ],
+              strokes: [],
+              effects: [],
+              reactions: [],
+            },
+          ] as unknown as readonly SceneNode[],
+          width: 20,
+          height: 20,
+          layoutMode: 'NONE',
+          isAsset: true,
+        },
+      )
+    }
+
+    const offVariant = createToggleComponent('off', 'toggle-off')
+    const onVariant = createToggleComponent('on', 'toggle-on')
+
+    const componentSet = createComponentSetNode(
+      'Toggle',
+      {
+        state: {
+          type: 'VARIANT',
+          defaultValue: 'off',
+          variantOptions: ['off', 'on'],
+        },
+      },
+      [offVariant, onVariant],
+    )
+
+    ;(offVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+    ;(onVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'Toggle',
+    )
+
+    expect(codes).toHaveLength(1)
+    expect(codes[0]?.[1]).toContain('state?: boolean')
+    expect(codes[0]?.[1]).toContain('[state ?? false]')
+  })
+
   test('generates BOOLEAN conditions on INSTANCE asset children in multi-variant ComponentSet', async () => {
     // Mirrors the real Figma Button structure where:
     //   - size: lg, md, sm, tag (VARIANT)

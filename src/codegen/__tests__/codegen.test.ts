@@ -3401,6 +3401,70 @@ describe('Codegen Tree Methods', () => {
       expect(tree.props).toEqual({})
     })
 
+    test('does not inline multi-node asset-like component instances', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'trend=up',
+        children: [
+          {
+            type: 'VECTOR',
+            name: 'Icon',
+            visible: true,
+            isAsset: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 1, b: 1 },
+                opacity: 1,
+              },
+            ],
+            strokes: [],
+            effects: [],
+            reactions: [],
+          },
+          {
+            type: 'TEXT',
+            name: '43.8%',
+            visible: true,
+            characters: '43.8%',
+            getStyledTextSegments: () => [createTextSegment('43.8%')],
+            strokes: [],
+            effects: [],
+            reactions: [],
+            textAutoResize: 'WIDTH_AND_HEIGHT',
+          },
+        ],
+        visible: true,
+        width: 73,
+        height: 26,
+        fills: [],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        layoutMode: 'HORIZONTAL',
+        itemSpacing: 4,
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const instanceNode = {
+        type: 'INSTANCE',
+        name: 'Trend',
+        visible: true,
+        width: 73,
+        height: 26,
+        getMainComponentAsync: async () => mainComponent,
+      } as unknown as InstanceNode
+      addParent(instanceNode)
+
+      const codegen = new Codegen(instanceNode, DEFAULT_CODEGEN_OPTIONS)
+      const tree = await codegen.buildTree()
+
+      expect(tree.isComponent).toBe(true)
+      expect(tree.component).toContain('Trend')
+      expect(tree.leadingComment).toBeUndefined()
+    })
+
     test('preserves extracted component declaration while inlining commented asset instance usage', async () => {
       const successComponent = {
         type: 'COMPONENT',

@@ -156,6 +156,124 @@ describe('ResponsiveCodegen', () => {
     expect(generator.getImportMetadata()).toEqual(result.imports)
   })
 
+  it('merges import metadata across multiple breakpoints in generateResponsiveResult', async () => {
+    const mobile = makeNode('mobile', 320, [], 'FRAME')
+    const desktop = makeNode('desktop', 1200, [], 'FRAME')
+    const section = {
+      type: 'SECTION',
+      children: [mobile, desktop],
+    } as unknown as SectionNode
+
+    let callCount = 0
+    mockGetTree.mockImplementation(async () => {
+      callCount++
+      return callCount === 1
+        ? {
+            component: 'Box',
+            props: {
+              mobileOnly: {
+                __imports: {
+                  devupImports: ['Text'],
+                  customImports: ['MobileBadge'],
+                  usesKeyframes: false,
+                },
+              },
+            },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Mobile',
+          }
+        : {
+            component: 'Box',
+            props: {
+              desktopOnly: {
+                __imports: {
+                  devupImports: ['Image'],
+                  customImports: ['DesktopBadge'],
+                  usesKeyframes: true,
+                },
+              },
+            },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Desktop',
+          }
+    })
+
+    const generator = new ResponsiveCodegen(section)
+    const result = await generator.generateResponsiveResult()
+
+    expect(result.code).toContain('render:Box')
+    expect(result.imports.devupImports).toEqual(['Box', 'Image', 'Text'])
+    expect(result.imports.customImports).toEqual([
+      'DesktopBadge',
+      'MobileBadge',
+    ])
+    expect(result.imports.usesKeyframes).toBe(true)
+  })
+
+  it('exposes stable structural child keys for unique leaf children', () => {
+    const generator = new ResponsiveCodegen(null)
+    const leaf: NodeTree = {
+      component: 'Box',
+      props: { bg: '$success', boxSize: '16px' },
+      children: [],
+      nodeType: 'FRAME',
+      nodeName: 'trend-up 1',
+    }
+
+    const key = (
+      generator as unknown as {
+        getChildStructureSignature: (tree: NodeTree) => string
+        treeChildrenToMap: (tree: NodeTree) => Map<string, NodeTree[]>
+      }
+    ).getChildStructureSignature(leaf)
+
+    expect(key).toContain('Box')
+
+    const map = (
+      generator as unknown as {
+        treeChildrenToMap: (tree: NodeTree) => Map<string, NodeTree[]>
+      }
+    ).treeChildrenToMap({
+      component: 'Center',
+      props: {},
+      children: [leaf],
+      nodeType: 'FRAME',
+      nodeName: 'Root',
+    })
+
+    expect([...map.keys()][0]).toContain('sig:')
+  })
+
+  it('computes structural signatures for non-leaf children recursively', () => {
+    const generator = new ResponsiveCodegen(null)
+    const nonLeaf: NodeTree = {
+      component: 'Center',
+      props: { gap: '4px' },
+      children: [
+        {
+          component: 'Box',
+          props: { bg: '$success', boxSize: '16px' },
+          children: [],
+          nodeType: 'FRAME',
+          nodeName: 'Icon',
+        },
+      ],
+      nodeType: 'FRAME',
+      nodeName: 'Trend',
+    }
+
+    const signature = (
+      generator as unknown as {
+        getChildStructureSignature: (tree: NodeTree) => string
+      }
+    ).getChildStructureSignature(nonLeaf)
+
+    expect(signature).toContain('Center')
+    expect(signature).toContain('Box')
+  })
+
   it('merges breakpoints and adds display for missing child variants', async () => {
     const onlyMobileChild: NodeTree = {
       component: 'Box',
@@ -1596,6 +1714,172 @@ describe('ResponsiveCodegen', () => {
       expect(result[0][1]).toContain('status')
     })
 
+    it('covers viewport-only import metadata aggregation callbacks', async () => {
+      let callCount = 0
+      mockGetTree.mockImplementation(async () => {
+        callCount++
+        return callCount === 1
+          ? {
+              component: 'Box',
+              props: {
+                mobileOnly: {
+                  __imports: {
+                    devupImports: ['Text'],
+                    customImports: ['MobileOnly'],
+                    usesKeyframes: false,
+                  },
+                },
+              },
+              children: [],
+              nodeType: 'FRAME',
+              nodeName: 'Mobile',
+            }
+          : {
+              component: 'Box',
+              props: {
+                desktopOnly: {
+                  __imports: {
+                    devupImports: ['Image'],
+                    customImports: ['DesktopOnly'],
+                    usesKeyframes: true,
+                  },
+                },
+              },
+              children: [],
+              nodeType: 'FRAME',
+              nodeName: 'Desktop',
+            }
+      })
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'ViewportOnlyImports',
+        componentPropertyDefinitions: {
+          viewport: {
+            type: 'VARIANT',
+            variantOptions: ['mobile', 'desktop'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'viewport=mobile',
+            variantProperties: { viewport: 'mobile' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 320,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'viewport=desktop',
+            variantProperties: { viewport: 'desktop' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 1200,
+            height: 100,
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateViewportResponsiveComponents(
+          componentSet,
+          'ViewportOnlyImports',
+        )
+
+      expect(result[0]?.[2]).toEqual({
+        devupImports: ['Box', 'Image', 'Text'],
+        customImports: ['DesktopOnly', 'MobileOnly'],
+        usesKeyframes: true,
+      })
+    })
+
+    it('covers viewport+variant import metadata aggregation callbacks', async () => {
+      let callCount = 0
+      mockGetTree.mockImplementation(async () => {
+        callCount++
+        return callCount % 2 === 1
+          ? {
+              component: 'Box',
+              props: {
+                mobileOnly: {
+                  __imports: {
+                    devupImports: ['Text'],
+                    customImports: ['VariantMobile'],
+                    usesKeyframes: false,
+                  },
+                },
+              },
+              children: [],
+              nodeType: 'FRAME',
+              nodeName: 'Mobile',
+            }
+          : {
+              component: 'Box',
+              props: {
+                desktopOnly: {
+                  __imports: {
+                    devupImports: ['Image'],
+                    customImports: ['VariantDesktop'],
+                    usesKeyframes: true,
+                  },
+                },
+              },
+              children: [],
+              nodeType: 'FRAME',
+              nodeName: 'Desktop',
+            }
+      })
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'ViewportAndVariantImports',
+        componentPropertyDefinitions: {
+          viewport: {
+            type: 'VARIANT',
+            variantOptions: ['mobile', 'desktop'],
+          },
+          status: {
+            type: 'VARIANT',
+            variantOptions: ['default', 'alt'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'viewport=mobile, status=default',
+            variantProperties: { viewport: 'mobile', status: 'default' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 320,
+            height: 100,
+          },
+          {
+            type: 'COMPONENT',
+            name: 'viewport=desktop, status=default',
+            variantProperties: { viewport: 'desktop', status: 'default' },
+            children: [],
+            layoutMode: 'VERTICAL',
+            width: 1200,
+            height: 100,
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'ViewportAndVariantImports',
+        )
+
+      expect(result[0]?.[2]).toEqual({
+        devupImports: ['Box', 'Image', 'Text'],
+        customImports: ['VariantDesktop', 'VariantMobile'],
+        usesKeyframes: true,
+      })
+    })
+
     it('prefers collapsed asset trees for non-viewport variants when the built tree is already an asset leaf', async () => {
       let treeCallCount = 0
       mockGetTree.mockImplementation(async () => {
@@ -2972,6 +3256,191 @@ describe('ResponsiveCodegen', () => {
       expect(result).toContain('scroll: "ScrollLabel"')
       expect(result).toContain('default: "DefaultLabel"')
       expect(result).toContain('[status]')
+    })
+  })
+
+  describe('generateVariantOnlyMergedCode with structurally equivalent asset children', () => {
+    it('merges asset-like children even when node names differ', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'up',
+          {
+            component: 'Center',
+            props: { gap: '4px' },
+            children: [
+              {
+                component: 'Box',
+                props: {
+                  aspectRatio: '1',
+                  bg: '$success',
+                  boxSize: '16px',
+                  maskImage: "url('/icons/trend-up 1.svg')",
+                  maskPos: 'center',
+                  maskRepeat: 'no-repeat',
+                  maskSize: 'contain',
+                },
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'trend-up 1',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+        [
+          'down',
+          {
+            component: 'Center',
+            props: { gap: '4px' },
+            children: [
+              {
+                component: 'Box',
+                props: {
+                  aspectRatio: '1',
+                  bg: '$error',
+                  boxSize: '16px',
+                  maskImage: "url('/icons/trend-down 1.svg')",
+                  maskPos: 'center',
+                  maskRepeat: 'no-repeat',
+                  maskSize: 'contain',
+                },
+                children: [],
+                nodeType: 'FRAME',
+                nodeName: 'trend-down 1',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Root',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'grpah',
+        treesByVariant,
+        0,
+      )
+
+      expect(result).not.toContain('grpah === "up" && render:Box')
+      expect(result).not.toContain('grpah === "down" && render:Box')
+      expect(result).toContain('"variantKey":"grpah"')
+      expect(result).toContain('trend-up 1.svg')
+      expect(result).toContain('trend-down 1.svg')
+      expect(result).toMatchSnapshot()
+    })
+  })
+
+  describe('private helper coverage', () => {
+    it('covers parseCompositeKey, getSharedCondition, mergeChildrenAcrossBreakpoints, and mergePropsAcrossComposites', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const parsed = (
+        generator as unknown as {
+          parseCompositeKey: (compositeKey: string) => Record<string, string>
+        }
+      ).parseCompositeKey('size=lg|variant=primary')
+      expect(parsed).toEqual({ size: 'lg', variant: 'primary' })
+
+      const sharedCondition = (
+        generator as unknown as {
+          getSharedCondition: (
+            childMap: Map<string, NodeTree>,
+          ) => string | undefined
+        }
+      ).getSharedCondition(
+        new Map([
+          [
+            'a',
+            {
+              component: 'Box',
+              props: {},
+              children: [],
+              nodeType: 'FRAME',
+              nodeName: 'A',
+              condition: 'showIcon',
+            },
+          ],
+          [
+            'b',
+            {
+              component: 'Box',
+              props: {},
+              children: [],
+              nodeType: 'FRAME',
+              nodeName: 'B',
+              condition: 'showIcon',
+            },
+          ],
+        ]),
+      )
+      expect(sharedCondition).toBe('showIcon')
+
+      const mergedChildren = (
+        generator as unknown as {
+          mergeChildrenAcrossBreakpoints: (
+            treesByBreakpoint: Map<import('../index').BreakpointKey, NodeTree>,
+          ) => NodeTree[]
+        }
+      ).mergeChildrenAcrossBreakpoints(
+        new Map([
+          [
+            'mobile' as import('../index').BreakpointKey,
+            {
+              component: 'Flex',
+              props: {},
+              children: [
+                {
+                  component: 'Box',
+                  props: { w: '10px' },
+                  children: [],
+                  nodeType: 'FRAME',
+                  nodeName: 'Shared',
+                },
+              ],
+              nodeType: 'FRAME',
+              nodeName: 'Root',
+            },
+          ],
+          [
+            'pc' as import('../index').BreakpointKey,
+            {
+              component: 'Flex',
+              props: {},
+              children: [
+                {
+                  component: 'Box',
+                  props: { w: '20px' },
+                  children: [],
+                  nodeType: 'FRAME',
+                  nodeName: 'Shared',
+                },
+              ],
+              nodeType: 'FRAME',
+              nodeName: 'Root',
+            },
+          ],
+        ]),
+      )
+      expect(mergedChildren).toHaveLength(1)
+
+      const mergedCompositeProps = (
+        generator as unknown as {
+          mergePropsAcrossComposites: (
+            variantKeys: string[],
+            propsMap: Map<string, Record<string, unknown>>,
+          ) => Record<string, unknown>
+        }
+      ).mergePropsAcrossComposites(
+        ['size', 'variant'],
+        new Map([
+          ['size=lg|variant=primary', { bg: '$successBg' }],
+          ['size=lg|variant=down', { bg: '$errorBg' }],
+        ]),
+      )
+      expect(mergedCompositeProps.bg).toBeTruthy()
     })
   })
 
