@@ -17,6 +17,7 @@ export interface NodeTree {
   isSlot?: boolean // true if this is an INSTANCE_SWAP slot — renders as {component}
   condition?: string // BOOLEAN prop name — renders as {condition && <.../>}
   textChildren?: string[] // raw text content for TEXT nodes
+  leadingComment?: string // optional JSX comment emitted immediately before this node
 }
 
 export interface ComponentTree {

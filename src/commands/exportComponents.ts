@@ -1,6 +1,6 @@
 import JSZip from 'jszip'
 
-import { Codegen } from '../codegen/Codegen'
+import { Codegen, DEFAULT_CODEGEN_OPTIONS } from '../codegen/Codegen'
 import { downloadFile } from '../utils/download-file'
 
 const NOTIFY_TIMEOUT = 3000
@@ -16,7 +16,7 @@ export async function exportComponents() {
   try {
     figma.notify('Exporting components...')
     const elements = figma.currentPage.selection.map(
-      (node) => new Codegen(node),
+      (node) => new Codegen(node, DEFAULT_CODEGEN_OPTIONS),
     )
     await Promise.all(elements.map((element) => element.run()))
 

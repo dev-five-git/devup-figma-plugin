@@ -2,6 +2,7 @@ import JSZip from 'jszip'
 
 import {
   Codegen,
+  DEFAULT_CODEGEN_OPTIONS,
   getGlobalAssetNodes,
   resetGlobalAssetNodes,
 } from '../codegen/Codegen'
@@ -261,6 +262,7 @@ export async function exportPagesAndComponents() {
         await ResponsiveCodegen.generateVariantResponsiveComponents(
           componentSet,
           componentName,
+          DEFAULT_CODEGEN_OPTIONS,
         )
       perfEnd(`responsiveCodegen(${componentName})`, t)
 
@@ -304,7 +306,7 @@ export async function exportPagesAndComponents() {
 
       // 3. Extract components using Codegen for other node types
       let t = perfStart()
-      const codegen = new Codegen(node)
+      const codegen = new Codegen(node, DEFAULT_CODEGEN_OPTIONS)
       await codegen.run()
       perfEnd(`codegen(${node.name})`, t)
 
@@ -342,7 +344,10 @@ export async function exportPagesAndComponents() {
         updateProgress(`Generating page: ${sectionNode.name}`)
 
         t = perfStart()
-        const responsiveCodegen = new ResponsiveCodegen(sectionNode)
+        const responsiveCodegen = new ResponsiveCodegen(
+          sectionNode,
+          DEFAULT_CODEGEN_OPTIONS,
+        )
         const responsiveCode = await responsiveCodegen.generateResponsiveCode()
         const baseName = toPascal(sectionNode.name)
         const pageName = isParentSection ? `${baseName}Page` : baseName

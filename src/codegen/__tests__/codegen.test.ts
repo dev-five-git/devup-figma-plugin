@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it, test } from 'bun:test'
 import { getComponentName } from '../../utils'
 import { toPascal } from '../../utils/to-pascal'
-import { Codegen } from '../Codegen'
+import { Codegen, DEFAULT_CODEGEN_OPTIONS } from '../Codegen'
 import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
 import type { NodeTree } from '../types'
 import { assembleNodeTree, type NodeData } from '../utils/node-proxy'
@@ -3277,6 +3277,125 @@ describe('Codegen Tree Methods', () => {
       const tree = await codegen.buildTree()
 
       expect(tree.component).toBe('MainComponent')
+      expect(tree.isComponent).toBe(true)
+      expect(tree.props).toEqual({})
+    })
+
+    test('inlines asset-only INSTANCE when inline mode is enabled', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'status=error',
+        children: [
+          {
+            type: 'VECTOR',
+            name: 'Glyph',
+            visible: true,
+            isAsset: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 1, b: 1 },
+                opacity: 1,
+              },
+            ],
+            strokes: [],
+            effects: [],
+            reactions: [],
+          },
+        ],
+        visible: true,
+        width: 24,
+        height: 24,
+        fills: [],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        layoutMode: 'NONE',
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const instanceNode = {
+        type: 'INSTANCE',
+        name: 'Status',
+        visible: true,
+        width: 24,
+        height: 24,
+        getMainComponentAsync: async () => mainComponent,
+      } as unknown as InstanceNode
+      addParent(instanceNode)
+
+      const codegen = new Codegen(instanceNode, DEFAULT_CODEGEN_OPTIONS)
+      const tree = await codegen.buildTree()
+
+      expect(['Image', 'Box']).toContain(tree.component)
+      expect(tree.isComponent).toBeUndefined()
+      expect(
+        tree.props.src === '/icons/status=error.svg' ||
+          tree.props.maskImage === 'url(/icons/status=error.svg)',
+      ).toBe(true)
+      expect(tree.props.boxSize).toBe('24px')
+      expect(tree.leadingComment).toContain('<Status')
+
+      const rendered = Codegen.renderTree(tree)
+      expect(rendered).toContain('{/* <Status')
+      expect(rendered).toContain('/icons/status=error.svg')
+
+      await codegen.run()
+      const components = codegen.getComponentsCodes()
+      expect(components.some(([name]) => name.includes('Status'))).toBe(true)
+    })
+
+    test('keeps component reference for asset-only INSTANCE when reference mode is selected', async () => {
+      const mainComponent = {
+        type: 'COMPONENT',
+        name: 'status=error',
+        children: [
+          {
+            type: 'VECTOR',
+            name: 'Glyph',
+            visible: true,
+            isAsset: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 1, b: 1 },
+                opacity: 1,
+              },
+            ],
+            strokes: [],
+            effects: [],
+            reactions: [],
+          },
+        ],
+        visible: true,
+        width: 24,
+        height: 24,
+        fills: [],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        layoutMode: 'NONE',
+      } as unknown as ComponentNode
+      addParent(mainComponent)
+
+      const instanceNode = {
+        type: 'INSTANCE',
+        name: 'Status',
+        visible: true,
+        width: 24,
+        height: 24,
+        getMainComponentAsync: async () => mainComponent,
+      } as unknown as InstanceNode
+      addParent(instanceNode)
+
+      const codegen = new Codegen(instanceNode, {
+        assetComponentInstanceMode: 'reference',
+      })
+      const tree = await codegen.buildTree()
+
+      expect(tree.component).toContain('Status')
       expect(tree.isComponent).toBe(true)
       expect(tree.props).toEqual({})
     })

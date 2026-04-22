@@ -19,7 +19,16 @@ import {
 import { getPageNode } from './utils/get-page-node'
 import { paddingLeftMultiline } from './utils/padding-left-multiline'
 import { perfEnd, perfStart } from './utils/perf'
+import { propsToString } from './utils/props-to-str'
 import { buildCssUrl } from './utils/wrap-url'
+
+export interface CodegenOptions {
+  assetComponentInstanceMode?: 'reference' | 'inline'
+}
+
+export const DEFAULT_CODEGEN_OPTIONS: CodegenOptions = {
+  assetComponentInstanceMode: 'inline',
+}
 
 // Global cache for node.getMainComponentAsync() results.
 // Multiple Codegen instances (from ResponsiveCodegen) process the same INSTANCE nodes,
@@ -259,7 +268,43 @@ function cloneTree(tree: NodeTree): NodeTree {
     isSlot: tree.isSlot,
     condition: tree.condition,
     textChildren: tree.textChildren,
+    leadingComment: tree.leadingComment,
   }
+}
+
+function isAssetLeafTree(tree: NodeTree): boolean {
+  return (
+    tree.children.length === 0 &&
+    ((tree.component === 'Image' && typeof tree.props.src === 'string') ||
+      (tree.component === 'Box' && typeof tree.props.maskImage === 'string'))
+  )
+}
+
+function applyAssetNodeSize(
+  tree: NodeTree,
+  node: SceneNode,
+): Record<string, unknown> {
+  const props = { ...tree.props }
+
+  if (node.width === node.height) {
+    props.boxSize = addPx(node.width)
+    delete props.w
+    delete props.h
+  } else {
+    props.w = addPx(node.width)
+    props.h = addPx(node.height)
+    delete props.boxSize
+  }
+
+  return props
+}
+
+function buildComponentReferenceComment(
+  componentName: string,
+  props: Record<string, unknown>,
+): string {
+  const propsString = propsToString(props)
+  return `<${componentName}${propsString ? ` ${propsString}` : ''} />`
 }
 
 export class Codegen {
@@ -283,7 +328,10 @@ export class Codegen {
   // Collect fire-and-forget addComponentTree promises so we can await them
   // before rendering component codes (decouples INSTANCE buildTree from addComponentTree)
 
-  constructor(private node: SceneNode) {
+  constructor(
+    private node: SceneNode,
+    private options: CodegenOptions = DEFAULT_CODEGEN_OPTIONS,
+  ) {
     this.node = node
     // if (node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET') {
     //   this.node = node.parent
@@ -452,6 +500,55 @@ export class Codegen {
     // instances (containing only vectors) would otherwise be misclassified as SVG assets.
     if (node.type === 'INSTANCE') {
       const mainComponent = await getMainComponentCached(node)
+      const variantProps = extractInstanceVariantProps(node)
+
+      if (
+        this.options.assetComponentInstanceMode === 'inline' &&
+        mainComponent
+      ) {
+        this.addComponentTree(mainComponent)
+
+        const inlineTree = cloneTree(await this.buildTree(mainComponent))
+
+        if (isAssetLeafTree(inlineTree)) {
+          inlineTree.props = applyAssetNodeSize(inlineTree, node)
+          inlineTree.nodeType = node.type
+          inlineTree.nodeName = node.name
+          inlineTree.leadingComment = buildComponentReferenceComment(
+            getComponentName(mainComponent),
+            variantProps,
+          )
+
+          const posProps = getPositionProps(node)
+          if (posProps?.pos) {
+            const transformProps = getTransformProps(node)
+            perfEnd('buildTree()', tBuild)
+            return {
+              component: 'Box',
+              props: {
+                pos: posProps.pos,
+                top: posProps.top,
+                left: posProps.left,
+                right: posProps.right,
+                bottom: posProps.bottom,
+                transform: posProps.transform || transformProps?.transform,
+                w:
+                  (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)
+                    ?.width === node.width
+                    ? '100%'
+                    : undefined,
+              },
+              children: [inlineTree],
+              nodeType: 'WRAPPER',
+              nodeName: `${node.name}_wrapper`,
+            }
+          }
+
+          perfEnd('buildTree()', tBuild)
+          return inlineTree
+        }
+      }
+
       // Fire addComponentTree without awaiting — it runs in the background.
       // All pending promises are collected and awaited in run() before rendering.
       if (mainComponent) {
@@ -459,7 +556,6 @@ export class Codegen {
       }
 
       const componentName = getComponentName(mainComponent || node)
-      const variantProps = extractInstanceVariantProps(node)
 
       // Check for native SLOT children and build their overridden content.
       // SLOT children contain the content placed into the component's slot.
@@ -924,6 +1020,11 @@ export class Codegen {
         childrenCodes.push(Codegen.renderTree(child, 0))
       }
       result = renderNode(tree.component, tree.props, depth, childrenCodes)
+    }
+
+    if (tree.leadingComment) {
+      const comment = `${'  '.repeat(depth)}{/* ${tree.leadingComment} */}`
+      result = `${comment}\n${result}`
     }
 
     // Wrap with BOOLEAN conditional rendering if needed

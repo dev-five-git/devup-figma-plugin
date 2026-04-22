@@ -1,5 +1,6 @@
 import {
   Codegen,
+  DEFAULT_CODEGEN_OPTIONS,
   resetGlobalBuildTreeCache,
   resetMainComponentCache,
 } from './codegen/Codegen'
@@ -239,7 +240,7 @@ export function registerCodegen(ctx: typeof figma) {
           resetGlobalBuildTreeCache()
 
           let t = perfStart()
-          const codegen = new Codegen(node)
+          const codegen = new Codegen(node, DEFAULT_CODEGEN_OPTIONS)
           await codegen.run()
           perfEnd('Codegen.run()', t)
 
@@ -264,6 +265,7 @@ export function registerCodegen(ctx: typeof figma) {
               await ResponsiveCodegen.generateVariantResponsiveComponents(
                 node,
                 componentName,
+                DEFAULT_CODEGEN_OPTIONS,
               )
             perfEnd('generateVariantResponsiveComponents(COMPONENT_SET)', t)
           }
@@ -303,6 +305,7 @@ export function registerCodegen(ctx: typeof figma) {
                   await ResponsiveCodegen.generateVariantResponsiveComponents(
                     parentSet,
                     componentName,
+                    DEFAULT_CODEGEN_OPTIONS,
                   )
                 perfEnd(
                   `generateVariantResponsiveComponents(${componentName})`,
@@ -330,7 +333,10 @@ export function registerCodegen(ctx: typeof figma) {
 
           if (sectionNode) {
             try {
-              const responsiveCodegen = new ResponsiveCodegen(sectionNode)
+              const responsiveCodegen = new ResponsiveCodegen(
+                sectionNode,
+                DEFAULT_CODEGEN_OPTIONS,
+              )
               const responsiveCode =
                 await responsiveCodegen.generateResponsiveCode()
               const baseName = toPascal(sectionNode.name)

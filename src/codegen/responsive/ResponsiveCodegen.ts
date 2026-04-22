@@ -1,3 +1,4 @@
+import type { CodegenOptions } from '../Codegen'
 import { Codegen } from '../Codegen'
 import {
   applyTextChildrenTransform,
@@ -91,6 +92,7 @@ function cloneNodeTree(tree: NodeTree): NodeTree {
     isSlot: tree.isSlot,
     condition: tree.condition,
     textChildren: tree.textChildren,
+    leadingComment: tree.leadingComment,
   }
 }
 
@@ -229,7 +231,10 @@ function mergeChildNameOrder(
 export class ResponsiveCodegen {
   private breakpointNodes: Map<BreakpointKey, SceneNode> = new Map()
 
-  constructor(private sectionNode: SectionNode | null) {
+  constructor(
+    private sectionNode: SectionNode | null,
+    private options: CodegenOptions = {},
+  ) {
     if (this.sectionNode) {
       this.categorizeChildren()
     }
@@ -262,7 +267,7 @@ export class ResponsiveCodegen {
     if (this.breakpointNodes.size === 1) {
       // If only one breakpoint, generate normal code using Codegen.
       const [, node] = firstMapEntry(this.breakpointNodes)
-      const codegen = new Codegen(node)
+      const codegen = new Codegen(node, this.options)
       const tree = await codegen.getTree()
       return Codegen.renderTree(tree, 0)
     }
@@ -270,7 +275,7 @@ export class ResponsiveCodegen {
     // Extract trees per breakpoint using Codegen — all independent, run in parallel.
     const breakpointTrees = new Map<BreakpointKey, NodeTree>()
     for (const [bp, node] of this.breakpointNodes) {
-      const codegen = new Codegen(node)
+      const codegen = new Codegen(node, this.options)
       const tree = await codegen.getTree()
       breakpointTrees.set(bp, tree)
     }
@@ -471,6 +476,7 @@ export class ResponsiveCodegen {
   static async generateViewportResponsiveComponents(
     componentSet: ComponentSetNode,
     componentName: string,
+    options: CodegenOptions = {},
   ): Promise<ReadonlyArray<readonly [string, string]>> {
     // Find viewport and effect variant keys
     const viewportDefs = getComponentPropertyDefinitions(componentSet)
@@ -548,7 +554,7 @@ export class ResponsiveCodegen {
 
     // Generate responsive code for each group
     const results: Array<readonly [string, string]> = []
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
 
     for (const [groupKey, viewportComponents] of groups) {
       // Parse group key to get variant filter for getSelectorPropsForGroup
@@ -567,7 +573,7 @@ export class ResponsiveCodegen {
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
         let t = perfStart()
-        const codegen = new Codegen(component)
+        const codegen = new Codegen(component, options)
         const tree = await codegen.getTree()
         perfEnd('Codegen.getTree(viewportVariant)', t)
 
@@ -621,6 +627,7 @@ export class ResponsiveCodegen {
   static async generateVariantResponsiveComponents(
     componentSet: ComponentSetNode,
     componentName: string,
+    options: CodegenOptions = {},
   ): Promise<ReadonlyArray<readonly [string, string]>> {
     const tTotal = perfStart()
 
@@ -674,6 +681,7 @@ export class ResponsiveCodegen {
       const r = await ResponsiveCodegen.generateEffectOnlyComponents(
         componentSet,
         componentName,
+        options,
       )
       perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return r
@@ -686,6 +694,7 @@ export class ResponsiveCodegen {
         componentName,
         otherVariantKeys,
         finalVariants,
+        options,
       )
       perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return r
@@ -696,6 +705,7 @@ export class ResponsiveCodegen {
       const r = await ResponsiveCodegen.generateViewportResponsiveComponents(
         componentSet,
         componentName,
+        options,
       )
       perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return r
@@ -777,7 +787,7 @@ export class ResponsiveCodegen {
       return []
     }
 
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
 
     // Step 1: For each variant combination, merge by viewport to get responsive props
     const responsivePropsByComposite = new Map<
@@ -794,7 +804,7 @@ export class ResponsiveCodegen {
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
         let t = perfStart()
-        const codegen = new Codegen(component)
+        const codegen = new Codegen(component, options)
         const tree = await codegen.getTree()
         perfEnd('Codegen.getTree(variant)', t)
 
@@ -847,6 +857,7 @@ export class ResponsiveCodegen {
   private static async generateEffectOnlyComponents(
     componentSet: ComponentSetNode,
     componentName: string,
+    options: CodegenOptions = {},
   ): Promise<ReadonlyArray<readonly [string, string]>> {
     // Use defaultVariant as the base component
     const defaultComponent = componentSet.defaultVariant
@@ -855,7 +866,7 @@ export class ResponsiveCodegen {
     }
 
     // Get base props from defaultVariant
-    const codegen = new Codegen(defaultComponent)
+    const codegen = new Codegen(defaultComponent, options)
     const tree = await codegen.getTree()
 
     // Get pseudo-selector props (hover, active, disabled, etc.)
@@ -902,6 +913,7 @@ export class ResponsiveCodegen {
     componentName: string,
     variantKeys: string[],
     variants: Record<string, string>,
+    options: CodegenOptions = {},
   ): Promise<ReadonlyArray<readonly [string, string]>> {
     if (variantKeys.length === 0) {
       return []
@@ -935,6 +947,7 @@ export class ResponsiveCodegen {
         sanitizedVariantKeys[0],
         variants,
         hasEffect,
+        options,
       )
     }
 
@@ -1015,7 +1028,7 @@ export class ResponsiveCodegen {
       perfEnd('getSelectorPropsForGroup(nonViewport)', t)
 
       t = perfStart()
-      const codegen = new Codegen(component)
+      const codegen = new Codegen(component, options)
       const builtTree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
 
@@ -1057,7 +1070,7 @@ export class ResponsiveCodegen {
       treesByCompositeAndBreakpoint.set(compositeKey, singleBreakpointMap)
     }
 
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
     const mergedCode = responsiveCodegen.generateMultiVariantMergedCode(
       sanitizedVariantKeys,
       treesByCompositeAndBreakpoint,
@@ -1080,6 +1093,7 @@ export class ResponsiveCodegen {
     sanitizedVariantKey: string,
     variants: Record<string, string>,
     hasEffect: boolean,
+    options: CodegenOptions = {},
   ): Promise<ReadonlyArray<readonly [string, string]>> {
     // Group components by variant value
     const componentsByVariant = new Map<string, ComponentNode>()
@@ -1117,7 +1131,7 @@ export class ResponsiveCodegen {
       perfEnd('getSelectorPropsForGroup(nonViewport)', t)
 
       t = perfStart()
-      const codegen = new Codegen(component)
+      const codegen = new Codegen(component, options)
       const builtTree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
 
@@ -1148,7 +1162,7 @@ export class ResponsiveCodegen {
     }
 
     // Generate merged code with variant conditionals
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
     const mergedCode = responsiveCodegen.generateVariantOnlyMergedCode(
       sanitizedVariantKey,
       treesByVariant,
