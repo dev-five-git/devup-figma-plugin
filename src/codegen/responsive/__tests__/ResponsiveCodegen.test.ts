@@ -40,13 +40,23 @@ const mockGetTree = mock(
   }),
 )
 
+const mockGetComponentTree = mock(() => undefined)
+
+const defaultGetTreeImplementation = async (): Promise<NodeTree> => ({
+  component: 'Box',
+  props: { id: 'test' },
+  children: [],
+  nodeType: 'FRAME',
+  nodeName: 'test',
+})
+
 const mockRenderTree = mock((tree: NodeTree, depth: number) =>
   renderNodeMock(tree.component, tree.props, depth, []),
 )
 
 const MockCodegen = class {
   getTree = mockGetTree
-  getComponentTree = mock(() => undefined)
+  getComponentTree = mockGetComponentTree
   static renderTree = mockRenderTree
 }
 
@@ -63,6 +73,9 @@ describe('ResponsiveCodegen', () => {
     ;({ ResponsiveCodegen } = await import('../ResponsiveCodegen'))
     renderNodeMock.mockClear()
     mockGetTree.mockClear()
+    mockGetTree.mockImplementation(defaultGetTreeImplementation)
+    mockGetComponentTree.mockClear()
+    mockGetComponentTree.mockImplementation(() => undefined)
     mockRenderTree.mockClear()
   })
 
@@ -890,6 +903,55 @@ describe('ResponsiveCodegen', () => {
       expect(result).toContain('size === "lg"')
       expect(result).not.toContain('leftIcon')
     })
+
+    it('falls back to conditional full trees when root components differ across variants', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByVariant = new Map<string, NodeTree>([
+        [
+          'success',
+          {
+            component: 'Image',
+            props: { src: '/icons/status=success.svg' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Status',
+          },
+        ],
+        [
+          'error',
+          {
+            component: 'Box',
+            props: { boxSize: '24px' },
+            children: [
+              {
+                component: 'Box',
+                props: { bg: '#E01444', borderRadius: '50%' },
+                children: [],
+                nodeType: 'ELLIPSE',
+                nodeName: 'Ellipse',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Status',
+          },
+        ],
+      ])
+
+      const result = generator.generateVariantOnlyMergedCode(
+        'status',
+        treesByVariant,
+        0,
+      )
+
+      expect(result).toContain('status === "success"')
+      expect(result).toContain('status === "error"')
+      expect(result).toContain('render:Image:depth=0')
+      expect(result).toContain('render:Box:depth=0')
+      expect(result).not.toContain(
+        'render:Image:depth=0:{"src":"/icons/status=success.svg"}|render:Box',
+      )
+    })
   })
 
   describe('createNestedVariantProp optimization', () => {
@@ -1501,7 +1563,103 @@ describe('ResponsiveCodegen', () => {
       expect(result[0][1]).toContain('status')
     })
 
+    it('prefers collapsed asset trees for non-viewport variants when the built tree is already an asset leaf', async () => {
+      let treeCallCount = 0
+      mockGetTree.mockImplementation(async () => {
+        treeCallCount++
+
+        return {
+          component: 'Image',
+          props: {
+            src:
+              treeCallCount === 1
+                ? '/icons/status=success.svg'
+                : '/icons/status=error.svg',
+          },
+          children: [],
+          nodeType: 'COMPONENT',
+          nodeName: 'Status',
+        }
+      })
+
+      mockGetComponentTree.mockImplementation((() => ({
+        name: 'Status',
+        node: {} as SceneNode,
+        tree: {
+          component: 'Box',
+          props: { boxSize: '24px' },
+          children: [
+            {
+              component: 'Box',
+              props: { bg: '#E01444' },
+              children: [],
+              nodeType: 'ELLIPSE',
+              nodeName: 'Ellipse',
+            },
+          ],
+          nodeType: 'COMPONENT',
+          nodeName: 'Status',
+        },
+        variants: {},
+      })) as never)
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        name: 'Status',
+        componentPropertyDefinitions: {
+          status: {
+            type: 'VARIANT',
+            variantOptions: ['success', 'error'],
+          },
+        },
+        children: [
+          {
+            type: 'COMPONENT',
+            name: 'status=success',
+            variantProperties: { status: 'success' },
+            children: [],
+          },
+          {
+            type: 'COMPONENT',
+            name: 'status=error',
+            variantProperties: { status: 'error' },
+            children: [],
+          },
+        ],
+      } as unknown as ComponentSetNode
+
+      const result =
+        await ResponsiveCodegen.generateVariantResponsiveComponents(
+          componentSet,
+          'Status',
+        )
+
+      expect(result).toHaveLength(1)
+      expect(result[0][1]).toContain('render:Image:depth=0')
+      expect(result[0][1]).toContain('/icons/status=success.svg')
+      expect(result[0][1]).toContain('/icons/status=error.svg')
+      expect(result[0][1]).not.toContain(
+        'render:Box:depth=0:{"boxSize":"24px"}',
+      )
+    })
+
     it('handles effect + viewport + size + variant (4 dimensions)', async () => {
+      mockGetTree.mockImplementation(async () => ({
+        component: 'Box',
+        props: { id: 'RootTablet' },
+        children: [
+          {
+            component: 'Box',
+            props: { id: 'Shared' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Shared',
+          },
+        ],
+        nodeType: 'FRAME',
+        nodeName: 'RootTablet',
+      }))
+
       // Button component with:
       // - effect: default, hover, active
       // - viewport: Desktop, Mobile
@@ -2855,6 +3013,65 @@ describe('ResponsiveCodegen', () => {
       expect(result).toContain('Md: "Medium"')
       expect(result).toContain('Sm: "Small"')
       expect(result).toContain('[size]')
+    })
+  })
+
+  describe('generateNestedVariantMergedCode with mixed root components', () => {
+    it('falls back to composite-conditional full trees when root components differ', () => {
+      const generator = new ResponsiveCodegen(null)
+
+      const treesByComposite = new Map<string, NodeTree>([
+        [
+          'size=Md|variant=success',
+          {
+            component: 'Image',
+            props: { src: '/icons/status=success.svg' },
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Status',
+          },
+        ],
+        [
+          'size=Md|variant=error',
+          {
+            component: 'Box',
+            props: { boxSize: '24px' },
+            children: [
+              {
+                component: 'Box',
+                props: { bg: '#E01444' },
+                children: [],
+                nodeType: 'ELLIPSE',
+                nodeName: 'Ellipse',
+              },
+            ],
+            nodeType: 'FRAME',
+            nodeName: 'Status',
+          },
+        ],
+      ])
+
+      const result = (
+        generator as unknown as {
+          generateNestedVariantMergedCode: (
+            variantKeys: string[],
+            trees: Map<string, NodeTree>,
+            depth: number,
+          ) => string
+        }
+      ).generateNestedVariantMergedCode(
+        ['size', 'variant'],
+        treesByComposite,
+        0,
+      )
+
+      expect(result).toContain('size === "Md" && variant === "success"')
+      expect(result).toContain('size === "Md" && variant === "error"')
+      expect(result).toContain('render:Image:depth=0')
+      expect(result).toContain('render:Box:depth=0')
+      expect(result).not.toContain(
+        'render:Image:depth=0:{"src":"/icons/status=success.svg"}|render:Box',
+      )
     })
   })
 

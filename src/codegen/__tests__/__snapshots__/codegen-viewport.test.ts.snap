@@ -1,0 +1,19 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Codegen effect-only COMPONENT_SET generates snapshot for asset-like Status ComponentSet as Image src variants 1`] = `
+"export interface StatusProps {
+  status: 'success' | 'warning' | 'error'
+}
+
+export function Status({ status }: StatusProps) {
+  return (
+    <Image
+      src={{
+        success: "/icons/status=success.svg",
+        warning: "/icons/status=warning.svg",
+        error: "/icons/status=error.svg"
+      }[status]}
+    />
+  )
+}"
+`;

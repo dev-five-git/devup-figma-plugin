@@ -42,6 +42,79 @@ function firstMapEntry<K, V>(map: Map<K, V>): [K, V] {
   throw new Error('empty map')
 }
 
+function renderFragment(childrenCodes: string[], depth: number): string {
+  const indent = '  '.repeat(depth)
+  if (childrenCodes.length === 0) return `${indent}<></>`
+
+  let children = ''
+  for (let i = 0; i < childrenCodes.length; i++) {
+    if (i > 0) children += '\n'
+    children += paddingLeftMultiline(childrenCodes[i], depth + 1)
+  }
+
+  return `${indent}<>\n${children}\n${indent}</>`
+}
+
+function wrapConditionalJsx(condition: string, jsx: string): string {
+  if (jsx.includes('\n')) {
+    return `{${condition} && (\n${paddingLeftMultiline(jsx, 1)}\n)}`
+  }
+
+  return `{${condition} && ${jsx}}`
+}
+
+function hasMixedRootComponents(trees: Iterable<NodeTree>): boolean {
+  let firstComponent: string | undefined
+
+  for (const tree of trees) {
+    if (!firstComponent) {
+      firstComponent = tree.component
+      continue
+    }
+
+    if (tree.component !== firstComponent) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function cloneNodeTree(tree: NodeTree): NodeTree {
+  return {
+    component: tree.component,
+    props: tree.props,
+    children: tree.children,
+    nodeType: tree.nodeType,
+    nodeName: tree.nodeName,
+    isComponent: tree.isComponent,
+    isSlot: tree.isSlot,
+    condition: tree.condition,
+    textChildren: tree.textChildren,
+  }
+}
+
+function isAssetLeafTree(tree: NodeTree): boolean {
+  return (
+    tree.children.length === 0 &&
+    ((tree.component === 'Image' && typeof tree.props.src === 'string') ||
+      (tree.component === 'Box' && typeof tree.props.maskImage === 'string'))
+  )
+}
+
+function getVariantSourceTree(
+  codegen: Codegen,
+  tree: NodeTree,
+  preferBuiltAssetTree: boolean,
+): NodeTree {
+  if (preferBuiltAssetTree && isAssetLeafTree(tree)) {
+    return cloneNodeTree(tree)
+  }
+
+  const componentTree = codegen.getComponentTree()
+  return componentTree ? cloneNodeTree(componentTree.tree) : tree
+}
+
 /**
  * Build a stable merged order of child names across multiple variants/breakpoints.
  * Uses topological sort on a DAG of ordering constraints from all variants,
@@ -925,6 +998,14 @@ export class ResponsiveCodegen {
 
     // Build trees for each combination
     const treesByComposite = new Map<string, NodeTree>()
+    const builtTreesByComposite = new Map<
+      string,
+      {
+        codegen: Codegen
+        builtTree: NodeTree
+        selectorProps: Record<string, object | string> | null
+      }
+    >()
     for (const [compositeKey, component] of componentsByComposite) {
       const variantFilter = parseCompositeKeyToOriginal(compositeKey)
       let t = perfStart()
@@ -935,19 +1016,31 @@ export class ResponsiveCodegen {
 
       t = perfStart()
       const codegen = new Codegen(component)
-      const tree = await codegen.getTree()
+      const builtTree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
 
-      // Use the component tree from addComponentTree if available — it includes
-      // ALL children (even invisible BOOLEAN-controlled ones) with condition fields
-      // and INSTANCE_SWAP slot placeholders, which buildTree() skips.
-      const componentTree = codegen.getComponentTree()
-      if (componentTree) {
-        tree.children = componentTree.tree.children
-      }
+      builtTreesByComposite.set(compositeKey, {
+        codegen,
+        builtTree,
+        selectorProps,
+      })
+    }
 
-      if (selectorProps && Object.keys(selectorProps).length > 0) {
-        tree.props = Object.assign({}, tree.props, selectorProps)
+    const preferBuiltAssetTrees =
+      builtTreesByComposite.size > 0 &&
+      [...builtTreesByComposite.values()].every(({ builtTree }) =>
+        isAssetLeafTree(builtTree),
+      )
+
+    for (const [compositeKey, entry] of builtTreesByComposite) {
+      const tree = getVariantSourceTree(
+        entry.codegen,
+        entry.builtTree,
+        preferBuiltAssetTrees,
+      )
+
+      if (entry.selectorProps && Object.keys(entry.selectorProps).length > 0) {
+        tree.props = Object.assign({}, tree.props, entry.selectorProps)
       }
       treesByComposite.set(compositeKey, tree)
     }
@@ -1005,6 +1098,14 @@ export class ResponsiveCodegen {
 
     // Build trees for each variant
     const treesByVariant = new Map<string, NodeTree>()
+    const builtTreesByVariant = new Map<
+      string,
+      {
+        codegen: Codegen
+        builtTree: NodeTree
+        selectorProps: Record<string, object | string> | null
+      }
+    >()
     for (const [variantValue, component] of componentsByVariant) {
       const variantFilter: Record<string, string> = {
         [variantKey]: variantValue,
@@ -1017,19 +1118,31 @@ export class ResponsiveCodegen {
 
       t = perfStart()
       const codegen = new Codegen(component)
-      const tree = await codegen.getTree()
+      const builtTree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
 
-      // Use the component tree from addComponentTree if available — it includes
-      // ALL children (even invisible BOOLEAN-controlled ones) with condition fields
-      // and INSTANCE_SWAP slot placeholders, which buildTree() skips.
-      const componentTree = codegen.getComponentTree()
-      if (componentTree) {
-        tree.children = componentTree.tree.children
-      }
+      builtTreesByVariant.set(variantValue, {
+        codegen,
+        builtTree,
+        selectorProps,
+      })
+    }
 
-      if (selectorProps && Object.keys(selectorProps).length > 0) {
-        tree.props = Object.assign({}, tree.props, selectorProps)
+    const preferBuiltAssetTrees =
+      builtTreesByVariant.size > 0 &&
+      [...builtTreesByVariant.values()].every(({ builtTree }) =>
+        isAssetLeafTree(builtTree),
+      )
+
+    for (const [variantValue, entry] of builtTreesByVariant) {
+      const tree = getVariantSourceTree(
+        entry.codegen,
+        entry.builtTree,
+        preferBuiltAssetTrees,
+      )
+
+      if (entry.selectorProps && Object.keys(entry.selectorProps).length > 0) {
+        tree.props = Object.assign({}, tree.props, entry.selectorProps)
       }
       treesByVariant.set(variantValue, tree)
     }
@@ -1173,6 +1286,21 @@ export class ResponsiveCodegen {
     treesByVariant: Map<string, NodeTree>,
     depth: number,
   ): string {
+    if (hasMixedRootComponents(treesByVariant.values())) {
+      const conditionalTrees: string[] = []
+
+      for (const [variant, tree] of treesByVariant) {
+        conditionalTrees.push(
+          wrapConditionalJsx(
+            `${variantKey} === "${variant}"`,
+            Codegen.renderTree(tree, 0),
+          ),
+        )
+      }
+
+      return renderFragment(conditionalTrees, depth)
+    }
+
     const firstTree = firstMapValue(treesByVariant)
 
     // Merge props across variants
@@ -1378,6 +1506,23 @@ export class ResponsiveCodegen {
     treesByComposite: Map<string, NodeTree>,
     depth: number,
   ): string {
+    if (hasMixedRootComponents(treesByComposite.values())) {
+      const conditionalTrees: string[] = []
+
+      for (const [compositeKey, tree] of treesByComposite) {
+        const parsed = this.parseCompositeKey(compositeKey)
+        const condition = variantKeys
+          .map((variantKey) => `${variantKey} === "${parsed[variantKey]}"`)
+          .join(' && ')
+
+        conditionalTrees.push(
+          wrapConditionalJsx(condition, Codegen.renderTree(tree, 0)),
+        )
+      }
+
+      return renderFragment(conditionalTrees, depth)
+    }
+
     const firstTree = firstMapValue(treesByComposite)
 
     // Build props map indexed by composite key
