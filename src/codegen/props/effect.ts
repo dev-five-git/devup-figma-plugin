@@ -1,3 +1,4 @@
+import { getStyleByIdCached } from '../../utils'
 import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { styleNameToTypography } from '../../utils/style-name-to-typography'
@@ -21,7 +22,7 @@ async function _resolveEffectStyleToken(
   if (!('effectStyleId' in node)) return null
   const styleId = (node as SceneNode & { effectStyleId: string }).effectStyleId
   if (!styleId || typeof styleId !== 'string') return null
-  const style = await figma.getStyleByIdAsync(styleId)
+  const style = await getStyleByIdCached(styleId)
   if (style?.name) {
     return `$${styleNameToTypography(style.name).name}`
   }
@@ -44,8 +45,10 @@ export async function getEffectProps(
   // This preserves per-breakpoint differences so the responsive merge
   // can detect them and produce responsive arrays.
   const result: Record<string, string> = {}
-  for (const effect of effects) {
-    const props = await _getEffectPropsFromEffect(effect)
+  const effectPropsList = await Promise.all(
+    effects.map((effect) => _getEffectPropsFromEffect(effect)),
+  )
+  for (const props of effectPropsList) {
     for (const [key, value] of Object.entries(props)) {
       if (value) {
         result[key] = result[key] ? `${result[key]}, ${value}` : value
@@ -64,6 +67,13 @@ export async function getEffectProps(
   }
 
   return result
+}
+
+function hasEffectVariable(
+  bv: BoundVars,
+  field: string,
+): bv is Record<string, { id: string } | undefined> {
+  return !!bv?.[field]
 }
 
 async function _resolveEffectColor(
@@ -103,6 +113,18 @@ async function _getEffectPropsFromEffect(
       const { offset, radius, spread, color } = effect
       const { x, y } = offset
 
+      if (
+        !hasEffectVariable(bv, 'offsetX') &&
+        !hasEffectVariable(bv, 'offsetY') &&
+        !hasEffectVariable(bv, 'radius') &&
+        !hasEffectVariable(bv, 'spread') &&
+        !hasEffectVariable(bv, 'color')
+      ) {
+        return {
+          boxShadow: `${addPx(x, '0')} ${addPx(y, '0')} ${addPx(radius, '0')} ${addPx(spread ?? 0, '0')} ${optimizeHex(rgbaToHex(color))}`,
+        }
+      }
+
       const [ex, ey, er, es, ec] = await Promise.all([
         _resolveEffectLength(bv, 'offsetX', x, '0'),
         _resolveEffectLength(bv, 'offsetY', y, '0'),
@@ -118,6 +140,18 @@ async function _getEffectPropsFromEffect(
     case 'INNER_SHADOW': {
       const { offset, radius, spread, color } = effect
       const { x, y } = offset
+
+      if (
+        !hasEffectVariable(bv, 'offsetX') &&
+        !hasEffectVariable(bv, 'offsetY') &&
+        !hasEffectVariable(bv, 'radius') &&
+        !hasEffectVariable(bv, 'spread') &&
+        !hasEffectVariable(bv, 'color')
+      ) {
+        return {
+          boxShadow: `inset ${addPx(x, '0')} ${addPx(y, '0')} ${addPx(radius, '0')} ${addPx(spread ?? 0, '0')} ${optimizeHex(rgbaToHex(color))}`,
+        }
+      }
 
       const [ex, ey, er, es, ec] = await Promise.all([
         _resolveEffectLength(bv, 'offsetX', x, '0'),

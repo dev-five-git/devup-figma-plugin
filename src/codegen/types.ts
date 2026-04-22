@@ -1,8 +1,14 @@
+export type NodeBoundVariables =
+  | Record<string, { id: string } | undefined>
+  | undefined
+  | null
+
 export interface NodeContext {
   isAsset: 'svg' | 'png' | null
   canBeAbsolute: boolean
   isPageRoot: boolean
   pageNode: SceneNode | null
+  boundVariables?: NodeBoundVariables
 }
 
 export type Props = Record<string, unknown>

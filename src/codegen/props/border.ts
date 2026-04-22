@@ -1,3 +1,4 @@
+import type { NodeContext } from '../types'
 import { addPx } from '../utils/add-px'
 import { fourValueShortcut } from '../utils/four-value-shortcut'
 import { paintToCSS, paintToCSSSyncIfPossible } from '../utils/paint-to-css'
@@ -7,11 +8,41 @@ type BoundVars = Record<string, { id: string } | undefined> | undefined | null
 
 export async function getBorderRadiusProps(
   node: SceneNode,
+  ctx?: NodeContext,
 ): Promise<
   Record<string, boolean | string | number | undefined | null> | undefined
 > {
   const bv =
-    'boundVariables' in node ? (node.boundVariables as BoundVars) : undefined
+    (ctx?.boundVariables as BoundVars) ??
+    ('boundVariables' in node ? (node.boundVariables as BoundVars) : undefined)
+
+  if (!bv) {
+    if (
+      'cornerRadius' in node &&
+      typeof node.cornerRadius === 'number' &&
+      node.cornerRadius !== 0 &&
+      !('topLeftRadius' in node)
+    ) {
+      return { borderRadius: addPx(node.cornerRadius) }
+    }
+    if ('topLeftRadius' in node) {
+      const value = fourValueShortcut(
+        node.topLeftRadius,
+        node.topRightRadius,
+        node.bottomRightRadius,
+        node.bottomLeftRadius,
+      )
+      if (value === '0') return
+      return {
+        borderRadius: value,
+      }
+    }
+    if (node.type === 'ELLIPSE' && !node.arcData.innerRadius) {
+      return {
+        borderRadius: '50%',
+      }
+    }
+  }
 
   if (
     'cornerRadius' in node &&
@@ -78,16 +109,60 @@ export async function getBorderProps(
   if (!('strokes' in node && node.strokes.length > 0) || node.type === 'TEXT')
     return
   const strokeStyle = getStrokeStyle(node)
-  const paintCssList = []
-  for (let i = 0; i < node.strokes.length; i++) {
-    const paint = node.strokes[node.strokes.length - 1 - i]
-    if (paint.visible !== false && paint.opacity !== 0) {
-      paintCssList.push(
-        paintToCSSSyncIfPossible(paint, node, i === node.strokes.length - 1) ??
-          (await paintToCSS(paint, node, i === node.strokes.length - 1)),
-      )
+  const simpleStroke =
+    node.strokes.length === 1 &&
+    node.strokes[0].visible !== false &&
+    node.strokes[0].opacity !== 0 &&
+    paintToCSSSyncIfPossible(node.strokes[0], node, true)
+
+  if (typeof simpleStroke === 'string') {
+    const weight = node.strokeWeight
+    if (
+      weight !== figma.mixed &&
+      (node.strokeAlign !== 'INSIDE' || node.type === 'LINE')
+    ) {
+      const wType =
+        'layoutSizingHorizontal' in node ? node.layoutSizingHorizontal : 'FILL'
+      return {
+        outline: `${strokeStyle} ${weight}px ${simpleStroke}`,
+        outlineOffset:
+          node.type === 'LINE'
+            ? null
+            : {
+                CENTER: addPx(-weight / 2),
+                OUTSIDE: null,
+                INSIDE: null,
+              }[node.strokeAlign],
+        maxW:
+          node.type === 'LINE'
+            ? `calc(${wType === 'FILL' ? '100%' : `${node.width}px`} - ${weight * 2}px)`
+            : undefined,
+        transform:
+          node.type === 'LINE'
+            ? `translate(${addPx(weight)}, ${addPx(-weight)})`
+            : undefined,
+      }
+    }
+
+    if (weight !== figma.mixed) {
+      return {
+        border: `${strokeStyle} ${weight}px ${simpleStroke}`,
+      }
     }
   }
+
+  const visibleStrokes = node.strokes
+    .map((paint, i) => ({ paint, isLast: i === node.strokes.length - 1 }))
+    .reverse()
+    .filter(({ paint }) => paint.visible !== false && paint.opacity !== 0)
+  const paintCssList = await Promise.all(
+    visibleStrokes.map(async ({ paint, isLast }) => {
+      return (
+        paintToCSSSyncIfPossible(paint, node, isLast) ??
+        (await paintToCSS(paint, node, isLast))
+      )
+    }),
+  )
   const weight = node.strokeWeight
   if (
     weight !== figma.mixed &&

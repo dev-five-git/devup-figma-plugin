@@ -8,7 +8,7 @@ import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
 import { addPx } from './utils/add-px'
-import { checkAssetNode } from './utils/check-asset-node'
+import { analyzeAssetNode, checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
 import { collectComponentProps } from './utils/collect-component-props'
 import {
@@ -492,6 +492,7 @@ export class Codegen {
 
   private async doBuildTree(node: SceneNode): Promise<NodeTree> {
     const tBuild = perfStart()
+    let pendingAddComponentTreeNode: ComponentNode | null = null
 
     // Handle COMPONENT_SET or COMPONENT — fire addComponentTree BEFORE any early returns
     // (e.g., asset detection) so that BOOLEAN conditions and INSTANCE_SWAP slots are always
@@ -502,10 +503,8 @@ export class Codegen {
         node === this.node.defaultVariant) ||
         this.node.type === 'COMPONENT')
     ) {
-      // Fire-and-forget — errors collected via addComponentTreePromises in run().
-      this.addComponentTree(
-        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-      )
+      pendingAddComponentTreeNode =
+        node.type === 'COMPONENT_SET' ? node.defaultVariant : node
     }
 
     // Handle native Figma SLOT nodes — render as {slotName} in the component.
@@ -535,9 +534,8 @@ export class Codegen {
         this.options.assetComponentInstanceMode === 'inline' &&
         mainComponent
       ) {
-        this.addComponentTree(mainComponent)
-
         const inlineTree = cloneTree(await this.buildTree(mainComponent))
+        this.addComponentTree(mainComponent)
 
         if (isAssetLeafTree(inlineTree)) {
           inlineTree.props = applyAssetNodeSize(inlineTree, node)
@@ -689,6 +687,10 @@ export class Codegen {
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
+      const assetAnalysis = await analyzeAssetNode(node)
+      if (pendingAddComponentTreeNode) {
+        await this.addComponentTree(pendingAddComponentTreeNode)
+      }
       // Register in global asset registry for export commands
       const assetKey = `${assetNode}/${node.name}`
       if (!globalAssetNodes.has(assetKey)) {
@@ -700,7 +702,10 @@ export class Codegen {
       const props: Record<string, unknown> = { ...baseProps }
       props.src = `/${assetNode === 'svg' ? 'icons' : 'images'}/${node.name}.${assetNode}`
       if (assetNode === 'svg') {
-        const maskColor = await checkSameColor(node)
+        const maskColor =
+          node.type === 'COMPONENT'
+            ? await checkSameColor(node)
+            : assetAnalysis.sameColor
         if (maskColor) {
           props.maskImage = buildCssUrl(props.src as string)
           props.maskRepeat = 'no-repeat'
@@ -747,6 +752,10 @@ export class Codegen {
       for (const child of node.children) {
         children.push(await this.buildTree(child))
       }
+    }
+
+    if (pendingAddComponentTreeNode) {
+      await this.addComponentTree(pendingAddComponentTreeNode)
     }
 
     // Now await props (likely already resolved while children were processing)

@@ -1,4 +1,4 @@
-import type { NodeContext } from '../types'
+import type { NodeBoundVariables, NodeContext } from '../types'
 import { checkAssetNode } from '../utils/check-asset-node'
 import { getPageNode } from '../utils/get-page-node'
 import { isPageRoot } from '../utils/is-page-root'
@@ -17,7 +17,7 @@ import { getObjectFitProps } from './object-fit'
 import { getOverflowProps } from './overflow'
 import { getPaddingProps } from './padding'
 import { canBeAbsolute, getPositionProps } from './position'
-import { getReactionProps } from './reaction'
+import { getReactionProps, hasReactionProps } from './reaction'
 import { getTextAlignProps } from './text-align'
 import { getTextShadowProps } from './text-shadow'
 import { getTextStrokeProps } from './text-stroke'
@@ -26,6 +26,10 @@ import { getVisibilityProps } from './visibility'
 
 export function computeNodeContext(node: SceneNode): NodeContext {
   const asset = checkAssetNode(node)
+  const boundVariables =
+    'boundVariables' in node
+      ? (node.boundVariables as NodeBoundVariables)
+      : undefined
   const pageNode = getPageNode(
     node as BaseNode & ChildrenMixin,
   ) as SceneNode | null
@@ -35,6 +39,7 @@ export function computeNodeContext(node: SceneNode): NodeContext {
     canBeAbsolute: canBeAbsolute(node),
     isPageRoot: pageRoot,
     pageNode,
+    boundVariables,
   }
 }
 
@@ -76,6 +81,16 @@ export async function getProps(
 
     // Compute cross-cutting node context ONCE for all sync getters that need it.
     const ctx = computeNodeContext(node)
+    const hasFills = 'fills' in node && node.fills !== figma.mixed
+    const hasStrokes = 'strokes' in node && node.strokes.length > 0
+    const hasEffects = 'effects' in node && node.effects.length > 0
+    const hasInferredAutoLayout =
+      'inferredAutoLayout' in node && !!node.inferredAutoLayout
+    const hasPadding = 'paddingLeft' in node
+    const hasRadius =
+      ('cornerRadius' in node && typeof node.cornerRadius === 'number') ||
+      'topLeftRadius' in node ||
+      (node.type === 'ELLIPSE' && !node.arcData.innerRadius)
 
     // PHASE 1: Fire ALL async prop getters — initiates Figma IPC calls immediately.
     // These return Promises that resolve when IPC completes.
@@ -83,27 +98,38 @@ export async function getProps(
     //           + padding, auto-layout, layout, min-max, border-radius,
     //             effect, text-shadow (newly async for variable support)
     const tBorder = perfStart()
-    const borderP = getBorderProps(node)
+    const borderP = hasStrokes && !isText ? getBorderProps(node) : undefined
     const tBg = perfStart()
-    const bgP = getBackgroundProps(node)
+    const bgP = hasFills ? getBackgroundProps(node) : undefined
     const tTextStroke = perfStart()
-    const textStrokeP = isText ? getTextStrokeProps(node) : undefined
+    const textStrokeP =
+      isText && hasStrokes ? getTextStrokeProps(node) : undefined
     const tReaction = perfStart()
-    const reactionP = getReactionProps(node)
+    const reactionP = hasReactionProps(node)
+      ? getReactionProps(node)
+      : undefined
     const tAutoLayout = perfStart()
-    const autoLayoutP = getAutoLayoutProps(node, ctx)
+    const autoLayoutP = hasInferredAutoLayout
+      ? getAutoLayoutProps(node, ctx)
+      : undefined
     const tMinMax = perfStart()
-    const minMaxP = getMinMaxProps(node)
+    const minMaxP = getMinMaxProps(node, ctx)
     const tLayout = perfStart()
     const layoutP = getLayoutProps(node, ctx)
     const tBorderRadius = perfStart()
-    const borderRadiusP = getBorderRadiusProps(node)
+    const borderRadiusP = hasRadius
+      ? getBorderRadiusProps(node, ctx)
+      : undefined
     const tPadding = perfStart()
-    const paddingP = getPaddingProps(node)
+    const paddingP =
+      hasInferredAutoLayout || hasPadding
+        ? getPaddingProps(node, ctx)
+        : undefined
     const tEffect = perfStart()
-    const effectP = getEffectProps(node)
+    const effectP = hasEffects ? getEffectProps(node) : undefined
     const tTextShadow = perfStart()
-    const textShadowP = isText ? getTextShadowProps(node) : undefined
+    const textShadowP =
+      isText && hasEffects ? getTextShadowProps(node) : undefined
 
     // PHASE 2: Run sync prop getters while async IPC is pending in background.
     const tSync = perfStart()
@@ -121,28 +147,28 @@ export async function getProps(
     perfEnd('getProps.sync', tSync)
 
     // PHASE 3: Await async results — likely already resolved during sync phase.
-    const autoLayoutProps = await autoLayoutP
-    perfEnd('getProps.autoLayout', tAutoLayout)
+    const autoLayoutProps = autoLayoutP ? await autoLayoutP : undefined
+    if (autoLayoutP) perfEnd('getProps.autoLayout', tAutoLayout)
     const minMaxProps = await minMaxP
     perfEnd('getProps.minMax', tMinMax)
     const layoutProps = await layoutP
     perfEnd('getProps.layout', tLayout)
-    const borderRadiusProps = await borderRadiusP
-    perfEnd('getProps.borderRadius', tBorderRadius)
-    const borderProps = await borderP
-    perfEnd('getProps.border', tBorder)
-    const backgroundProps = await bgP
-    perfEnd('getProps.background', tBg)
-    const paddingProps = await paddingP
-    perfEnd('getProps.padding', tPadding)
-    const effectProps = await effectP
-    perfEnd('getProps.effect', tEffect)
+    const borderRadiusProps = borderRadiusP ? await borderRadiusP : undefined
+    if (borderRadiusP) perfEnd('getProps.borderRadius', tBorderRadius)
+    const borderProps = borderP ? await borderP : undefined
+    if (borderP) perfEnd('getProps.border', tBorder)
+    const backgroundProps = bgP ? await bgP : undefined
+    if (bgP) perfEnd('getProps.background', tBg)
+    const paddingProps = paddingP ? await paddingP : undefined
+    if (paddingP) perfEnd('getProps.padding', tPadding)
+    const effectProps = effectP ? await effectP : undefined
+    if (effectP) perfEnd('getProps.effect', tEffect)
     const textStrokeProps = textStrokeP ? await textStrokeP : undefined
     if (textStrokeP) perfEnd('getProps.textStroke', tTextStroke)
     const textShadowProps = textShadowP ? await textShadowP : undefined
     if (textShadowP) perfEnd('getProps.textShadow', tTextShadow)
-    const reactionProps = await reactionP
-    perfEnd('getProps.reaction', tReaction)
+    const reactionProps = reactionP ? await reactionP : undefined
+    if (reactionP) perfEnd('getProps.reaction', tReaction)
 
     // PHASE 4: Merge in order to preserve last-key-wins semantics.
     const result: Record<string, unknown> = {}

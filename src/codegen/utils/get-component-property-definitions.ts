@@ -1,3 +1,12 @@
+const componentPropertyDefinitionsCache = new Map<
+  string,
+  ComponentSetNode['componentPropertyDefinitions']
+>()
+
+export function resetComponentPropertyDefinitionsCache(): void {
+  componentPropertyDefinitionsCache.clear()
+}
+
 /**
  * Safely access componentPropertyDefinitions on a node.
  * Figma's getter throws when the component set has validation errors
@@ -10,12 +19,23 @@ export function getComponentPropertyDefinitions(
   if (!node) {
     return {} as ComponentSetNode['componentPropertyDefinitions']
   }
+
+  const cacheKey = 'id' in node ? node.id : undefined
+  if (cacheKey && componentPropertyDefinitionsCache.has(cacheKey)) {
+    return componentPropertyDefinitionsCache.get(cacheKey) ?? {}
+  }
+
+  let result: ComponentSetNode['componentPropertyDefinitions']
   try {
-    return (
+    result =
       node.componentPropertyDefinitions ||
       ({} as ComponentSetNode['componentPropertyDefinitions'])
-    )
   } catch {
-    return {} as ComponentSetNode['componentPropertyDefinitions']
+    result = {} as ComponentSetNode['componentPropertyDefinitions']
   }
+
+  if (cacheKey) {
+    componentPropertyDefinitionsCache.set(cacheKey, result)
+  }
+  return result
 }

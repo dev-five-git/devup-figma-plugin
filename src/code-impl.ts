@@ -15,10 +15,17 @@ import {
   coerceBooleanVariantValue,
   isBooleanVariantOptions,
 } from './codegen/utils/boolean-variant'
+import { resetCheckAssetNodeCache } from './codegen/utils/check-asset-node'
+import { resetCheckSameColorCache } from './codegen/utils/check-same-color'
 import type { ImportMetadata } from './codegen/utils/collect-import-metadata'
 import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
-import { getComponentPropertyDefinitions } from './codegen/utils/get-component-property-definitions'
+import {
+  getComponentPropertyDefinitions,
+  resetComponentPropertyDefinitionsCache,
+} from './codegen/utils/get-component-property-definitions'
+import { resetGetPageNodeCache } from './codegen/utils/get-page-node'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
+import { resetPaintToCssCache } from './codegen/utils/paint-to-css'
 import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
 import { resetVariableCache } from './codegen/utils/variable-cache'
 import { wrapComponent } from './codegen/utils/wrap-component'
@@ -246,6 +253,11 @@ export function registerCodegen(ctx: typeof figma) {
           resetSelectorPropsCache()
           resetChildAnimationCache()
           resetVariableCache()
+          resetCheckAssetNodeCache()
+          resetCheckSameColorCache()
+          resetPaintToCssCache()
+          resetGetPageNodeCache()
+          resetComponentPropertyDefinitionsCache()
           resetTextStyleCache()
           resetMainComponentCache()
           resetGlobalBuildTreeCache()

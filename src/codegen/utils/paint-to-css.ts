@@ -7,6 +7,15 @@ import { solidToString, solidToStringSync } from './solid-to-string'
 import { getVariableByIdCached } from './variable-cache'
 import { buildCssUrl } from './wrap-url'
 
+const patternSourceCache = new Map<
+  string,
+  { imageExtension: 'svg' | 'png' | null; imageName: string }
+>()
+
+export function resetPaintToCssCache(): void {
+  patternSourceCache.clear()
+}
+
 interface Point {
   x: number
   y: number
@@ -245,9 +254,18 @@ async function convertRadial(
 }
 
 async function convertPattern(fill: PatternPaint): Promise<string> {
-  const node = await figma.getNodeByIdAsync(fill.sourceNodeId)
-  const imageExtension = node ? checkAssetNode(node as SceneNode) : null
-  const imageName = node?.name ?? 'pattern'
+  const cachedSource = patternSourceCache.get(fill.sourceNodeId)
+  const { imageExtension, imageName } = cachedSource
+    ? cachedSource
+    : await (async () => {
+        const node = await figma.getNodeByIdAsync(fill.sourceNodeId)
+        const source = {
+          imageExtension: node ? checkAssetNode(node as SceneNode) : null,
+          imageName: node?.name ?? 'pattern',
+        }
+        patternSourceCache.set(fill.sourceNodeId, source)
+        return source
+      })()
   const horizontalPosition = convertPosition(
     fill.horizontalAlignment,
     fill.spacing.x,

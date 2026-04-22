@@ -1,3 +1,4 @@
+import { getStyleByIdCached } from '../../utils'
 import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
 import { styleNameToTypography } from '../../utils/style-name-to-typography'
@@ -20,7 +21,7 @@ async function _resolveEffectStyleToken(
   if (!('effectStyleId' in node)) return null
   const styleId = (node as SceneNode & { effectStyleId: string }).effectStyleId
   if (!styleId || typeof styleId !== 'string') return null
-  const style = await figma.getStyleByIdAsync(styleId)
+  const style = await getStyleByIdCached(styleId)
   if (style?.name) {
     return `$${styleNameToTypography(style.name).name}`
   }

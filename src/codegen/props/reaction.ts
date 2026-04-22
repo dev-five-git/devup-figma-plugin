@@ -28,6 +28,15 @@ export function resetChildAnimationCache(): void {
   childAnimationCache.clear()
 }
 
+export function hasReactionProps(node: SceneNode): boolean {
+  if ('reactions' in node && node.reactions && node.reactions.length > 0) {
+    return true
+  }
+
+  const parentAnimations = childAnimationCache.get(node.parent?.id || '')
+  return !!parentAnimations?.has(node.name)
+}
+
 // Format duration/delay values (up to 3 decimal places, remove trailing zeros)
 function fmtDuration(n: number): string {
   return (Math.round(n * 1000) / 1000)
@@ -438,6 +447,16 @@ async function generateChildAnimations(
     childrenByName.set(child.name, child)
   })
 
+  const chainChildrenByName = chain.map((step) => {
+    const childMap = new Map<string, SceneNode>()
+    if ('children' in step.node) {
+      for (const child of step.node.children as readonly SceneNode[]) {
+        childMap.set(child.name, child)
+      }
+    }
+    return childMap
+  })
+
   // Parallelize per-child animation building — each child's diff is independent.
   // Even with single-threaded Figma IPC, Promise.all allows microtask interleaving
   // between awaits, overlapping computation with I/O.
@@ -457,11 +476,12 @@ async function generateChildAnimations(
 
       // Find matching child in current step by name
       if ('children' in prevNode && 'children' in currentNode) {
-        const prevChildren = prevNode.children as readonly SceneNode[]
-        const currentChildren = currentNode.children as readonly SceneNode[]
+        const prevChildrenByName =
+          i === 0 ? childrenByName : chainChildrenByName[i - 1]
+        const currentChildrenByName = chainChildrenByName[i]
 
-        const prevChild = prevChildren.find((c) => c.name === childName)
-        const currentChild = currentChildren.find((c) => c.name === childName)
+        const prevChild = prevChildrenByName.get(childName)
+        const currentChild = currentChildrenByName.get(childName)
 
         if (prevChild && currentChild) {
           const changes = await generateSingleNodeDifferences(
@@ -518,15 +538,13 @@ async function generateChildAnimations(
       }
 
       // Get the starting child from startNode
-      const startChild = startChildren.find((c) => c.name === childName)
+      const startChild = childrenByName.get(childName)
 
       if (startChild) {
         // Get the first step's matching child
         const firstStepNode = chain[0]
         if ('children' in firstStepNode.node) {
-          const firstChildren = firstStepNode.node
-            .children as readonly SceneNode[]
-          const firstChild = firstChildren.find((c) => c.name === childName)
+          const firstChild = chainChildrenByName[0]?.get(childName)
 
           if (firstChild) {
             // Compare first destination back to source to get starting values
