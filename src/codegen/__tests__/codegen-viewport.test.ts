@@ -996,6 +996,75 @@ describe('Codegen effect-only COMPONENT_SET', () => {
     expect(codes[0]?.[1]).toMatchSnapshot()
   })
 
+  test('generates boolean prop for true/false variant component sets', async () => {
+    function createPrivacyComponent(
+      value: 'true' | 'false',
+      assetName: string,
+    ) {
+      return createComponentNode(
+        `속성 1=${value}`,
+        { '속성 1': value },
+        {
+          id: `privacy-${value}`,
+          children: [
+            {
+              type: 'VECTOR',
+              id: `${assetName}-vector`,
+              name: 'Vector',
+              visible: true,
+              isAsset: true,
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  color: { r: 0.42, g: 0.44, b: 0.5 },
+                  opacity: 1,
+                },
+              ],
+              strokes: [],
+              effects: [],
+              reactions: [],
+            },
+          ] as unknown as readonly SceneNode[],
+          width: 20,
+          height: 20,
+          layoutMode: 'NONE',
+          isAsset: true,
+        },
+      )
+    }
+
+    const falseVariant = createPrivacyComponent('false', '속성 1=false')
+    const trueVariant = createPrivacyComponent('true', '속성 1=true')
+
+    const componentSet = createComponentSetNode(
+      'Privacy',
+      {
+        '속성 1': {
+          type: 'VARIANT',
+          defaultValue: 'false',
+          variantOptions: ['false', 'true'],
+        },
+      },
+      [falseVariant, trueVariant],
+    )
+
+    ;(falseVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+    ;(trueVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'Privacy',
+    )
+
+    expect(codes).toHaveLength(1)
+    expect(codes[0]?.[1]).toContain('property1?: boolean')
+    expect(codes[0]?.[1]).toContain('[property1 ?? false]')
+    expect(codes[0]?.[1]).toMatchSnapshot()
+  })
+
   test('generates BOOLEAN conditions on INSTANCE asset children in multi-variant ComponentSet', async () => {
     // Mirrors the real Figma Button structure where:
     //   - size: lg, md, sm, tag (VARIANT)

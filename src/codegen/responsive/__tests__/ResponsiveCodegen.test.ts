@@ -123,6 +123,39 @@ describe('ResponsiveCodegen', () => {
     expect(result.startsWith('render:Box')).toBeTrue()
   })
 
+  it('returns import metadata from generateResponsiveResult', async () => {
+    const child = makeNode('desktop', 1200, [], 'FRAME')
+    const section = {
+      type: 'SECTION',
+      children: [child],
+    } as unknown as SectionNode
+
+    mockGetTree.mockImplementation(async () => ({
+      component: 'Box',
+      props: {
+        slot: {
+          __imports: {
+            devupImports: ['Text'],
+            customImports: ['Status'],
+            usesKeyframes: true,
+          },
+        },
+      },
+      children: [],
+      nodeType: 'FRAME',
+      nodeName: 'Desktop',
+    }))
+
+    const generator = new ResponsiveCodegen(section)
+    const result = await generator.generateResponsiveResult()
+
+    expect(result.code.startsWith('render:Box')).toBeTrue()
+    expect(result.imports.devupImports).toEqual(['Box', 'Text'])
+    expect(result.imports.customImports).toEqual(['Status'])
+    expect(result.imports.usesKeyframes).toBe(true)
+    expect(generator.getImportMetadata()).toEqual(result.imports)
+  })
+
   it('merges breakpoints and adds display for missing child variants', async () => {
     const onlyMobileChild: NodeTree = {
       component: 'Box',

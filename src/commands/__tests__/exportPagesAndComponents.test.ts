@@ -1,5 +1,7 @@
 import { afterAll, describe, expect, spyOn, test } from 'bun:test'
+
 import * as checkAssetNodeModule from '../../codegen/utils/check-asset-node'
+import type { ImportMetadata } from '../../codegen/utils/collect-import-metadata'
 import {
   collectAssetNodes,
   DEVUP_COMPONENTS,
@@ -7,6 +9,21 @@ import {
   extractImports,
   generateImportStatements,
 } from '../exportPagesAndComponents'
+
+function componentCode(
+  name: string,
+  metadata: Partial<ImportMetadata>,
+): readonly [string, string, ImportMetadata] {
+  return [
+    name,
+    '',
+    {
+      devupImports: metadata.devupImports ?? [],
+      customImports: metadata.customImports ?? [],
+      usesKeyframes: metadata.usesKeyframes ?? false,
+    },
+  ]
+}
 
 const checkAssetNodeSpy = spyOn(
   checkAssetNodeModule,
@@ -39,76 +56,68 @@ describe('DEVUP_COMPONENTS', () => {
 
 describe('extractImports', () => {
   test('should extract Box import', () => {
-    const result = extractImports([['Test', '<Box>Hello</Box>']])
+    const result = extractImports([
+      componentCode('Test', { devupImports: ['Box'] }),
+    ])
     expect(result).toContain('Box')
   })
 
   test('should extract multiple devup-ui components', () => {
     const result = extractImports([
-      ['Test', '<Box><Flex><Text>Hello</Text></Flex></Box>'],
+      componentCode('Test', { devupImports: ['Box', 'Flex', 'Text'] }),
     ])
     expect(result).toContain('Box')
     expect(result).toContain('Flex')
     expect(result).toContain('Text')
   })
 
-  test('should extract keyframes with parenthesis', () => {
+  test('should extract keyframes import', () => {
     const result = extractImports([
-      ['Test', '<Box animationName={keyframes({ "0%": { opacity: 0 } })} />'],
+      componentCode('Test', {
+        devupImports: ['Box'],
+        usesKeyframes: true,
+      }),
     ])
     expect(result).toContain('keyframes')
     expect(result).toContain('Box')
   })
 
-  test('should extract keyframes with template literal', () => {
-    const result = extractImports([
-      ['Test', '<Box animationName={keyframes`from { opacity: 0 }`} />'],
-    ])
-    expect(result).toContain('keyframes')
-  })
-
   test('should not extract keyframes when not present', () => {
-    const result = extractImports([['Test', '<Box w="100px" />']])
+    const result = extractImports([
+      componentCode('Test', { devupImports: ['Box'] }),
+    ])
     expect(result).not.toContain('keyframes')
   })
 
   test('should return sorted imports', () => {
     const result = extractImports([
-      ['Test', '<VStack><Box><Center /></Box></VStack>'],
+      componentCode('Test', { devupImports: ['VStack', 'Box', 'Center'] }),
     ])
     expect(result).toEqual(['Box', 'Center', 'VStack'])
   })
 
   test('should not include duplicates', () => {
     const result = extractImports([
-      ['Test1', '<Box>A</Box>'],
-      ['Test2', '<Box>B</Box>'],
+      componentCode('Test1', { devupImports: ['Box'] }),
+      componentCode('Test2', { devupImports: ['Box'] }),
     ])
     expect(result.filter((x) => x === 'Box').length).toBe(1)
-  })
-
-  test('should handle self-closing tags', () => {
-    const result = extractImports([['Test', '<Image />']])
-    expect(result).toContain('Image')
-  })
-
-  test('should handle tags with spaces', () => {
-    const result = extractImports([['Test', '<Grid  rows={2}>']])
-    expect(result).toContain('Grid')
   })
 })
 
 describe('extractCustomComponentImports', () => {
   test('should extract custom component', () => {
     const result = extractCustomComponentImports([
-      ['Test', '<Box><CustomButton /></Box>'],
+      componentCode('Test', { customImports: ['CustomButton'] }),
     ])
     expect(result).toContain('CustomButton')
   })
 
   test('should extract multiple custom components', () => {
     const result = extractCustomComponentImports([
-      ['Test', '<CustomA><CustomB /><CustomC /></CustomA>'],
+      componentCode('Test', {
+        customImports: ['CustomA', 'CustomB', 'CustomC'],
+      }),
     ])
     expect(result).toContain('CustomA')
     expect(result).toContain('CustomB')
@@ -117,7 +126,10 @@ describe('extractCustomComponentImports', () => {
 
   test('should not include devup-ui components', () => {
     const result = extractCustomComponentImports([
-      ['Test', '<Box><Flex><CustomCard /></Flex></Box>'],
+      componentCode('Test', {
+        devupImports: ['Box', 'Flex'],
+        customImports: ['CustomCard'],
+      }),
     ])
     expect(result).toContain('CustomCard')
     expect(result).not.toContain('Box')
@@ -126,22 +138,22 @@ describe('extractCustomComponentImports', () => {
 
   test('should return sorted imports', () => {
     const result = extractCustomComponentImports([
-      ['Test', '<Zebra /><Apple /><Mango />'],
+      componentCode('Test', { customImports: ['Zebra', 'Apple', 'Mango'] }),
     ])
     expect(result).toEqual(['Apple', 'Mango', 'Zebra'])
   })
 
   test('should not include duplicates', () => {
     const result = extractCustomComponentImports([
-      ['Test1', '<SharedButton />'],
-      ['Test2', '<SharedButton />'],
+      componentCode('Test1', { customImports: ['SharedButton'] }),
+      componentCode('Test2', { customImports: ['SharedButton'] }),
     ])
     expect(result.filter((x) => x === 'SharedButton').length).toBe(1)
   })
 
   test('should return empty array when no custom components', () => {
     const result = extractCustomComponentImports([
-      ['Test', '<Box><Flex>Hello</Flex></Box>'],
+      componentCode('Test', { devupImports: ['Box', 'Flex'] }),
     ])
     expect(result).toEqual([])
   })
@@ -210,7 +222,6 @@ describe('collectAssetNodes', () => {
 
   test('should not descend into asset node children', () => {
     const assets = new Map<string, { node: SceneNode; type: 'svg' | 'png' }>()
-    // VECTOR is an asset — even if it somehow had children, we don't walk them
     const node = createNode('VECTOR', 'icon-parent')
     collectAssetNodes(node, assets)
     expect(assets.size).toBe(1)
@@ -268,19 +279,16 @@ describe('collectAssetNodes', () => {
     const visited = new Set<string>()
     const sharedChild = createNode('VECTOR', 'shared-icon', { id: 'shared-1' })
 
-    // First call walks the child
     const parent1 = createNode('FRAME', 'parent-a', {
       children: [sharedChild],
     })
     collectAssetNodes(parent1, assets, visited)
     expect(assets.size).toBe(1)
 
-    // Second call with overlapping subtree — shared-1 already visited
     const parent2 = createNode('FRAME', 'parent-b', {
       children: [sharedChild],
     })
     collectAssetNodes(parent2, assets, visited)
-    // Still 1 — child was skipped via visited set
     expect(assets.size).toBe(1)
     expect(visited.has('shared-1')).toBe(true)
   })
@@ -296,7 +304,6 @@ describe('collectAssetNodes', () => {
     collectAssetNodes(node, assets, visited)
     expect(assets.size).toBe(1)
 
-    // Clear assets but keep visited — re-collecting same root yields nothing new
     assets.clear()
     collectAssetNodes(node, assets, visited)
     expect(assets.size).toBe(0)
@@ -305,7 +312,6 @@ describe('collectAssetNodes', () => {
   test('should work without visited set (backward compatible)', () => {
     const assets = new Map<string, { node: SceneNode; type: 'svg' | 'png' }>()
     const node = createNode('VECTOR', 'compat-icon')
-    // No visited parameter — should still work
     collectAssetNodes(node, assets)
     expect(assets.size).toBe(1)
   })
@@ -313,13 +319,18 @@ describe('collectAssetNodes', () => {
 
 describe('generateImportStatements', () => {
   test('should generate devup-ui import statement', () => {
-    const result = generateImportStatements([['Test', '<Box><Flex /></Box>']])
+    const result = generateImportStatements([
+      componentCode('Test', { devupImports: ['Box', 'Flex'] }),
+    ])
     expect(result).toContain("import { Box, Flex } from '@devup-ui/react'")
   })
 
   test('should generate custom component import statements', () => {
     const result = generateImportStatements([
-      ['Test', '<Box><CustomButton /></Box>'],
+      componentCode('Test', {
+        devupImports: ['Box'],
+        customImports: ['CustomButton'],
+      }),
     ])
     expect(result).toContain("import { Box } from '@devup-ui/react'")
     expect(result).toContain(
@@ -329,33 +340,41 @@ describe('generateImportStatements', () => {
 
   test('should generate multiple custom component imports on separate lines', () => {
     const result = generateImportStatements([
-      ['Test', '<Box><ButtonA /><ButtonB /></Box>'],
+      componentCode('Test', { customImports: ['ButtonA', 'ButtonB'] }),
     ])
     expect(result).toContain("import { ButtonA } from '@/components/ButtonA'")
     expect(result).toContain("import { ButtonB } from '@/components/ButtonB'")
   })
 
   test('should return empty string when no imports', () => {
-    const result = generateImportStatements([['Test', 'just text']])
+    const result = generateImportStatements([componentCode('Test', {})])
     expect(result).toBe('')
   })
 
   test('should include keyframes in devup-ui import', () => {
     const result = generateImportStatements([
-      ['Test', '<Box animation={keyframes({})} />'],
+      componentCode('Test', {
+        devupImports: ['Box'],
+        usesKeyframes: true,
+      }),
     ])
     expect(result).toContain('keyframes')
     expect(result).toContain("from '@devup-ui/react'")
   })
 
   test('should end with double newline when has imports', () => {
-    const result = generateImportStatements([['Test', '<Box />']])
+    const result = generateImportStatements([
+      componentCode('Test', { devupImports: ['Box'] }),
+    ])
     expect(result.endsWith('\n\n')).toBe(true)
   })
 
   test('should return the same imports across repeated calls', () => {
     const components = [
-      ['Test', '<Box><CustomButton /><Flex /></Box>'],
+      componentCode('Test', {
+        devupImports: ['Box', 'Flex'],
+        customImports: ['CustomButton'],
+      }),
     ] as const
     const first = generateImportStatements(components)
     const second = generateImportStatements(components)

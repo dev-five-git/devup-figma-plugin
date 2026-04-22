@@ -17,3 +17,24 @@ export function Status({ status }: StatusProps) {
   )
 }"
 `;
+
+exports[`Codegen effect-only COMPONENT_SET generates boolean prop for true/false variant component sets 1`] = `
+"export interface PrivacyProps {
+  property1?: boolean
+}
+
+export function Privacy({ property1 }: PrivacyProps) {
+  return (
+    <Box
+      bg="#6B7080"
+      maskImage={{
+        false: "url('/icons/속성 1=false.svg')",
+        true: "url('/icons/속성 1=true.svg')"
+      }[property1 ?? false]}
+      maskPos="center"
+      maskRepeat="no-repeat"
+      maskSize="contain"
+    />
+  )
+}"
+`;

@@ -50,6 +50,24 @@ afterEach(() => {
   mock.restore()
 })
 
+const componentCode = (
+  name: string,
+  metadata: {
+    devupImports?: string[]
+    customImports?: string[]
+    usesKeyframes?: boolean
+  },
+) =>
+  [
+    name,
+    '',
+    {
+      devupImports: metadata.devupImports ?? [],
+      customImports: metadata.customImports ?? [],
+      usesKeyframes: metadata.usesKeyframes ?? false,
+    },
+  ] as const
+
 describe('runCommand', () => {
   it.each([
     ['export-devup', ['json'], 'exportDevup'],
@@ -247,10 +265,10 @@ it('auto-runs on module load when figma is present', async () => {
 describe('extractImports', () => {
   it('should extract keyframes import when code contains keyframes(', () => {
     const result = codeModule.extractImports([
-      [
-        'AnimatedBox',
-        '<Box animationName={keyframes({ "0%": { opacity: 0 } })} />',
-      ],
+      componentCode('AnimatedBox', {
+        devupImports: ['Box'],
+        usesKeyframes: true,
+      }),
     ])
     expect(result).toContain('keyframes')
     expect(result).toContain('Box')
@@ -258,7 +276,10 @@ describe('extractImports', () => {
 
   it('should extract keyframes import when code contains keyframes`', () => {
     const result = codeModule.extractImports([
-      ['AnimatedBox', '<Box animationName={keyframes`from { opacity: 0 }`} />'],
+      componentCode('AnimatedBox', {
+        usesKeyframes: true,
+        devupImports: ['Box'],
+      }),
     ])
     expect(result).toContain('keyframes')
     expect(result).toContain('Box')
@@ -266,7 +287,7 @@ describe('extractImports', () => {
 
   it('should not extract keyframes when not present', () => {
     const result = codeModule.extractImports([
-      ['SimpleBox', '<Box w="100px" />'],
+      componentCode('SimpleBox', { devupImports: ['Box'] }),
     ])
     expect(result).not.toContain('keyframes')
     expect(result).toContain('Box')
@@ -276,7 +297,10 @@ describe('extractImports', () => {
 describe('extractCustomComponentImports', () => {
   it('should extract custom component imports', () => {
     const result = codeModule.extractCustomComponentImports([
-      ['MyComponent', '<Box><CustomButton /><CustomInput /></Box>'],
+      componentCode('MyComponent', {
+        devupImports: ['Box'],
+        customImports: ['CustomButton', 'CustomInput'],
+      }),
     ])
     expect(result).toContain('CustomButton')
     expect(result).toContain('CustomInput')
@@ -286,10 +310,10 @@ describe('extractCustomComponentImports', () => {
 
   it('should not include devup-ui components', () => {
     const result = codeModule.extractCustomComponentImports([
-      [
-        'MyComponent',
-        '<Box><Flex><VStack><CustomCard /></VStack></Flex></Box>',
-      ],
+      componentCode('MyComponent', {
+        devupImports: ['Box', 'Flex', 'VStack'],
+        customImports: ['CustomCard'],
+      }),
     ])
     expect(result).toContain('CustomCard')
     expect(result).not.toContain('Box')
@@ -299,29 +323,40 @@ describe('extractCustomComponentImports', () => {
 
   it('should return empty array when no custom components', () => {
     const result = codeModule.extractCustomComponentImports([
-      ['MyComponent', '<Box><Flex><Text>Hello</Text></Flex></Box>'],
+      componentCode('MyComponent', { devupImports: ['Box', 'Flex', 'Text'] }),
     ])
     expect(result).toEqual([])
   })
 
   it('should sort custom components alphabetically', () => {
     const result = codeModule.extractCustomComponentImports([
-      ['MyComponent', '<Box><Zebra /><Apple /><Mango /></Box>'],
+      componentCode('MyComponent', {
+        customImports: ['Zebra', 'Apple', 'Mango'],
+      }),
     ])
     expect(result).toEqual(['Apple', 'Mango', 'Zebra'])
   })
 
   it('should handle multiple components with same custom component', () => {
     const result = codeModule.extractCustomComponentImports([
-      ['ComponentA', '<Box><SharedButton /></Box>'],
-      ['ComponentB', '<Flex><SharedButton /></Flex>'],
+      componentCode('ComponentA', {
+        devupImports: ['Box'],
+        customImports: ['SharedButton'],
+      }),
+      componentCode('ComponentB', {
+        devupImports: ['Flex'],
+        customImports: ['SharedButton'],
+      }),
     ])
     expect(result).toEqual(['SharedButton'])
   })
 
   it('should handle nested custom components', () => {
     const result = codeModule.extractCustomComponentImports([
-      ['Parent', '<Box><ChildA><ChildB><ChildC /></ChildB></ChildA></Box>'],
+      componentCode('Parent', {
+        devupImports: ['Box'],
+        customImports: ['ChildA', 'ChildB', 'ChildC'],
+      }),
     ])
     expect(result).toContain('ChildA')
     expect(result).toContain('ChildB')

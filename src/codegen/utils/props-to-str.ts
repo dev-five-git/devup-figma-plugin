@@ -89,12 +89,13 @@ function formatVariantPropValue(
   variantProp: {
     variantKey: string
     values: Record<string, unknown>
+    accessorExpression?: string
   },
   indent: number = 0,
   asConst: boolean = false,
 ): string {
   const entries = Object.entries(variantProp.values)
-  const accessor = `[${variantProp.variantKey}]`
+  const accessor = `[${variantProp.accessorExpression || variantProp.variantKey}]`
 
   // Helper to wrap with as const if needed
   const wrapAsConst = (objStr: string) => {

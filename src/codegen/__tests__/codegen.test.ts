@@ -3400,6 +3400,213 @@ describe('Codegen Tree Methods', () => {
       expect(tree.props).toEqual({})
     })
 
+    test('preserves extracted component declaration while inlining commented asset instance usage', async () => {
+      const successComponent = {
+        type: 'COMPONENT',
+        id: 'status-success',
+        name: 'status=success',
+        variantProperties: { status: 'success' },
+        children: [
+          {
+            type: 'VECTOR',
+            id: 'status-success-glyph',
+            name: 'Glyph',
+            visible: true,
+            isAsset: true,
+            fills: [
+              {
+                type: 'SOLID',
+                visible: true,
+                color: { r: 1, g: 1, b: 1 },
+                opacity: 1,
+              },
+            ],
+            strokes: [],
+            effects: [],
+            reactions: [],
+          },
+        ],
+        visible: true,
+        width: 24,
+        height: 24,
+        fills: [],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        layoutMode: 'NONE',
+      } as unknown as ComponentNode
+
+      const warningComponent = {
+        ...successComponent,
+        id: 'status-warning',
+        name: 'status=warning',
+        variantProperties: { status: 'warning' },
+      } as unknown as ComponentNode
+
+      const errorComponent = {
+        ...successComponent,
+        id: 'status-error',
+        name: 'status=error',
+        variantProperties: { status: 'error' },
+      } as unknown as ComponentNode
+
+      const componentSet = {
+        type: 'COMPONENT_SET',
+        id: 'status-set',
+        name: 'Status',
+        children: [successComponent, warningComponent, errorComponent],
+        defaultVariant: successComponent,
+        componentPropertyDefinitions: {
+          status: {
+            type: 'VARIANT',
+            defaultValue: 'success',
+            variantOptions: ['success', 'warning', 'error'],
+          },
+        },
+      } as unknown as ComponentSetNode
+
+      ;(successComponent as unknown as { parent: ComponentSetNode }).parent =
+        componentSet
+      ;(warningComponent as unknown as { parent: ComponentSetNode }).parent =
+        componentSet
+      ;(errorComponent as unknown as { parent: ComponentSetNode }).parent =
+        componentSet
+
+      const instanceNode = {
+        type: 'INSTANCE',
+        id: 'toast-status-instance',
+        name: 'Status',
+        visible: true,
+        width: 24,
+        height: 24,
+        componentProperties: {
+          status: {
+            type: 'VARIANT',
+            value: 'error',
+          },
+        },
+        getMainComponentAsync: async () => errorComponent,
+      } as unknown as InstanceNode
+
+      const root = {
+        type: 'FRAME',
+        name: 'Toast',
+        visible: true,
+        children: [instanceNode],
+        layoutMode: 'HORIZONTAL',
+        itemSpacing: 12,
+        paddingLeft: 0,
+        paddingRight: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        width: 580,
+        height: 48,
+        fills: [],
+        strokes: [],
+        effects: [],
+        reactions: [],
+      } as unknown as FrameNode
+
+      ;(instanceNode as unknown as { parent: FrameNode }).parent = root
+
+      const codegen = new Codegen(root, DEFAULT_CODEGEN_OPTIONS)
+      await codegen.run()
+
+      expect(codegen.getCode()).toMatchSnapshot(
+        'inline instance usage keeps commented reference',
+      )
+
+      let foundStatus = false
+      for (const [name, code] of codegen.getComponentsCodes()) {
+        if (name === 'Status') {
+          foundStatus = true
+          expect(code).toMatchSnapshot(
+            'inline instance usage keeps extracted Status declaration',
+          )
+        }
+      }
+      expect(foundStatus).toBe(true)
+    })
+
+    test('infers boolean props for extracted component declarations from tree conditions', async () => {
+      const conditionalChild = {
+        type: 'TEXT',
+        name: '버튼명',
+        visible: true,
+        characters: '버튼명',
+        getStyledTextSegments: () => [createTextSegment('버튼명')],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+        componentPropertyReferences: { visible: 'closeButton#70:1' },
+      } as unknown as TextNode
+
+      const labelChild = {
+        type: 'TEXT',
+        name: '오류 메시지',
+        visible: true,
+        characters: '오류 메시지',
+        getStyledTextSegments: () => [createTextSegment('오류 메시지')],
+        strokes: [],
+        effects: [],
+        reactions: [],
+        textAutoResize: 'WIDTH_AND_HEIGHT',
+      } as unknown as TextNode
+
+      const defaultVariant = {
+        type: 'COMPONENT',
+        name: 'state=default',
+        children: [labelChild, conditionalChild],
+        visible: true,
+        reactions: [],
+        variantProperties: { state: 'default' },
+        layoutMode: 'HORIZONTAL',
+        itemSpacing: 12,
+        paddingLeft: 16,
+        paddingRight: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
+        fills: [],
+        strokes: [],
+        effects: [],
+        width: 580,
+        height: 48,
+      } as unknown as ComponentNode
+
+      const node = {
+        type: 'COMPONENT_SET',
+        name: 'Toast',
+        children: [defaultVariant],
+        defaultVariant,
+        visible: true,
+        componentPropertyDefinitions: {
+          state: {
+            type: 'VARIANT',
+            variantOptions: ['Default'],
+          },
+          'closeButton#70:1': {
+            type: 'BOOLEAN',
+            defaultValue: true,
+          },
+        },
+      } as unknown as ComponentSetNode
+      addParent(node)
+
+      const codegen = new Codegen(node, DEFAULT_CODEGEN_OPTIONS)
+      await codegen.run()
+
+      let foundToast = false
+      for (const [name, code] of codegen.getComponentsCodes()) {
+        if (name === 'Toast') {
+          foundToast = true
+          expect(code).toContain('export interface ToastProps')
+          expect(code).toContain('closeButton?: boolean')
+        }
+      }
+      expect(foundToast).toBe(true)
+    })
+
     test('builds tree for INSTANCE node with position wrapper (absolute)', async () => {
       const mainComponent = {
         type: 'COMPONENT',

@@ -11,6 +11,11 @@ import {
   sanitizePropertyName,
 } from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
+import {
+  coerceBooleanVariantValue,
+  isBooleanVariantOptions,
+} from './codegen/utils/boolean-variant'
+import type { ImportMetadata } from './codegen/utils/collect-import-metadata'
 import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
 import { getComponentPropertyDefinitions } from './codegen/utils/get-component-property-definitions'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
@@ -31,8 +36,10 @@ export { extractCustomComponentImports, extractImports }
 import { getComponentName, resetTextStyleCache } from './utils'
 import { toPascal } from './utils/to-pascal'
 
+type GeneratedCodeEntry = readonly [string, string, ImportMetadata?]
+
 function generateImportStatements(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedCodeEntry>,
 ): string {
   const devupImports = extractImports(componentsCodes)
   const customImports = extractCustomComponentImports(componentsCodes)
@@ -55,7 +62,7 @@ function generateImportStatements(
 }
 
 function generateBashCLI(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedCodeEntry>,
 ): string {
   const importStatement = generateImportStatements(componentsCodes)
 
@@ -73,7 +80,7 @@ function generateBashCLI(
 }
 
 function generatePowerShellCLI(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedCodeEntry>,
 ): string {
   const importStatement = generateImportStatements(componentsCodes)
 
@@ -173,10 +180,14 @@ export function generateComponentUsage(node: SceneNode): string | null {
       if (isReservedVariantKey(key)) continue
       const sanitizedKey = sanitizePropertyName(key)
       if (def.type === 'VARIANT') {
+        const defaultValue = String(def.defaultValue)
+        const isBooleanVariant = isBooleanVariantOptions(
+          def.variantOptions || [],
+        )
         entries.push({
           key: sanitizedKey,
-          value: String(def.defaultValue),
-          type: 'VARIANT',
+          value: String(coerceBooleanVariantValue(defaultValue)),
+          type: isBooleanVariant ? 'BOOLEAN' : 'VARIANT',
         })
       } else if (def.type === 'BOOLEAN') {
         if (def.defaultValue) {
@@ -249,9 +260,7 @@ export function registerCodegen(ctx: typeof figma) {
           perfEnd('getComponentsCodes()', t)
 
           // Generate responsive component codes with variant support
-          let responsiveComponentsCodes: ReadonlyArray<
-            readonly [string, string]
-          > = []
+          let responsiveComponentsCodes: ReadonlyArray<GeneratedCodeEntry> = []
           if (node.type === 'COMPONENT_SET') {
             const componentName = getComponentName(node)
             // Reset the global build tree cache so that each variant's Codegen
@@ -275,9 +284,7 @@ export function registerCodegen(ctx: typeof figma) {
           // because the self-referencing componentTree would trigger the parent
           // COMPONENT_SET to be fully expanded — producing ComponentSet-level output
           // when the user only wants to see their selected variant.
-          let componentsResponsiveCodes: ReadonlyArray<
-            readonly [string, string]
-          > = []
+          let componentsResponsiveCodes: ReadonlyArray<GeneratedCodeEntry> = []
           if (
             componentsCodes.length > 0 &&
             node.type !== 'COMPONENT' &&
@@ -285,7 +292,7 @@ export function registerCodegen(ctx: typeof figma) {
           ) {
             const componentNodes = codegen.getComponentNodes()
             const processedComponentSets = new Set<string>()
-            const responsiveResults: Array<readonly [string, string]> = []
+            const responsiveResults: Array<GeneratedCodeEntry> = []
 
             for (const componentNode of componentNodes) {
               // Check if the component belongs to a COMPONENT_SET
@@ -337,8 +344,8 @@ export function registerCodegen(ctx: typeof figma) {
                 sectionNode,
                 DEFAULT_CODEGEN_OPTIONS,
               )
-              const responsiveCode =
-                await responsiveCodegen.generateResponsiveCode()
+              const { code: responsiveCode, imports } =
+                await responsiveCodegen.generateResponsiveResult()
               const baseName = toPascal(sectionNode.name)
               const sectionComponentName = isParentSection
                 ? `${baseName}Page`
@@ -348,9 +355,9 @@ export function registerCodegen(ctx: typeof figma) {
                 responsiveCode,
                 { exportDefault: isParentSection },
               )
-              const sectionCodes: ReadonlyArray<readonly [string, string]> = [
-                [sectionComponentName, wrappedCode],
-              ]
+              const sectionCodes: ReadonlyArray<
+                readonly [string, string, typeof imports]
+              > = [[sectionComponentName, wrappedCode, imports]]
               const importStatement = generateImportStatements(sectionCodes)
               const fullCode = importStatement + wrappedCode
 
@@ -425,22 +432,16 @@ export function registerCodegen(ctx: typeof figma) {
           }
 
           // Merge component codes: responsive/variant versions override simple ones.
-          const responsiveOverrides = new Map<
-            string,
-            readonly [string, string]
-          >()
+          const responsiveOverrides = new Map<string, GeneratedCodeEntry>()
           for (const entry of componentsResponsiveCodes)
             responsiveOverrides.set(entry[0], entry)
           for (const entry of responsiveComponentsCodes)
             responsiveOverrides.set(entry[0], entry)
 
-          const mergedComponentsCodes: ReadonlyArray<
-            readonly [string, string]
-          > =
+          const mergedComponentsCodes: ReadonlyArray<GeneratedCodeEntry> =
             componentsCodes.length > 0 && responsiveOverrides.size > 0
               ? componentsCodes.map(
-                  ([name, code]) =>
-                    responsiveOverrides.get(name) ?? ([name, code] as const),
+                  (entry) => responsiveOverrides.get(entry[0]) ?? entry,
                 )
               : componentsCodes
 

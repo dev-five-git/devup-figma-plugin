@@ -3982,3 +3982,36 @@ exports[`render real world component real world $ 109`] = `
   )
 }"
 `;
+
+exports[`Codegen Tree Methods buildTree preserves extracted component declaration while inlining commented asset instance usage: inline instance usage keeps commented reference 1`] = `
+"{/* <Status status="error" /> */}
+<Box
+  bg="#FFF"
+  boxSize="24px"
+  h="48px"
+  maskImage="url(/icons/status=error.svg)"
+  maskPos="center"
+  maskRepeat="no-repeat"
+  maskSize="contain"
+  w="580px"
+/>"
+`;
+
+exports[`Codegen Tree Methods buildTree preserves extracted component declaration while inlining commented asset instance usage: inline instance usage keeps extracted Status declaration 1`] = `
+"export interface StatusProps {
+  status: 'success' | 'warning' | 'error'
+}
+
+export function Status({ status }: StatusProps) {
+  return (
+    <Box
+      bg="#FFF"
+      boxSize="24px"
+      maskImage="url(/icons/Glyph.svg)"
+      maskPos="center"
+      maskRepeat="no-repeat"
+      maskSize="contain"
+    />
+  )
+}"
+`;

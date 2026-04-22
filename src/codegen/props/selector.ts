@@ -1,3 +1,4 @@
+import { getVariantType } from '../utils/boolean-variant'
 import { fmtPct } from '../utils/fmtPct'
 import { getComponentPropertyDefinitions } from '../utils/get-component-property-definitions'
 import { perfEnd, perfStart } from '../utils/perf'
@@ -177,9 +178,7 @@ async function computeSelectorProps(node: ComponentSetNode): Promise<{
     const definition = defs[name]
     const sanitizedName = sanitizePropertyName(name)
     if (definition.type === 'VARIANT' && definition.variantOptions) {
-      result.variants[sanitizedName] = definition.variantOptions
-        .map((option) => `'${option}'`)
-        .join(' | ')
+      result.variants[sanitizedName] = getVariantType(definition.variantOptions)
     } else if (definition.type === 'INSTANCE_SWAP') {
       result.variants[sanitizedName] = 'React.ReactNode'
     } else if (definition.type === 'BOOLEAN') {

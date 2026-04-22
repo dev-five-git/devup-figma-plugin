@@ -7,6 +7,12 @@ import {
 } from '../props/selector'
 import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
+import { getVariantType } from '../utils/boolean-variant'
+import {
+  collectImportMetadataFromTree,
+  type ImportMetadata,
+  mergeImportMetadata,
+} from '../utils/collect-import-metadata'
 import { getComponentPropertyDefinitions } from '../utils/get-component-property-definitions'
 import { paddingLeftMultiline } from '../utils/padding-left-multiline'
 import { perfEnd, perfStart } from '../utils/perf'
@@ -22,6 +28,8 @@ import {
   type PropValue,
   viewportToBreakpoint,
 } from '.'
+
+type GeneratedResponsiveCode = readonly [string, string, ImportMetadata]
 
 const POSITION_PROP_KEYS = new Set([
   'pos',
@@ -230,6 +238,11 @@ function mergeChildNameOrder(
  */
 export class ResponsiveCodegen {
   private breakpointNodes: Map<BreakpointKey, SceneNode> = new Map()
+  private lastImportMetadata: ImportMetadata = {
+    devupImports: [],
+    customImports: [],
+    usesKeyframes: false,
+  }
 
   constructor(
     private sectionNode: SectionNode | null,
@@ -260,8 +273,23 @@ export class ResponsiveCodegen {
    * Generate responsive code.
    */
   async generateResponsiveCode(): Promise<string> {
+    const result = await this.generateResponsiveResult()
+    return result.code
+  }
+
+  async generateResponsiveResult(): Promise<{
+    code: string
+    imports: ImportMetadata
+  }> {
     if (this.breakpointNodes.size === 0) {
-      return '// No responsive variants found in section'
+      return {
+        code: '// No responsive variants found in section',
+        imports: {
+          devupImports: [],
+          customImports: [],
+          usesKeyframes: false,
+        },
+      }
     }
 
     if (this.breakpointNodes.size === 1) {
@@ -269,7 +297,9 @@ export class ResponsiveCodegen {
       const [, node] = firstMapEntry(this.breakpointNodes)
       const codegen = new Codegen(node, this.options)
       const tree = await codegen.getTree()
-      return Codegen.renderTree(tree, 0)
+      const imports = collectImportMetadataFromTree(tree)
+      this.lastImportMetadata = imports
+      return { code: Codegen.renderTree(tree, 0), imports }
     }
 
     // Extract trees per breakpoint using Codegen — all independent, run in parallel.
@@ -280,8 +310,19 @@ export class ResponsiveCodegen {
       breakpointTrees.set(bp, tree)
     }
 
+    const imports = mergeImportMetadata(
+      [...breakpointTrees.values()].map((tree) =>
+        collectImportMetadataFromTree(tree),
+      ),
+    )
+    this.lastImportMetadata = imports
+
     // Merge trees and generate code.
-    return this.generateMergedCode(breakpointTrees, 0)
+    return { code: this.generateMergedCode(breakpointTrees, 0), imports }
+  }
+
+  getImportMetadata(): ImportMetadata {
+    return this.lastImportMetadata
   }
 
   /**
@@ -477,7 +518,7 @@ export class ResponsiveCodegen {
     componentSet: ComponentSetNode,
     componentName: string,
     options: CodegenOptions = {},
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     // Find viewport and effect variant keys
     const viewportDefs = getComponentPropertyDefinitions(componentSet)
     let viewportKey: string | undefined
@@ -500,9 +541,9 @@ export class ResponsiveCodegen {
       if (lowerName !== 'viewport' && lowerName !== 'effect') {
         const sanitizedName = sanitizePropertyName(name)
         if (definition.type === 'VARIANT') {
-          variants[sanitizedName] =
-            definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
-            ''
+          variants[sanitizedName] = definition.variantOptions
+            ? getVariantType(definition.variantOptions)
+            : ''
         } else if (definition.type === 'INSTANCE_SWAP') {
           variants[sanitizedName] = 'React.ReactNode'
         } else if (definition.type === 'BOOLEAN') {
@@ -553,7 +594,7 @@ export class ResponsiveCodegen {
     }
 
     // Generate responsive code for each group
-    const results: Array<readonly [string, string]> = []
+    const results: Array<GeneratedResponsiveCode> = []
     const responsiveCodegen = new ResponsiveCodegen(null, options)
 
     for (const [groupKey, viewportComponents] of groups) {
@@ -610,6 +651,11 @@ export class ResponsiveCodegen {
           finalVariants,
           variantComments,
         ),
+        mergeImportMetadata(
+          [...treesByBreakpoint.values()].map((tree) =>
+            collectImportMetadataFromTree(tree, componentName),
+          ),
+        ),
       ] as const)
     }
 
@@ -628,7 +674,7 @@ export class ResponsiveCodegen {
     componentSet: ComponentSetNode,
     componentName: string,
     options: CodegenOptions = {},
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     const tTotal = perfStart()
 
     // Find viewport and effect variant keys
@@ -657,9 +703,9 @@ export class ResponsiveCodegen {
           const sanitizedName = sanitizePropertyName(name)
           otherVariantKeys.push(name) // Keep original for Figma data access
           variantKeyToSanitized[name] = sanitizedName
-          variants[sanitizedName] =
-            definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
-            ''
+          variants[sanitizedName] = definition.variantOptions
+            ? getVariantType(definition.variantOptions)
+            : ''
         }
       } else if (definition.type === 'INSTANCE_SWAP') {
         const sanitizedName = sanitizePropertyName(name)
@@ -836,7 +882,7 @@ export class ResponsiveCodegen {
       0,
     )
 
-    const result: Array<readonly [string, string]> = [
+    const result: Array<GeneratedResponsiveCode> = [
       [
         componentName,
         renderComponent(
@@ -844,6 +890,14 @@ export class ResponsiveCodegen {
           mergedCode,
           finalVariants,
           variantComments,
+        ),
+        mergeImportMetadata(
+          [...responsivePropsByComposite.values()].flatMap(
+            (treesByBreakpoint) =>
+              [...treesByBreakpoint.values()].map((tree) =>
+                collectImportMetadataFromTree(tree, componentName),
+              ),
+          ),
         ),
       ],
     ]
@@ -858,7 +912,7 @@ export class ResponsiveCodegen {
     componentSet: ComponentSetNode,
     componentName: string,
     options: CodegenOptions = {},
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     // Use defaultVariant as the base component
     const defaultComponent = componentSet.defaultVariant
     if (!defaultComponent) {
@@ -896,10 +950,11 @@ export class ResponsiveCodegen {
     const { variants: finalVariants, variantComments } =
       applyTextChildrenTransform(variants)
 
-    const result: Array<readonly [string, string]> = [
+    const result: Array<GeneratedResponsiveCode> = [
       [
         componentName,
         renderComponent(componentName, code, finalVariants, variantComments),
+        collectImportMetadataFromTree(tree, componentName),
       ],
     ]
     return result
@@ -914,7 +969,7 @@ export class ResponsiveCodegen {
     variantKeys: string[],
     variants: Record<string, string>,
     options: CodegenOptions = {},
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     if (variantKeys.length === 0) {
       return []
     }
@@ -1077,8 +1132,16 @@ export class ResponsiveCodegen {
       0,
     )
 
-    const result: Array<readonly [string, string]> = [
-      [componentName, renderComponent(componentName, mergedCode, variants)],
+    const result: Array<GeneratedResponsiveCode> = [
+      [
+        componentName,
+        renderComponent(componentName, mergedCode, variants),
+        mergeImportMetadata(
+          [...treesByComposite.values()].map((tree) =>
+            collectImportMetadataFromTree(tree, componentName),
+          ),
+        ),
+      ],
     ]
     return result
   }
@@ -1094,7 +1157,7 @@ export class ResponsiveCodegen {
     variants: Record<string, string>,
     hasEffect: boolean,
     options: CodegenOptions = {},
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     // Group components by variant value
     const componentsByVariant = new Map<string, ComponentNode>()
 
@@ -1169,8 +1232,16 @@ export class ResponsiveCodegen {
       0,
     )
 
-    const result: Array<readonly [string, string]> = [
-      [componentName, renderComponent(componentName, mergedCode, variants)],
+    const result: Array<GeneratedResponsiveCode> = [
+      [
+        componentName,
+        renderComponent(componentName, mergedCode, variants),
+        mergeImportMetadata(
+          [...treesByVariant.values()].map((tree) =>
+            collectImportMetadataFromTree(tree, componentName),
+          ),
+        ),
+      ],
     ]
     return result
   }

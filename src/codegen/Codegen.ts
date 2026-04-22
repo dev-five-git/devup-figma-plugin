@@ -10,6 +10,12 @@ import type { ComponentTree, NodeTree } from './types'
 import { addPx } from './utils/add-px'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
+import { collectBooleanConditionProps } from './utils/collect-boolean-condition-props'
+import {
+  collectImportMetadataFromTree,
+  type ImportMetadata,
+  mergeImportMetadata,
+} from './utils/collect-import-metadata'
 import { extractInstanceVariantProps } from './utils/extract-instance-variant-props'
 import { getComponentPropertyDefinitions } from './utils/get-component-property-definitions'
 import {
@@ -304,7 +310,8 @@ function buildComponentReferenceComment(
   props: Record<string, unknown>,
 ): string {
   const propsString = propsToString(props)
-  return `<${componentName}${propsString ? ` ${propsString}` : ''} />`
+  const normalizedProps = propsString.replace(/\s+/g, ' ').trim()
+  return `<${componentName}${normalizedProps ? ` ${normalizedProps}` : ''} />`
 }
 
 export class Codegen {
@@ -315,6 +322,7 @@ export class Codegen {
       code: string
       variants: Record<string, string>
       variantComments?: Record<string, string>
+      imports: ImportMetadata
     }
   > = new Map()
   code: string = ''
@@ -362,17 +370,19 @@ export class Codegen {
   }
 
   getComponentsCodes() {
-    const result: Array<readonly [string, string]> = []
+    const result: Array<readonly [string, string, ImportMetadata]> = []
     for (const {
       node,
       code,
       variants,
       variantComments,
+      imports,
     } of this.components.values()) {
       const name = getComponentName(node)
       result.push([
         name,
         renderComponent(name, code, variants, variantComments),
+        imports,
       ])
     }
     return result
@@ -414,11 +424,20 @@ export class Codegen {
     // Sync componentTrees to components
     for (const [compId, compTree] of this.componentTrees) {
       if (!this.components.has(compId)) {
+        const inferredBooleanProps = collectBooleanConditionProps(compTree.tree)
+        const variants = { ...compTree.variants }
+        for (const propName of inferredBooleanProps) {
+          if (!variants[propName]) {
+            variants[propName] = 'boolean'
+          }
+        }
+
         this.components.set(compId, {
           node: compTree.node,
           code: Codegen.renderTree(compTree.tree, 0),
-          variants: compTree.variants,
+          variants,
           variantComments: compTree.variantComments,
+          imports: collectImportMetadataFromTree(compTree.tree, compTree.name),
         })
       }
     }
@@ -601,7 +620,13 @@ export class Codegen {
             }
             jsx = `<>\n${childrenStr}\n</>`
           }
-          variantProps[slotName] = { __jsxSlot: true, jsx }
+          variantProps[slotName] = {
+            __jsxSlot: true,
+            __imports: mergeImportMetadata(
+              content.map((tree) => collectImportMetadataFromTree(tree)),
+            ),
+            jsx,
+          }
         }
       }
 
