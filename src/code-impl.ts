@@ -1,5 +1,6 @@
 import {
   Codegen,
+  DEFAULT_CODEGEN_OPTIONS,
   resetGlobalBuildTreeCache,
   resetMainComponentCache,
 } from './codegen/Codegen'
@@ -10,9 +11,21 @@ import {
   sanitizePropertyName,
 } from './codegen/props/selector'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
+import {
+  coerceBooleanVariantValue,
+  isBooleanVariantOptions,
+} from './codegen/utils/boolean-variant'
+import { resetCheckAssetNodeCache } from './codegen/utils/check-asset-node'
+import { resetCheckSameColorCache } from './codegen/utils/check-same-color'
+import type { ImportMetadata } from './codegen/utils/collect-import-metadata'
 import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
-import { getComponentPropertyDefinitions } from './codegen/utils/get-component-property-definitions'
+import {
+  getComponentPropertyDefinitions,
+  resetComponentPropertyDefinitionsCache,
+} from './codegen/utils/get-component-property-definitions'
+import { resetGetPageNodeCache } from './codegen/utils/get-page-node'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
+import { resetPaintToCssCache } from './codegen/utils/paint-to-css'
 import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
 import { resetVariableCache } from './codegen/utils/variable-cache'
 import { wrapComponent } from './codegen/utils/wrap-component'
@@ -30,8 +43,10 @@ export { extractCustomComponentImports, extractImports }
 import { getComponentName, resetTextStyleCache } from './utils'
 import { toPascal } from './utils/to-pascal'
 
+type GeneratedCodeEntry = readonly [string, string, ImportMetadata?]
+
 function generateImportStatements(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedCodeEntry>,
 ): string {
   const devupImports = extractImports(componentsCodes)
   const customImports = extractCustomComponentImports(componentsCodes)
@@ -54,7 +69,7 @@ function generateImportStatements(
 }
 
 function generateBashCLI(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedCodeEntry>,
 ): string {
   const importStatement = generateImportStatements(componentsCodes)
 
@@ -72,7 +87,7 @@ function generateBashCLI(
 }
 
 function generatePowerShellCLI(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedCodeEntry>,
 ): string {
   const importStatement = generateImportStatements(componentsCodes)
 
@@ -172,10 +187,14 @@ export function generateComponentUsage(node: SceneNode): string | null {
       if (isReservedVariantKey(key)) continue
       const sanitizedKey = sanitizePropertyName(key)
       if (def.type === 'VARIANT') {
+        const defaultValue = String(def.defaultValue)
+        const isBooleanVariant = isBooleanVariantOptions(
+          def.variantOptions || [],
+        )
         entries.push({
           key: sanitizedKey,
-          value: String(def.defaultValue),
-          type: 'VARIANT',
+          value: String(coerceBooleanVariantValue(defaultValue)),
+          type: isBooleanVariant ? 'BOOLEAN' : 'VARIANT',
         })
       } else if (def.type === 'BOOLEAN') {
         if (def.defaultValue) {
@@ -234,12 +253,17 @@ export function registerCodegen(ctx: typeof figma) {
           resetSelectorPropsCache()
           resetChildAnimationCache()
           resetVariableCache()
+          resetCheckAssetNodeCache()
+          resetCheckSameColorCache()
+          resetPaintToCssCache()
+          resetGetPageNodeCache()
+          resetComponentPropertyDefinitionsCache()
           resetTextStyleCache()
           resetMainComponentCache()
           resetGlobalBuildTreeCache()
 
           let t = perfStart()
-          const codegen = new Codegen(node)
+          const codegen = new Codegen(node, DEFAULT_CODEGEN_OPTIONS)
           await codegen.run()
           perfEnd('Codegen.run()', t)
 
@@ -248,9 +272,7 @@ export function registerCodegen(ctx: typeof figma) {
           perfEnd('getComponentsCodes()', t)
 
           // Generate responsive component codes with variant support
-          let responsiveComponentsCodes: ReadonlyArray<
-            readonly [string, string]
-          > = []
+          let responsiveComponentsCodes: ReadonlyArray<GeneratedCodeEntry> = []
           if (node.type === 'COMPONENT_SET') {
             const componentName = getComponentName(node)
             // Reset the global build tree cache so that each variant's Codegen
@@ -264,6 +286,7 @@ export function registerCodegen(ctx: typeof figma) {
               await ResponsiveCodegen.generateVariantResponsiveComponents(
                 node,
                 componentName,
+                DEFAULT_CODEGEN_OPTIONS,
               )
             perfEnd('generateVariantResponsiveComponents(COMPONENT_SET)', t)
           }
@@ -273,9 +296,7 @@ export function registerCodegen(ctx: typeof figma) {
           // because the self-referencing componentTree would trigger the parent
           // COMPONENT_SET to be fully expanded — producing ComponentSet-level output
           // when the user only wants to see their selected variant.
-          let componentsResponsiveCodes: ReadonlyArray<
-            readonly [string, string]
-          > = []
+          let componentsResponsiveCodes: ReadonlyArray<GeneratedCodeEntry> = []
           if (
             componentsCodes.length > 0 &&
             node.type !== 'COMPONENT' &&
@@ -283,7 +304,7 @@ export function registerCodegen(ctx: typeof figma) {
           ) {
             const componentNodes = codegen.getComponentNodes()
             const processedComponentSets = new Set<string>()
-            const responsiveResults: Array<readonly [string, string]> = []
+            const responsiveResults: Array<GeneratedCodeEntry> = []
 
             for (const componentNode of componentNodes) {
               // Check if the component belongs to a COMPONENT_SET
@@ -303,6 +324,7 @@ export function registerCodegen(ctx: typeof figma) {
                   await ResponsiveCodegen.generateVariantResponsiveComponents(
                     parentSet,
                     componentName,
+                    DEFAULT_CODEGEN_OPTIONS,
                   )
                 perfEnd(
                   `generateVariantResponsiveComponents(${componentName})`,
@@ -330,9 +352,12 @@ export function registerCodegen(ctx: typeof figma) {
 
           if (sectionNode) {
             try {
-              const responsiveCodegen = new ResponsiveCodegen(sectionNode)
-              const responsiveCode =
-                await responsiveCodegen.generateResponsiveCode()
+              const responsiveCodegen = new ResponsiveCodegen(
+                sectionNode,
+                DEFAULT_CODEGEN_OPTIONS,
+              )
+              const { code: responsiveCode, imports } =
+                await responsiveCodegen.generateResponsiveResult()
               const baseName = toPascal(sectionNode.name)
               const sectionComponentName = isParentSection
                 ? `${baseName}Page`
@@ -342,9 +367,9 @@ export function registerCodegen(ctx: typeof figma) {
                 responsiveCode,
                 { exportDefault: isParentSection },
               )
-              const sectionCodes: ReadonlyArray<readonly [string, string]> = [
-                [sectionComponentName, wrappedCode],
-              ]
+              const sectionCodes: ReadonlyArray<
+                readonly [string, string, typeof imports]
+              > = [[sectionComponentName, wrappedCode, imports]]
               const importStatement = generateImportStatements(sectionCodes)
               const fullCode = importStatement + wrappedCode
 
@@ -419,22 +444,16 @@ export function registerCodegen(ctx: typeof figma) {
           }
 
           // Merge component codes: responsive/variant versions override simple ones.
-          const responsiveOverrides = new Map<
-            string,
-            readonly [string, string]
-          >()
+          const responsiveOverrides = new Map<string, GeneratedCodeEntry>()
           for (const entry of componentsResponsiveCodes)
             responsiveOverrides.set(entry[0], entry)
           for (const entry of responsiveComponentsCodes)
             responsiveOverrides.set(entry[0], entry)
 
-          const mergedComponentsCodes: ReadonlyArray<
-            readonly [string, string]
-          > =
+          const mergedComponentsCodes: ReadonlyArray<GeneratedCodeEntry> =
             componentsCodes.length > 0 && responsiveOverrides.size > 0
               ? componentsCodes.map(
-                  ([name, code]) =>
-                    responsiveOverrides.get(name) ?? ([name, code] as const),
+                  (entry) => responsiveOverrides.get(entry[0]) ?? entry,
                 )
               : componentsCodes
 

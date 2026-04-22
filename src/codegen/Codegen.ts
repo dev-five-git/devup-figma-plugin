@@ -8,8 +8,14 @@ import { renderComponent, renderNode } from './render'
 import { renderText } from './render/text'
 import type { ComponentTree, NodeTree } from './types'
 import { addPx } from './utils/add-px'
-import { checkAssetNode } from './utils/check-asset-node'
+import { analyzeAssetNode, checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
+import { collectComponentProps } from './utils/collect-component-props'
+import {
+  collectImportMetadataFromTree,
+  type ImportMetadata,
+  mergeImportMetadata,
+} from './utils/collect-import-metadata'
 import { extractInstanceVariantProps } from './utils/extract-instance-variant-props'
 import { getComponentPropertyDefinitions } from './utils/get-component-property-definitions'
 import {
@@ -19,7 +25,16 @@ import {
 import { getPageNode } from './utils/get-page-node'
 import { paddingLeftMultiline } from './utils/padding-left-multiline'
 import { perfEnd, perfStart } from './utils/perf'
+import { propsToString } from './utils/props-to-str'
 import { buildCssUrl } from './utils/wrap-url'
+
+export interface CodegenOptions {
+  assetComponentInstanceMode?: 'reference' | 'inline'
+}
+
+export const DEFAULT_CODEGEN_OPTIONS: CodegenOptions = {
+  assetComponentInstanceMode: 'inline',
+}
 
 // Global cache for node.getMainComponentAsync() results.
 // Multiple Codegen instances (from ResponsiveCodegen) process the same INSTANCE nodes,
@@ -259,7 +274,44 @@ function cloneTree(tree: NodeTree): NodeTree {
     isSlot: tree.isSlot,
     condition: tree.condition,
     textChildren: tree.textChildren,
+    leadingComment: tree.leadingComment,
   }
+}
+
+function isAssetLeafTree(tree: NodeTree): boolean {
+  return (
+    tree.children.length === 0 &&
+    ((tree.component === 'Image' && typeof tree.props.src === 'string') ||
+      (tree.component === 'Box' && typeof tree.props.maskImage === 'string'))
+  )
+}
+
+function applyAssetNodeSize(
+  tree: NodeTree,
+  node: SceneNode,
+): Record<string, unknown> {
+  const props = { ...tree.props }
+
+  if (node.width === node.height) {
+    props.boxSize = addPx(node.width)
+    delete props.w
+    delete props.h
+  } else {
+    props.w = addPx(node.width)
+    props.h = addPx(node.height)
+    delete props.boxSize
+  }
+
+  return props
+}
+
+function buildComponentReferenceComment(
+  componentName: string,
+  props: Record<string, unknown>,
+): string {
+  const propsString = propsToString(props)
+  const normalizedProps = propsString.replace(/\s+/g, ' ').trim()
+  return `<${componentName}${normalizedProps ? ` ${normalizedProps}` : ''} />`
 }
 
 export class Codegen {
@@ -270,6 +322,7 @@ export class Codegen {
       code: string
       variants: Record<string, string>
       variantComments?: Record<string, string>
+      imports: ImportMetadata
     }
   > = new Map()
   code: string = ''
@@ -283,7 +336,10 @@ export class Codegen {
   // Collect fire-and-forget addComponentTree promises so we can await them
   // before rendering component codes (decouples INSTANCE buildTree from addComponentTree)
 
-  constructor(private node: SceneNode) {
+  constructor(
+    private node: SceneNode,
+    private options: CodegenOptions = DEFAULT_CODEGEN_OPTIONS,
+  ) {
     this.node = node
     // if (node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET') {
     //   this.node = node.parent
@@ -314,17 +370,19 @@ export class Codegen {
   }
 
   getComponentsCodes() {
-    const result: Array<readonly [string, string]> = []
+    const result: Array<readonly [string, string, ImportMetadata]> = []
     for (const {
       node,
       code,
       variants,
       variantComments,
+      imports,
     } of this.components.values()) {
       const name = getComponentName(node)
       result.push([
         name,
         renderComponent(name, code, variants, variantComments),
+        imports,
       ])
     }
     return result
@@ -366,11 +424,30 @@ export class Codegen {
     // Sync componentTrees to components
     for (const [compId, compTree] of this.componentTrees) {
       if (!this.components.has(compId)) {
+        const variants = { ...compTree.variants }
+        const collectedProps = collectComponentProps(compTree.tree)
+        for (const propName of collectedProps.booleanProps) {
+          if (!variants[propName]) {
+            variants[propName] = 'boolean'
+          }
+        }
+        for (const propName of collectedProps.textProps) {
+          if (!variants[propName]) {
+            variants[propName] = 'string'
+          }
+        }
+        for (const propName of collectedProps.slotProps) {
+          if (!variants[propName]) {
+            variants[propName] = 'React.ReactNode'
+          }
+        }
+
         this.components.set(compId, {
           node: compTree.node,
           code: Codegen.renderTree(compTree.tree, 0),
-          variants: compTree.variants,
+          variants,
           variantComments: compTree.variantComments,
+          imports: collectImportMetadataFromTree(compTree.tree, compTree.name),
         })
       }
     }
@@ -415,6 +492,7 @@ export class Codegen {
 
   private async doBuildTree(node: SceneNode): Promise<NodeTree> {
     const tBuild = perfStart()
+    let pendingAddComponentTreeNode: ComponentNode | null = null
 
     // Handle COMPONENT_SET or COMPONENT — fire addComponentTree BEFORE any early returns
     // (e.g., asset detection) so that BOOLEAN conditions and INSTANCE_SWAP slots are always
@@ -425,10 +503,8 @@ export class Codegen {
         node === this.node.defaultVariant) ||
         this.node.type === 'COMPONENT')
     ) {
-      // Fire-and-forget — errors collected via addComponentTreePromises in run().
-      this.addComponentTree(
-        node.type === 'COMPONENT_SET' ? node.defaultVariant : node,
-      )
+      pendingAddComponentTreeNode =
+        node.type === 'COMPONENT_SET' ? node.defaultVariant : node
     }
 
     // Handle native Figma SLOT nodes — render as {slotName} in the component.
@@ -452,6 +528,54 @@ export class Codegen {
     // instances (containing only vectors) would otherwise be misclassified as SVG assets.
     if (node.type === 'INSTANCE') {
       const mainComponent = await getMainComponentCached(node)
+      const variantProps = extractInstanceVariantProps(node)
+
+      if (
+        this.options.assetComponentInstanceMode === 'inline' &&
+        mainComponent
+      ) {
+        const inlineTree = cloneTree(await this.buildTree(mainComponent))
+        this.addComponentTree(mainComponent)
+
+        if (isAssetLeafTree(inlineTree)) {
+          inlineTree.props = applyAssetNodeSize(inlineTree, node)
+          inlineTree.nodeType = node.type
+          inlineTree.nodeName = node.name
+          inlineTree.leadingComment = buildComponentReferenceComment(
+            getComponentName(mainComponent),
+            variantProps,
+          )
+
+          const posProps = getPositionProps(node)
+          if (posProps?.pos) {
+            const transformProps = getTransformProps(node)
+            perfEnd('buildTree()', tBuild)
+            return {
+              component: 'Box',
+              props: {
+                pos: posProps.pos,
+                top: posProps.top,
+                left: posProps.left,
+                right: posProps.right,
+                bottom: posProps.bottom,
+                transform: posProps.transform || transformProps?.transform,
+                w:
+                  (getPageNode(node as BaseNode & ChildrenMixin) as SceneNode)
+                    ?.width === node.width
+                    ? '100%'
+                    : undefined,
+              },
+              children: [inlineTree],
+              nodeType: 'WRAPPER',
+              nodeName: `${node.name}_wrapper`,
+            }
+          }
+
+          perfEnd('buildTree()', tBuild)
+          return inlineTree
+        }
+      }
+
       // Fire addComponentTree without awaiting — it runs in the background.
       // All pending promises are collected and awaited in run() before rendering.
       if (mainComponent) {
@@ -459,7 +583,6 @@ export class Codegen {
       }
 
       const componentName = getComponentName(mainComponent || node)
-      const variantProps = extractInstanceVariantProps(node)
 
       // Check for native SLOT children and build their overridden content.
       // SLOT children contain the content placed into the component's slot.
@@ -505,7 +628,13 @@ export class Codegen {
             }
             jsx = `<>\n${childrenStr}\n</>`
           }
-          variantProps[slotName] = { __jsxSlot: true, jsx }
+          variantProps[slotName] = {
+            __jsxSlot: true,
+            __imports: mergeImportMetadata(
+              content.map((tree) => collectImportMetadataFromTree(tree)),
+            ),
+            jsx,
+          }
         }
       }
 
@@ -558,6 +687,10 @@ export class Codegen {
     // Handle asset nodes (images/SVGs)
     const assetNode = checkAssetNode(node)
     if (assetNode) {
+      const assetAnalysis = await analyzeAssetNode(node)
+      if (pendingAddComponentTreeNode) {
+        await this.addComponentTree(pendingAddComponentTreeNode)
+      }
       // Register in global asset registry for export commands
       const assetKey = `${assetNode}/${node.name}`
       if (!globalAssetNodes.has(assetKey)) {
@@ -569,7 +702,10 @@ export class Codegen {
       const props: Record<string, unknown> = { ...baseProps }
       props.src = `/${assetNode === 'svg' ? 'icons' : 'images'}/${node.name}.${assetNode}`
       if (assetNode === 'svg') {
-        const maskColor = await checkSameColor(node)
+        const maskColor =
+          node.type === 'COMPONENT'
+            ? await checkSameColor(node)
+            : assetAnalysis.sameColor
         if (maskColor) {
           props.maskImage = buildCssUrl(props.src as string)
           props.maskRepeat = 'no-repeat'
@@ -616,6 +752,10 @@ export class Codegen {
       for (const child of node.children) {
         children.push(await this.buildTree(child))
       }
+    }
+
+    if (pendingAddComponentTreeNode) {
+      await this.addComponentTree(pendingAddComponentTreeNode)
     }
 
     // Now await props (likely already resolved while children were processing)
@@ -924,6 +1064,11 @@ export class Codegen {
         childrenCodes.push(Codegen.renderTree(child, 0))
       }
       result = renderNode(tree.component, tree.props, depth, childrenCodes)
+    }
+
+    if (tree.leadingComment) {
+      const comment = `${'  '.repeat(depth)}{/* ${tree.leadingComment} */}`
+      result = `${comment}\n${result}`
     }
 
     // Wrap with BOOLEAN conditional rendering if needed

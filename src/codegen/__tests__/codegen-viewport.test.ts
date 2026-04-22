@@ -895,6 +895,241 @@ describe('Codegen effect-only COMPONENT_SET', () => {
     expect(generatedCode).toMatch(/leftIcon\s*&&/)
   })
 
+  test('generates snapshot for asset-like Status ComponentSet as Image src variants', async () => {
+    function createVectorChild(
+      id: string,
+      name: string,
+      fills: Paint[],
+      overrides: Record<string, unknown> = {},
+    ): SceneNode {
+      return {
+        type: 'VECTOR',
+        id,
+        name,
+        visible: true,
+        isAsset: true,
+        fills,
+        strokes: [],
+        effects: [],
+        reactions: [],
+        width: 20,
+        height: 20,
+        ...overrides,
+      } as unknown as SceneNode
+    }
+
+    function createStatusComponent(status: 'success' | 'warning' | 'error') {
+      const solid = (r: number, g: number, b: number): Paint => ({
+        type: 'SOLID',
+        visible: true,
+        color: { r, g, b },
+        opacity: 1,
+      })
+
+      const children: SceneNode[] = [
+        createVectorChild(`status-${status}-bg`, 'Ellipse 128', [
+          solid(
+            status === 'success'
+              ? 0.0549019608
+              : status === 'warning'
+                ? 1
+                : 0.8784313725,
+            status === 'success'
+              ? 0.6352941176
+              : status === 'warning'
+                ? 0.7137254902
+                : 0.0784313725,
+            status === 'success'
+              ? 0.4705882353
+              : status === 'warning'
+                ? 0.1411764706
+                : 0.2666666667,
+          ),
+        ]),
+        createVectorChild(`status-${status}-fg`, 'Glyph', [solid(1, 1, 1)]),
+      ]
+
+      return createComponentNode(
+        `status=${status}`,
+        { status },
+        {
+          id: `status-${status}`,
+          children: children as unknown as readonly SceneNode[],
+          width: 24,
+          height: 24,
+          layoutMode: 'NONE',
+        },
+      )
+    }
+
+    const success = createStatusComponent('success')
+    const warning = createStatusComponent('warning')
+    const error = createStatusComponent('error')
+
+    const componentSet = createComponentSetNode(
+      'Status',
+      {
+        status: {
+          type: 'VARIANT',
+          defaultValue: 'success',
+          variantOptions: ['success', 'warning', 'error'],
+        },
+      },
+      [success, warning, error],
+    )
+
+    for (const child of [success, warning, error]) {
+      ;(child as unknown as { parent: ComponentSetNode }).parent = componentSet
+      if ('children' in child && child.children) {
+        for (const grandchild of child.children) {
+          ;(grandchild as unknown as { parent: SceneNode }).parent = child
+        }
+      }
+    }
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'Status',
+    )
+
+    expect(codes).toHaveLength(1)
+    expect(codes[0]?.[1]).toMatchSnapshot()
+  })
+
+  test('generates boolean prop for true/false variant component sets', async () => {
+    function createPrivacyComponent(
+      value: 'true' | 'false',
+      assetName: string,
+    ) {
+      return createComponentNode(
+        `속성 1=${value}`,
+        { '속성 1': value },
+        {
+          id: `privacy-${value}`,
+          children: [
+            {
+              type: 'VECTOR',
+              id: `${assetName}-vector`,
+              name: 'Vector',
+              visible: true,
+              isAsset: true,
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  color: { r: 0.42, g: 0.44, b: 0.5 },
+                  opacity: 1,
+                },
+              ],
+              strokes: [],
+              effects: [],
+              reactions: [],
+            },
+          ] as unknown as readonly SceneNode[],
+          width: 20,
+          height: 20,
+          layoutMode: 'NONE',
+          isAsset: true,
+        },
+      )
+    }
+
+    const falseVariant = createPrivacyComponent('false', '속성 1=false')
+    const trueVariant = createPrivacyComponent('true', '속성 1=true')
+
+    const componentSet = createComponentSetNode(
+      'Privacy',
+      {
+        '속성 1': {
+          type: 'VARIANT',
+          defaultValue: 'false',
+          variantOptions: ['false', 'true'],
+        },
+      },
+      [falseVariant, trueVariant],
+    )
+
+    ;(falseVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+    ;(trueVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'Privacy',
+    )
+
+    expect(codes).toHaveLength(1)
+    expect(codes[0]?.[1]).toContain('property1?: boolean')
+    expect(codes[0]?.[1]).toContain('[property1 ?? false]')
+    expect(codes[0]?.[1]).toMatchSnapshot()
+  })
+
+  test('generates boolean prop for on/off variant component sets', async () => {
+    function createToggleComponent(value: 'on' | 'off', assetName: string) {
+      return createComponentNode(
+        `state=${value}`,
+        { state: value },
+        {
+          id: `toggle-${value}`,
+          children: [
+            {
+              type: 'VECTOR',
+              id: `${assetName}-vector`,
+              name: 'Vector',
+              visible: true,
+              isAsset: true,
+              fills: [
+                {
+                  type: 'SOLID',
+                  visible: true,
+                  color: { r: 0.42, g: 0.44, b: 0.5 },
+                  opacity: 1,
+                },
+              ],
+              strokes: [],
+              effects: [],
+              reactions: [],
+            },
+          ] as unknown as readonly SceneNode[],
+          width: 20,
+          height: 20,
+          layoutMode: 'NONE',
+          isAsset: true,
+        },
+      )
+    }
+
+    const offVariant = createToggleComponent('off', 'toggle-off')
+    const onVariant = createToggleComponent('on', 'toggle-on')
+
+    const componentSet = createComponentSetNode(
+      'Toggle',
+      {
+        state: {
+          type: 'VARIANT',
+          defaultValue: 'off',
+          variantOptions: ['off', 'on'],
+        },
+      },
+      [offVariant, onVariant],
+    )
+
+    ;(offVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+    ;(onVariant as unknown as { parent: ComponentSetNode }).parent =
+      componentSet
+
+    const codes = await ResponsiveCodegen.generateVariantResponsiveComponents(
+      componentSet,
+      'Toggle',
+    )
+
+    expect(codes).toHaveLength(1)
+    expect(codes[0]?.[1]).toContain('state?: boolean')
+    expect(codes[0]?.[1]).toContain('[state ?? false]')
+  })
+
   test('generates BOOLEAN conditions on INSTANCE asset children in multi-variant ComponentSet', async () => {
     // Mirrors the real Figma Button structure where:
     //   - size: lg, md, sm, tag (VARIANT)

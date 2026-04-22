@@ -6,7 +6,7 @@ import { ResponsiveCodegen } from '../codegen/responsive/ResponsiveCodegen'
 const runMock = mock(async () => {})
 const getComponentsCodesMock = mock(() => [])
 const getCodeMock = mock(() => 'base-code')
-const generateResponsiveCodeMock = mock(() => {
+const generateResponsiveResultMock = mock(() => {
   throw new Error('boom')
 })
 
@@ -20,16 +20,16 @@ const resetFigma = () => {
 const originalRun = Codegen.prototype.run
 const originalGetComponentsCodes = Codegen.prototype.getComponentsCodes
 const originalGetCode = Codegen.prototype.getCode
-const originalGenerateResponsiveCode =
-  ResponsiveCodegen.prototype.generateResponsiveCode
+const originalGenerateResponsiveResult =
+  ResponsiveCodegen.prototype.generateResponsiveResult
 
 describe('registerCodegen responsive error handling', () => {
   beforeEach(() => {
     Codegen.prototype.run = runMock as unknown as typeof Codegen.prototype.run
     Codegen.prototype.getComponentsCodes = getComponentsCodesMock
     Codegen.prototype.getCode = getCodeMock
-    ResponsiveCodegen.prototype.generateResponsiveCode =
-      generateResponsiveCodeMock
+    ResponsiveCodegen.prototype.generateResponsiveResult =
+      generateResponsiveResultMock
 
     console.error = consoleErrorMock as typeof console.error
     resetFigma()
@@ -39,8 +39,8 @@ describe('registerCodegen responsive error handling', () => {
     Codegen.prototype.run = originalRun
     Codegen.prototype.getComponentsCodes = originalGetComponentsCodes
     Codegen.prototype.getCode = originalGetCode
-    ResponsiveCodegen.prototype.generateResponsiveCode =
-      originalGenerateResponsiveCode
+    ResponsiveCodegen.prototype.generateResponsiveResult =
+      originalGenerateResponsiveResult
 
     console.error = originalError
     resetFigma()

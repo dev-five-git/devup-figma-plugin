@@ -1,4 +1,4 @@
-import type { NodeContext } from '../types'
+import type { NodeBoundVariables, NodeContext } from '../types'
 import { addPx } from '../utils/add-px'
 import { checkAssetNode } from '../utils/check-asset-node'
 import { getPageNode } from '../utils/get-page-node'
@@ -8,16 +8,27 @@ import { canBeAbsolute } from './position'
 
 type BoundVars = Record<string, { id: string } | undefined> | undefined | null
 
-function getBoundVars(node: SceneNode): BoundVars {
-  return 'boundVariables' in node
-    ? (node.boundVariables as BoundVars)
-    : undefined
+function getBoundVars(node: SceneNode, ctx?: NodeContext): BoundVars {
+  return (
+    (ctx?.boundVariables as NodeBoundVariables) ??
+    ('boundVariables' in node ? (node.boundVariables as BoundVars) : undefined)
+  )
 }
 
 export async function getMinMaxProps(
   node: SceneNode,
+  ctx?: NodeContext,
 ): Promise<Record<string, boolean | string | number | undefined | null>> {
-  const bv = getBoundVars(node)
+  const bv = getBoundVars(node, ctx)
+
+  if (!bv) {
+    return {
+      maxW: addPx(node.maxWidth),
+      maxH: addPx(node.maxHeight),
+      minW: addPx(node.minWidth),
+      minH: addPx(node.minHeight),
+    }
+  }
 
   const [minWVar, maxWVar, minHVar, maxHVar] = await Promise.all([
     resolveBoundVariable(bv, 'minWidth'),
@@ -49,11 +60,26 @@ export async function getLayoutProps(
 
 async function _getTextLayoutProps(
   node: TextNode,
+  ctx?: NodeContext,
 ): Promise<Record<
   string,
   boolean | string | number | undefined | null
 > | null> {
-  const bv = getBoundVars(node)
+  const bv = getBoundVars(node, ctx)
+
+  if (!bv) {
+    switch (node.textAutoResize) {
+      case 'WIDTH_AND_HEIGHT':
+        return {}
+      case 'HEIGHT':
+        return {
+          w: addPx(node.width),
+        }
+      case 'NONE':
+      case 'TRUNCATE':
+        return null
+    }
+  }
 
   switch (node.textAutoResize) {
     case 'WIDTH_AND_HEIGHT':
@@ -74,9 +100,31 @@ async function _getLayoutProps(
   node: SceneNode,
   ctx?: NodeContext,
 ): Promise<Record<string, boolean | string | number | undefined | null>> {
-  const bv = getBoundVars(node)
+  const bv = getBoundVars(node, ctx)
 
   if (ctx ? ctx.canBeAbsolute : canBeAbsolute(node)) {
+    if (!bv) {
+      return {
+        w:
+          node.type === 'TEXT' ||
+          (node.parent &&
+            'width' in node.parent &&
+            node.parent.width > node.width)
+            ? (ctx ? ctx.isAsset !== null : !!checkAssetNode(node)) ||
+              ('children' in node && node.children.length === 0)
+              ? addPx(node.width)
+              : undefined
+            : '100%',
+        h:
+          ('children' in node && node.children.length > 0) ||
+          node.type === 'TEXT'
+            ? undefined
+            : 'children' in node && node.children.length === 0
+              ? addPx(node.height)
+              : '100%',
+      }
+    }
+
     const wVar = await resolveBoundVariable(bv, 'width')
     const hVar = await resolveBoundVariable(bv, 'height')
 
@@ -105,7 +153,7 @@ async function _getLayoutProps(
   const wType =
     'layoutSizingHorizontal' in node ? node.layoutSizingHorizontal : 'FILL'
   if (node.type === 'TEXT' && hType === 'FIXED' && wType === 'FIXED') {
-    const ret = await _getTextLayoutProps(node)
+    const ret = await _getTextLayoutProps(node, ctx)
     if (ret) return ret
   }
   const aspectRatio =
@@ -113,6 +161,41 @@ async function _getLayoutProps(
   const rootNode = ctx
     ? ctx.pageNode
     : getPageNode(node as BaseNode & ChildrenMixin)
+
+  if (!bv) {
+    return {
+      aspectRatio: aspectRatio
+        ? Math.floor((aspectRatio.x / aspectRatio.y) * 100) / 100
+        : undefined,
+      flex:
+        wType === 'FILL' &&
+        node.parent &&
+        'layoutMode' in node.parent &&
+        node.parent.layoutMode === 'HORIZONTAL'
+          ? 1
+          : undefined,
+      w:
+        rootNode === node
+          ? undefined
+          : wType === 'FIXED'
+            ? addPx(node.width)
+            : wType === 'FILL' &&
+                ((node.parent && isChildWidthShrinker(node.parent, 'width')) ||
+                  node.maxWidth !== null)
+              ? '100%'
+              : undefined,
+      h:
+        rootNode === node
+          ? undefined
+          : hType === 'FIXED'
+            ? addPx(node.height)
+            : hType === 'FILL' &&
+                ((node.parent && isChildWidthShrinker(node.parent, 'height')) ||
+                  node.maxHeight !== null)
+              ? '100%'
+              : undefined,
+    }
+  }
 
   const wVar =
     wType === 'FIXED' ? await resolveBoundVariable(bv, 'width') : null

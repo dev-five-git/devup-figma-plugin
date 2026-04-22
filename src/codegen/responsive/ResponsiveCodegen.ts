@@ -1,3 +1,4 @@
+import type { CodegenOptions } from '../Codegen'
 import { Codegen } from '../Codegen'
 import {
   applyTextChildrenTransform,
@@ -6,6 +7,12 @@ import {
 } from '../props/selector'
 import { renderComponent, renderNode } from '../render'
 import type { NodeTree, Props } from '../types'
+import { getVariantType } from '../utils/boolean-variant'
+import {
+  collectImportMetadataFromTree,
+  type ImportMetadata,
+  mergeImportMetadata,
+} from '../utils/collect-import-metadata'
 import { getComponentPropertyDefinitions } from '../utils/get-component-property-definitions'
 import { paddingLeftMultiline } from '../utils/padding-left-multiline'
 import { perfEnd, perfStart } from '../utils/perf'
@@ -21,6 +28,8 @@ import {
   type PropValue,
   viewportToBreakpoint,
 } from '.'
+
+type GeneratedResponsiveCode = readonly [string, string, ImportMetadata]
 
 const POSITION_PROP_KEYS = new Set([
   'pos',
@@ -40,6 +49,80 @@ function firstMapValue<V>(map: Map<unknown, V>): V {
 function firstMapEntry<K, V>(map: Map<K, V>): [K, V] {
   for (const entry of map.entries()) return entry
   throw new Error('empty map')
+}
+
+function renderFragment(childrenCodes: string[], depth: number): string {
+  const indent = '  '.repeat(depth)
+  if (childrenCodes.length === 0) return `${indent}<></>`
+
+  let children = ''
+  for (let i = 0; i < childrenCodes.length; i++) {
+    if (i > 0) children += '\n'
+    children += paddingLeftMultiline(childrenCodes[i], depth + 1)
+  }
+
+  return `${indent}<>\n${children}\n${indent}</>`
+}
+
+function wrapConditionalJsx(condition: string, jsx: string): string {
+  if (jsx.includes('\n')) {
+    return `{${condition} && (\n${paddingLeftMultiline(jsx, 1)}\n)}`
+  }
+
+  return `{${condition} && ${jsx}}`
+}
+
+function hasMixedRootComponents(trees: Iterable<NodeTree>): boolean {
+  let firstComponent: string | undefined
+
+  for (const tree of trees) {
+    if (!firstComponent) {
+      firstComponent = tree.component
+      continue
+    }
+
+    if (tree.component !== firstComponent) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function cloneNodeTree(tree: NodeTree): NodeTree {
+  return {
+    component: tree.component,
+    props: tree.props,
+    children: tree.children,
+    nodeType: tree.nodeType,
+    nodeName: tree.nodeName,
+    isComponent: tree.isComponent,
+    isSlot: tree.isSlot,
+    condition: tree.condition,
+    textChildren: tree.textChildren,
+    leadingComment: tree.leadingComment,
+  }
+}
+
+function isAssetLeafTree(tree: NodeTree): boolean {
+  return (
+    tree.children.length === 0 &&
+    ((tree.component === 'Image' && typeof tree.props.src === 'string') ||
+      (tree.component === 'Box' && typeof tree.props.maskImage === 'string'))
+  )
+}
+
+function getVariantSourceTree(
+  codegen: Codegen,
+  tree: NodeTree,
+  preferBuiltAssetTree: boolean,
+): NodeTree {
+  if (preferBuiltAssetTree && isAssetLeafTree(tree)) {
+    return cloneNodeTree(tree)
+  }
+
+  const componentTree = codegen.getComponentTree()
+  return componentTree ? cloneNodeTree(componentTree.tree) : tree
 }
 
 /**
@@ -155,8 +238,16 @@ function mergeChildNameOrder(
  */
 export class ResponsiveCodegen {
   private breakpointNodes: Map<BreakpointKey, SceneNode> = new Map()
+  private lastImportMetadata: ImportMetadata = {
+    devupImports: [],
+    customImports: [],
+    usesKeyframes: false,
+  }
 
-  constructor(private sectionNode: SectionNode | null) {
+  constructor(
+    private sectionNode: SectionNode | null,
+    private options: CodegenOptions = {},
+  ) {
     if (this.sectionNode) {
       this.categorizeChildren()
     }
@@ -182,39 +273,96 @@ export class ResponsiveCodegen {
    * Generate responsive code.
    */
   async generateResponsiveCode(): Promise<string> {
+    const result = await this.generateResponsiveResult()
+    return result.code
+  }
+
+  async generateResponsiveResult(): Promise<{
+    code: string
+    imports: ImportMetadata
+  }> {
     if (this.breakpointNodes.size === 0) {
-      return '// No responsive variants found in section'
+      return {
+        code: '// No responsive variants found in section',
+        imports: {
+          devupImports: [],
+          customImports: [],
+          usesKeyframes: false,
+        },
+      }
     }
 
     if (this.breakpointNodes.size === 1) {
       // If only one breakpoint, generate normal code using Codegen.
       const [, node] = firstMapEntry(this.breakpointNodes)
-      const codegen = new Codegen(node)
+      const codegen = new Codegen(node, this.options)
       const tree = await codegen.getTree()
-      return Codegen.renderTree(tree, 0)
+      const imports = collectImportMetadataFromTree(tree)
+      this.lastImportMetadata = imports
+      return { code: Codegen.renderTree(tree, 0), imports }
     }
 
     // Extract trees per breakpoint using Codegen — all independent, run in parallel.
     const breakpointTrees = new Map<BreakpointKey, NodeTree>()
     for (const [bp, node] of this.breakpointNodes) {
-      const codegen = new Codegen(node)
+      const codegen = new Codegen(node, this.options)
       const tree = await codegen.getTree()
       breakpointTrees.set(bp, tree)
     }
 
+    const imports = mergeImportMetadata(
+      [...breakpointTrees.values()].map((tree) =>
+        collectImportMetadataFromTree(tree),
+      ),
+    )
+    this.lastImportMetadata = imports
+
     // Merge trees and generate code.
-    return this.generateMergedCode(breakpointTrees, 0)
+    return { code: this.generateMergedCode(breakpointTrees, 0), imports }
+  }
+
+  getImportMetadata(): ImportMetadata {
+    return this.lastImportMetadata
   }
 
   /**
    * Convert NodeTree children array to Map by nodeName.
    */
+  private getChildStructureSignature(tree: NodeTree): string {
+    const propKeys = Object.keys(tree.props).sort().join(',')
+    const childSignatures = tree.children
+      .map((child) => this.getChildStructureSignature(child))
+      .join('|')
+
+    return [
+      tree.component,
+      tree.isComponent ? 'component' : 'node',
+      tree.isSlot ? 'slot' : 'regular',
+      tree.condition ? 'conditional' : 'plain',
+      tree.textChildren?.length ? 'text' : 'notext',
+      propKeys,
+      childSignatures,
+    ].join('::')
+  }
+
   private treeChildrenToMap(tree: NodeTree): Map<string, NodeTree[]> {
     const result = new Map<string, NodeTree[]>()
+    const signatureCounts = new Map<string, number>()
+
     for (const child of tree.children) {
-      const existing = result.get(child.nodeName) || []
+      const signature = this.getChildStructureSignature(child)
+      signatureCounts.set(signature, (signatureCounts.get(signature) || 0) + 1)
+    }
+
+    for (const child of tree.children) {
+      const signature = this.getChildStructureSignature(child)
+      const childKey =
+        signatureCounts.get(signature) === 1
+          ? `sig:${signature}`
+          : child.nodeName
+      const existing = result.get(childKey) || []
       existing.push(child)
-      result.set(child.nodeName, existing)
+      result.set(childKey, existing)
     }
     return result
   }
@@ -398,7 +546,8 @@ export class ResponsiveCodegen {
   static async generateViewportResponsiveComponents(
     componentSet: ComponentSetNode,
     componentName: string,
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    options: CodegenOptions = {},
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     // Find viewport and effect variant keys
     const viewportDefs = getComponentPropertyDefinitions(componentSet)
     let viewportKey: string | undefined
@@ -421,9 +570,9 @@ export class ResponsiveCodegen {
       if (lowerName !== 'viewport' && lowerName !== 'effect') {
         const sanitizedName = sanitizePropertyName(name)
         if (definition.type === 'VARIANT') {
-          variants[sanitizedName] =
-            definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
-            ''
+          variants[sanitizedName] = definition.variantOptions
+            ? getVariantType(definition.variantOptions)
+            : ''
         } else if (definition.type === 'INSTANCE_SWAP') {
           variants[sanitizedName] = 'React.ReactNode'
         } else if (definition.type === 'BOOLEAN') {
@@ -474,8 +623,8 @@ export class ResponsiveCodegen {
     }
 
     // Generate responsive code for each group
-    const results: Array<readonly [string, string]> = []
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const results: Array<GeneratedResponsiveCode> = []
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
 
     for (const [groupKey, viewportComponents] of groups) {
       // Parse group key to get variant filter for getSelectorPropsForGroup
@@ -494,7 +643,7 @@ export class ResponsiveCodegen {
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
         let t = perfStart()
-        const codegen = new Codegen(component)
+        const codegen = new Codegen(component, options)
         const tree = await codegen.getTree()
         perfEnd('Codegen.getTree(viewportVariant)', t)
 
@@ -531,6 +680,11 @@ export class ResponsiveCodegen {
           finalVariants,
           variantComments,
         ),
+        mergeImportMetadata(
+          [...treesByBreakpoint.values()].map((tree) =>
+            collectImportMetadataFromTree(tree, componentName),
+          ),
+        ),
       ] as const)
     }
 
@@ -548,7 +702,8 @@ export class ResponsiveCodegen {
   static async generateVariantResponsiveComponents(
     componentSet: ComponentSetNode,
     componentName: string,
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    options: CodegenOptions = {},
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     const tTotal = perfStart()
 
     // Find viewport and effect variant keys
@@ -577,9 +732,9 @@ export class ResponsiveCodegen {
           const sanitizedName = sanitizePropertyName(name)
           otherVariantKeys.push(name) // Keep original for Figma data access
           variantKeyToSanitized[name] = sanitizedName
-          variants[sanitizedName] =
-            definition.variantOptions?.map((opt) => `'${opt}'`).join(' | ') ||
-            ''
+          variants[sanitizedName] = definition.variantOptions
+            ? getVariantType(definition.variantOptions)
+            : ''
         }
       } else if (definition.type === 'INSTANCE_SWAP') {
         const sanitizedName = sanitizePropertyName(name)
@@ -601,6 +756,7 @@ export class ResponsiveCodegen {
       const r = await ResponsiveCodegen.generateEffectOnlyComponents(
         componentSet,
         componentName,
+        options,
       )
       perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return r
@@ -613,6 +769,7 @@ export class ResponsiveCodegen {
         componentName,
         otherVariantKeys,
         finalVariants,
+        options,
       )
       perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return r
@@ -623,6 +780,7 @@ export class ResponsiveCodegen {
       const r = await ResponsiveCodegen.generateViewportResponsiveComponents(
         componentSet,
         componentName,
+        options,
       )
       perfEnd('generateVariantResponsiveComponents(total)', tTotal)
       return r
@@ -704,7 +862,7 @@ export class ResponsiveCodegen {
       return []
     }
 
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
 
     // Step 1: For each variant combination, merge by viewport to get responsive props
     const responsivePropsByComposite = new Map<
@@ -721,7 +879,7 @@ export class ResponsiveCodegen {
       const treesByBreakpoint = new Map<BreakpointKey, NodeTree>()
       for (const [bp, component] of viewportComponents) {
         let t = perfStart()
-        const codegen = new Codegen(component)
+        const codegen = new Codegen(component, options)
         const tree = await codegen.getTree()
         perfEnd('Codegen.getTree(variant)', t)
 
@@ -753,7 +911,7 @@ export class ResponsiveCodegen {
       0,
     )
 
-    const result: Array<readonly [string, string]> = [
+    const result: Array<GeneratedResponsiveCode> = [
       [
         componentName,
         renderComponent(
@@ -761,6 +919,14 @@ export class ResponsiveCodegen {
           mergedCode,
           finalVariants,
           variantComments,
+        ),
+        mergeImportMetadata(
+          [...responsivePropsByComposite.values()].flatMap(
+            (treesByBreakpoint) =>
+              [...treesByBreakpoint.values()].map((tree) =>
+                collectImportMetadataFromTree(tree, componentName),
+              ),
+          ),
         ),
       ],
     ]
@@ -774,7 +940,8 @@ export class ResponsiveCodegen {
   private static async generateEffectOnlyComponents(
     componentSet: ComponentSetNode,
     componentName: string,
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    options: CodegenOptions = {},
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     // Use defaultVariant as the base component
     const defaultComponent = componentSet.defaultVariant
     if (!defaultComponent) {
@@ -782,7 +949,7 @@ export class ResponsiveCodegen {
     }
 
     // Get base props from defaultVariant
-    const codegen = new Codegen(defaultComponent)
+    const codegen = new Codegen(defaultComponent, options)
     const tree = await codegen.getTree()
 
     // Get pseudo-selector props (hover, active, disabled, etc.)
@@ -812,10 +979,11 @@ export class ResponsiveCodegen {
     const { variants: finalVariants, variantComments } =
       applyTextChildrenTransform(variants)
 
-    const result: Array<readonly [string, string]> = [
+    const result: Array<GeneratedResponsiveCode> = [
       [
         componentName,
         renderComponent(componentName, code, finalVariants, variantComments),
+        collectImportMetadataFromTree(tree, componentName),
       ],
     ]
     return result
@@ -829,7 +997,8 @@ export class ResponsiveCodegen {
     componentName: string,
     variantKeys: string[],
     variants: Record<string, string>,
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    options: CodegenOptions = {},
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     if (variantKeys.length === 0) {
       return []
     }
@@ -862,6 +1031,7 @@ export class ResponsiveCodegen {
         sanitizedVariantKeys[0],
         variants,
         hasEffect,
+        options,
       )
     }
 
@@ -925,6 +1095,14 @@ export class ResponsiveCodegen {
 
     // Build trees for each combination
     const treesByComposite = new Map<string, NodeTree>()
+    const builtTreesByComposite = new Map<
+      string,
+      {
+        codegen: Codegen
+        builtTree: NodeTree
+        selectorProps: Record<string, object | string> | null
+      }
+    >()
     for (const [compositeKey, component] of componentsByComposite) {
       const variantFilter = parseCompositeKeyToOriginal(compositeKey)
       let t = perfStart()
@@ -934,20 +1112,32 @@ export class ResponsiveCodegen {
       perfEnd('getSelectorPropsForGroup(nonViewport)', t)
 
       t = perfStart()
-      const codegen = new Codegen(component)
-      const tree = await codegen.getTree()
+      const codegen = new Codegen(component, options)
+      const builtTree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
 
-      // Use the component tree from addComponentTree if available — it includes
-      // ALL children (even invisible BOOLEAN-controlled ones) with condition fields
-      // and INSTANCE_SWAP slot placeholders, which buildTree() skips.
-      const componentTree = codegen.getComponentTree()
-      if (componentTree) {
-        tree.children = componentTree.tree.children
-      }
+      builtTreesByComposite.set(compositeKey, {
+        codegen,
+        builtTree,
+        selectorProps,
+      })
+    }
 
-      if (selectorProps && Object.keys(selectorProps).length > 0) {
-        tree.props = Object.assign({}, tree.props, selectorProps)
+    const preferBuiltAssetTrees =
+      builtTreesByComposite.size > 0 &&
+      [...builtTreesByComposite.values()].every(({ builtTree }) =>
+        isAssetLeafTree(builtTree),
+      )
+
+    for (const [compositeKey, entry] of builtTreesByComposite) {
+      const tree = getVariantSourceTree(
+        entry.codegen,
+        entry.builtTree,
+        preferBuiltAssetTrees,
+      )
+
+      if (entry.selectorProps && Object.keys(entry.selectorProps).length > 0) {
+        tree.props = Object.assign({}, tree.props, entry.selectorProps)
       }
       treesByComposite.set(compositeKey, tree)
     }
@@ -964,15 +1154,23 @@ export class ResponsiveCodegen {
       treesByCompositeAndBreakpoint.set(compositeKey, singleBreakpointMap)
     }
 
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
     const mergedCode = responsiveCodegen.generateMultiVariantMergedCode(
       sanitizedVariantKeys,
       treesByCompositeAndBreakpoint,
       0,
     )
 
-    const result: Array<readonly [string, string]> = [
-      [componentName, renderComponent(componentName, mergedCode, variants)],
+    const result: Array<GeneratedResponsiveCode> = [
+      [
+        componentName,
+        renderComponent(componentName, mergedCode, variants),
+        mergeImportMetadata(
+          [...treesByComposite.values()].map((tree) =>
+            collectImportMetadataFromTree(tree, componentName),
+          ),
+        ),
+      ],
     ]
     return result
   }
@@ -987,7 +1185,8 @@ export class ResponsiveCodegen {
     sanitizedVariantKey: string,
     variants: Record<string, string>,
     hasEffect: boolean,
-  ): Promise<ReadonlyArray<readonly [string, string]>> {
+    options: CodegenOptions = {},
+  ): Promise<ReadonlyArray<GeneratedResponsiveCode>> {
     // Group components by variant value
     const componentsByVariant = new Map<string, ComponentNode>()
 
@@ -1005,6 +1204,14 @@ export class ResponsiveCodegen {
 
     // Build trees for each variant
     const treesByVariant = new Map<string, NodeTree>()
+    const builtTreesByVariant = new Map<
+      string,
+      {
+        codegen: Codegen
+        builtTree: NodeTree
+        selectorProps: Record<string, object | string> | null
+      }
+    >()
     for (const [variantValue, component] of componentsByVariant) {
       const variantFilter: Record<string, string> = {
         [variantKey]: variantValue,
@@ -1016,34 +1223,54 @@ export class ResponsiveCodegen {
       perfEnd('getSelectorPropsForGroup(nonViewport)', t)
 
       t = perfStart()
-      const codegen = new Codegen(component)
-      const tree = await codegen.getTree()
+      const codegen = new Codegen(component, options)
+      const builtTree = await codegen.getTree()
       perfEnd('Codegen.getTree(nonViewportVariant)', t)
 
-      // Use the component tree from addComponentTree if available — it includes
-      // ALL children (even invisible BOOLEAN-controlled ones) with condition fields
-      // and INSTANCE_SWAP slot placeholders, which buildTree() skips.
-      const componentTree = codegen.getComponentTree()
-      if (componentTree) {
-        tree.children = componentTree.tree.children
-      }
+      builtTreesByVariant.set(variantValue, {
+        codegen,
+        builtTree,
+        selectorProps,
+      })
+    }
 
-      if (selectorProps && Object.keys(selectorProps).length > 0) {
-        tree.props = Object.assign({}, tree.props, selectorProps)
+    const preferBuiltAssetTrees =
+      builtTreesByVariant.size > 0 &&
+      [...builtTreesByVariant.values()].every(({ builtTree }) =>
+        isAssetLeafTree(builtTree),
+      )
+
+    for (const [variantValue, entry] of builtTreesByVariant) {
+      const tree = getVariantSourceTree(
+        entry.codegen,
+        entry.builtTree,
+        preferBuiltAssetTrees,
+      )
+
+      if (entry.selectorProps && Object.keys(entry.selectorProps).length > 0) {
+        tree.props = Object.assign({}, tree.props, entry.selectorProps)
       }
       treesByVariant.set(variantValue, tree)
     }
 
     // Generate merged code with variant conditionals
-    const responsiveCodegen = new ResponsiveCodegen(null)
+    const responsiveCodegen = new ResponsiveCodegen(null, options)
     const mergedCode = responsiveCodegen.generateVariantOnlyMergedCode(
       sanitizedVariantKey,
       treesByVariant,
       0,
     )
 
-    const result: Array<readonly [string, string]> = [
-      [componentName, renderComponent(componentName, mergedCode, variants)],
+    const result: Array<GeneratedResponsiveCode> = [
+      [
+        componentName,
+        renderComponent(componentName, mergedCode, variants),
+        mergeImportMetadata(
+          [...treesByVariant.values()].map((tree) =>
+            collectImportMetadataFromTree(tree, componentName),
+          ),
+        ),
+      ],
     ]
     return result
   }
@@ -1173,6 +1400,21 @@ export class ResponsiveCodegen {
     treesByVariant: Map<string, NodeTree>,
     depth: number,
   ): string {
+    if (hasMixedRootComponents(treesByVariant.values())) {
+      const conditionalTrees: string[] = []
+
+      for (const [variant, tree] of treesByVariant) {
+        conditionalTrees.push(
+          wrapConditionalJsx(
+            `${variantKey} === "${variant}"`,
+            Codegen.renderTree(tree, 0),
+          ),
+        )
+      }
+
+      return renderFragment(conditionalTrees, depth)
+    }
+
     const firstTree = firstMapValue(treesByVariant)
 
     // Merge props across variants
@@ -1378,6 +1620,23 @@ export class ResponsiveCodegen {
     treesByComposite: Map<string, NodeTree>,
     depth: number,
   ): string {
+    if (hasMixedRootComponents(treesByComposite.values())) {
+      const conditionalTrees: string[] = []
+
+      for (const [compositeKey, tree] of treesByComposite) {
+        const parsed = this.parseCompositeKey(compositeKey)
+        const condition = variantKeys
+          .map((variantKey) => `${variantKey} === "${parsed[variantKey]}"`)
+          .join(' && ')
+
+        conditionalTrees.push(
+          wrapConditionalJsx(condition, Codegen.renderTree(tree, 0)),
+        )
+      }
+
+      return renderFragment(conditionalTrees, depth)
+    }
+
     const firstTree = firstMapValue(treesByComposite)
 
     // Build props map indexed by composite key

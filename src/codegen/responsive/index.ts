@@ -1,3 +1,8 @@
+import {
+  getBooleanVariantAccessor,
+  isBooleanVariantOptions,
+  normalizeBooleanVariantKey,
+} from '../utils/boolean-variant'
 import { isDefaultProp } from '../utils/is-default-prop'
 
 // Breakpoint thresholds (by width)
@@ -457,6 +462,7 @@ export interface VariantPropValue {
   __variantProp: true
   variantKey: string // e.g., 'status'
   values: Record<string, PropValue> // e.g., { scroll: [1, 2], default: [3, 4] }
+  accessorExpression?: string
 }
 
 /**
@@ -478,10 +484,22 @@ export function createVariantPropValue(
   variantKey: string,
   values: Record<string, PropValue>,
 ): VariantPropValue {
+  const valueKeys = Object.keys(values)
+  const normalizedValues = isBooleanVariantOptions(valueKeys)
+    ? Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [
+          normalizeBooleanVariantKey(key),
+          value,
+        ]),
+      )
+    : values
   return {
     __variantProp: true,
     variantKey,
-    values,
+    values: normalizedValues,
+    accessorExpression: isBooleanVariantOptions(valueKeys)
+      ? getBooleanVariantAccessor(variantKey)
+      : undefined,
   }
 }
 

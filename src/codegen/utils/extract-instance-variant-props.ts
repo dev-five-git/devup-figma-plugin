@@ -1,4 +1,5 @@
 import { sanitizePropertyName } from '../props/selector'
+import { coerceBooleanVariantValue } from './boolean-variant'
 
 /**
  * Reserved variant keys that should not be passed as props.
@@ -47,7 +48,7 @@ export function extractInstanceVariantProps(
     if (isReservedVariantKey(key)) continue
     const sanitizedKey = sanitizePropertyName(key)
     if (prop.type === 'VARIANT') {
-      variantProps[sanitizedKey] = String(prop.value)
+      variantProps[sanitizedKey] = coerceBooleanVariantValue(String(prop.value))
     } else if (prop.type === 'BOOLEAN' && prop.value === true) {
       variantProps[sanitizedKey] = true
     }

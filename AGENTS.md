@@ -61,6 +61,7 @@ Figma plugin that generates React/TypeScript components using `@devup-ui/react` 
 
 - **Never treat responsive arrays as default values** — Arrays bypass `isDefaultProp` filtering (`is-default-prop.ts:27`)
 - **Never pass `effect` or `viewport` as component props** — Reserved internal variant keys, handled via pseudo-selectors/responsive arrays
+- **Never infer props, structure, or semantics from generated code strings** — Use `NodeTree`, variant metadata, slot metadata, or other structured intermediate data instead of regex/string scans over JSX/TS output
 - **Never append rotation transforms** — Always replace entire value (`reaction.ts`)
 - **Animation targets are not assets** — Nodes with `SMART_ANIMATE` reactions must not be exported as images (`check-asset-node.ts:35`)
 - **Tile-mode fills are not images** — `PATTERN`/`TILE` fills are backgrounds, not exportable assets

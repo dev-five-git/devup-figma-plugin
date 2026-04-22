@@ -2,11 +2,13 @@ import JSZip from 'jszip'
 
 import {
   Codegen,
+  DEFAULT_CODEGEN_OPTIONS,
   getGlobalAssetNodes,
   resetGlobalAssetNodes,
 } from '../codegen/Codegen'
 import { ResponsiveCodegen } from '../codegen/responsive/ResponsiveCodegen'
 import { checkAssetNode } from '../codegen/utils/check-asset-node'
+import type { ImportMetadata } from '../codegen/utils/collect-import-metadata'
 import {
   perfEnd,
   perfReport,
@@ -43,60 +45,52 @@ export const DEVUP_COMPONENTS = [
   'Image',
 ]
 const DEVUP_COMPONENT_SET = new Set(DEVUP_COMPONENTS)
-const DEVUP_COMPONENT_PATTERNS = DEVUP_COMPONENTS.map(
-  (component) => [component, new RegExp(`<${component}[\\s/>]`)] as const,
-)
-const CUSTOM_COMPONENT_USAGE_REGEX = /<([A-Z][a-zA-Z0-9]*)/g
+type GeneratedComponentCode = readonly [string, string, ImportMetadata?]
 
-function getCombinedCode(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
-): string {
-  let allCode = ''
-  for (let i = 0; i < componentsCodes.length; i++) {
-    if (i > 0) allCode += '\n'
-    allCode += componentsCodes[i][1]
+function getMergedImportMetadata(
+  componentsCodes: ReadonlyArray<GeneratedComponentCode>,
+): ImportMetadata {
+  const devupImports = new Set<string>()
+  const customImports = new Set<string>()
+  let usesKeyframes = false
+
+  for (const [, , metadata] of componentsCodes) {
+    if (!metadata) continue
+    for (const component of metadata.devupImports) {
+      devupImports.add(component)
+    }
+    for (const component of metadata.customImports) {
+      if (!DEVUP_COMPONENT_SET.has(component)) {
+        customImports.add(component)
+      }
+    }
+    usesKeyframes ||= metadata.usesKeyframes
   }
-  return allCode
+
+  return {
+    devupImports: [...devupImports].sort(),
+    customImports: [...customImports].sort(),
+    usesKeyframes,
+  }
 }
 
 export function extractImports(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedComponentCode>,
 ): string[] {
-  const allCode = getCombinedCode(componentsCodes)
-  const imports = new Set<string>()
-
-  for (const [component, regex] of DEVUP_COMPONENT_PATTERNS) {
-    if (regex.test(allCode)) {
-      imports.add(component)
-    }
-  }
-
-  if (/\bkeyframes\s*(\(|`)/.test(allCode)) {
-    imports.add('keyframes')
-  }
-
+  const metadata = getMergedImportMetadata(componentsCodes)
+  const imports = new Set(metadata.devupImports)
+  if (metadata.usesKeyframes) imports.add('keyframes')
   return Array.from(imports).sort()
 }
 
 export function extractCustomComponentImports(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedComponentCode>,
 ): string[] {
-  const allCode = getCombinedCode(componentsCodes)
-  const customImports = new Set<string>()
-
-  CUSTOM_COMPONENT_USAGE_REGEX.lastIndex = 0
-  for (const match of allCode.matchAll(CUSTOM_COMPONENT_USAGE_REGEX)) {
-    const componentName = match[1]
-    if (!DEVUP_COMPONENT_SET.has(componentName)) {
-      customImports.add(componentName)
-    }
-  }
-
-  return Array.from(customImports).sort()
+  return getMergedImportMetadata(componentsCodes).customImports
 }
 
 export function generateImportStatements(
-  componentsCodes: ReadonlyArray<readonly [string, string]>,
+  componentsCodes: ReadonlyArray<GeneratedComponentCode>,
 ): string {
   const devupImports = extractImports(componentsCodes)
   const customImports = extractCustomComponentImports(componentsCodes)
@@ -261,6 +255,7 @@ export async function exportPagesAndComponents() {
         await ResponsiveCodegen.generateVariantResponsiveComponents(
           componentSet,
           componentName,
+          DEFAULT_CODEGEN_OPTIONS,
         )
       perfEnd(`responsiveCodegen(${componentName})`, t)
 
@@ -304,7 +299,7 @@ export async function exportPagesAndComponents() {
 
       // 3. Extract components using Codegen for other node types
       let t = perfStart()
-      const codegen = new Codegen(node)
+      const codegen = new Codegen(node, DEFAULT_CODEGEN_OPTIONS)
       await codegen.run()
       perfEnd(`codegen(${node.name})`, t)
 
@@ -342,17 +337,21 @@ export async function exportPagesAndComponents() {
         updateProgress(`Generating page: ${sectionNode.name}`)
 
         t = perfStart()
-        const responsiveCodegen = new ResponsiveCodegen(sectionNode)
-        const responsiveCode = await responsiveCodegen.generateResponsiveCode()
+        const responsiveCodegen = new ResponsiveCodegen(
+          sectionNode,
+          DEFAULT_CODEGEN_OPTIONS,
+        )
+        const { code: responsiveCode, imports } =
+          await responsiveCodegen.generateResponsiveResult()
         const baseName = toPascal(sectionNode.name)
         const pageName = isParentSection ? `${baseName}Page` : baseName
         const wrappedCode = wrapComponent('Page', responsiveCode, {
           exportDefault: true,
         })
 
-        const pageCodeEntry: ReadonlyArray<readonly [string, string]> = [
-          ['Page', wrappedCode],
-        ]
+        const pageCodeEntry: ReadonlyArray<
+          readonly [string, string, typeof imports]
+        > = [['Page', wrappedCode, imports]]
         const importStatement = generateImportStatements(pageCodeEntry)
         const fullCode = importStatement + wrappedCode
 

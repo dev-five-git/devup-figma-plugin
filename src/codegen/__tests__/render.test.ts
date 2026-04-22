@@ -241,6 +241,22 @@ export function Button({ leftIcon, size, rightIcon }: ButtonProps) {
   return <Center />
 }`,
     },
+    {
+      title:
+        'does not infer boolean props from JSX strings when variants are empty',
+      component: 'Toast',
+      code: `<Center>
+  {closeButton && <Text>버튼명</Text>}
+</Center>`,
+      variants: {} as Record<string, string>,
+      expected: `export function Toast() {
+  return (
+    <Center>
+      {closeButton && <Text>버튼명</Text>}
+    </Center>
+  )
+}`,
+    },
   ])('$title', ({ component, code, variants, expected }) => {
     const result = renderComponent(component, code, variants)
     expect(result).toBe(expected)

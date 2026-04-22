@@ -20,11 +20,12 @@ export async function getAutoLayoutProps(
   if (layoutMode === 'GRID') return getGridProps(node)
 
   const bv =
-    'boundVariables' in node
+    ctx?.boundVariables ??
+    ('boundVariables' in node
       ? (node.boundVariables as
           | Record<string, { id: string } | undefined>
           | undefined)
-      : undefined
+      : undefined)
 
   let childrenCount = 0
   for (const c of node.children) if (c.visible) childrenCount++

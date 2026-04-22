@@ -1,10 +1,12 @@
-import { Codegen } from '../codegen/Codegen'
+import { Codegen, DEFAULT_CODEGEN_OPTIONS } from '../codegen/Codegen'
 
 export async function exportAssets() {
   // try {
   figma.notify('Exporting assets...')
   const elements = await Promise.all(
-    figma.currentPage.selection.map(async (node) => new Codegen(node)),
+    figma.currentPage.selection.map(
+      async (node) => new Codegen(node, DEFAULT_CODEGEN_OPTIONS),
+    ),
   )
   await Promise.all(elements.map((element) => element.run()))
 

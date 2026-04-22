@@ -8,7 +8,7 @@ import {
   test,
 } from 'bun:test'
 import * as checkAssetNodeModule from '../check-asset-node'
-import { paintToCSS } from '../paint-to-css'
+import { paintToCSS, resetPaintToCssCache } from '../paint-to-css'
 import { resetVariableCache } from '../variable-cache'
 
 // mock asset checker to avoid real node handling
@@ -24,6 +24,7 @@ afterAll(() => {
 describe('paintToCSS', () => {
   beforeEach(() => {
     resetVariableCache()
+    resetPaintToCssCache()
   })
   test('converts image paint with TILE scaleMode to repeat url', async () => {
     ;(globalThis as { figma?: unknown }).figma = {

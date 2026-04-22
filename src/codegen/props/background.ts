@@ -7,23 +7,36 @@ export async function getBackgroundProps(
   Record<string, boolean | string | number | undefined | null> | undefined
 > {
   if ('fills' in node && node.fills !== figma.mixed) {
+    const fills = node.fills
     const gradientText =
       node.type === 'TEXT' &&
-      !!node.fills.find(
+      !!fills.find(
         (fill) =>
           fill.visible &&
           (fill.type === 'IMAGE' || fill.type.includes('GRADIENT')),
       )
 
+    const visibleFills = [...fills]
+      .reverse()
+      .filter((fill) => fill.opacity !== 0 && fill.visible)
+      .map((fill, i, reversedVisibleFills) => ({
+        fill,
+        isLast: i === reversedVisibleFills.length - 1,
+      }))
+
     const cssFills: string[] = []
     let backgroundBlend: BlendMode = 'NORMAL'
 
-    for (let i = 0; i < node.fills.length; i++) {
-      const fill = node.fills[node.fills.length - 1 - i]
-      if (fill.opacity === 0 || !fill.visible) continue
-      const cssFill =
-        paintToCSSSyncIfPossible(fill, node, i === node.fills.length - 1) ??
-        (await paintToCSS(fill, node, i === node.fills.length - 1))
+    const cssFillResults = await Promise.all(
+      visibleFills.map(async ({ fill, isLast }) => {
+        const cssFill =
+          paintToCSSSyncIfPossible(fill, node, isLast) ??
+          (await paintToCSS(fill, node, isLast))
+        return { fill, cssFill }
+      }),
+    )
+
+    for (const { fill, cssFill } of cssFillResults) {
       if (
         fill.type === 'SOLID' &&
         fill.blendMode &&

@@ -5,7 +5,7 @@ import { toPascal } from './utils/to-pascal'
 const styleByIdCache = new Map<string, Promise<BaseStyle | null>>()
 const styleByIdResolved = new Map<string, BaseStyle | null>()
 
-function getStyleByIdCached(styleId: string): Promise<BaseStyle | null> {
+export function getStyleByIdCached(styleId: string): Promise<BaseStyle | null> {
   const cached = styleByIdCache.get(styleId)
   if (cached) return cached
   const promise = Promise.resolve(figma.getStyleByIdAsync(styleId)).then(
