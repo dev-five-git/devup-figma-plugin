@@ -4,6 +4,7 @@ import { toPascal } from '../../utils/to-pascal'
 import { Codegen, DEFAULT_CODEGEN_OPTIONS } from '../Codegen'
 import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
 import type { NodeTree } from '../types'
+import { collectComponentProps } from '../utils/collect-component-props'
 import { assembleNodeTree, type NodeData } from '../utils/node-proxy'
 import { wrapComponent } from '../utils/wrap-component'
 
@@ -5213,6 +5214,49 @@ describe('Codegen Tree Methods', () => {
       for (const [name, code] of codegen.getComponentsCodes()) {
         expect(code).toMatchSnapshot(`INSTANCE_SWAP+BOOLEAN: ${name}`)
       }
+    })
+  })
+
+  describe('collectComponentProps', () => {
+    test('collects boolean, text, and slot props from structured tree metadata', () => {
+      const tree: NodeTree = {
+        component: 'Flex',
+        props: {},
+        children: [
+          {
+            component: 'header',
+            props: {},
+            children: [],
+            nodeType: 'SLOT',
+            nodeName: 'Header',
+            isSlot: true,
+          },
+          {
+            component: 'Text',
+            props: {},
+            children: [],
+            nodeType: 'TEXT',
+            nodeName: 'Label',
+            textChildren: ['{title}'],
+          },
+          {
+            component: 'Box',
+            props: {},
+            children: [],
+            nodeType: 'FRAME',
+            nodeName: 'Action',
+            condition: 'showAction',
+          },
+        ],
+        nodeType: 'FRAME',
+        nodeName: 'Root',
+      }
+
+      const result = collectComponentProps(tree)
+
+      expect(result.booleanProps).toEqual(['showAction'])
+      expect(result.textProps).toEqual(['title'])
+      expect(result.slotProps).toEqual(['header'])
     })
   })
 

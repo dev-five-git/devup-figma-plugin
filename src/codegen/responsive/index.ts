@@ -1,6 +1,7 @@
 import {
   getBooleanVariantAccessor,
   isBooleanVariantOptions,
+  normalizeBooleanVariantKey,
 } from '../utils/boolean-variant'
 import { isDefaultProp } from '../utils/is-default-prop'
 
@@ -484,10 +485,18 @@ export function createVariantPropValue(
   values: Record<string, PropValue>,
 ): VariantPropValue {
   const valueKeys = Object.keys(values)
+  const normalizedValues = isBooleanVariantOptions(valueKeys)
+    ? Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [
+          normalizeBooleanVariantKey(key),
+          value,
+        ]),
+      )
+    : values
   return {
     __variantProp: true,
     variantKey,
-    values,
+    values: normalizedValues,
     accessorExpression: isBooleanVariantOptions(valueKeys)
       ? getBooleanVariantAccessor(variantKey)
       : undefined,

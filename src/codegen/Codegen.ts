@@ -10,7 +10,7 @@ import type { ComponentTree, NodeTree } from './types'
 import { addPx } from './utils/add-px'
 import { checkAssetNode } from './utils/check-asset-node'
 import { checkSameColor } from './utils/check-same-color'
-import { collectBooleanConditionProps } from './utils/collect-boolean-condition-props'
+import { collectComponentProps } from './utils/collect-component-props'
 import {
   collectImportMetadataFromTree,
   type ImportMetadata,
@@ -424,11 +424,21 @@ export class Codegen {
     // Sync componentTrees to components
     for (const [compId, compTree] of this.componentTrees) {
       if (!this.components.has(compId)) {
-        const inferredBooleanProps = collectBooleanConditionProps(compTree.tree)
         const variants = { ...compTree.variants }
-        for (const propName of inferredBooleanProps) {
+        const collectedProps = collectComponentProps(compTree.tree)
+        for (const propName of collectedProps.booleanProps) {
           if (!variants[propName]) {
             variants[propName] = 'boolean'
+          }
+        }
+        for (const propName of collectedProps.textProps) {
+          if (!variants[propName]) {
+            variants[propName] = 'string'
+          }
+        }
+        for (const propName of collectedProps.slotProps) {
+          if (!variants[propName]) {
+            variants[propName] = 'React.ReactNode'
           }
         }
 
