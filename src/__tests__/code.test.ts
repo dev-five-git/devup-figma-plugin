@@ -1688,6 +1688,292 @@ describe('registerCodegen with usage output', () => {
 
     const usageCode = (usageResult as { code: string }).code
     expect(usageCode).toBe('<MyButton variant="primary" />')
+
+    // Regression guard: COMPONENT root must emit a wrapped function
+    // definition (export function ...) — never raw JSX from getCode().
+    const definitionResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'MyButton',
+    )
+    expect(definitionResult).toBeDefined()
+    const definitionCode = (definitionResult as { code: string }).code
+    expect(definitionCode).toContain('export function MyButton')
+    expect(definitionCode).not.toMatch(/^<[A-Z]/)
+  })
+
+  it('should emit wrapped definition + import + CLI for standalone COMPONENT (regression)', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    // Standalone COMPONENT (no parent COMPONENT_SET, no variants) — mirrors
+    // the user-reported BottomSheet case where the function wrapper was missing.
+    const componentNode = {
+      type: 'COMPONENT',
+      name: 'BasicCard',
+      visible: true,
+      variantProperties: null,
+      children: [],
+      layoutMode: 'VERTICAL',
+      width: 100,
+      height: 100,
+      componentPropertyDefinitions: {},
+      reactions: [],
+      parent: null,
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: componentNode,
+      language: 'devup-ui',
+    })
+
+    // Usage must remain
+    const usageResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'Usage',
+    )
+    expect(usageResult).toBeDefined()
+    expect((usageResult as { code: string }).code).toBe('<BasicCard />')
+
+    // Definition must contain wrapped function + devup-ui import.
+    // Title for a single-component definition equals the component name.
+    const definitionResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'BasicCard',
+    )
+    expect(definitionResult).toBeDefined()
+    const definitionCode = (definitionResult as { code: string }).code
+    expect(definitionCode).toContain('export function BasicCard')
+    expect(definitionCode).toContain("from '@devup-ui/react'")
+
+    // Regression: definition must NOT start with a raw JSX tag (which would
+    // be the unwrapped output of codegen.getCode()).
+    expect(definitionCode).not.toMatch(/^<[A-Z]/)
+
+    // Bash + PowerShell CLI entries must exist for the COMPONENT.
+    const bashCLI = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'BasicCard - CLI (Bash)',
+    )
+    expect(bashCLI).toBeDefined()
+    expect((bashCLI as { code: string }).code).toContain(
+      'src/components/BasicCard.tsx',
+    )
+
+    const powershellCLI = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'BasicCard - CLI (PowerShell)',
+    )
+    expect(powershellCLI).toBeDefined()
+    expect((powershellCLI as { code: string }).code).toContain(
+      'src\\components\\BasicCard.tsx',
+    )
+
+    // Regression: there must be NO entry titled `${node.name}` that contains
+    // an un-wrapped main code (i.e., the old codegen.getCode() output that
+    // caused the bug). The only entry titled 'BasicCard' is the wrapped
+    // definition checked above — already asserted to start with non-`<X`.
+
+    // Pure Code section must be the FIRST entry, with raw JSX (no wrapper,
+    // no import) — see the dedicated 'Pure Code' regression tests below.
+    const pureCodeResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'Pure Code',
+    )
+    expect(pureCodeResult).toBeDefined()
+    expect(result[0]).toBe(pureCodeResult)
+    const pureCode = (pureCodeResult as { code: string }).code
+    expect(pureCode).not.toContain('export function')
+    expect(pureCode).not.toContain("from '@devup-ui/react'")
+  })
+
+  it('should emit Pure Code section as first entry for every node type (regression)', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    const handler = capturedHandler as CodegenHandler
+
+    // 1. Plain FRAME — Pure Code must exist as first entry.
+    const frameNode = {
+      type: 'FRAME',
+      name: 'PlainFrame',
+      visible: true,
+      children: [],
+      width: 100,
+      height: 100,
+      layoutMode: 'VERTICAL',
+    } as unknown as SceneNode
+
+    const frameResult = await handler({
+      node: frameNode,
+      language: 'devup-ui',
+    })
+    expect((frameResult[0] as { title: string } | undefined)?.title).toBe(
+      'Pure Code',
+    )
+
+    // 2. Standalone COMPONENT — Pure Code must exist as first entry.
+    const componentNode = {
+      type: 'COMPONENT',
+      name: 'PlainComponent',
+      visible: true,
+      variantProperties: null,
+      children: [],
+      width: 100,
+      height: 100,
+      layoutMode: 'VERTICAL',
+      componentPropertyDefinitions: {},
+      reactions: [],
+      parent: null,
+    } as unknown as SceneNode
+
+    const componentResult = await handler({
+      node: componentNode,
+      language: 'devup-ui',
+    })
+    expect((componentResult[0] as { title: string } | undefined)?.title).toBe(
+      'Pure Code',
+    )
+  })
+
+  it('should inline-expand INSTANCE in Pure Code (no component references)', async () => {
+    let capturedHandler: CodegenHandler | null = null
+
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: (_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        },
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    codeModule.registerCodegen(figmaMock)
+
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    // Build a COMPONENT with an inner Box (so inline-expansion produces JSX).
+    const innerBox = {
+      type: 'FRAME',
+      name: 'InnerBox',
+      visible: true,
+      children: [],
+      width: 50,
+      height: 50,
+      layoutMode: 'NONE',
+    }
+
+    const mainComponent = {
+      type: 'COMPONENT',
+      name: 'CustomChip',
+      visible: true,
+      variantProperties: null,
+      children: [innerBox],
+      width: 100,
+      height: 50,
+      layoutMode: 'HORIZONTAL',
+      componentPropertyDefinitions: {},
+      reactions: [],
+      parent: null,
+    } as unknown as ComponentNode
+
+    const instanceNode = {
+      type: 'INSTANCE',
+      name: 'CustomChip',
+      visible: true,
+      width: 100,
+      height: 50,
+      componentProperties: {},
+      getMainComponentAsync: async () => mainComponent,
+    }
+
+    const frameNode = {
+      type: 'FRAME',
+      name: 'WrapperFrame',
+      visible: true,
+      children: [instanceNode],
+      width: 200,
+      height: 200,
+      layoutMode: 'VERTICAL',
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({
+      node: frameNode,
+      language: 'devup-ui',
+    })
+
+    // Pure Code must be the first entry.
+    const pureCodeResult = result.find(
+      (r: unknown) =>
+        typeof r === 'object' &&
+        r !== null &&
+        'title' in r &&
+        (r as { title: string }).title === 'Pure Code',
+    )
+    expect(pureCodeResult).toBeDefined()
+    expect(result[0]).toBe(pureCodeResult)
+
+    const pureCode = (pureCodeResult as { code: string }).code
+    // INSTANCE reference must NOT appear in Pure Code — it should be inlined.
+    expect(pureCode).not.toContain('<CustomChip')
+    // No wrapper / import in Pure Code.
+    expect(pureCode).not.toContain('export function')
+    expect(pureCode).not.toContain("from '@devup-ui/react'")
   })
 
   it('should generate usage for COMPONENT_SET node', async () => {

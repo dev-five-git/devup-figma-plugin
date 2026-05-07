@@ -30,6 +30,16 @@ import { buildCssUrl } from './utils/wrap-url'
 
 export interface CodegenOptions {
   assetComponentInstanceMode?: 'reference' | 'inline'
+  /**
+   * "Pure Code" mode — produces raw JSX of primitives only.
+   * - Bypasses INSTANCE component-reference rendering (INSTANCE nodes are
+   *   walked like ordinary FRAMEs so their children are emitted inline).
+   * - Skips addComponentTree() so no SLOT placeholders / BOOLEAN conditions
+   *   are injected into the tree.
+   * - Drops native SLOT children and BOOLEAN-default-false children at build
+   *   time so the output reflects the default variant's actual JSX.
+   */
+  inlineAllInstances?: boolean
 }
 
 export const DEFAULT_CODEGEN_OPTIONS: CodegenOptions = {
@@ -497,7 +507,10 @@ export class Codegen {
     // Handle COMPONENT_SET or COMPONENT — fire addComponentTree BEFORE any early returns
     // (e.g., asset detection) so that BOOLEAN conditions and INSTANCE_SWAP slots are always
     // detected on children, even when the COMPONENT itself is classified as an asset.
+    // Skipped entirely in Pure Code mode (inlineAllInstances) — no component
+    // extraction, no condition/slot injection.
     if (
+      !this.options.inlineAllInstances &&
       (node.type === 'COMPONENT_SET' || node.type === 'COMPONENT') &&
       ((this.node.type === 'COMPONENT_SET' &&
         node === this.node.defaultVariant) ||
@@ -526,7 +539,9 @@ export class Codegen {
     // skipping the expensive full getProps() with 6 async Figma API calls.
     // INSTANCE nodes must be checked before asset detection because icon-like
     // instances (containing only vectors) would otherwise be misclassified as SVG assets.
-    if (node.type === 'INSTANCE') {
+    // In Pure Code mode (inlineAllInstances), INSTANCE is walked like an ordinary
+    // node so its children render inline as raw primitives.
+    if (node.type === 'INSTANCE' && !this.options.inlineAllInstances) {
       const mainComponent = await getMainComponentCached(node)
       const variantProps = extractInstanceVariantProps(node)
 
@@ -744,12 +759,53 @@ export class Codegen {
     // Fire getProps early for non-INSTANCE nodes — it runs while we process children.
     const propsPromise = getProps(node)
 
+    // In Pure Code mode, pre-compute BOOLEAN-default-false slots so we can
+    // drop children whose visibility is bound to a false-default boolean prop
+    // (matches the default variant's actual rendered JSX).
+    let pureModeHiddenBooleans: Set<string> | null = null
+    if (
+      this.options.inlineAllInstances &&
+      (node.type === 'COMPONENT' || node.type === 'COMPONENT_SET')
+    ) {
+      const parentSet =
+        node.type === 'COMPONENT' && node.parent?.type === 'COMPONENT_SET'
+          ? (node.parent as ComponentSetNode)
+          : null
+      const propDefs = parentSet
+        ? getComponentPropertyDefinitions(parentSet)
+        : getComponentPropertyDefinitions(
+            node as ComponentNode | ComponentSetNode,
+          )
+      for (const [key, def] of Object.entries(propDefs)) {
+        if (def.type === 'BOOLEAN' && !def.defaultValue) {
+          pureModeHiddenBooleans ??= new Set()
+          pureModeHiddenBooleans.add(key)
+        }
+      }
+    }
+
     // Build children sequentially — Figma's single-threaded IPC means
     // concurrent subtree builds add overhead without improving throughput,
     // and sequential order maximizes cache hits for shared nodes.
     const children: NodeTree[] = []
     if ('children' in node) {
       for (const child of node.children) {
+        if (this.options.inlineAllInstances) {
+          // Drop native SLOT children — they're component-definition concepts
+          // (render as {slotName}); raw JSX should not contain them.
+          if ((child.type as string) === 'SLOT') continue
+          // Drop BOOLEAN-default-false controlled children.
+          if (pureModeHiddenBooleans) {
+            const refs = (
+              child as {
+                componentPropertyReferences?: Record<string, string>
+              }
+            ).componentPropertyReferences
+            if (refs?.visible && pureModeHiddenBooleans.has(refs.visible)) {
+              continue
+            }
+          }
+        }
         children.push(await this.buildTree(child))
       }
     }

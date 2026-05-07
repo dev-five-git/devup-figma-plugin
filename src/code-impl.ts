@@ -457,14 +457,19 @@ export function registerCodegen(ctx: typeof figma) {
                 )
               : componentsCodes
 
-          // For INSTANCE nodes, include the referenced component definition(s)
-          // alongside Usage so developers see both how to use AND the implementation.
+          // For INSTANCE and COMPONENT nodes, include the referenced component
+          // definition(s) alongside Usage so developers see both how to use AND
+          // the implementation. For COMPONENT, the self-definition is in
+          // mergedComponentsCodes because addComponentTree() registers it.
           const componentDefinitionResults: {
             title: string
             language: 'TYPESCRIPT' | 'BASH'
             code: string
           }[] = []
-          if (node.type === 'INSTANCE' && mergedComponentsCodes.length > 0) {
+          if (
+            (node.type === 'INSTANCE' || node.type === 'COMPONENT') &&
+            mergedComponentsCodes.length > 0
+          ) {
             const importStatement = generateImportStatements(
               mergedComponentsCodes,
             )
@@ -495,9 +500,10 @@ export function registerCodegen(ctx: typeof figma) {
           }
 
           // Collect remaining responsive codes NOT already merged into component definitions.
-          // Only filter for INSTANCE nodes — other node types don't produce componentDefinitionResults.
+          // Filter for INSTANCE and COMPONENT — both produce componentDefinitionResults
+          // and need to deduplicate self/child entries from allComponentsCodes.
           const mergedNames =
-            node.type === 'INSTANCE'
+            node.type === 'INSTANCE' || node.type === 'COMPONENT'
               ? new Set(mergedComponentsCodes.map(([name]) => name))
               : new Set<string>()
           const allComponentsCodes = [
@@ -509,12 +515,48 @@ export function registerCodegen(ctx: typeof figma) {
             ),
           ]
 
-          // For COMPONENT nodes, show both the single-variant code AND Usage.
-          // For COMPONENT_SET and INSTANCE, show only Usage.
+          // For COMPONENT/COMPONENT_SET/INSTANCE, the wrapped definition is emitted
+          // via componentDefinitionResults (or Usage), so suppress the raw main code
+          // (codegen.getCode() returns un-wrapped JSX without the function signature).
           // For all other types, show the main code.
-          const showMainCode = !isComponentType || node.type === 'COMPONENT'
+          const showMainCode = !isComponentType
+
+          // Generate "Pure Code" — raw JSX of devup-ui primitives only, with
+          // every INSTANCE inline-expanded and every component reference
+          // (SLOT/BOOLEAN-conditional) flattened. Always emitted as the
+          // FIRST entry so users see a copy-paste-ready primitives version.
+          let pureCodeResult: {
+            title: 'Pure Code'
+            language: 'TYPESCRIPT'
+            code: string
+          } | null = null
+          try {
+            // Pure Code is generated AFTER the main codegen, which leaves the
+            // shared globalBuildTreeCache populated with mutated trees
+            // (BOOLEAN conditions / SLOT placeholders). Reset before reuse.
+            resetGlobalBuildTreeCache()
+            const pureSourceNode =
+              node.type === 'COMPONENT_SET'
+                ? (node as ComponentSetNode).defaultVariant
+                : node
+            if (pureSourceNode) {
+              const pureCodegen = new Codegen(pureSourceNode, {
+                ...DEFAULT_CODEGEN_OPTIONS,
+                inlineAllInstances: true,
+              })
+              await pureCodegen.run()
+              pureCodeResult = {
+                title: 'Pure Code',
+                language: 'TYPESCRIPT',
+                code: pureCodegen.getCode(),
+              }
+            }
+          } catch (e) {
+            console.error('[pure-code] Error generating pure code:', e)
+          }
 
           return [
+            ...(pureCodeResult ? [{ ...pureCodeResult } as const] : []),
             ...usageResults,
             ...componentDefinitionResults,
             ...(showMainCode
