@@ -15,9 +15,9 @@
   "author": "",
   "license": "",
   "devDependencies": {
-    "@figma/plugin-typings": "^1.124",
-    "@rspack/cli": "^2.0.0",
-    "@rspack/core": "^2.0.0",
+    "@figma/plugin-typings": "^1.126",
+    "@rspack/cli": "^2.0.3",
+    "@rspack/core": "^2.0.3",
 
     "husky": "^9.1",
     "typescript": "^6.0",

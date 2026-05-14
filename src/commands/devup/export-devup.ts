@@ -560,6 +560,70 @@ function effectStyleToCssShadow(style: EffectStyle): string | null {
   return parts.length > 0 ? parts.join(', ') : null
 }
 
+type DevupCategoryName = 'colors' | 'length' | 'shadows' | 'typography'
+
+/**
+ * Find variable names that appear in more than one Devup category.
+ *
+ * devup.json keys all flow into a single token namespace at consumption time,
+ * so a name shared between e.g. `colors.title` and `length.title` collapses
+ * into one ambiguous reference. Surfacing duplicates at export time prevents
+ * silent overwrite on the next `importDevup` round-trip.
+ */
+export function findDuplicateVariableNames(
+  devup: Devup,
+): Map<string, DevupCategoryName[]> {
+  const occurrences = new Map<string, DevupCategoryName[]>()
+
+  const record = (category: DevupCategoryName, name: string) => {
+    let categories = occurrences.get(name)
+    if (!categories) {
+      categories = []
+      occurrences.set(name, categories)
+    }
+    if (!categories.includes(category)) {
+      categories.push(category)
+    }
+  }
+
+  if (devup.theme?.colors) {
+    for (const themeEntries of Object.values(devup.theme.colors)) {
+      for (const key of Object.keys(themeEntries)) {
+        record('colors', key)
+      }
+    }
+  }
+  if (devup.theme?.length) {
+    for (const themeEntries of Object.values(devup.theme.length)) {
+      for (const key of Object.keys(themeEntries)) {
+        record('length', key)
+      }
+    }
+  }
+  if (devup.theme?.shadows) {
+    for (const themeEntries of Object.values(devup.theme.shadows)) {
+      for (const key of Object.keys(themeEntries)) {
+        record('shadows', key)
+      }
+    }
+  }
+  if (devup.theme?.typography) {
+    for (const key of Object.keys(devup.theme.typography)) {
+      record('typography', key)
+    }
+  }
+
+  const duplicates = new Map<string, DevupCategoryName[]>()
+  for (const [name, categories] of occurrences) {
+    if (categories.length > 1) {
+      duplicates.set(name, categories)
+    }
+  }
+  return duplicates
+}
+
+const DUPLICATE_NOTIFY_TIMEOUT = 5000
+
 export async function exportDevup(
   output: 'json' | 'excel',
   treeshaking: boolean = true,
@@ -569,6 +633,18 @@ export async function exportDevup(
   const devup = await buildDevupConfig(treeshaking)
   perfEnd('exportDevup()', t)
   console.info(perfReport())
+
+  const duplicates = findDuplicateVariableNames(devup)
+  if (duplicates.size > 0) {
+    const details = Array.from(duplicates.entries())
+      .map(([name, categories]) => `"${name}" (${categories.join(', ')})`)
+      .join(', ')
+    figma.notify(
+      `Duplicate variable name(s) across collections: ${details}. Rename them before exporting to avoid devup.json conflicts.`,
+      { timeout: DUPLICATE_NOTIFY_TIMEOUT, error: true },
+    )
+    return
+  }
 
   switch (output) {
     case 'json':

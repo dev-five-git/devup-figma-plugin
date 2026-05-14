@@ -17,8 +17,9 @@ import * as textSegmentToTypographyModule from '../../../utils/text-segment-to-t
 import * as textStyleToTypographyModule from '../../../utils/text-style-to-typography'
 import * as uploadFileModule from '../../../utils/upload-file'
 import * as variableAliasToValueModule from '../../../utils/variable-alias-to-value'
+import { findDuplicateVariableNames } from '../export-devup'
 import { exportDevup, importDevup } from '../index'
-import type { DevupTypography } from '../types'
+import type { Devup, DevupTypography } from '../types'
 import * as downloadXlsxModule from '../utils/download-devup-xlsx'
 import * as getColorCollectionModule from '../utils/get-devup-color-collection'
 import * as uploadXlsxModule from '../utils/upload-devup-xlsx'
@@ -723,6 +724,116 @@ describe('devup commands', () => {
     expect(payload.theme?.typography).toBeUndefined()
   })
 
+  test('exportDevup notifies and skips json download when variable names collide across collections', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    spyOn(rgbaToHexModule, 'rgbaToHex').mockReturnValue('#ff0000')
+    spyOn(optimizeHexModule, 'optimizeHex').mockImplementation((v) => v)
+
+    const colorVariable = {
+      name: 'title',
+      resolvedType: 'COLOR',
+      valuesByMode: { m1: { r: 1, g: 0, b: 0, a: 1 } },
+    } as unknown as Variable
+    const floatVariable = {
+      name: 'title',
+      resolvedType: 'FLOAT',
+      valuesByMode: { m1: 16 },
+    } as unknown as Variable
+    const variablesById: Record<string, Variable> = {
+      color1: colorVariable,
+      float1: floatVariable,
+    }
+
+    const notifyMock = mock(() => {})
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
+      root: { findAllWithCriteria: () => [], children: [] },
+      variables: {
+        getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
+        getLocalVariableCollectionsAsync: async () => [
+          {
+            modes: [{ modeId: 'm1', name: 'Light' }],
+            variableIds: ['color1', 'float1'],
+          },
+        ],
+      },
+      notify: notifyMock,
+    } as unknown as typeof figma
+
+    await exportDevup('json', false)
+
+    expect(notifyMock).toHaveBeenCalledTimes(1)
+    const [message, options] = notifyMock.mock.calls[0] as unknown as [
+      string,
+      { error?: boolean; timeout?: number },
+    ]
+    expect(message).toContain('"title"')
+    expect(message).toContain('colors')
+    expect(message).toContain('length')
+    expect(options).toMatchObject({ error: true })
+    expect(downloadFileMock).not.toHaveBeenCalled()
+  })
+
+  test('exportDevup notifies and skips excel download when variable names collide across collections', async () => {
+    getColorCollectionSpy = spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(null)
+    spyOn(rgbaToHexModule, 'rgbaToHex').mockReturnValue('#ff0000')
+    spyOn(optimizeHexModule, 'optimizeHex').mockImplementation((v) => v)
+    styleNameToTypographySpy = spyOn(
+      styleNameToTypographyModule,
+      'styleNameToTypography',
+    ).mockReturnValue({ level: 0, name: 'title' })
+    textStyleToTypographySpy = spyOn(
+      textStyleToTypographyModule,
+      'textStyleToTypography',
+    ).mockResolvedValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
+
+    const colorVariable = {
+      name: 'title',
+      resolvedType: 'COLOR',
+      valuesByMode: { m1: { r: 1, g: 0, b: 0, a: 1 } },
+    } as unknown as Variable
+    const variablesById: Record<string, Variable> = { color1: colorVariable }
+
+    const notifyMock = mock(() => {})
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      loadAllPagesAsync: async () => {},
+      getLocalTextStylesAsync: async () => [
+        { id: 'style1', name: 'title' } as unknown as TextStyle,
+      ],
+      getLocalEffectStylesAsync: async () => [],
+      root: { findAllWithCriteria: () => [], children: [] },
+      variables: {
+        getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
+        getLocalVariableCollectionsAsync: async () => [
+          {
+            modes: [{ modeId: 'm1', name: 'Light' }],
+            variableIds: ['color1'],
+          },
+        ],
+      },
+      notify: notifyMock,
+    } as unknown as typeof figma
+
+    await exportDevup('excel', false)
+
+    expect(notifyMock).toHaveBeenCalledTimes(1)
+    const [message] = notifyMock.mock.calls[0] as unknown as [string]
+    expect(message).toContain('"title"')
+    expect(message).toContain('colors')
+    expect(message).toContain('typography')
+    expect(downloadXlsxMock).not.toHaveBeenCalled()
+  })
+
   test('importDevup creates colors and typography from json', async () => {
     getColorCollectionSpy = spyOn(
       getColorCollectionModule,
@@ -1013,5 +1124,70 @@ describe('devup commands', () => {
 
     expect(styleObj.letterSpacing).toMatchObject({ unit: 'PIXELS', value: 100 })
     expect(styleObj.lineHeight).toMatchObject({ unit: 'PIXELS', value: 18 })
+  })
+})
+
+describe('findDuplicateVariableNames', () => {
+  test('returns empty map when no theme is defined', () => {
+    expect(findDuplicateVariableNames({}).size).toBe(0)
+  })
+
+  test('returns empty map when each name lives in a single category', () => {
+    const devup: Devup = {
+      theme: {
+        colors: { light: { primary: '#fff' }, dark: { primary: '#000' } },
+        length: { default: { gutter: '16px' } },
+        shadows: { default: { card: '0 0 1px #000' } },
+        typography: { heading: { fontFamily: 'Inter' } },
+      },
+    }
+    expect(findDuplicateVariableNames(devup).size).toBe(0)
+  })
+
+  test('reports a name shared between colors and length', () => {
+    const devup: Devup = {
+      theme: {
+        colors: { light: { title: '#fff' } },
+        length: { default: { title: '16px' } },
+      },
+    }
+    const duplicates = findDuplicateVariableNames(devup)
+    expect(duplicates.get('title')).toEqual(['colors', 'length'])
+  })
+
+  test('reports a name shared between typography and shadows', () => {
+    const devup: Devup = {
+      theme: {
+        shadows: { default: { card: '0 0 1px #000' } },
+        typography: { card: { fontFamily: 'Inter' } },
+      },
+    }
+    const duplicates = findDuplicateVariableNames(devup)
+    expect(duplicates.get('card')).toEqual(['shadows', 'typography'])
+  })
+
+  test('reports a name occurring in three categories', () => {
+    const devup: Devup = {
+      theme: {
+        colors: { light: { brand: '#fff' } },
+        length: { default: { brand: '16px' } },
+        typography: { brand: { fontFamily: 'Inter' } },
+      },
+    }
+    const duplicates = findDuplicateVariableNames(devup)
+    expect(duplicates.get('brand')).toEqual(['colors', 'length', 'typography'])
+  })
+
+  test('deduplicates a name appearing in multiple themes of the same category', () => {
+    const devup: Devup = {
+      theme: {
+        colors: {
+          light: { title: '#fff' },
+          dark: { title: '#000' },
+        },
+      },
+    }
+    // Same category — not a cross-collection duplicate.
+    expect(findDuplicateVariableNames(devup).size).toBe(0)
   })
 })
