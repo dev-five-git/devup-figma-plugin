@@ -787,29 +787,27 @@ describe('devup commands', () => {
     ).mockResolvedValue(null)
     spyOn(rgbaToHexModule, 'rgbaToHex').mockReturnValue('#ff0000')
     spyOn(optimizeHexModule, 'optimizeHex').mockImplementation((v) => v)
-    styleNameToTypographySpy = spyOn(
-      styleNameToTypographyModule,
-      'styleNameToTypography',
-    ).mockReturnValue({ level: 0, name: 'title' })
-    textStyleToTypographySpy = spyOn(
-      textStyleToTypographyModule,
-      'textStyleToTypography',
-    ).mockResolvedValue({ fontFamily: 'Inter' } as unknown as DevupTypography)
 
     const colorVariable = {
       name: 'title',
       resolvedType: 'COLOR',
       valuesByMode: { m1: { r: 1, g: 0, b: 0, a: 1 } },
     } as unknown as Variable
-    const variablesById: Record<string, Variable> = { color1: colorVariable }
+    const floatVariable = {
+      name: 'title',
+      resolvedType: 'FLOAT',
+      valuesByMode: { m1: 16 },
+    } as unknown as Variable
+    const variablesById: Record<string, Variable> = {
+      color1: colorVariable,
+      float1: floatVariable,
+    }
 
     const notifyMock = mock(() => {})
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
       loadAllPagesAsync: async () => {},
-      getLocalTextStylesAsync: async () => [
-        { id: 'style1', name: 'title' } as unknown as TextStyle,
-      ],
+      getLocalTextStylesAsync: async () => [],
       getLocalEffectStylesAsync: async () => [],
       root: { findAllWithCriteria: () => [], children: [] },
       variables: {
@@ -817,7 +815,7 @@ describe('devup commands', () => {
         getLocalVariableCollectionsAsync: async () => [
           {
             modes: [{ modeId: 'm1', name: 'Light' }],
-            variableIds: ['color1'],
+            variableIds: ['color1', 'float1'],
           },
         ],
       },
@@ -830,7 +828,7 @@ describe('devup commands', () => {
     const [message] = notifyMock.mock.calls[0] as unknown as [string]
     expect(message).toContain('"title"')
     expect(message).toContain('colors')
-    expect(message).toContain('typography')
+    expect(message).toContain('length')
     expect(downloadXlsxMock).not.toHaveBeenCalled()
   })
 
@@ -1155,18 +1153,27 @@ describe('findDuplicateVariableNames', () => {
     expect(duplicates.get('title')).toEqual(['colors', 'length'])
   })
 
-  test('reports a name shared between typography and shadows', () => {
+  test('ignores typography collisions because typography lives in a separate class namespace', () => {
     const devup: Devup = {
       theme: {
-        shadows: { default: { card: '0 0 1px #000' } },
-        typography: { card: { fontFamily: 'Inter' } },
+        colors: { light: { brand: '#fff' } },
+        typography: { brand: { fontFamily: 'Inter' } },
       },
     }
-    const duplicates = findDuplicateVariableNames(devup)
-    expect(duplicates.get('card')).toEqual(['shadows', 'typography'])
+    expect(findDuplicateVariableNames(devup).size).toBe(0)
   })
 
-  test('reports a name occurring in three categories', () => {
+  test('ignores shadow collisions because shadows live in a separate effect-style namespace', () => {
+    const devup: Devup = {
+      theme: {
+        length: { default: { card: '16px' } },
+        shadows: { default: { card: '0 0 1px #000' } },
+      },
+    }
+    expect(findDuplicateVariableNames(devup).size).toBe(0)
+  })
+
+  test('still reports colors/length collision when typography shares the same name', () => {
     const devup: Devup = {
       theme: {
         colors: { light: { brand: '#fff' } },
@@ -1175,7 +1182,8 @@ describe('findDuplicateVariableNames', () => {
       },
     }
     const duplicates = findDuplicateVariableNames(devup)
-    expect(duplicates.get('brand')).toEqual(['colors', 'length', 'typography'])
+    expect(duplicates.size).toBe(1)
+    expect(duplicates.get('brand')).toEqual(['colors', 'length'])
   })
 
   test('deduplicates a name appearing in multiple themes of the same category', () => {

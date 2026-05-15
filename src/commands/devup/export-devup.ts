@@ -560,22 +560,24 @@ function effectStyleToCssShadow(style: EffectStyle): string | null {
   return parts.length > 0 ? parts.join(', ') : null
 }
 
-type DevupCategoryName = 'colors' | 'length' | 'shadows' | 'typography'
+type DevupVariableCategory = 'colors' | 'length'
 
 /**
- * Find variable names that appear in more than one Devup category.
+ * Find variable names that collide across Devup variable-collection categories
+ * (`colors` and `length`).
  *
- * devup.json keys all flow into a single token namespace at consumption time,
- * so a name shared between e.g. `colors.title` and `length.title` collapses
- * into one ambiguous reference. Surfacing duplicates at export time prevents
- * silent overwrite on the next `importDevup` round-trip.
+ * Both categories land in a single Figma variable collection on `importDevup`,
+ * so a name shared between e.g. `colors.title` and `length.title` overwrites
+ * one another on round-trip. `typography` and `shadows` live in text/effect
+ * style namespaces (separate classes in devup-ui) and are intentionally not
+ * checked here.
  */
 export function findDuplicateVariableNames(
   devup: Devup,
-): Map<string, DevupCategoryName[]> {
-  const occurrences = new Map<string, DevupCategoryName[]>()
+): Map<string, DevupVariableCategory[]> {
+  const occurrences = new Map<string, DevupVariableCategory[]>()
 
-  const record = (category: DevupCategoryName, name: string) => {
+  const record = (category: DevupVariableCategory, name: string) => {
     let categories = occurrences.get(name)
     if (!categories) {
       categories = []
@@ -600,20 +602,8 @@ export function findDuplicateVariableNames(
       }
     }
   }
-  if (devup.theme?.shadows) {
-    for (const themeEntries of Object.values(devup.theme.shadows)) {
-      for (const key of Object.keys(themeEntries)) {
-        record('shadows', key)
-      }
-    }
-  }
-  if (devup.theme?.typography) {
-    for (const key of Object.keys(devup.theme.typography)) {
-      record('typography', key)
-    }
-  }
 
-  const duplicates = new Map<string, DevupCategoryName[]>()
+  const duplicates = new Map<string, DevupVariableCategory[]>()
   for (const [name, categories] of occurrences) {
     if (categories.length > 1) {
       duplicates.set(name, categories)
@@ -640,7 +630,7 @@ export async function exportDevup(
       .map(([name, categories]) => `"${name}" (${categories.join(', ')})`)
       .join(', ')
     figma.notify(
-      `Duplicate variable name(s) across collections: ${details}. Rename them before exporting to avoid devup.json conflicts.`,
+      `Duplicate variable name(s) in variable collection: ${details}. Rename them before exporting to avoid devup.json conflicts.`,
       { timeout: DUPLICATE_NOTIFY_TIMEOUT, error: true },
     )
     return
