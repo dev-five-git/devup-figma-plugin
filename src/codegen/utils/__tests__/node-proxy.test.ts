@@ -778,7 +778,8 @@ describe('nodeProxyTracker', () => {
     const childrenProp = parentLog?.properties.find((p) => p.key === 'children')
     expect(childrenProp).toBeDefined()
     expect(Array.isArray(childrenProp?.value)).toBe(true)
-    expect((childrenProp?.value as string[])[0]).toBe('[NodeId: child-1]')
+    const childrenValues = childrenProp?.value as string[]
+    expect(childrenValues[0]).toBe('[NodeId: child-1]')
 
     // Child should have properties tracked
     expect(childLog?.properties.length).toBeGreaterThan(0)

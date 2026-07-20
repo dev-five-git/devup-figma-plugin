@@ -65,9 +65,6 @@ function optimizeResponsiveArray(
     for (let i = 1; i < values.length; i++) {
       arr.push(values[i])
     }
-    while (arr.length > 0 && arr[arr.length - 1] === null) {
-      arr.pop()
-    }
     return arr
   }
   return values
@@ -402,7 +399,13 @@ export async function buildDevupConfig(
 
     for (const varId of usedVarIds) {
       const variable = await figma.variables.getVariableByIdAsync(varId)
-      if (!variable || variable.resolvedType !== 'FLOAT') continue
+      if (variable?.resolvedType !== 'FLOAT') continue
+      // Only export variables registered in THIS file's local collections.
+      // Skip library/remote variables that merely tagged along when an element
+      // was copied in — they are not part of this file's design system and
+      // otherwise collapse into phantom `length` tokens that collide with local
+      // colors/typography of the same name.
+      if (variable.remote) continue
 
       const collId = variable.variableCollectionId
       let collection = collectionCache.get(collId)
@@ -562,6 +565,197 @@ function effectStyleToCssShadow(style: EffectStyle): string | null {
 
 type DevupCategoryName = 'colors' | 'length' | 'shadows' | 'typography'
 
+/** Devup categories backed by Figma variables (COLOR/FLOAT), not text/effect styles. */
+type VariableCategoryName = 'colors' | 'length'
+
+/**
+ * Origin of a variable-backed name: the Figma collection it lives in, its
+ * original (pre-camelCase) variable name, and the Devup category it maps to.
+ */
+export interface VariableSource {
+  collection: string
+  originalName: string
+  category: VariableCategoryName
+  /** True when the variable is published from a library rather than local. */
+  remote?: boolean
+  /** Name of a document node that binds this variable — helps find non-local ones. */
+  boundNodeName?: string
+}
+
+/** A duplicate camelCased name: the categories it spans plus its Figma origins. */
+export interface DuplicateVariable {
+  categories: DevupCategoryName[]
+  sources: VariableSource[]
+}
+
+/** COLOR -> colors, FLOAT -> length; other resolved types map to no category. */
+function variableCategoryOf(
+  resolvedType: VariableResolvedDataType,
+): VariableCategoryName | null {
+  if (resolvedType === 'COLOR') return 'colors'
+  if (resolvedType === 'FLOAT') return 'length'
+  return null
+}
+
+/**
+ * Walk every page and record, per bound variable id, the name of the first node
+ * that binds it. Mirrors how buildDevupConfig collects `usedVarIds`, so the
+ * duplicate report can point at the actual node behind a non-local variable.
+ */
+async function collectDocumentBoundVariableNodes(): Promise<
+  Map<string, string>
+> {
+  const boundNodeByVarId = new Map<string, string>()
+
+  const record = (node: SceneNode) => {
+    const bv =
+      'boundVariables' in node
+        ? (node.boundVariables as
+            | Record<string, { id: string } | { id: string }[]>
+            | undefined)
+        : undefined
+    if (!bv) return
+    for (const val of Object.values(bv)) {
+      const items = Array.isArray(val) ? val : [val]
+      for (const item of items) {
+        if (item?.id && !boundNodeByVarId.has(item.id)) {
+          boundNodeByVarId.set(item.id, node.name)
+        }
+      }
+    }
+  }
+
+  const walk = (node: SceneNode) => {
+    record(node)
+    if (!('children' in node)) return
+    for (const child of node.children) {
+      walk(child)
+    }
+  }
+
+  const rootPages = Array.isArray(figma.root.children)
+    ? figma.root.children
+    : []
+  if (rootPages.length === 0) return boundNodeByVarId
+
+  const prevSkip = figma.skipInvisibleInstanceChildren
+  figma.skipInvisibleInstanceChildren = true
+  const currentPageId = figma.currentPage.id
+  const orderedPages: PageNode[] = [
+    figma.currentPage,
+    ...rootPages.filter((page) => page.id !== currentPageId),
+  ]
+  for (const page of orderedPages) {
+    if (page.id !== currentPageId) {
+      await page.loadAsync()
+    }
+    for (const child of page.children) {
+      walk(child)
+    }
+  }
+  figma.skipInvisibleInstanceChildren = prevSkip
+
+  return boundNodeByVarId
+}
+
+/**
+ * Index every COLOR/FLOAT variable that can flow into devup.json by its
+ * camelCased name, recording the Figma collection + original variable name.
+ *
+ * Two sources are merged:
+ * 1. Local variable collections (what the Figma variables panel shows).
+ * 2. Variables bound to nodes in the document — this catches library/remote
+ *    variables (and anything not in a local collection) that still export into
+ *    `length`/`colors`. That is the usual reason a reported duplicate "isn't
+ *    visible" in the local panel.
+ *
+ * `findDuplicateVariableNames` only sees the collapsed devup.json keys; this
+ * index lets the export point the user at the exact collection, original name,
+ * library flag, and a node that binds it so they know which side to rename.
+ */
+export async function collectVariableSources(): Promise<
+  Map<string, VariableSource[]>
+> {
+  const index = new Map<string, VariableSource[]>()
+
+  const add = (camel: string, source: VariableSource) => {
+    let list = index.get(camel)
+    if (!list) {
+      list = []
+      index.set(camel, list)
+    }
+    list.push(source)
+  }
+
+  // 1) Local variables — the collections shown in the Figma variables panel.
+  const collections = await figma.variables.getLocalVariableCollectionsAsync()
+  for (const collection of collections) {
+    const variables = await Promise.all(
+      collection.variableIds.map((id) =>
+        figma.variables.getVariableByIdAsync(id),
+      ),
+    )
+    for (const variable of variables) {
+      if (variable === null) continue
+      const category = variableCategoryOf(variable.resolvedType)
+      if (category === null) continue
+      add(toCamel(variable.name), {
+        collection: collection.name,
+        originalName: variable.name,
+        category,
+      })
+    }
+  }
+
+  // 2) Variables bound to document nodes — catches library/remote variables
+  //    that never appear in the local collections above.
+  const boundNodeByVarId = await collectDocumentBoundVariableNodes()
+  const collectionNameCache = new Map<string, string>()
+  for (const [varId, nodeName] of boundNodeByVarId) {
+    const variable = await figma.variables.getVariableByIdAsync(varId)
+    if (variable === null) continue
+    const category = variableCategoryOf(variable.resolvedType)
+    if (category === null) continue
+
+    let collectionName = collectionNameCache.get(variable.variableCollectionId)
+    if (collectionName === undefined) {
+      const collection = await figma.variables.getVariableCollectionByIdAsync(
+        variable.variableCollectionId,
+      )
+      collectionName = collection?.name ?? '(unknown collection)'
+      collectionNameCache.set(variable.variableCollectionId, collectionName)
+    }
+
+    const camel = toCamel(variable.name)
+    // Already surfaced from a local collection → annotate with a node instead
+    // of adding a duplicate entry.
+    const existing = index
+      .get(camel)
+      ?.find(
+        (source) =>
+          source.category === category &&
+          source.originalName === variable.name &&
+          source.collection === collectionName,
+      )
+    if (existing) {
+      if (existing.boundNodeName === undefined) {
+        existing.boundNodeName = nodeName
+      }
+      continue
+    }
+
+    add(camel, {
+      collection: collectionName,
+      originalName: variable.name,
+      category,
+      remote: variable.remote,
+      boundNodeName: nodeName,
+    })
+  }
+
+  return index
+}
+
 /**
  * Find variable names that appear in more than one Devup category.
  *
@@ -569,10 +763,15 @@ type DevupCategoryName = 'colors' | 'length' | 'shadows' | 'typography'
  * so a name shared between e.g. `colors.title` and `length.title` collapses
  * into one ambiguous reference. Surfacing duplicates at export time prevents
  * silent overwrite on the next `importDevup` round-trip.
+ *
+ * Pass `variableSources` (from {@link collectVariableSources}) to annotate each
+ * duplicate with the Figma collection + original name it came from, so callers
+ * can tell the user exactly which variable to rename.
  */
 export function findDuplicateVariableNames(
   devup: Devup,
-): Map<string, DevupCategoryName[]> {
+  variableSources?: Map<string, VariableSource[]>,
+): Map<string, DuplicateVariable> {
   const occurrences = new Map<string, DevupCategoryName[]>()
 
   const record = (category: DevupCategoryName, name: string) => {
@@ -613,13 +812,56 @@ export function findDuplicateVariableNames(
     }
   }
 
-  const duplicates = new Map<string, DevupCategoryName[]>()
+  const duplicates = new Map<string, DuplicateVariable>()
   for (const [name, categories] of occurrences) {
     if (categories.length > 1) {
-      duplicates.set(name, categories)
+      duplicates.set(name, {
+        categories,
+        sources: variableSources?.get(name) ?? [],
+      })
     }
   }
   return duplicates
+}
+
+const CATEGORY_SOURCE_HINT: Record<DevupCategoryName, string> = {
+  colors: 'color variable',
+  length: 'number (float) variable',
+  shadows: 'effect style',
+  typography: 'text style',
+}
+
+/**
+ * Render a multi-line, human-readable breakdown of duplicates for the plugin
+ * console: for each name, every category it spans and — for variable-backed
+ * categories — the exact Figma collection + original name behind it.
+ */
+export function formatDuplicateReport(
+  duplicates: Map<string, DuplicateVariable>,
+): string {
+  const lines: string[] = []
+  for (const [name, { categories, sources }] of duplicates) {
+    lines.push(`- "${name}" spans ${categories.length} categories:`)
+    for (const category of categories) {
+      const matches = sources.filter((source) => source.category === category)
+      if (matches.length === 0) {
+        lines.push(`    ${category}: ${CATEGORY_SOURCE_HINT[category]}`)
+        continue
+      }
+      for (const match of matches) {
+        const notes: string[] = []
+        if (match.remote) notes.push('library')
+        if (match.boundNodeName) {
+          notes.push(`bound on node "${match.boundNodeName}"`)
+        }
+        const suffix = notes.length > 0 ? ` (${notes.join(', ')})` : ''
+        lines.push(
+          `    ${category}: ${CATEGORY_SOURCE_HINT[category]} "${match.originalName}" in collection "${match.collection}"${suffix}`,
+        )
+      }
+    }
+  }
+  return lines.join('\n')
 }
 
 const DUPLICATE_NOTIFY_TIMEOUT = 5000
@@ -636,11 +878,16 @@ export async function exportDevup(
 
   const duplicates = findDuplicateVariableNames(devup)
   if (duplicates.size > 0) {
-    const details = Array.from(duplicates.entries())
-      .map(([name, categories]) => `"${name}" (${categories.join(', ')})`)
+    const variableSources = await collectVariableSources()
+    const detailed = findDuplicateVariableNames(devup, variableSources)
+    const summary = Array.from(detailed.entries())
+      .map(([name, { categories }]) => `"${name}" (${categories.join(', ')})`)
       .join(', ')
+    console.error(
+      `[devup] Duplicate variable name(s) across collections. Rename one side of each before exporting:\n${formatDuplicateReport(detailed)}`,
+    )
     figma.notify(
-      `Duplicate variable name(s) across collections: ${details}. Rename them before exporting to avoid devup.json conflicts.`,
+      `Duplicate variable name(s) across collections: ${summary}. Rename them before exporting to avoid devup.json conflicts. Open the plugin console (Plugins > Development > Open Console) to see which collection each one is in.`,
       { timeout: DUPLICATE_NOTIFY_TIMEOUT, error: true },
     )
     return

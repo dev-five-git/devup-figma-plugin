@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 import {
+  type BreakpointKey,
   getBreakpointByWidth,
   groupChildrenByBreakpoint,
   groupNodesByName,
+  mergePropsToResponsive,
   optimizeResponsiveValue,
   viewportToBreakpoint,
 } from '../index'
@@ -96,5 +98,20 @@ describe('responsive index helpers', () => {
     // unknown values default to pc
     expect(viewportToBreakpoint('unknown')).toBe('pc')
     expect(viewportToBreakpoint('')).toBe('pc')
+  })
+
+  it('replaces a collapsed string shadow with its effectStyle token', () => {
+    // Same shadow across breakpoints collapses to a single string, then the
+    // post-merge pass swaps it for the effectStyle token from a breakpoint.
+    const merged = mergePropsToResponsive(
+      new Map<BreakpointKey, Record<string, unknown>>([
+        [
+          'mobile',
+          { boxShadow: '0 1px 2px #000', __boxShadowToken: '$shadow' },
+        ],
+        ['pc', { boxShadow: '0 1px 2px #000', __boxShadowToken: '$shadow' }],
+      ]),
+    )
+    expect(merged.boxShadow).toBe('$shadow')
   })
 })

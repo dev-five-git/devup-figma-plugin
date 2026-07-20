@@ -244,4 +244,54 @@ describe('import-devup length and shadow coverage', () => {
 
     expect(uploadXlsx).toHaveBeenCalled()
   })
+
+  test('imports length reusing an existing collection mode', async () => {
+    spyOn(uploadFileModule, 'uploadFile').mockResolvedValue(
+      JSON.stringify({
+        theme: { length: { default: { gap: '8px' } } },
+      }),
+    )
+
+    const setValueForMode = mock(() => {})
+    const collection = {
+      variableIds: [],
+      // Non-empty modes → the `modes.map(...)` callback in importLength runs.
+      modes: [{ modeId: 'mobile-existing', name: 'mobile' }],
+      addMode: mock((name: string) => `${name}-id`),
+      removeMode: mock(() => {}),
+    } as unknown as VariableCollection
+
+    spyOn(
+      getColorCollectionModule,
+      'getDevupColorCollection',
+    ).mockResolvedValue(collection)
+
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      variables: {
+        createVariableCollection: () => collection,
+        getLocalVariablesAsync: async () => [],
+        createVariable: mock(
+          () =>
+            ({
+              id: 'gap',
+              name: 'gap',
+              resolvedType: 'FLOAT',
+              setValueForMode,
+              remove: mock(() => {}),
+            }) as unknown as Variable,
+        ),
+      },
+      getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
+      createEffectStyle: () => ({ name: '', effects: [] }),
+      createTextStyle: mock(() => ({ name: '' }) as unknown as TextStyle),
+      loadFontAsync: mock(async () => {}),
+    } as unknown as typeof figma
+
+    await importDevup('json')
+
+    // Single '8px' value → set on the reused existing 'mobile' mode.
+    expect(setValueForMode).toHaveBeenCalledWith('mobile-existing', 8)
+  })
 })

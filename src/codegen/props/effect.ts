@@ -189,4 +189,7 @@ async function _getEffectPropsFromEffect(
         backdropFilter: `blur(${effect.radius}px)`,
       }
   }
+
+  // Unknown/unsupported effect type — contributes no CSS.
+  return {}
 }

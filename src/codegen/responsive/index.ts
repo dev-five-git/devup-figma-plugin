@@ -397,13 +397,13 @@ export function mergePropsToResponsive(
         }
       }
     } else if (typeof shadowValue === 'string') {
-      // Collapsed single value — replace with token from any breakpoint
-      for (const props of breakpointProps.values()) {
-        const token = props[tokenKey]
-        if (typeof token === 'string') {
-          result[shadowKey] = token
-          break
-        }
+      // Collapsed single value — replace with the token from the first
+      // breakpoint that has one (insertion order preserved).
+      const tokenProps = [...breakpointProps.values()].find(
+        (props) => typeof props[tokenKey] === 'string',
+      )
+      if (tokenProps) {
+        result[shadowKey] = tokenProps[tokenKey] as string
       }
     }
   }

@@ -1,14 +1,72 @@
-import { afterAll, describe, expect, spyOn, test } from 'bun:test'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from 'bun:test'
+import JSZipBinding from 'jszip'
 
+import * as CodegenModule from '../../codegen/Codegen'
+import * as ResponsiveCodegenModule from '../../codegen/responsive/ResponsiveCodegen'
 import * as checkAssetNodeModule from '../../codegen/utils/check-asset-node'
 import type { ImportMetadata } from '../../codegen/utils/collect-import-metadata'
+import * as perfModule from '../../codegen/utils/perf'
+import * as downloadFileModule from '../../utils/download-file'
+import * as devupModule from '../devup'
 import {
   collectAssetNodes,
+  collectSectionNotes,
   DEVUP_COMPONENTS,
+  exportPagesAndComponents,
   extractCustomComponentImports,
   extractImports,
   generateImportStatements,
 } from '../exportPagesAndComponents'
+
+const RealJSZip =
+  require('../../../node_modules/jszip/dist/jszip.js') as typeof import('jszip')
+type ZipInternals = InstanceType<typeof RealJSZip> & {
+  comment: string | null
+  root: string
+}
+
+beforeEach(() => {
+  if (typeof JSZipBinding.prototype.folder === 'function') return
+
+  // Another test globally replaces jszip. Repair that constructor with the real prototype.
+  for (const method of ['file', 'generateAsync']) {
+    Reflect.deleteProperty(JSZipBinding.prototype, method)
+  }
+  Object.setPrototypeOf(JSZipBinding.prototype, RealJSZip.prototype)
+  Object.defineProperties(JSZipBinding.prototype, {
+    root: { value: '', writable: true },
+    comment: { value: null, writable: true },
+    clone: {
+      value: function (this: ZipInternals) {
+        const clone = new RealJSZip() as ZipInternals
+        clone.files = this.files
+        clone.comment = this.comment
+        clone.root = this.root
+        return clone
+      },
+    },
+  })
+})
+
+const restoreCallbacks: Array<() => void> = []
+
+function trackSpy<T extends { mockRestore(): void }>(spy: T): T {
+  restoreCallbacks.push(() => spy.mockRestore())
+  return spy
+}
+
+afterEach(() => {
+  for (const restore of restoreCallbacks.splice(0).reverse()) restore()
+})
 
 function componentCode(
   name: string,
@@ -380,5 +438,429 @@ describe('generateImportStatements', () => {
     const second = generateImportStatements(components)
 
     expect(second).toBe(first)
+  })
+})
+
+describe('collectSectionNotes', () => {
+  test('combines non-empty direct text and descendant annotations', () => {
+    const annotatedNodes = [
+      {
+        type: 'FRAME',
+        name: 'Card',
+        annotations: [
+          { label: ' Use the compact variant ' },
+          { label: '   ', labelMarkdown: 'ignored fallback' },
+        ],
+      },
+      {
+        type: 'RECTANGLE',
+        name: 'Hero image',
+        annotations: [{ labelMarkdown: 'Maintain the aspect ratio' }],
+      },
+      { type: 'FRAME', name: 'Unannotated' },
+    ] as unknown as SceneNode[]
+    const section = {
+      type: 'SECTION',
+      children: [
+        { type: 'TEXT', characters: '  Introductory note  ' },
+        { type: 'TEXT', characters: '   ' },
+        { type: 'FRAME' },
+      ],
+      findAll: (predicate: (node: SceneNode) => boolean) =>
+        annotatedNodes.filter(predicate),
+    } as unknown as SectionNode
+
+    expect(collectSectionNotes(section)).toBe(
+      'Introductory note\n[Card] Use the compact variant\n[Hero image] Maintain the aspect ratio',
+    )
+  })
+
+  test('returns an empty string when the section has no notes', () => {
+    const descendants = [
+      { type: 'FRAME', name: 'Plain frame' },
+      { type: 'FRAME', name: 'Empty annotations', annotations: [] },
+    ] as unknown as SceneNode[]
+    const section = {
+      type: 'SECTION',
+      children: [{ type: 'TEXT', characters: '\n  ' }],
+      findAll: (predicate: (node: SceneNode) => boolean) =>
+        descendants.filter(predicate),
+    } as unknown as SectionNode
+
+    expect(collectSectionNotes(section)).toBe('')
+  })
+})
+
+type NodeOverrides = Record<string, unknown>
+
+let orchestrationNodeId = 0
+function createOrchestrationNode(
+  type: SceneNode['type'],
+  name: string,
+  overrides: NodeOverrides = {},
+): SceneNode {
+  return {
+    type,
+    name,
+    id: `orchestration-node-${orchestrationNodeId++}`,
+    visible: true,
+    children: [],
+    parent: null,
+    findAll: () => [],
+    exportAsync: mock(async () => new Uint8Array([1, 2, 3])),
+    ...overrides,
+  } as unknown as SceneNode
+}
+
+function installFigmaPage(
+  selection: readonly SceneNode[],
+  children: readonly SceneNode[] = selection,
+) {
+  const cancelMock = mock(() => {})
+  const notifyMock = mock(() => ({ cancel: cancelMock }))
+  ;(globalThis as { figma?: unknown }).figma = {
+    currentPage: {
+      selection,
+      children,
+      name: 'Marketing',
+    },
+    notify: notifyMock,
+  } as unknown as typeof figma
+  return { cancelMock, notifyMock }
+}
+
+const generatedImports: ImportMetadata = {
+  devupImports: ['Box'],
+  customImports: [],
+  usesKeyframes: false,
+}
+
+describe('exportPagesAndComponents', () => {
+  test('exports components, pages, notes, screenshots, and assets into a real zip', async () => {
+    const screenshotError = new Error('screenshot failed')
+    const assetError = new Error('asset failed')
+    const componentSet = createOrchestrationNode(
+      'COMPONENT_SET',
+      'button set',
+      {
+        id: 'component-set-a',
+        exportAsync: mock(async () => Promise.reject(screenshotError)),
+      },
+    ) as ComponentSetNode
+    const componentInSet = createOrchestrationNode(
+      'COMPONENT',
+      'button child',
+      {
+        parent: componentSet,
+      },
+    )
+    const nestedComponentSet = createOrchestrationNode(
+      'COMPONENT_SET',
+      'nested set',
+      { id: 'component-set-b' },
+    ) as ComponentSetNode
+    const nestedComponent = createOrchestrationNode(
+      'COMPONENT',
+      'nested child',
+      { parent: nestedComponentSet },
+    )
+    const annotatedDescendants = [
+      {
+        type: 'FRAME',
+        name: 'Content',
+        annotations: [{ labelMarkdown: 'Keep this content concise' }],
+      },
+    ] as unknown as SceneNode[]
+    const section = createOrchestrationNode('SECTION', 'landing page', {
+      children: [
+        { type: 'TEXT', characters: ' Page owner: Growth ' },
+        { type: 'TEXT', characters: '   ' },
+      ],
+      findAll: (predicate: (node: SceneNode) => boolean) =>
+        annotatedDescendants.filter(predicate),
+    }) as SectionNode
+    const parentSection = createOrchestrationNode(
+      'SECTION',
+      'account details',
+      {
+        children: [],
+        findAll: () => [],
+      },
+    ) as SectionNode
+    const childOfSection = createOrchestrationNode('FRAME', 'account content', {
+      parent: parentSection,
+    })
+    const svgAsset = createOrchestrationNode('VECTOR', 'check')
+    const pngAsset = createOrchestrationNode('RECTANGLE', 'portrait')
+    const failedAsset = createOrchestrationNode('RECTANGLE', 'broken', {
+      exportAsync: mock(async () => Promise.reject(assetError)),
+    })
+    const assetNodes = new Map([
+      ['svg/check', { node: svgAsset, type: 'svg' as const }],
+      ['png/portrait', { node: pngAsset, type: 'png' as const }],
+      ['png/broken', { node: failedAsset, type: 'png' as const }],
+    ])
+    const { notifyMock } = installFigmaPage([
+      componentSet,
+      componentInSet,
+      section,
+      childOfSection,
+    ])
+    let downloadedData: Uint8Array | undefined
+
+    trackSpy(
+      spyOn(devupModule, 'buildDevupConfig').mockImplementation(async () => ({
+        theme: {},
+      })),
+    )
+    trackSpy(
+      spyOn(CodegenModule, 'resetGlobalAssetNodes').mockImplementation(
+        () => {},
+      ),
+    )
+    trackSpy(
+      spyOn(CodegenModule, 'getGlobalAssetNodes').mockReturnValue(assetNodes),
+    )
+    trackSpy(
+      spyOn(CodegenModule.Codegen.prototype, 'run').mockResolvedValue(''),
+    )
+    trackSpy(
+      spyOn(CodegenModule.Codegen.prototype, 'getComponentsCodes')
+        .mockReturnValueOnce([
+          [
+            'InlineCard',
+            'export const InlineCard = () => <Box />',
+            generatedImports,
+          ],
+        ])
+        .mockReturnValueOnce([]),
+    )
+    trackSpy(
+      spyOn(CodegenModule.Codegen.prototype, 'getComponentNodes')
+        .mockReturnValueOnce([nestedComponent])
+        .mockReturnValueOnce([]),
+    )
+    trackSpy(
+      spyOn(
+        ResponsiveCodegenModule.ResponsiveCodegen,
+        'generateVariantResponsiveComponents',
+      ).mockImplementation(async (_node, componentName) => [
+        [
+          componentName,
+          `export const ${componentName} = () => <Box />`,
+          generatedImports,
+        ],
+      ]),
+    )
+    trackSpy(
+      spyOn(
+        ResponsiveCodegenModule.ResponsiveCodegen,
+        'canGenerateResponsive',
+      ).mockImplementation((node): node is SectionNode => node === section),
+    )
+    trackSpy(
+      spyOn(
+        ResponsiveCodegenModule.ResponsiveCodegen,
+        'hasParentSection',
+      ).mockImplementation((node) =>
+        node === childOfSection ? parentSection : null,
+      ),
+    )
+    trackSpy(
+      spyOn(
+        ResponsiveCodegenModule.ResponsiveCodegen.prototype,
+        'generateResponsiveResult',
+      ).mockResolvedValue({ code: '<Box />', imports: generatedImports }),
+    )
+    trackSpy(spyOn(perfModule, 'perfStart').mockReturnValue(0))
+    trackSpy(spyOn(perfModule, 'perfEnd').mockImplementation(() => {}))
+    trackSpy(spyOn(perfModule, 'perfReset').mockImplementation(() => {}))
+    trackSpy(
+      spyOn(perfModule, 'perfReport').mockReturnValue('performance report'),
+    )
+    const nowValues = [1000, 1000, 1200, 1200, 1400, 1400, 1600, 1600]
+    let nowIndex = 0
+    trackSpy(
+      spyOn(Date, 'now').mockImplementation(
+        () => nowValues[nowIndex++] ?? nowValues[nowValues.length - 1],
+      ),
+    )
+    const consoleErrorSpy = trackSpy(
+      spyOn(console, 'error').mockImplementation(() => {}),
+    )
+    trackSpy(spyOn(console, 'info').mockImplementation(() => {}))
+    const downloadSpy = trackSpy(
+      spyOn(downloadFileModule, 'downloadFile').mockImplementation(
+        async (_fileName, data) => {
+          if (data instanceof Uint8Array) downloadedData = data
+        },
+      ),
+    )
+
+    await exportPagesAndComponents()
+
+    expect(downloadSpy).toHaveBeenCalledWith(
+      'Marketing-export.zip',
+      expect.any(Uint8Array),
+    )
+    expect(downloadedData).toBeInstanceOf(Uint8Array)
+    if (!downloadedData) throw new Error('Expected generated zip data')
+    const zip = await RealJSZip.loadAsync(downloadedData)
+    expect(Object.keys(zip.files)).toEqual(
+      expect.arrayContaining([
+        'components/ButtonSet.tsx',
+        'components/NestedSet.tsx',
+        'components/InlineCard.tsx',
+        'pages/LandingPage.tsx',
+        'pages/LandingPage.txt',
+        'pages/LandingPage.png',
+        'pages/AccountDetailsPage.tsx',
+        'pages/AccountDetailsPage.png',
+        'icons/check.svg',
+        'images/portrait.png',
+        'devup.json',
+      ]),
+    )
+    expect(zip.file('pages/AccountDetailsPage.txt')).toBeNull()
+    expect(zip.file('components/ButtonSet.png')).toBeNull()
+    expect(zip.file('images/broken.png')).toBeNull()
+    expect(await zip.file('pages/LandingPage.txt')?.async('string')).toBe(
+      'Page owner: Growth\n[Content] Keep this content concise',
+    )
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to capture screenshot for ButtonSet.png:',
+      screenshotError,
+    )
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to export asset broken:',
+      assetError,
+    )
+    expect(notifyMock).toHaveBeenCalledWith(
+      'Exported 3 components, 2 pages, 2 assets',
+      { timeout: 3000 },
+    )
+    expect(notifyMock).toHaveBeenCalledWith(
+      expect.stringContaining('Exporting ['),
+      { timeout: Infinity },
+    )
+    expect(nowIndex).toBe(8)
+  })
+
+  test('uses page children and returns when no components or pages are found', async () => {
+    const node = createOrchestrationNode('FRAME', 'plain frame')
+    const { notifyMock, cancelMock } = installFigmaPage([], [node])
+    const buildSpy = trackSpy(
+      spyOn(devupModule, 'buildDevupConfig').mockResolvedValue({ theme: {} }),
+    )
+    trackSpy(
+      spyOn(CodegenModule, 'resetGlobalAssetNodes').mockImplementation(
+        () => {},
+      ),
+    )
+    trackSpy(
+      spyOn(CodegenModule.Codegen.prototype, 'run').mockResolvedValue(''),
+    )
+    trackSpy(
+      spyOn(
+        CodegenModule.Codegen.prototype,
+        'getComponentsCodes',
+      ).mockReturnValue([]),
+    )
+    trackSpy(
+      spyOn(
+        CodegenModule.Codegen.prototype,
+        'getComponentNodes',
+      ).mockReturnValue([]),
+    )
+    trackSpy(
+      spyOn(
+        ResponsiveCodegenModule.ResponsiveCodegen,
+        'canGenerateResponsive',
+      ).mockReturnValue(false),
+    )
+    trackSpy(
+      spyOn(
+        ResponsiveCodegenModule.ResponsiveCodegen,
+        'hasParentSection',
+      ).mockReturnValue(null),
+    )
+    trackSpy(spyOn(Date, 'now').mockReturnValue(1000))
+
+    await exportPagesAndComponents()
+
+    expect(buildSpy).toHaveBeenCalledTimes(1)
+    expect(cancelMock).toHaveBeenCalled()
+    expect(notifyMock).toHaveBeenCalledWith('No components or pages found')
+  })
+
+  test('exports successfully without adding an asset count to the notification', async () => {
+    const componentSet = createOrchestrationNode('COMPONENT_SET', 'badge', {
+      id: 'badge-set',
+    }) as ComponentSetNode
+    const { notifyMock } = installFigmaPage([componentSet])
+    trackSpy(
+      spyOn(devupModule, 'buildDevupConfig').mockResolvedValue({ theme: {} }),
+    )
+    trackSpy(
+      spyOn(CodegenModule, 'resetGlobalAssetNodes').mockImplementation(
+        () => {},
+      ),
+    )
+    trackSpy(
+      spyOn(CodegenModule, 'getGlobalAssetNodes').mockReturnValue(new Map()),
+    )
+    trackSpy(
+      spyOn(
+        ResponsiveCodegenModule.ResponsiveCodegen,
+        'generateVariantResponsiveComponents',
+      ).mockResolvedValue([
+        ['Badge', 'export const Badge = () => <Box />', generatedImports],
+      ]),
+    )
+    trackSpy(spyOn(Date, 'now').mockReturnValue(1000))
+    trackSpy(spyOn(console, 'info').mockImplementation(() => {}))
+    const downloadSpy = trackSpy(
+      spyOn(downloadFileModule, 'downloadFile').mockResolvedValue(undefined),
+    )
+
+    await exportPagesAndComponents()
+
+    expect(downloadSpy).toHaveBeenCalledWith(
+      'Marketing-export.zip',
+      expect.any(Uint8Array),
+    )
+    expect(notifyMock).toHaveBeenCalledWith('Exported 1 components, 0 pages', {
+      timeout: 3000,
+    })
+  })
+
+  test('notifies an error when orchestration throws', async () => {
+    const node = createOrchestrationNode('FRAME', 'broken frame')
+    const failure = new Error('codegen failed')
+    const { notifyMock, cancelMock } = installFigmaPage([node])
+    trackSpy(
+      spyOn(devupModule, 'buildDevupConfig').mockResolvedValue({ theme: {} }),
+    )
+    trackSpy(
+      spyOn(CodegenModule, 'resetGlobalAssetNodes').mockImplementation(
+        () => {},
+      ),
+    )
+    trackSpy(
+      spyOn(CodegenModule.Codegen.prototype, 'run').mockRejectedValue(failure),
+    )
+    trackSpy(spyOn(Date, 'now').mockReturnValue(1000))
+    const consoleErrorSpy = trackSpy(
+      spyOn(console, 'error').mockImplementation(() => {}),
+    )
+
+    await exportPagesAndComponents()
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(failure)
+    expect(cancelMock).toHaveBeenCalled()
+    expect(notifyMock).toHaveBeenCalledWith(
+      'Error exporting pages and components',
+      { timeout: 3000, error: true },
+    )
   })
 })

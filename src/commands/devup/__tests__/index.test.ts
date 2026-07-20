@@ -17,7 +17,14 @@ import * as textSegmentToTypographyModule from '../../../utils/text-segment-to-t
 import * as textStyleToTypographyModule from '../../../utils/text-style-to-typography'
 import * as uploadFileModule from '../../../utils/upload-file'
 import * as variableAliasToValueModule from '../../../utils/variable-alias-to-value'
-import { findDuplicateVariableNames } from '../export-devup'
+import {
+  buildDevupConfig,
+  collectVariableSources,
+  type DuplicateVariable,
+  findDuplicateVariableNames,
+  formatDuplicateReport,
+  type VariableSource,
+} from '../export-devup'
 import { exportDevup, importDevup } from '../index'
 import type { Devup, DevupTypography } from '../types'
 import * as downloadXlsxModule from '../utils/download-devup-xlsx'
@@ -748,6 +755,9 @@ describe('devup commands', () => {
     }
 
     const notifyMock = mock(() => {})
+    const consoleErrorMock = spyOn(console, 'error').mockImplementation(
+      () => {},
+    )
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
       loadAllPagesAsync: async () => {},
@@ -758,6 +768,7 @@ describe('devup commands', () => {
         getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
         getLocalVariableCollectionsAsync: async () => [
           {
+            name: 'Brand',
             modes: [{ modeId: 'm1', name: 'Light' }],
             variableIds: ['color1', 'float1'],
           },
@@ -778,6 +789,18 @@ describe('devup commands', () => {
     expect(message).toContain('length')
     expect(options).toMatchObject({ error: true })
     expect(downloadFileMock).not.toHaveBeenCalled()
+
+    // Console report pinpoints the exact collection + original name to rename.
+    expect(consoleErrorMock).toHaveBeenCalledTimes(1)
+    const [report] = consoleErrorMock.mock.calls[0] as unknown as [string]
+    expect(report).toContain('"title"')
+    expect(report).toContain(
+      'colors: color variable "title" in collection "Brand"',
+    )
+    expect(report).toContain(
+      'length: number (float) variable "title" in collection "Brand"',
+    )
+    consoleErrorMock.mockRestore()
   })
 
   test('exportDevup notifies and skips excel download when variable names collide across collections', async () => {
@@ -804,6 +827,9 @@ describe('devup commands', () => {
     const variablesById: Record<string, Variable> = { color1: colorVariable }
 
     const notifyMock = mock(() => {})
+    const consoleErrorMock = spyOn(console, 'error').mockImplementation(
+      () => {},
+    )
     ;(globalThis as { figma?: unknown }).figma = {
       util: { rgba: (v: unknown) => v },
       loadAllPagesAsync: async () => {},
@@ -816,6 +842,7 @@ describe('devup commands', () => {
         getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
         getLocalVariableCollectionsAsync: async () => [
           {
+            name: 'Brand',
             modes: [{ modeId: 'm1', name: 'Light' }],
             variableIds: ['color1'],
           },
@@ -832,6 +859,15 @@ describe('devup commands', () => {
     expect(message).toContain('colors')
     expect(message).toContain('typography')
     expect(downloadXlsxMock).not.toHaveBeenCalled()
+
+    // colors resolves to the exact variable; typography is style-backed (no collection).
+    expect(consoleErrorMock).toHaveBeenCalledTimes(1)
+    const [report] = consoleErrorMock.mock.calls[0] as unknown as [string]
+    expect(report).toContain(
+      'colors: color variable "title" in collection "Brand"',
+    )
+    expect(report).toContain('typography: text style')
+    consoleErrorMock.mockRestore()
   })
 
   test('importDevup creates colors and typography from json', async () => {
@@ -1152,7 +1188,9 @@ describe('findDuplicateVariableNames', () => {
       },
     }
     const duplicates = findDuplicateVariableNames(devup)
-    expect(duplicates.get('title')).toEqual(['colors', 'length'])
+    expect(duplicates.get('title')?.categories).toEqual(['colors', 'length'])
+    // No source index passed → sources default to empty.
+    expect(duplicates.get('title')?.sources).toEqual([])
   })
 
   test('reports a name shared between typography and shadows', () => {
@@ -1163,7 +1201,10 @@ describe('findDuplicateVariableNames', () => {
       },
     }
     const duplicates = findDuplicateVariableNames(devup)
-    expect(duplicates.get('card')).toEqual(['shadows', 'typography'])
+    expect(duplicates.get('card')?.categories).toEqual([
+      'shadows',
+      'typography',
+    ])
   })
 
   test('reports a name occurring in three categories', () => {
@@ -1175,7 +1216,11 @@ describe('findDuplicateVariableNames', () => {
       },
     }
     const duplicates = findDuplicateVariableNames(devup)
-    expect(duplicates.get('brand')).toEqual(['colors', 'length', 'typography'])
+    expect(duplicates.get('brand')?.categories).toEqual([
+      'colors',
+      'length',
+      'typography',
+    ])
   })
 
   test('deduplicates a name appearing in multiple themes of the same category', () => {
@@ -1189,5 +1234,252 @@ describe('findDuplicateVariableNames', () => {
     }
     // Same category — not a cross-collection duplicate.
     expect(findDuplicateVariableNames(devup).size).toBe(0)
+  })
+
+  test('annotates duplicates with variable sources when provided', () => {
+    const devup: Devup = {
+      theme: {
+        colors: { light: { title: '#fff' } },
+        length: { default: { title: '16px' } },
+        shadows: { default: { card: '0 0 1px #000' } },
+        typography: { card: { fontFamily: 'Inter' } },
+      },
+    }
+    const sources = new Map<string, VariableSource[]>([
+      [
+        'title',
+        [
+          { collection: 'Brand', originalName: 'Title', category: 'colors' },
+          { collection: 'Spacing', originalName: 'title', category: 'length' },
+        ],
+      ],
+    ])
+    const duplicates = findDuplicateVariableNames(devup, sources)
+    expect(duplicates.get('title')?.sources).toEqual([
+      { collection: 'Brand', originalName: 'Title', category: 'colors' },
+      { collection: 'Spacing', originalName: 'title', category: 'length' },
+    ])
+    // 'card' is style-backed and absent from the source index → empty sources.
+    expect(duplicates.get('card')?.categories).toEqual([
+      'shadows',
+      'typography',
+    ])
+    expect(duplicates.get('card')?.sources).toEqual([])
+  })
+})
+
+describe('collectVariableSources', () => {
+  afterEach(() => {
+    ;(globalThis as { figma?: unknown }).figma = undefined
+  })
+
+  test('indexes COLOR and FLOAT variables by camelCased name with collection + origin', async () => {
+    const variablesById: Record<string, Variable> = {
+      c1: { name: 'Title Color', resolvedType: 'COLOR' } as unknown as Variable,
+      f1: { name: 'title-color', resolvedType: 'FLOAT' } as unknown as Variable,
+      s1: { name: 'ignored', resolvedType: 'STRING' } as unknown as Variable,
+    }
+    ;(globalThis as { figma?: unknown }).figma = {
+      variables: {
+        getLocalVariableCollectionsAsync: async () => [
+          { name: 'Colors', variableIds: ['c1', 's1'] },
+          { name: 'Spacing', variableIds: ['f1', 'missing'] },
+        ],
+        getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
+      },
+      root: { children: [] },
+    } as unknown as typeof figma
+
+    const index = await collectVariableSources()
+    // 'Title Color' and 'title-color' both camelCase to 'titleColor'.
+    expect(index.get('titleColor')).toEqual([
+      { collection: 'Colors', originalName: 'Title Color', category: 'colors' },
+      {
+        collection: 'Spacing',
+        originalName: 'title-color',
+        category: 'length',
+      },
+    ])
+    // STRING variables map to no Devup category → ignored.
+    expect(index.get('ignored')).toBeUndefined()
+  })
+
+  test('locates library/bound variables that are absent from local collections', async () => {
+    const localColor = {
+      name: 'caption',
+      resolvedType: 'COLOR',
+    } as unknown as Variable
+    const remoteFloat = {
+      name: 'caption',
+      resolvedType: 'FLOAT',
+      remote: true,
+      variableCollectionId: 'coll-remote',
+    } as unknown as Variable
+    const variablesById: Record<string, Variable> = {
+      'local-color': localColor,
+      'remote-float': remoteFloat,
+    }
+    const page = {
+      id: 'page-1',
+      children: [
+        {
+          id: 'frame-1',
+          name: 'Card / Padding',
+          type: 'FRAME',
+          boundVariables: { paddingLeft: { id: 'remote-float' } },
+          children: [],
+        },
+      ],
+    }
+    ;(globalThis as { figma?: unknown }).figma = {
+      variables: {
+        getLocalVariableCollectionsAsync: async () => [
+          { name: 'Semantic', variableIds: ['local-color'] },
+        ],
+        getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
+        getVariableCollectionByIdAsync: async (id: string) =>
+          id === 'coll-remote' ? { name: 'Spacing (library)' } : null,
+      },
+      skipInvisibleInstanceChildren: false,
+      currentPage: page,
+      root: { children: [page] },
+    } as unknown as typeof figma
+
+    const index = await collectVariableSources()
+    // The FLOAT "caption" is invisible in local collections but bound in the
+    // document → surfaced with its library flag + the node that binds it.
+    expect(index.get('caption')).toEqual([
+      { collection: 'Semantic', originalName: 'caption', category: 'colors' },
+      {
+        collection: 'Spacing (library)',
+        originalName: 'caption',
+        category: 'length',
+        remote: true,
+        boundNodeName: 'Card / Padding',
+      },
+    ])
+  })
+})
+
+describe('formatDuplicateReport', () => {
+  test('shows collection + origin for variable-backed categories and a hint otherwise', () => {
+    const duplicates = new Map<string, DuplicateVariable>([
+      [
+        'caption',
+        {
+          categories: ['colors', 'length'],
+          sources: [
+            {
+              collection: 'Semantic',
+              originalName: 'Caption',
+              category: 'colors',
+            },
+            {
+              collection: 'Spacing',
+              originalName: 'caption',
+              category: 'length',
+              remote: true,
+              boundNodeName: 'Card / Padding',
+            },
+          ],
+        },
+      ],
+      ['card', { categories: ['shadows', 'typography'], sources: [] }],
+    ])
+    const report = formatDuplicateReport(duplicates)
+    expect(report).toContain('- "caption" spans 2 categories:')
+    expect(report).toContain(
+      'colors: color variable "Caption" in collection "Semantic"',
+    )
+    // Library + bound-node annotations pinpoint the otherwise-invisible source.
+    expect(report).toContain(
+      'length: number (float) variable "caption" in collection "Spacing" (library, bound on node "Card / Padding")',
+    )
+    // Style-backed categories have no variable source → generic hint only.
+    expect(report).toContain('shadows: effect style')
+    expect(report).toContain('typography: text style')
+  })
+})
+
+describe('buildDevupConfig', () => {
+  afterEach(() => {
+    ;(globalThis as { figma?: unknown }).figma = undefined
+  })
+
+  test('excludes remote/library bound variables from length (only current-file collections)', async () => {
+    const localFloat = {
+      name: 'gutter',
+      resolvedType: 'FLOAT',
+      remote: false,
+      variableCollectionId: 'local-coll',
+      valuesByMode: { m1: 16 },
+    } as unknown as Variable
+    // Tag-along library variable — bound to a pasted node, not registered locally.
+    const remoteFloat = {
+      name: 'caption',
+      resolvedType: 'FLOAT',
+      remote: true,
+      variableCollectionId: 'remote-coll',
+      valuesByMode: { m1: 12 },
+    } as unknown as Variable
+    const variablesById: Record<string, Variable> = {
+      'local-float': localFloat,
+      'remote-float': remoteFloat,
+    }
+    const collectionsById: Record<string, VariableCollection> = {
+      'local-coll': {
+        id: 'local-coll',
+        name: 'Sizes',
+        modes: [{ modeId: 'm1', name: 'mobile' }],
+      } as unknown as VariableCollection,
+      'remote-coll': {
+        id: 'remote-coll',
+        name: '수치',
+        modes: [{ modeId: 'm1', name: 'mobile' }],
+      } as unknown as VariableCollection,
+    }
+    const page = {
+      id: 'p1',
+      children: [
+        {
+          id: 'n1',
+          name: 'Frame',
+          type: 'FRAME',
+          boundVariables: {
+            paddingLeft: { id: 'local-float' },
+            paddingRight: { id: 'remote-float' },
+          },
+          children: [],
+        },
+      ],
+    }
+    ;(globalThis as { figma?: unknown }).figma = {
+      util: { rgba: (v: unknown) => v },
+      mixed: Symbol('mixed'),
+      skipInvisibleInstanceChildren: false,
+      currentPage: page,
+      root: { children: [page] },
+      getLocalTextStylesAsync: async () => [],
+      getLocalEffectStylesAsync: async () => [],
+      variables: {
+        getLocalVariableCollectionsAsync: async () => [
+          {
+            id: 'local-coll',
+            name: 'Sizes',
+            variableIds: [],
+            modes: [{ modeId: 'm1', name: 'mobile' }],
+          },
+        ],
+        getVariableByIdAsync: async (id: string) => variablesById[id] ?? null,
+        getVariableCollectionByIdAsync: async (id: string) =>
+          collectionsById[id] ?? null,
+      },
+    } as unknown as typeof figma
+
+    const devup = await buildDevupConfig(true)
+    const defaultLength = devup.theme?.length?.default ?? {}
+    // Local FLOAT stays; the library/remote FLOAT that tagged along is dropped.
+    expect(Object.keys(defaultLength)).toContain('gutter')
+    expect(Object.keys(defaultLength)).not.toContain('caption')
   })
 })
