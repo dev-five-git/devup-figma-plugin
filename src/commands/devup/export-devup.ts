@@ -404,7 +404,7 @@ export async function buildDevupConfig(
       // Skip library/remote variables that merely tagged along when an element
       // was copied in — they are not part of this file's design system and
       // otherwise collapse into phantom `length` tokens that collide with local
-      // colors/typography of the same name.
+      // colors of the same name.
       if (variable.remote) continue
 
       const collId = variable.variableCollectionId
@@ -563,9 +563,21 @@ function effectStyleToCssShadow(style: EffectStyle): string | null {
   return parts.length > 0 ? parts.join(', ') : null
 }
 
-type DevupCategoryName = 'colors' | 'length' | 'shadows' | 'typography'
+/**
+ * Devup categories that devup-ui emits as bare `--<name>` custom properties on
+ * the same `:root` rule, so they share one flat token namespace: any `$name` in
+ * a style prop becomes `var(--name)` with no category awareness. A name reused
+ * across two of these silently overwrites (last declaration wins).
+ *
+ * `typography` is deliberately absent. Typography is emitted as a
+ * `.typo-<name>` class selector and referenced through the dedicated
+ * `typography="name"` prop, never entering the `--<name>` space — so a text
+ * style may freely share a name with a color/length/shadow token, and treating
+ * that overlap as a conflict blocked exports for no reason.
+ */
+type DevupCategoryName = 'colors' | 'length' | 'shadows'
 
-/** Devup categories backed by Figma variables (COLOR/FLOAT), not text/effect styles. */
+/** Devup categories backed by Figma variables (COLOR/FLOAT), not effect styles. */
 type VariableCategoryName = 'colors' | 'length'
 
 /**
@@ -757,12 +769,17 @@ export async function collectVariableSources(): Promise<
 }
 
 /**
- * Find variable names that appear in more than one Devup category.
+ * Find names that appear in more than one {@link DevupCategoryName}.
  *
- * devup.json keys all flow into a single token namespace at consumption time,
- * so a name shared between e.g. `colors.title` and `length.title` collapses
- * into one ambiguous reference. Surfacing duplicates at export time prevents
- * silent overwrite on the next `importDevup` round-trip.
+ * `colors`, `length` and `shadows` keys all collapse into the same `--<name>`
+ * custom-property space at consumption time, so a name shared between e.g.
+ * `colors.title` and `length.title` becomes one ambiguous reference. Surfacing
+ * those duplicates at export time prevents silent overwrite on the next
+ * `importDevup` round-trip.
+ *
+ * `theme.typography` is intentionally not scanned: it compiles to a
+ * `.typo-<name>` class instead of a custom property, so it cannot collide with
+ * a variable-backed token and must never block an export.
  *
  * Pass `variableSources` (from {@link collectVariableSources}) to annotate each
  * duplicate with the Figma collection + original name it came from, so callers
@@ -806,11 +823,6 @@ export function findDuplicateVariableNames(
       }
     }
   }
-  if (devup.theme?.typography) {
-    for (const key of Object.keys(devup.theme.typography)) {
-      record('typography', key)
-    }
-  }
 
   const duplicates = new Map<string, DuplicateVariable>()
   for (const [name, categories] of occurrences) {
@@ -828,7 +840,6 @@ const CATEGORY_SOURCE_HINT: Record<DevupCategoryName, string> = {
   colors: 'color variable',
   length: 'number (float) variable',
   shadows: 'effect style',
-  typography: 'text style',
 }
 
 /**

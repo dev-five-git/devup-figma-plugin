@@ -803,7 +803,7 @@ describe('devup commands', () => {
     consoleErrorMock.mockRestore()
   })
 
-  test('exportDevup notifies and skips excel download when variable names collide across collections', async () => {
+  test('exportDevup exports excel when a text style shares a name with a color variable', async () => {
     getColorCollectionSpy = spyOn(
       getColorCollectionModule,
       'getDevupColorCollection',
@@ -853,20 +853,19 @@ describe('devup commands', () => {
 
     await exportDevup('excel', false)
 
-    expect(notifyMock).toHaveBeenCalledTimes(1)
-    const [message] = notifyMock.mock.calls[0] as unknown as [string]
-    expect(message).toContain('"title"')
-    expect(message).toContain('colors')
-    expect(message).toContain('typography')
-    expect(downloadXlsxMock).not.toHaveBeenCalled()
-
-    // colors resolves to the exact variable; typography is style-backed (no collection).
-    expect(consoleErrorMock).toHaveBeenCalledTimes(1)
-    const [report] = consoleErrorMock.mock.calls[0] as unknown as [string]
-    expect(report).toContain(
-      'colors: color variable "title" in collection "Brand"',
+    // Typography compiles to a `.typo-<name>` class, not a `--<name>` custom
+    // property, so a text style sharing a name with a variable is not a token
+    // conflict and must never abort the export.
+    expect(notifyMock).not.toHaveBeenCalled()
+    expect(consoleErrorMock).not.toHaveBeenCalled()
+    expect(downloadXlsxMock).toHaveBeenCalledWith(
+      'devup.xlsx',
+      expect.stringContaining('"colors":{"light":{"title":"#ff0000"}}'),
     )
-    expect(report).toContain('typography: text style')
+    expect(downloadXlsxMock).toHaveBeenCalledWith(
+      'devup.xlsx',
+      expect.stringContaining('"typography":{"title":{"fontFamily":"Inter"}}'),
+    )
     consoleErrorMock.mockRestore()
   })
 
@@ -1193,18 +1192,25 @@ describe('findDuplicateVariableNames', () => {
     expect(duplicates.get('title')?.sources).toEqual([])
   })
 
-  test('reports a name shared between typography and shadows', () => {
+  test('ignores typography names shared with every other category', () => {
     const devup: Devup = {
       theme: {
+        colors: { light: { card: '#fff' } },
+        length: { default: { title: '16px' } },
         shadows: { default: { card: '0 0 1px #000' } },
-        typography: { card: { fontFamily: 'Inter' } },
+        typography: {
+          card: { fontFamily: 'Inter' },
+          title: { fontFamily: 'Inter' },
+        },
       },
     }
-    const duplicates = findDuplicateVariableNames(devup)
-    expect(duplicates.get('card')?.categories).toEqual([
+    // `card` really does span colors + shadows; typography is not part of it.
+    expect(findDuplicateVariableNames(devup).get('card')?.categories).toEqual([
+      'colors',
       'shadows',
-      'typography',
     ])
+    // `title` only exists in length + typography → separate namespaces, no clash.
+    expect(findDuplicateVariableNames(devup).has('title')).toBe(false)
   })
 
   test('reports a name occurring in three categories', () => {
@@ -1212,14 +1218,14 @@ describe('findDuplicateVariableNames', () => {
       theme: {
         colors: { light: { brand: '#fff' } },
         length: { default: { brand: '16px' } },
-        typography: { brand: { fontFamily: 'Inter' } },
+        shadows: { default: { brand: '0 0 1px #000' } },
       },
     }
     const duplicates = findDuplicateVariableNames(devup)
     expect(duplicates.get('brand')?.categories).toEqual([
       'colors',
       'length',
-      'typography',
+      'shadows',
     ])
   })
 
@@ -1239,10 +1245,9 @@ describe('findDuplicateVariableNames', () => {
   test('annotates duplicates with variable sources when provided', () => {
     const devup: Devup = {
       theme: {
-        colors: { light: { title: '#fff' } },
+        colors: { light: { title: '#fff', card: '#000' } },
         length: { default: { title: '16px' } },
         shadows: { default: { card: '0 0 1px #000' } },
-        typography: { card: { fontFamily: 'Inter' } },
       },
     }
     const sources = new Map<string, VariableSource[]>([
@@ -1259,11 +1264,8 @@ describe('findDuplicateVariableNames', () => {
       { collection: 'Brand', originalName: 'Title', category: 'colors' },
       { collection: 'Spacing', originalName: 'title', category: 'length' },
     ])
-    // 'card' is style-backed and absent from the source index → empty sources.
-    expect(duplicates.get('card')?.categories).toEqual([
-      'shadows',
-      'typography',
-    ])
+    // 'card' is partly style-backed and absent from the source index → empty.
+    expect(duplicates.get('card')?.categories).toEqual(['colors', 'shadows'])
     expect(duplicates.get('card')?.sources).toEqual([])
   })
 })
@@ -1384,7 +1386,7 @@ describe('formatDuplicateReport', () => {
           ],
         },
       ],
-      ['card', { categories: ['shadows', 'typography'], sources: [] }],
+      ['card', { categories: ['length', 'shadows'], sources: [] }],
     ])
     const report = formatDuplicateReport(duplicates)
     expect(report).toContain('- "caption" spans 2 categories:')
@@ -1395,9 +1397,10 @@ describe('formatDuplicateReport', () => {
     expect(report).toContain(
       'length: number (float) variable "caption" in collection "Spacing" (library, bound on node "Card / Padding")',
     )
-    // Style-backed categories have no variable source → generic hint only.
-    expect(report).toContain('shadows: effect style')
-    expect(report).toContain('typography: text style')
+    // Categories with no indexed source fall back to the generic hint.
+    expect(report).toContain(
+      '- "card" spans 2 categories:\n    length: number (float) variable\n    shadows: effect style',
+    )
   })
 })
 
