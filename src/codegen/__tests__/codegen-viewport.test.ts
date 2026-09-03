@@ -1,13 +1,11 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
-import { resetTextStyleCache } from '../../utils'
 import {
   Codegen,
   getGlobalAssetNodes,
   resetGlobalAssetNodes,
   resetGlobalBuildTreeCache,
 } from '../Codegen'
-import { resetGetPropsCache } from '../props'
-import { resetSelectorPropsCache } from '../props/selector'
+import { resetCodegenCaches } from '../reset-caches'
 import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
 
 // Mock figma global
@@ -50,20 +48,17 @@ import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
   },
 } as unknown as typeof figma
 
+// Every codegen cache is keyed by node.id, and other test files reuse ids such
+// as `status-error`. Reset all of them — exactly like a real codegen run does —
+// so results never depend on which test file ran first.
 beforeEach(() => {
-  resetGlobalBuildTreeCache()
+  resetCodegenCaches()
   resetGlobalAssetNodes()
-  resetGetPropsCache()
-  resetSelectorPropsCache()
-  resetTextStyleCache()
 })
 
 afterAll(() => {
-  resetGlobalBuildTreeCache()
+  resetCodegenCaches()
   resetGlobalAssetNodes()
-  resetGetPropsCache()
-  resetSelectorPropsCache()
-  resetTextStyleCache()
   ;(globalThis as { figma?: unknown }).figma = undefined
 })
 
