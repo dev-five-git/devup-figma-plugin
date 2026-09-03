@@ -93,6 +93,36 @@ describe('length bound variables (padding / gap / size / radius)', () => {
     })
   })
 
+  test.each([
+    ['SPACE_EVENLY', 'space-evenly'],
+    ['SPACE_AROUND', 'space-around'],
+  ] as const)(
+    'getAutoLayoutProps maps %s distribution to %s',
+    async (primaryAxisAlignItems, justifyContent) => {
+      setupFigmaMocks()
+
+      const node = {
+        type: 'FRAME',
+        inferredAutoLayout: {
+          layoutMode: 'HORIZONTAL',
+          itemSpacing: 8,
+        },
+        primaryAxisAlignItems,
+        counterAxisAlignItems: 'CENTER',
+        children: [{ visible: true }, { visible: true }],
+        boundVariables: {},
+      } as unknown as SceneNode
+
+      expect(await getAutoLayoutProps(node)).toEqual({
+        display: 'flex',
+        flexDir: 'row',
+        gap: '8px',
+        justifyContent,
+        alignItems: 'center',
+      })
+    },
+  )
+
   test('getLayoutProps resolves width/height variables on absolute nodes', async () => {
     setupFigmaMocks({
       variableNamesById: {
