@@ -1,5 +1,6 @@
 import { propsToPropsWithTypography } from '../../utils'
 import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
+import { traceAsync } from '../utils/diagnostics'
 import { fixTextChild } from '../utils/fix-text-child'
 import { paintToCSS, paintToCSSSyncIfPossible } from '../utils/paint-to-css'
 import { perfEnd, perfStart } from '../utils/perf'
@@ -31,7 +32,14 @@ const SEGMENT_TYPE = [
   'indentation',
   'hyperlink',
 ] as (keyof Omit<StyledTextSegment, 'characters' | 'start' | 'end'>)[]
-export async function renderText(node: TextNode): Promise<{
+export function renderText(node: TextNode): Promise<{
+  children: string[]
+  props: Record<string, string>
+}> {
+  return traceAsync('renderText', node, () => renderTextInner(node))
+}
+
+async function renderTextInner(node: TextNode): Promise<{
   children: string[]
   props: Record<string, string>
 }> {
@@ -109,10 +117,15 @@ export async function renderText(node: TextNode): Promise<{
       let text: string[] = [fixTextChild(seg.characters)]
       let textComponent: 'ul' | 'ol' | null = null
 
-      if (seg.listOptions.type === 'NONE') {
+      // Figma omits `listOptions` (leaves it undefined) on the non-list
+      // segments of a TEXT node that also contains a bulleted/numbered list,
+      // so a missing value means "not a list".
+      const listType = seg.listOptions?.type ?? 'NONE'
+
+      if (listType === 'NONE') {
         text = text.map((line) => line.replace(/\r\n|\r|\n/g, '<br />'))
       } else {
-        switch (seg.listOptions.type) {
+        switch (listType) {
           case 'UNORDERED': {
             textComponent = 'ul'
             break

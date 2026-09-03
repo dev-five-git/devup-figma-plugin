@@ -6,6 +6,7 @@ import {
   perfStart,
 } from '../../codegen/utils/perf'
 import { downloadFile } from '../../utils/download-file'
+import { isMotionEasing } from '../../utils/is-motion-easing'
 import { isVariableAlias } from '../../utils/is-variable-alias'
 import { optimizeHex } from '../../utils/optimize-hex'
 import { rgbaToHex } from '../../utils/rgba-to-hex'
@@ -119,14 +120,19 @@ export async function buildDevupConfig(
             variables.map(async (variable, i) => {
               if (variable === null || variable.resolvedType !== 'COLOR') return
               const value = variable.valuesByMode[mode.modeId]
-              if (typeof value === 'boolean' || typeof value === 'number')
+              if (
+                typeof value === 'boolean' ||
+                typeof value === 'number' ||
+                isMotionEasing(value)
+              )
                 return
               if (isVariableAlias(value)) {
                 const nextValue = await variableAliasToValue(value, mode.modeId)
                 if (nextValue === null) return
                 if (
                   typeof nextValue === 'boolean' ||
-                  typeof nextValue === 'number'
+                  typeof nextValue === 'number' ||
+                  isMotionEasing(nextValue)
                 )
                   return
                 colors[camelNames[i]] = optimizeHex(

@@ -2,32 +2,20 @@ import {
   Codegen,
   DEFAULT_CODEGEN_OPTIONS,
   resetGlobalBuildTreeCache,
-  resetMainComponentCache,
 } from './codegen/Codegen'
-import { resetGetPropsCache } from './codegen/props'
-import { resetChildAnimationCache } from './codegen/props/reaction'
-import {
-  resetSelectorPropsCache,
-  sanitizePropertyName,
-} from './codegen/props/selector'
+import { sanitizePropertyName } from './codegen/props/selector'
+import { resetCodegenCaches } from './codegen/reset-caches'
 import { ResponsiveCodegen } from './codegen/responsive/ResponsiveCodegen'
 import {
   coerceBooleanVariantValue,
   isBooleanVariantOptions,
 } from './codegen/utils/boolean-variant'
-import { resetCheckAssetNodeCache } from './codegen/utils/check-asset-node'
-import { resetCheckSameColorCache } from './codegen/utils/check-same-color'
 import type { ImportMetadata } from './codegen/utils/collect-import-metadata'
+import { formatCodegenErrorReport } from './codegen/utils/diagnostics'
 import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
-import {
-  getComponentPropertyDefinitions,
-  resetComponentPropertyDefinitionsCache,
-} from './codegen/utils/get-component-property-definitions'
-import { resetGetPageNodeCache } from './codegen/utils/get-page-node'
+import { getComponentPropertyDefinitions } from './codegen/utils/get-component-property-definitions'
 import { nodeProxyTracker } from './codegen/utils/node-proxy'
-import { resetPaintToCssCache } from './codegen/utils/paint-to-css'
 import { perfEnd, perfReport, perfReset, perfStart } from './codegen/utils/perf'
-import { resetVariableCache } from './codegen/utils/variable-cache'
 import { wrapComponent } from './codegen/utils/wrap-component'
 import { exportDevup, importDevup } from './commands/devup'
 import { exportAssets } from './commands/exportAssets'
@@ -40,7 +28,7 @@ import {
 
 export { extractCustomComponentImports, extractImports }
 
-import { getComponentName, resetTextStyleCache } from './utils'
+import { getComponentName } from './utils'
 import { toPascal } from './utils/to-pascal'
 
 type GeneratedCodeEntry = readonly [string, string, ImportMetadata?]
@@ -241,7 +229,10 @@ const debug = true
 
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
-    ctx.codegen.on('generate', async ({ node: n, language }) => {
+    const handler = async ({
+      node: n,
+      language,
+    }: CodegenEvent): Promise<CodegenResult[]> => {
       // Use the raw node for codegen (no Proxy overhead).
       // Debug tracking happens AFTER codegen completes via separate walk.
       const node = n
@@ -249,18 +240,7 @@ export function registerCodegen(ctx: typeof figma) {
         case 'devup-ui': {
           const time = Date.now()
           perfReset()
-          resetGetPropsCache()
-          resetSelectorPropsCache()
-          resetChildAnimationCache()
-          resetVariableCache()
-          resetCheckAssetNodeCache()
-          resetCheckSameColorCache()
-          resetPaintToCssCache()
-          resetGetPageNodeCache()
-          resetComponentPropertyDefinitionsCache()
-          resetTextStyleCache()
-          resetMainComponentCache()
-          resetGlobalBuildTreeCache()
+          resetCodegenCaches()
 
           let t = perfStart()
           const codegen = new Codegen(node, DEFAULT_CODEGEN_OPTIONS)
@@ -594,6 +574,28 @@ export function registerCodegen(ctx: typeof figma) {
         }
       }
       return []
+    }
+
+    ctx.codegen.on('generate', async (event) => {
+      try {
+        return await handler(event)
+      } catch (error) {
+        // The bundle is minified, so Figma's own stack trace is unreadable and
+        // the throw surfaces only as "unhandled promise rejection". Surface a
+        // structured report in the codegen panel instead, so it can be copied.
+        const report = formatCodegenErrorReport(error, {
+          node: event.node,
+          language: event.language,
+        })
+        console.error(report)
+        return [
+          {
+            title: 'Devup UI - Codegen Error',
+            language: 'PLAINTEXT' as const,
+            code: report,
+          },
+        ]
+      }
     })
   }
 }

@@ -2052,3 +2052,57 @@ describe('registerCodegen with usage output', () => {
     expect(usageCode).toBe('<MyButton variant="primary" size="md" />')
   })
 })
+
+describe('registerCodegen error reporting', () => {
+  type CodegenHandler = (event: {
+    node: SceneNode
+    language: string
+  }) => Promise<unknown[]>
+
+  it('returns a copyable diagnostic report instead of rejecting', async () => {
+    let capturedHandler: CodegenHandler | null = null
+    const figmaMock = {
+      editorType: 'dev',
+      mode: 'codegen',
+      command: 'noop',
+      codegen: {
+        on: mock((_event: string, handler: CodegenHandler) => {
+          capturedHandler = handler
+        }),
+      },
+      closePlugin: mock(() => {}),
+    } as unknown as typeof figma
+
+    const consoleError = spyOn(console, 'error').mockImplementation(() => {})
+
+    codeModule.registerCodegen(figmaMock)
+    expect(capturedHandler).not.toBeNull()
+    if (capturedHandler === null) throw new Error('Handler not captured')
+
+    // A TEXT node without getStyledTextSegments makes renderText throw the same
+    // way the minified bundle does in Figma.
+    const brokenText = {
+      id: '1:99',
+      type: 'TEXT',
+      name: 'Broken',
+      visible: true,
+      characters: 'hello',
+    } as unknown as SceneNode
+
+    const handler = capturedHandler as CodegenHandler
+    const result = await handler({ node: brokenText, language: 'devup-ui' })
+
+    expect(result).toHaveLength(1)
+    const [entry] = result as [
+      { title: string; language: string; code: string },
+    ]
+    expect(entry.title).toBe('Devup UI - Codegen Error')
+    expect(entry.language).toBe('PLAINTEXT')
+    expect(entry.code).toContain('DEVUP UI CODEGEN ERROR')
+    expect(entry.code).toContain('language : devup-ui')
+    expect(entry.code).toContain('selected : TEXT "Broken" (1:99)')
+    expect(entry.code).toContain('--- codegen path (innermost first) ---')
+    expect(entry.code).toContain('buildTree :: TEXT "Broken" (1:99)')
+    expect(consoleError).toHaveBeenCalled()
+  })
+})
