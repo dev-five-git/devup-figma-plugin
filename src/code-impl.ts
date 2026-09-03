@@ -18,6 +18,7 @@ import {
 import { resetCheckAssetNodeCache } from './codegen/utils/check-asset-node'
 import { resetCheckSameColorCache } from './codegen/utils/check-same-color'
 import type { ImportMetadata } from './codegen/utils/collect-import-metadata'
+import { formatCodegenErrorReport } from './codegen/utils/diagnostics'
 import { isReservedVariantKey } from './codegen/utils/extract-instance-variant-props'
 import {
   getComponentPropertyDefinitions,
@@ -241,7 +242,10 @@ const debug = true
 
 export function registerCodegen(ctx: typeof figma) {
   if (ctx.editorType === 'dev' && ctx.mode === 'codegen') {
-    ctx.codegen.on('generate', async ({ node: n, language }) => {
+    const handler = async ({
+      node: n,
+      language,
+    }: CodegenEvent): Promise<CodegenResult[]> => {
       // Use the raw node for codegen (no Proxy overhead).
       // Debug tracking happens AFTER codegen completes via separate walk.
       const node = n
@@ -594,6 +598,28 @@ export function registerCodegen(ctx: typeof figma) {
         }
       }
       return []
+    }
+
+    ctx.codegen.on('generate', async (event) => {
+      try {
+        return await handler(event)
+      } catch (error) {
+        // The bundle is minified, so Figma's own stack trace is unreadable and
+        // the throw surfaces only as "unhandled promise rejection". Surface a
+        // structured report in the codegen panel instead, so it can be copied.
+        const report = formatCodegenErrorReport(error, {
+          node: event.node,
+          language: event.language,
+        })
+        console.error(report)
+        return [
+          {
+            title: 'Devup UI - Codegen Error',
+            language: 'PLAINTEXT' as const,
+            code: report,
+          },
+        ]
+      }
     })
   }
 }
