@@ -109,10 +109,15 @@ export async function renderText(node: TextNode): Promise<{
       let text: string[] = [fixTextChild(seg.characters)]
       let textComponent: 'ul' | 'ol' | null = null
 
-      if (seg.listOptions.type === 'NONE') {
+      // Figma omits `listOptions` (leaves it undefined) on the non-list
+      // segments of a TEXT node that also contains a bulleted/numbered list,
+      // so a missing value means "not a list".
+      const listType = seg.listOptions?.type ?? 'NONE'
+
+      if (listType === 'NONE') {
         text = text.map((line) => line.replace(/\r\n|\r|\n/g, '<br />'))
       } else {
-        switch (seg.listOptions.type) {
+        switch (listType) {
           case 'UNORDERED': {
             textComponent = 'ul'
             break

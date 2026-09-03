@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it, test } from 'bun:test'
 import { getComponentName } from '../../utils'
 import { toPascal } from '../../utils/to-pascal'
 import { Codegen, DEFAULT_CODEGEN_OPTIONS } from '../Codegen'
+import { renderText } from '../render/text'
 import { ResponsiveCodegen } from '../responsive/ResponsiveCodegen'
 import type { NodeTree } from '../types'
 import { collectComponentProps } from '../utils/collect-component-props'
@@ -61235,5 +61236,32 @@ describe('render real world component', () => {
       await codegen.run()
       expect(codegen.getCode()).toMatchSnapshot()
     }
+  })
+})
+
+describe('renderText with segments missing listOptions', () => {
+  it('treats a segment without listOptions as a plain (non-list) segment', async () => {
+    // Figma returns `listOptions: undefined` — not `{ type: 'NONE' }` — for the
+    // non-list part of a TEXT node that also contains a bulleted list.
+    const plain = createTextSegment('Heading\n')
+    ;(plain as unknown as { listOptions?: unknown }).listOptions = undefined
+    const bullet = createTextSegment('list item')
+    ;(bullet as unknown as { listOptions?: unknown }).listOptions = {
+      type: 'UNORDERED',
+    }
+
+    const node = {
+      id: '1:1',
+      type: 'TEXT',
+      name: 'Mixed',
+      getStyledTextSegments: () => [plain, bullet],
+    } as unknown as TextNode
+
+    const { children } = await renderText(node)
+    const joined = children.join('')
+    expect(joined).toContain('Heading')
+    expect(joined).toContain('<Text as="ul"')
+    expect(joined).toContain('<li>')
+    expect(joined).toContain('list item')
   })
 })
