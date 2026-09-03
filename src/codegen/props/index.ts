@@ -1,5 +1,6 @@
 import type { NodeBoundVariables, NodeContext } from '../types'
 import { checkAssetNode } from '../utils/check-asset-node'
+import { traceAsync, traceSync } from '../utils/diagnostics'
 import { getPageNode } from '../utils/get-page-node'
 import { isPageRoot } from '../utils/is-page-root'
 import { perfEnd, perfStart } from '../utils/perf'
@@ -76,11 +77,17 @@ export async function getProps(
   }
 
   const t = perfStart()
-  const promise = (async () => {
+  const promise = traceAsync('getProps', node, async () => {
+    // Tag every getter so a failure names the exact getter, not just "getProps".
+    const traced = <T>(label: string, run: () => T): T =>
+      traceSync(label, node, run)
+    const tracedAsync = <T>(label: string, run: () => Promise<T>): Promise<T> =>
+      traceAsync(label, node, run)
+
     const isText = node.type === 'TEXT'
 
     // Compute cross-cutting node context ONCE for all sync getters that need it.
-    const ctx = computeNodeContext(node)
+    const ctx = traced('computeNodeContext', () => computeNodeContext(node))
     const hasFills = 'fills' in node && node.fills !== figma.mixed
     const hasStrokes = 'strokes' in node && node.strokes.length > 0
     const hasEffects = 'effects' in node && node.effects.length > 0
@@ -98,52 +105,87 @@ export async function getProps(
     //           + padding, auto-layout, layout, min-max, border-radius,
     //             effect, text-shadow (newly async for variable support)
     const tBorder = perfStart()
-    const borderP = hasStrokes && !isText ? getBorderProps(node) : undefined
+    const borderP =
+      hasStrokes && !isText
+        ? tracedAsync('getBorderProps', () => getBorderProps(node))
+        : undefined
     const tBg = perfStart()
-    const bgP = hasFills ? getBackgroundProps(node) : undefined
+    const bgP = hasFills
+      ? tracedAsync('getBackgroundProps', () => getBackgroundProps(node))
+      : undefined
     const tTextStroke = perfStart()
     const textStrokeP =
-      isText && hasStrokes ? getTextStrokeProps(node) : undefined
+      isText && hasStrokes
+        ? tracedAsync('getTextStrokeProps', () => getTextStrokeProps(node))
+        : undefined
     const tReaction = perfStart()
     const reactionP = hasReactionProps(node)
-      ? getReactionProps(node)
+      ? tracedAsync('getReactionProps', () => getReactionProps(node))
       : undefined
     const tAutoLayout = perfStart()
     const autoLayoutP = hasInferredAutoLayout
-      ? getAutoLayoutProps(node, ctx)
+      ? tracedAsync('getAutoLayoutProps', () => getAutoLayoutProps(node, ctx))
       : undefined
     const tMinMax = perfStart()
-    const minMaxP = getMinMaxProps(node, ctx)
+    const minMaxP = tracedAsync('getMinMaxProps', () =>
+      getMinMaxProps(node, ctx),
+    )
     const tLayout = perfStart()
-    const layoutP = getLayoutProps(node, ctx)
+    const layoutP = tracedAsync('getLayoutProps', () =>
+      getLayoutProps(node, ctx),
+    )
     const tBorderRadius = perfStart()
     const borderRadiusP = hasRadius
-      ? getBorderRadiusProps(node, ctx)
+      ? tracedAsync('getBorderRadiusProps', () =>
+          getBorderRadiusProps(node, ctx),
+        )
       : undefined
     const tPadding = perfStart()
     const paddingP =
       hasInferredAutoLayout || hasPadding
-        ? getPaddingProps(node, ctx)
+        ? tracedAsync('getPaddingProps', () => getPaddingProps(node, ctx))
         : undefined
     const tEffect = perfStart()
-    const effectP = hasEffects ? getEffectProps(node) : undefined
+    const effectP = hasEffects
+      ? tracedAsync('getEffectProps', () => getEffectProps(node))
+      : undefined
     const tTextShadow = perfStart()
     const textShadowP =
-      isText && hasEffects ? getTextShadowProps(node) : undefined
+      isText && hasEffects
+        ? tracedAsync('getTextShadowProps', () => getTextShadowProps(node))
+        : undefined
 
     // PHASE 2: Run sync prop getters while async IPC is pending in background.
     const tSync = perfStart()
-    const blendProps = getBlendProps(node)
-    const textAlignProps = isText ? getTextAlignProps(node) : undefined
-    const objectFitProps = getObjectFitProps(node)
-    const maxLineProps = isText ? getMaxLineProps(node) : undefined
-    const ellipsisProps = isText ? getEllipsisProps(node) : undefined
-    const positionProps = getPositionProps(node, ctx)
-    const gridChildProps = getGridChildProps(node)
-    const transformProps = getTransformProps(node, ctx)
-    const overflowProps = getOverflowProps(node)
-    const cursorProps = getCursorProps(node)
-    const visibilityProps = getVisibilityProps(node)
+    const blendProps = traced('getBlendProps', () => getBlendProps(node))
+    const textAlignProps = isText
+      ? traced('getTextAlignProps', () => getTextAlignProps(node))
+      : undefined
+    const objectFitProps = traced('getObjectFitProps', () =>
+      getObjectFitProps(node),
+    )
+    const maxLineProps = isText
+      ? traced('getMaxLineProps', () => getMaxLineProps(node))
+      : undefined
+    const ellipsisProps = isText
+      ? traced('getEllipsisProps', () => getEllipsisProps(node))
+      : undefined
+    const positionProps = traced('getPositionProps', () =>
+      getPositionProps(node, ctx),
+    )
+    const gridChildProps = traced('getGridChildProps', () =>
+      getGridChildProps(node),
+    )
+    const transformProps = traced('getTransformProps', () =>
+      getTransformProps(node, ctx),
+    )
+    const overflowProps = traced('getOverflowProps', () =>
+      getOverflowProps(node),
+    )
+    const cursorProps = traced('getCursorProps', () => getCursorProps(node))
+    const visibilityProps = traced('getVisibilityProps', () =>
+      getVisibilityProps(node),
+    )
     perfEnd('getProps.sync', tSync)
 
     // PHASE 3: Await async results — likely already resolved during sync phase.
@@ -202,7 +244,7 @@ export async function getProps(
     if (textShadowProps) Object.assign(result, textShadowProps)
     Object.assign(result, reactionProps, cursorProps, visibilityProps)
     return result
-  })()
+  })
 
   if (cacheKey) {
     getPropsCache.set(cacheKey, promise)

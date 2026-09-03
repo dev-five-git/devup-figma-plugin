@@ -16,6 +16,7 @@ import {
   type ImportMetadata,
   mergeImportMetadata,
 } from './utils/collect-import-metadata'
+import { traceAsync, traceSync } from './utils/diagnostics'
 import { extractInstanceVariantProps } from './utils/extract-instance-variant-props'
 import { getComponentPropertyDefinitions } from './utils/get-component-property-definitions'
 import {
@@ -500,7 +501,11 @@ export class Codegen {
     return result
   }
 
-  private async doBuildTree(node: SceneNode): Promise<NodeTree> {
+  private doBuildTree(node: SceneNode): Promise<NodeTree> {
+    return traceAsync('buildTree', node, () => this.doBuildTreeInner(node))
+  }
+
+  private async doBuildTreeInner(node: SceneNode): Promise<NodeTree> {
     const tBuild = perfStart()
     let pendingAddComponentTreeNode: ComponentNode | null = null
 
@@ -912,7 +917,16 @@ export class Codegen {
     return promise
   }
 
-  private async doAddComponentTree(
+  private doAddComponentTree(
+    node: ComponentNode,
+    nodeId: string,
+  ): Promise<void> {
+    return traceAsync('addComponentTree', node, () =>
+      this.doAddComponentTreeInner(node, nodeId),
+    )
+  }
+
+  private async doAddComponentTreeInner(
     node: ComponentNode,
     nodeId: string,
   ): Promise<void> {
@@ -1102,6 +1116,12 @@ export class Codegen {
    * Static method so it can be used independently.
    */
   static renderTree(tree: NodeTree, depth: number = 0): string {
+    return traceSync('renderTree', tree, () =>
+      Codegen.renderTreeInner(tree, depth),
+    )
+  }
+
+  private static renderTreeInner(tree: NodeTree, depth: number): string {
     // Handle INSTANCE_SWAP slot placeholders — render as {propName}
     if (tree.isSlot) {
       if (tree.condition) {

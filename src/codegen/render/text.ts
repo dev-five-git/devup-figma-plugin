@@ -1,5 +1,6 @@
 import { propsToPropsWithTypography } from '../../utils'
 import { textSegmentToTypography } from '../../utils/text-segment-to-typography'
+import { traceAsync } from '../utils/diagnostics'
 import { fixTextChild } from '../utils/fix-text-child'
 import { paintToCSS, paintToCSSSyncIfPossible } from '../utils/paint-to-css'
 import { perfEnd, perfStart } from '../utils/perf'
@@ -31,7 +32,14 @@ const SEGMENT_TYPE = [
   'indentation',
   'hyperlink',
 ] as (keyof Omit<StyledTextSegment, 'characters' | 'start' | 'end'>)[]
-export async function renderText(node: TextNode): Promise<{
+export function renderText(node: TextNode): Promise<{
+  children: string[]
+  props: Record<string, string>
+}> {
+  return traceAsync('renderText', node, () => renderTextInner(node))
+}
+
+async function renderTextInner(node: TextNode): Promise<{
   children: string[]
   props: Record<string, string>
 }> {
